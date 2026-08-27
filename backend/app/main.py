@@ -49,6 +49,8 @@ from .data_api import (
 
 settings = get_settings()
 
+SESSION_COOKIE_NAME = "riggs_bid_log_session"
+
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
@@ -62,7 +64,7 @@ app.add_middleware(
         or
         "development-only-riggs-bid-log-session-placeholder"
     ),
-    session_cookie="riggs_bid_log_session",
+    session_cookie=SESSION_COOKIE_NAME,
     max_age=settings.session_max_age_seconds,
     same_site="lax",
     https_only=settings.session_cookie_secure,
@@ -127,12 +129,35 @@ async def security_headers(
         "form-action 'self'"
     )
 
-    if request.url.path.startswith(
+    request_path = request.url.path
+
+    if request_path.startswith(
         "/api/"
     ):
         response.headers[
             "Cache-Control"
-        ] = "no-store"
+        ] = (
+            "no-store, private, "
+            "max-age=0"
+        )
+
+        response.headers[
+            "Pragma"
+        ] = "no-cache"
+
+        response.headers[
+            "Expires"
+        ] = "0"
+
+    elif request_path.startswith(
+        "/assets/"
+    ):
+        response.headers[
+            "Cache-Control"
+        ] = (
+            "public, max-age=31536000, "
+            "immutable"
+        )
 
     if settings.is_production_runtime:
         response.headers[
@@ -276,11 +301,19 @@ async def auth_login(
             detail="entra_not_configured",
         )
 
-    request.session[
-        "auth_return_to"
-    ] = _safe_return_path(
+    return_path = _safe_return_path(
         return_to
     )
+
+    # Start every Microsoft sign-in from a clean session.
+    # Authlib stores OAuth state in the signed session cookie,
+    # so stale/retried login attempts must not accumulate old
+    # state and eventually produce an oversized/bad cookie.
+    request.session.clear()
+
+    request.session[
+        "auth_return_to"
+    ] = return_path
 
     return await (
         oauth.entra.authorize_redirect(
@@ -314,6 +347,8 @@ async def auth_callback(
         )
 
     except OAuthError as exc:
+        request.session.clear()
+
         raise HTTPException(
             status_code=401,
             detail="microsoft_sign_in_failed",
@@ -324,6 +359,8 @@ async def auth_callback(
     )
 
     if not userinfo:
+        request.session.clear()
+
         raise HTTPException(
             status_code=401,
             detail="microsoft_identity_missing",
@@ -344,9 +381,14 @@ async def auth_callback(
         is not None
     }
 
-    resolve_entra_user(
-        identity
-    )
+    try:
+        resolve_entra_user(
+            identity
+        )
+
+    except HTTPException:
+        request.session.clear()
+        raise
 
     return_to = _safe_return_path(
         request.session.get(
@@ -361,7 +403,8 @@ async def auth_callback(
     ] = identity
 
     return RedirectResponse(
-        return_to
+        return_to,
+        status_code=303,
     )
 
 
@@ -383,11 +426,24 @@ def auth_logout(
 ):
     request.session.clear()
 
-    return {
-        "status": "signed_out",
-        "authMode":
-            settings.auth_mode,
-    }
+    response = JSONResponse(
+        content={
+            "status": "signed_out",
+            "authMode":
+                settings.auth_mode,
+        }
+    )
+
+    # Explicitly expire the browser session cookie.
+    response.delete_cookie(
+        SESSION_COOKIE_NAME,
+        path="/",
+        secure=settings.session_cookie_secure,
+        httponly=True,
+        samesite="lax",
+    )
+
+    return response
 
 
 @app.get("/api/platform/status")
@@ -618,6 +674,22 @@ def frontend(
             detail="frontend_not_built",
         )
 
-    return FileResponse(
+    response = FileResponse(
         index_file
     )
+
+    # Never retain a stale SPA bootstrap across deployments.
+    # Vite's hashed assets are cached separately under /assets/.
+    response.headers[
+        "Cache-Control"
+    ] = "no-store, max-age=0"
+
+    response.headers[
+        "Pragma"
+    ] = "no-cache"
+
+    response.headers[
+        "Expires"
+    ] = "0"
+
+    return response
