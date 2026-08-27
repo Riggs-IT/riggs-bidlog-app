@@ -589,6 +589,22 @@ h2 {
 }
 
 
+.filter-field input[type="month"] {
+  color-scheme: dark;
+}
+
+
+:root[data-theme="light"] .filter-field input[type="month"] {
+  color-scheme: light;
+}
+
+
+.filter-field input[type="month"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.82;
+}
+
+
 .filter-actions {
   display: flex;
   align-items: flex-end;

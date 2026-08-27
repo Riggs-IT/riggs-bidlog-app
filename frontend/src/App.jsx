@@ -3173,7 +3173,9 @@ export default function App() {
                   )
             }
             detail={
-              `${monthLabel(fromMonth)} through ${monthLabel(throughMonth)}`
+              rangeValid
+                ? `${monthLabel(fromMonth)} through ${monthLabel(throughMonth)}`
+                : 'Select a valid forecast month range'
             }
             emphasis
           />
