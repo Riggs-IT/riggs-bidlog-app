@@ -1,0 +1,18 @@
+services:
+  riggs-bid-log:
+    build: .
+    container_name: riggs-bid-log-app
+
+    restart: unless-stopped
+
+    ports:
+      - "8175:8080"
+
+    env_file:
+      - .env
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.78.0/24
