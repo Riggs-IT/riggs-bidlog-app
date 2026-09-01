@@ -5,6 +5,7 @@ import {
 } from 'react';
 
 import ProjectAccountability from './ProjectAccountability.jsx';
+import CurrentProjectBillingDrawer from './CurrentProjectBillingDrawer.jsx';
 
 
 const ALL = '__ALL__';
@@ -24,13 +25,7 @@ function getInitialTheme() {
     return saved;
   }
 
-  return (
-    window.matchMedia?.(
-      '(prefers-color-scheme: dark)',
-    ).matches
-      ? 'dark'
-      : 'light'
-  );
+  return 'dark';
 }
 
 
@@ -59,37 +54,49 @@ function ThemeControl({
 function friendlyError(detail) {
   const messages = {
     authentication_required:
-      'Sign in with your Riggs Microsoft account to continue.',
+      'Sign in with your Riggs Companies Microsoft account to continue.',
 
     session_inactive_timeout:
-      'Your session expired after 1 hour of inactivity.',
+      'Your session ended after 1 hour of inactivity. Sign in again to continue.',
+
+    invalid_session:
+      'Your previous Bid Log session is no longer valid. Sign in again to continue.',
+
+    microsoft_sign_in_failed:
+      'Microsoft sign-in could not be completed. Try again, or contact Riggs IT if the problem continues.',
+
+    microsoft_identity_missing:
+      'Microsoft did not return the identity information Bid Log needs. Try signing in again.',
 
     bid_log_user_not_authorized:
-      'Your Riggs account does not currently have Bid Log access.',
+      'Your Riggs Companies account is not currently authorized to use Bid Log.',
 
     bid_log_identity_conflict:
-      'Your Microsoft identity maps to conflicting Riggs access records.',
+      'Your Riggs Companies account could not be matched to a single Bid Log access record. Contact Riggs IT.',
+
+    entra_not_configured:
+      'Microsoft sign-in is temporarily unavailable for Bid Log. Contact Riggs IT if the problem continues.',
 
     data_api_cloudflare_access_rejected:
-      'Cloudflare Access rejected the Bid Log application credentials.',
+      'Bid Log could not verify application access. Try again in a moment.',
 
     data_api_bid_log_service_auth_rejected:
-      'The Riggs Data API rejected the Bid Log application credential.',
+      'Bid Log could not verify application access. Try again in a moment.',
 
     sql_capacity_unavailable:
-      'RiggsDataHub is temporarily at connection capacity.',
+      'Riggs data services are busy right now. Try again in a moment.',
 
     sql_unavailable:
-      'RiggsDataHub is temporarily unavailable.',
+      'Riggs data services are temporarily unavailable.',
 
     data_api_unavailable:
-      'The Riggs Data API is temporarily unavailable.',
+      'Bid Log could not reach Riggs data services. Check your connection and try again.',
 
     data_api_not_configured:
-      'The Bid Log Data API client is not fully configured.',
+      'Bid Log services are temporarily unavailable.',
 
     invalid_data_api_response:
-      'The Riggs Data API returned an unexpected response.',
+      'Bid Log received an unexpected response from Riggs data services.',
 
     projected_billing_resource_not_found:
       'The requested projected-billing record could not be found.',
@@ -140,6 +147,31 @@ function addMonths(
   return monthValueFromDate(
     date
   );
+}
+
+
+function dateLabel(value) {
+  if (!value) {
+    return '—';
+  }
+
+  const parsed =
+    new Date(
+      `${String(value).slice(0, 10)}T12:00:00`
+    );
+
+  if (Number.isNaN(parsed.getTime())) {
+    return String(value);
+  }
+
+  return new Intl.DateTimeFormat(
+    'en-US',
+    {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    },
+  ).format(parsed);
 }
 
 
@@ -859,73 +891,207 @@ function StatCard({
 }
 
 
+function MicrosoftMark() {
+  return (
+    <span
+      className="microsoft-mark"
+      aria-hidden="true"
+    >
+      <span />
+      <span />
+      <span />
+      <span />
+    </span>
+  );
+}
+
+
 function SignInView({
-  theme,
-  setTheme,
   authError,
 }) {
+  const params =
+    new URLSearchParams(
+      window.location.search,
+    );
+
+  const signedOutValue =
+    params.get('signed_out');
+
+  const isSignedOut =
+    signedOutValue === '1';
+
+  const isTimeout =
+    signedOutValue === 'timeout'
+    || authError === 'session_inactive_timeout';
+
+  const hasError =
+    Boolean(authError)
+    && !isTimeout;
+
+  let statusLabel = 'SIGN IN';
+  let heading = 'Sign in to Bid Log';
+  let message =
+    'Use your Riggs Companies Microsoft account to continue.';
+  let actionLabel =
+    'Continue with Microsoft';
+  let statusClass = '';
+
+  if (isSignedOut) {
+    statusLabel = 'SIGNED OUT';
+    heading = "You're signed out";
+    message =
+      'Your Bid Log session has ended securely.';
+    actionLabel = 'Sign back in';
+    statusClass = 'success';
+  } else if (isTimeout) {
+    statusLabel = 'SESSION ENDED';
+    heading = 'Your session ended';
+    message =
+      friendlyError(
+        'session_inactive_timeout'
+      );
+    actionLabel = 'Sign in again';
+    statusClass = 'notice';
+  } else if (hasError) {
+    statusLabel = 'SIGN-IN ISSUE';
+    heading = "We couldn't sign you in";
+    message =
+      friendlyError(authError);
+    actionLabel = 'Try again';
+    statusClass = 'error';
+  }
+
   return (
     <div className="auth-page">
-      <div className="auth-theme">
-        <ThemeControl
-          theme={theme}
-          onChange={setTheme}
-        />
-      </div>
+      <div
+        className="auth-blueprint-grid"
+        aria-hidden="true"
+      />
 
-      <section className="auth-card">
-        <div className="auth-brand">
-          <div className="brand-mark large">
+      <header className="auth-header">
+        <div className="auth-company-brand">
+          <div className="auth-riggs-mark">
             R
           </div>
 
-          <div>
-            <div className="eyebrow">
-              RIGGS COMPANIES
-            </div>
-
-            <h1>Bid Log</h1>
-          </div>
-        </div>
-
-        <p className="auth-copy">
-          Secure internal bidding and
-          projected-billings workspace.
-        </p>
-
-        {authError && (
-          <div
-            className="auth-alert"
-            role="alert"
-          >
+          <div className="auth-company-copy">
             <strong>
-              Unable to verify access
+              RIGGS COMPANIES
             </strong>
-
             <span>
-              {friendlyError(authError)}
+              Internal Business Systems
             </span>
           </div>
-        )}
-
-        <a
-          className="primary-button"
-          href="/api/auth/login"
-        >
-          <span>
-            Sign in with Microsoft
-          </span>
-
-          <span aria-hidden="true">
-            →
-          </span>
-        </a>
-
-        <div className="security-note">
-          Microsoft Entra ID · Riggs Data API ·
-          Private SQL access
         </div>
-      </section>
+
+        <div className="auth-header-note">
+          Authorized personnel only
+        </div>
+      </header>
+
+      <main className="auth-layout">
+        <section className="auth-intro">
+          <div className="auth-kicker">
+            ESTIMATING · FORECASTING · ACCOUNTABILITY
+          </div>
+
+          <h1>
+            Bid Log
+          </h1>
+
+          <div className="auth-product-title">
+            Estimating &amp; Projected Billings
+          </div>
+
+          <p className="auth-intro-copy">
+            A secure internal workspace for Riggs Companies bidding,
+            projected billings, and project accountability.
+          </p>
+
+          <div className="auth-trust-list">
+            <div>
+              <span className="auth-trust-icon">✓</span>
+              <span>
+                Riggs Companies Microsoft account required
+              </span>
+            </div>
+
+            <div>
+              <span className="auth-trust-icon">✓</span>
+              <span>
+                Access limited to authorized employees
+              </span>
+            </div>
+
+            <div>
+              <span className="auth-trust-icon">✓</span>
+              <span>
+                Sessions automatically expire when inactive
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <section className="auth-access-column">
+          <div className="auth-access-panel">
+            <div
+              className={
+                `auth-state-label ${statusClass}`
+              }
+            >
+              {statusLabel}
+            </div>
+
+            <h2>
+              {heading}
+            </h2>
+
+            <p className="auth-access-copy">
+              {message}
+            </p>
+
+            {hasError && (
+              <div
+                className="auth-support-note"
+                role="alert"
+              >
+                If this continues, contact Riggs IT.
+              </div>
+            )}
+
+            <a
+              className="auth-microsoft-button"
+              href="/api/auth/login"
+            >
+              <span className="auth-microsoft-button-main">
+                <MicrosoftMark />
+                <span>{actionLabel}</span>
+              </span>
+
+              <span
+                className="auth-button-arrow"
+                aria-hidden="true"
+              >
+                →
+              </span>
+            </a>
+
+            <div className="auth-protection-note">
+              Protected by Riggs Companies Microsoft authentication
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="auth-footer">
+        <span>
+          © {new Date().getFullYear()} Riggs Companies
+        </span>
+
+        <span>
+          Bid Log · Internal application
+        </span>
+      </footer>
     </div>
   );
 }
@@ -980,6 +1146,11 @@ export default function App() {
   ] = useState([]);
 
   const [
+    selectedCurrentProject,
+    setSelectedCurrentProject,
+  ] = useState(null);
+
+  const [
     activeBids,
     setActiveBids,
   ] = useState([]);
@@ -1007,11 +1178,33 @@ export default function App() {
   });
 
   const [
-    sourceMode,
-    setSourceMode,
+    bidScope,
+    setBidScope,
   ] = useState(
-    'combined'
+    'all'
   );
+
+  const [
+    detailSort,
+    setDetailSort,
+  ] = useState(
+    'smart'
+  );
+
+  const [
+    selectedComparisonMonth,
+    setSelectedComparisonMonth,
+  ] = useState(null);
+
+  const [
+    monthlyComparisonOpen,
+    setMonthlyComparisonOpen,
+  ] = useState(true);
+
+  const [
+    includeActiveProjects,
+    setIncludeActiveProjects,
+  ] = useState(true);
 
   const [
     search,
@@ -1173,12 +1366,28 @@ export default function App() {
               window.location.search,
             );
 
-          setAuthError(
-            params.get('signed_out')
-              === 'timeout'
-              ? 'session_inactive_timeout'
-              : detail,
-          );
+          const signedOut =
+            params.get('signed_out');
+
+          const callbackError =
+            params.get('auth_error');
+
+          if (signedOut === 'timeout') {
+            setAuthError(
+              'session_inactive_timeout'
+            );
+          } else if (callbackError) {
+            setAuthError(
+              callbackError
+            );
+          } else if (
+            detail
+            !== 'authentication_required'
+          ) {
+            setAuthError(detail);
+          } else {
+            setAuthError(null);
+          }
         }
 
       } catch {
@@ -1378,58 +1587,6 @@ export default function App() {
   }
 
 
-  async function verifyApi() {
-    try {
-      const response =
-        await window.fetch(
-          '/api/platform/status',
-          {
-            credentials:
-              'same-origin',
-          },
-        );
-
-      if (!response.ok) {
-        let detail =
-          'data_api_unavailable';
-
-        try {
-          const payload =
-            await response.json();
-
-          detail =
-            payload?.detail
-            || detail;
-
-        } catch {
-          // Keep default.
-        }
-
-        window.alert(
-          friendlyError(detail),
-        );
-
-        return;
-      }
-
-      const payload =
-        await response.json();
-
-      window.alert(
-        `Riggs Data API: ${payload.dataApi.status}`
-        + ` · SQL: ${payload.dataApi.sql}`,
-      );
-
-    } catch {
-      window.alert(
-        friendlyError(
-          'data_api_unavailable'
-        ),
-      );
-    }
-  }
-
-
   const monthRange =
     useMemo(
       () =>
@@ -1447,13 +1604,80 @@ export default function App() {
     monthRange.length > 0;
 
 
+  const includeBids =
+    bidScope !== 'none';
+
+  const selectedBidSourceRows =
+    useMemo(
+      () => {
+        if (!includeBids) {
+          return [];
+        }
+
+        if (bidScope === 'potential') {
+          return activeBids.filter(
+            row =>
+              Number(row.probability) > 0.85
+          );
+        }
+
+        return activeBids;
+      },
+      [
+        activeBids,
+        bidScope,
+        includeBids,
+      ],
+    );
+
+  const potentialBidCount =
+    useMemo(
+      () =>
+        activeBids.filter(
+          row =>
+            Number(row.probability) > 0.85
+        ).length,
+      [activeBids],
+    );
+
+  const sourceSelectionKey =
+    `${bidScope}-${includeActiveProjects ? 'projects' : 'no-projects'}`;
+
+
+  function toggleBidScope(scope) {
+    if (bidScope === scope) {
+      if (includeActiveProjects) {
+        setBidScope('none');
+      }
+
+      return;
+    }
+
+    setBidScope(scope);
+  }
+
+
+  function toggleActiveProjects() {
+    if (
+      includeActiveProjects
+      && bidScope === 'none'
+    ) {
+      return;
+    }
+
+    setIncludeActiveProjects(
+      value => !value
+    );
+  }
+
+
   const pmOptions =
     useMemo(
       () => {
         const values = [];
 
         if (
-          sourceMode !== 'active'
+          includeActiveProjects
         ) {
           values.push(
             ...currentProjects.map(
@@ -1466,10 +1690,10 @@ export default function App() {
         }
 
         if (
-          sourceMode !== 'current'
+          includeBids
         ) {
           values.push(
-            ...activeBids.map(
+            ...selectedBidSourceRows.map(
               row =>
                 pmKey(
                   row.pm
@@ -1484,9 +1708,10 @@ export default function App() {
         );
       },
       [
-        sourceMode,
+        includeActiveProjects,
+        includeBids,
         currentProjects,
-        activeBids,
+        selectedBidSourceRows,
       ],
     );
 
@@ -1497,7 +1722,7 @@ export default function App() {
         const values = [];
 
         if (
-          sourceMode !== 'active'
+          includeActiveProjects
         ) {
           values.push(
             ...currentProjects.map(
@@ -1510,10 +1735,10 @@ export default function App() {
         }
 
         if (
-          sourceMode !== 'current'
+          includeBids
         ) {
           values.push(
-            ...activeBids.map(
+            ...selectedBidSourceRows.map(
               row =>
                 normalizeProjectType(
                   row.projectType
@@ -1528,9 +1753,10 @@ export default function App() {
         );
       },
       [
-        sourceMode,
+        includeActiveProjects,
+        includeBids,
         currentProjects,
-        activeBids,
+        selectedBidSourceRows,
       ],
     );
 
@@ -1541,7 +1767,7 @@ export default function App() {
         const values = [];
 
         if (
-          sourceMode !== 'active'
+          includeActiveProjects
         ) {
           values.push(
             ...currentProjects.map(
@@ -1552,10 +1778,10 @@ export default function App() {
         }
 
         if (
-          sourceMode !== 'current'
+          includeBids
         ) {
           values.push(
-            ...activeBids.map(
+            ...selectedBidSourceRows.map(
               row =>
                 row.purpose
             )
@@ -1567,9 +1793,10 @@ export default function App() {
         );
       },
       [
-        sourceMode,
+        includeActiveProjects,
+        includeBids,
         currentProjects,
-        activeBids,
+        selectedBidSourceRows,
       ],
     );
 
@@ -1617,12 +1844,12 @@ export default function App() {
     useMemo(
       () =>
         sortedUnique(
-          activeBids.map(
+          selectedBidSourceRows.map(
             row =>
               row.status
           )
         ),
-      [activeBids],
+      [selectedBidSourceRows],
     );
 
 
@@ -1630,12 +1857,12 @@ export default function App() {
     useMemo(
       () =>
         sortedUnique(
-          activeBids.map(
+          selectedBidSourceRows.map(
             row =>
               row.probabilityState
           )
         ),
-      [activeBids],
+      [selectedBidSourceRows],
     );
 
 
@@ -1643,12 +1870,12 @@ export default function App() {
     useMemo(
       () =>
         sortedUnique(
-          activeBids.map(
+          selectedBidSourceRows.map(
             row =>
               row.state
           )
         ),
-      [activeBids],
+      [selectedBidSourceRows],
     );
 
 
@@ -1667,7 +1894,7 @@ export default function App() {
     useMemo(
       () => {
         if (
-          sourceMode === 'active'
+          !includeActiveProjects
           || !rangeValid
         ) {
           return [];
@@ -1828,7 +2055,7 @@ export default function App() {
           );
       },
       [
-        sourceMode,
+        includeActiveProjects,
         rangeValid,
         currentProjects,
         currentMonthly,
@@ -1853,13 +2080,13 @@ export default function App() {
     useMemo(
       () => {
         if (
-          sourceMode === 'current'
+          !includeBids
           || !rangeValid
         ) {
           return [];
         }
 
-        return activeBids
+        return selectedBidSourceRows
           .filter(
             row => {
               if (
@@ -1986,9 +2213,9 @@ export default function App() {
           );
       },
       [
-        sourceMode,
+        includeBids,
         rangeValid,
-        activeBids,
+        selectedBidSourceRows,
         bidMonthly,
         normalizedSearch,
         pmFilter,
@@ -2155,6 +2382,183 @@ export default function App() {
     );
 
 
+  const selectedMonthDetailRows =
+    useMemo(
+      () => {
+        if (!selectedComparisonMonth) {
+          return [];
+        }
+
+        const rows = [];
+
+        for (
+          const project
+          of currentDetails
+        ) {
+          const monthlyRows =
+            currentMonthly.get(
+              project.jobListId
+            )
+            || [];
+
+          const monthly =
+            monthlyRows.find(
+              item =>
+                monthKey(
+                  item.monthStart
+                )
+                === selectedComparisonMonth
+            );
+
+          if (!monthly) {
+            continue;
+          }
+
+          const projected =
+            toNumber(
+              monthly.projectedAmount
+            );
+
+          const actual =
+            monthly.actualAmount
+              === null
+              || monthly.actualAmount
+                === undefined
+              ? null
+              : toNumber(
+                  monthly.actualAmount
+                );
+
+          rows.push({
+            key:
+              `month-current-${project.jobListId}`,
+            source:
+              'Current Project',
+            nativeId:
+              project.jobListId,
+            number:
+              project.jobNumber,
+            name:
+              project.jobName,
+            pm:
+              displayValue(
+                project.pm,
+                'No PM Assigned',
+              ),
+            dueDate:
+              null,
+            probability:
+              null,
+            expected:
+              projected,
+            actual,
+            variance:
+              actual === null
+                ? null
+                : actual - projected,
+            raw:
+              project,
+          });
+        }
+
+        for (
+          const bid
+          of bidDetails
+        ) {
+          const monthlyRows =
+            bidMonthly.get(
+              bid.sharePointItemId
+            )
+            || [];
+
+          const monthly =
+            monthlyRows.find(
+              item =>
+                monthKey(
+                  item.monthStart
+                )
+                === selectedComparisonMonth
+            );
+
+          if (!monthly) {
+            continue;
+          }
+
+          rows.push({
+            key:
+              `month-bid-${bid.sharePointItemId}`,
+            source:
+              'Active Bid',
+            nativeId:
+              bid.sharePointItemId,
+            number:
+              null,
+            name:
+              bid.bidName,
+            pm:
+              displayValue(
+                bid.pm,
+                'No PM Assigned',
+              ),
+            dueDate:
+              bid.dueDate || null,
+            probability:
+              bid.probability,
+            expected:
+              toNumber(
+                monthly.weightedMonthlyForecastAmount
+              ),
+            actual:
+              null,
+            variance:
+              null,
+            raw:
+              bid,
+          });
+        }
+
+        return rows.sort(
+          (a, b) => {
+            if (
+              a.source !== b.source
+            ) {
+              return (
+                a.source
+                  === 'Current Project'
+                  ? -1
+                  : 1
+              );
+            }
+
+            if (
+              b.expected !== a.expected
+            ) {
+              return (
+                b.expected
+                - a.expected
+              );
+            }
+
+            return String(
+              a.name || ''
+            ).localeCompare(
+              String(
+                b.name || ''
+              )
+            );
+          }
+        );
+      },
+      [
+        selectedComparisonMonth,
+        currentDetails,
+        bidDetails,
+        currentMonthly,
+        bidMonthly,
+      ],
+    );
+
+
   const detailRows =
     useMemo(
       () => {
@@ -2202,6 +2606,8 @@ export default function App() {
                 displayValue(
                   row.cityStateZip
                 ),
+              dueDate:
+                null,
               raw:
                 row,
             })
@@ -2254,6 +2660,8 @@ export default function App() {
                 ]
                   .filter(Boolean)
                   .join(', '),
+              dueDate:
+                row.dueDate || null,
               raw:
                 row,
             })
@@ -2264,21 +2672,131 @@ export default function App() {
           ...bidRows,
         ].sort(
           (a, b) => {
+            const nameCompare =
+              String(
+                a.name || ''
+              ).localeCompare(
+                String(
+                  b.name || ''
+                )
+              );
+
+            const jobNumberValue =
+              row => {
+                const value =
+                  Number(row.number);
+
+                return Number.isFinite(value)
+                  ? value
+                  : -1;
+              };
+
+            const dueDateValue =
+              row => {
+                if (!row.dueDate) {
+                  return Number.MAX_SAFE_INTEGER;
+                }
+
+                const value =
+                  new Date(
+                    `${String(row.dueDate).slice(0, 10)}T12:00:00`
+                  ).getTime();
+
+                return Number.isFinite(value)
+                  ? value
+                  : Number.MAX_SAFE_INTEGER;
+              };
+
             if (
-              b.expected !== a.expected
+              detailSort === 'job-desc'
             ) {
+              const difference =
+                jobNumberValue(b)
+                - jobNumberValue(a);
+
               return (
-                b.expected
-                - a.expected
+                difference
+                || nameCompare
               );
             }
 
-            return String(
-              a.name || ''
-            ).localeCompare(
-              String(
-                b.name || ''
-              )
+            if (
+              detailSort === 'due-asc'
+            ) {
+              const difference =
+                dueDateValue(a)
+                - dueDateValue(b);
+
+              return (
+                difference
+                || nameCompare
+              );
+            }
+
+            if (
+              detailSort === 'expected-desc'
+            ) {
+              const difference =
+                Number(b.expected || 0)
+                - Number(a.expected || 0);
+
+              return (
+                difference
+                || nameCompare
+              );
+            }
+
+            if (
+              detailSort === 'name-asc'
+            ) {
+              return nameCompare;
+            }
+
+            /*
+             * SMART
+             *
+             * Current Projects:
+             *     Job Number high -> low
+             *
+             * Active Bids:
+             *     Due Date soonest -> latest
+             *
+             * Mixed:
+             *     Keep the two business populations visually
+             *     understandable rather than pretending Job Number
+             *     and Bid Due Date share one meaningful scale.
+             */
+            if (
+              a.source !== b.source
+            ) {
+              return (
+                a.source === 'Current Project'
+                  ? -1
+                  : 1
+              );
+            }
+
+            if (
+              a.source
+                === 'Current Project'
+            ) {
+              const difference =
+                jobNumberValue(b)
+                - jobNumberValue(a);
+
+              return (
+                difference
+                || nameCompare
+              );
+            }
+
+            const difference =
+              dueDateValue(a)
+              - dueDateValue(b);
+
+            return (
+              difference
+              || nameCompare
             );
           }
         );
@@ -2286,142 +2804,178 @@ export default function App() {
       [
         currentDetails,
         bidDetails,
+        detailSort,
       ],
     );
 
 
   function exportCurrentView() {
     const headers = [
-      'SourceType',
-      'NativeID',
-      'JobNumber',
-      'Name',
+      'Source',
+      'Job Number',
+      'Job List ID',
+      'Bid ID',
+      'Project / Bid',
       'PM',
-      'ProjectTypeNormalized',
-      'ProjectTypeSource',
+      'Project Type',
       'Purpose',
-      'GeneralContractor',
+      'General Contractor',
       'Location',
-      'ForecastState',
-      'ForecastFrom',
-      'ForecastThrough',
-      'SelectedExpectedAmount',
-      'CurrentProjectProjectedAmount',
-      'WeightedActiveBidAmount',
-      'UnweightedActiveBidAmount',
-      'CurrentProjectActualAmount',
-      'CurrentProjectVariance',
+      'Due Date',
+      'Forecast State',
       'Probability',
+      'Forecast From',
+      'Forecast Through',
+      'Expected In Range',
+      'Actual In Range',
+      'Variance In Range',
+      'Unweighted Bid Forecast In Range',
+      'Effective Amount',
+      'Effective Start',
+      'Estimated Duration Months',
+      'Est. Complete Date',
+      'Foundation Billing History',
     ];
 
-    const rows = [
-      ...currentDetails.map(
-        row => ({
-          SourceType:
-            'Current Project',
-          NativeID:
-            row.jobListId,
-          JobNumber:
-            row.jobNumber,
-          Name:
-            row.jobName,
-          PM:
-            row.pm,
-          ProjectTypeNormalized:
-            projectTypeLabel(
-              row.projectType
-            ),
-          ProjectTypeSource:
-            row.projectType,
-          Purpose:
-            row.purpose,
-          GeneralContractor:
-            row.generalContractors,
-          Location:
-            row.cityStateZip,
-          ForecastState:
-            row.forecastState,
-          ForecastFrom:
-            fromMonth,
-          ForecastThrough:
-            throughMonth,
-          SelectedExpectedAmount:
-            row.selectedProjected,
-          CurrentProjectProjectedAmount:
-            row.selectedProjected,
-          WeightedActiveBidAmount:
-            '',
-          UnweightedActiveBidAmount:
-            '',
-          CurrentProjectActualAmount:
-            row.selectedActual,
-          CurrentProjectVariance:
-            row.selectedVariance,
-          Probability:
-            '',
-        })
-      ),
+    const rows =
+      detailRows.map(
+        row => {
+          const raw =
+            row.raw || {};
 
-      ...bidDetails.map(
-        row => ({
-          SourceType:
-            'Active Bid',
-          NativeID:
-            row.sharePointItemId,
-          JobNumber:
-            '',
-          Name:
-            row.bidName,
-          PM:
-            row.pm,
-          ProjectTypeNormalized:
-            projectTypeLabel(
-              row.projectType
-            ),
-          ProjectTypeSource:
-            row.projectType,
-          Purpose:
-            row.purpose,
-          GeneralContractor:
-            displayValue(
-              row.generalContractors,
-              '',
-            ),
-          Location:
-            [
-              row.city,
+          const isBid =
+            row.source
+            === 'Active Bid';
+
+          const hasFoundationHistory =
+            typeof raw.hasFoundationBillingHistory
+              === 'boolean'
+              ? (
+                  raw.hasFoundationBillingHistory
+                    ? 'Yes'
+                    : 'No'
+                )
+              : '';
+
+          const probabilityValue =
+            isBid
+            && raw.probability !== null
+            && raw.probability !== undefined
+              ? percent(
+                  raw.probability
+                )
+              : '';
+
+          return {
+            'Source':
+              row.source,
+
+            'Job Number':
+              isBid
+                ? ''
+                : row.number,
+
+            'Job List ID':
+              isBid
+                ? ''
+                : row.nativeId,
+
+            'Bid ID':
+              isBid
+                ? row.nativeId
+                : '',
+
+            'Project / Bid':
+              row.name,
+
+            'PM':
+              row.pm,
+
+            'Project Type':
+              row.projectType,
+
+            'Purpose':
+              row.purpose,
+
+            'General Contractor':
+              row.gc,
+
+            'Location':
+              row.location,
+
+            'Due Date':
+              isBid
+                ? (
+                    raw.dueDate
+                    || row.dueDate
+                    || ''
+                  )
+                : '',
+
+            'Forecast State':
               row.state,
-            ]
-              .filter(Boolean)
-              .join(', '),
-          ForecastState:
-            row.forecastState,
-          ForecastFrom:
-            fromMonth,
-          ForecastThrough:
-            throughMonth,
-          SelectedExpectedAmount:
-            row.selectedWeightedForecast,
-          CurrentProjectProjectedAmount:
-            '',
-          WeightedActiveBidAmount:
-            row.selectedWeightedForecast,
-          UnweightedActiveBidAmount:
-            row.selectedBidForecast,
-          CurrentProjectActualAmount:
-            '',
-          CurrentProjectVariance:
-            '',
-          Probability:
-            row.probability,
-        })
-      ),
-    ];
+
+            'Probability':
+              probabilityValue,
+
+            'Forecast From':
+              fromMonth,
+
+            'Forecast Through':
+              throughMonth,
+
+            'Expected In Range':
+              row.expected,
+
+            'Actual In Range':
+              row.actual === null
+                || row.actual === undefined
+                ? ''
+                : row.actual,
+
+            'Variance In Range':
+              row.variance === null
+                || row.variance === undefined
+                ? ''
+                : row.variance,
+
+            'Unweighted Bid Forecast In Range':
+              isBid
+                ? (
+                    raw.selectedBidForecast
+                    ?? ''
+                  )
+                : '',
+
+            'Effective Amount':
+              raw.effectiveAmount
+              ?? '',
+
+            'Effective Start':
+              raw.effectiveStartDate
+              ?? '',
+
+            'Estimated Duration Months':
+              raw.estimatedDurationMonths
+              ?? '',
+
+            'Est. Complete Date':
+              raw.projectedCompletionDate
+              ?? raw.effectiveEndDate
+              ?? '',
+
+            'Foundation Billing History':
+              isBid
+                ? ''
+                : hasFoundationHistory,
+          };
+        }
+      );
 
     downloadCsv(
       (
         'riggs-projected-billings-'
-        + `${sourceMode}-`
+        + `${sourceSelectionKey}-`
         + `${fromMonth}-to-${throughMonth}.csv`
       ),
       headers,
@@ -2452,8 +3006,17 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="loading-screen">
-        Loading Riggs Bid Log…
+      <div className="loading-screen auth-loading-screen">
+        <div className="auth-loading-brand">
+          <div className="auth-riggs-mark">
+            R
+          </div>
+
+          <div>
+            <strong>RIGGS COMPANIES</strong>
+            <span>Checking your Bid Log session…</span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -2462,8 +3025,6 @@ export default function App() {
   if (!user) {
     return (
       <SignInView
-        theme={theme}
-        setTheme={setTheme}
         authError={authError}
       />
     );
@@ -2535,41 +3096,33 @@ export default function App() {
               }
               onClick={() => setActivePage('accountability')}
             >
-              Project Accountability
+              Completed Projects
             </button>
           </nav>
         </div>
 
         <div className="topbar-actions">
-          <button
-            type="button"
-            className="top-button"
-            onClick={verifyApi}
-          >
-            Verify API
-          </button>
-
-          <ThemeControl
-            theme={theme}
-            onChange={setTheme}
-          />
-
           <div className="current-user">
             <strong>
               {user.displayName}
             </strong>
 
             <span>
-              {user.appRole}
+              Riggs Companies
             </span>
           </div>
 
+          <ThemeControl
+            theme={theme}
+            onChange={setTheme}
+          />
+
           <button
             type="button"
-            className="top-button"
+            className="signout-button"
             onClick={signOut}
           >
-            Sign Out
+            Sign out
           </button>
         </div>
       </header>
@@ -2588,17 +3141,13 @@ export default function App() {
             </h1>
 
             <p>
-              Compare current project forecasts
-              with probability-weighted active bids.
-              Foundation actual billings remain separate.
+              Choose the bids and active projects you want to review.
+              Forecast totals update to the selected sources and month range,
+              while Foundation actual billings remain separate.
             </p>
           </div>
 
           <div className="heading-actions">
-            <span className="role-chip">
-              {user.appRole}
-            </span>
-
             <button
               type="button"
               className="secondary-button"
@@ -2606,71 +3155,72 @@ export default function App() {
               disabled={
                 dataLoading
                 || !rangeValid
+                || !detailRows.length
               }
             >
-              Export CSV
+              {`Export CSV (${detailRows.length})`}
             </button>
           </div>
         </div>
 
 
-        <section className="mode-tabs">
-          <button
-            type="button"
-            className={
-              sourceMode === 'combined'
-                ? 'active'
-                : ''
-            }
-            onClick={
-              () =>
-                setSourceMode(
-                  'combined'
-                )
-            }
-          >
-            Combined
-          </button>
+        <section className="source-selector" aria-label="Projected billing sources">
+          <div className="source-selector-copy">
+            <span>SHOW IN FORECAST</span>
+            <small>
+              Select a bid pool, active projects, or both.
+            </small>
+          </div>
 
-          <button
-            type="button"
-            className={
-              sourceMode === 'active'
-                ? 'active'
-                : ''
-            }
-            onClick={
-              () =>
-                setSourceMode(
-                  'active'
-                )
-            }
-          >
-            Active Bids
-            <span>
-              {activeBids.length}
-            </span>
-          </button>
+          <div className="source-toggles">
+            <button
+              type="button"
+              aria-pressed={bidScope === 'all'}
+              className={
+                bidScope === 'all'
+                  ? 'active'
+                  : ''
+              }
+              onClick={() => toggleBidScope('all')}
+            >
+              <span className="toggle-label">
+                <strong>All Bids</strong>
+                <small>{activeBids.length} bids</small>
+              </span>
+            </button>
 
-          <button
-            type="button"
-            className={
-              sourceMode === 'current'
-                ? 'active'
-                : ''
-            }
-            onClick={
-              () =>
-                setSourceMode(
-                  'current'
-                )
-            }
-          >
-            Current Projects
-            <span>
-              {currentProjects.length}
-            </span>
-          </button>
+            <button
+              type="button"
+              aria-pressed={bidScope === 'potential'}
+              className={
+                bidScope === 'potential'
+                  ? 'active'
+                  : ''
+              }
+              onClick={() => toggleBidScope('potential')}
+            >
+              <span className="toggle-label">
+                <strong>Potential Bids</strong>
+                <small>Probability above 85% · {potentialBidCount}</small>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              aria-pressed={includeActiveProjects}
+              className={
+                includeActiveProjects
+                  ? 'active'
+                  : ''
+              }
+              onClick={toggleActiveProjects}
+            >
+              <span className="toggle-label">
+                <strong>Active Projects</strong>
+                <small>{currentProjects.length} projects</small>
+              </span>
+            </button>
+          </div>
         </section>
 
 
@@ -2853,7 +3403,7 @@ export default function App() {
               </div>
 
 
-              {sourceMode !== 'active' && (
+              {includeActiveProjects && (
                 <div className="source-filter-group">
                   <div className="filter-group-title">
                     Current Project Filters
@@ -2967,7 +3517,7 @@ export default function App() {
               )}
 
 
-              {sourceMode !== 'current' && (
+              {includeBids && (
                 <div className="source-filter-group">
                   <div className="filter-group-title">
                     Active Bid Filters
@@ -3122,9 +3672,7 @@ export default function App() {
             </div>
 
             <small>
-              Current Projects are cached once.
-              Only forecast-ready Active Bids request
-              monthly allocation rows.
+              Preparing the selected forecast view.
             </small>
           </section>
         )}
@@ -3132,7 +3680,7 @@ export default function App() {
 
         <section className="stats-grid">
           <StatCard
-            label="Current Project Forecast"
+            label="Active Project Forecast"
             value={
               dataLoading
                 ? 'Loading…'
@@ -3141,14 +3689,14 @@ export default function App() {
                   )
             }
             detail={
-              sourceMode === 'active'
-                ? 'Excluded in Active Bids mode'
-                : `${currentDetails.length} filtered projects`
+              includeActiveProjects
+                ? `${currentDetails.length} selected projects`
+                : 'Active Projects not selected'
             }
           />
 
           <StatCard
-            label="Weighted Active Bids"
+            label={bidScope === 'potential' ? 'Potential Bid Forecast' : 'Selected Bid Forecast'}
             value={
               dataLoading
                 ? 'Loading…'
@@ -3157,14 +3705,14 @@ export default function App() {
                   )
             }
             detail={
-              sourceMode === 'current'
-                ? 'Excluded in Current Projects mode'
-                : `${bidDetails.length} filtered bids · ${currency(rawBidTotal)} unweighted`
+              includeBids
+                ? `${bidDetails.length} selected bids · ${currency(rawBidTotal)} unweighted`
+                : 'Bids not selected'
             }
           />
 
           <StatCard
-            label="Combined Expected"
+            label="Selected Expected Billings"
             value={
               dataLoading
                 ? 'Loading…'
@@ -3181,7 +3729,7 @@ export default function App() {
           />
 
           <StatCard
-            label="Current Project Actual"
+            label="Active Project Actual"
             value={
               dataLoading
                 ? 'Loading…'
@@ -3189,12 +3737,18 @@ export default function App() {
                     currentActualTotal
                   )
             }
-            detail="Foundation actuals · shown separately"
+            detail={includeActiveProjects ? "Foundation actuals · shown separately" : "Active Projects not selected"}
           />
         </section>
 
 
-        <section className="content-card">
+        <section
+          className={
+            monthlyComparisonOpen
+              ? 'content-card'
+              : 'content-card monthly-comparison-collapsed'
+          }
+        >
           <div className="section-heading">
             <div>
               <span className="section-kicker">
@@ -3206,9 +3760,27 @@ export default function App() {
               </h2>
             </div>
 
-            <span className="section-note">
-              Combined expected excludes actual billing
-            </span>
+            <div className="monthly-heading-actions">
+              <span className="section-note">
+                Selected expected excludes actual billing
+              </span>
+
+              <button
+                type="button"
+                className="section-collapse-button"
+                aria-expanded={monthlyComparisonOpen}
+                onClick={
+                  () =>
+                    setMonthlyComparisonOpen(
+                      current => !current
+                    )
+                }
+              >
+                {monthlyComparisonOpen
+                  ? 'Collapse'
+                  : 'Expand'}
+              </button>
+            </div>
           </div>
 
           <div className="monthly-table-wrap">
@@ -3217,16 +3789,16 @@ export default function App() {
                 <tr>
                   <th>Month</th>
                   <th>
-                    Current Forecast
+                    Active Project Forecast
                   </th>
                   <th>
-                    Weighted Bids
+                    Selected Bid Forecast
                   </th>
                   <th>
-                    Combined Expected
+                    Selected Expected
                   </th>
                   <th>
-                    Current Actual
+                    Active Project Actual
                   </th>
                   <th className="visual-column">
                     Comparison
@@ -3237,7 +3809,25 @@ export default function App() {
               <tbody>
                 {monthlyComparison.map(
                   row => (
-                    <tr key={row.month}>
+                    <>
+                    <tr
+                      key={row.month}
+                      className={
+                        selectedComparisonMonth
+                          === row.month
+                          ? 'monthly-comparison-row selected'
+                          : 'monthly-comparison-row'
+                      }
+                      onClick={
+                        () =>
+                          setSelectedComparisonMonth(
+                            current =>
+                              current === row.month
+                                ? null
+                                : row.month
+                          )
+                      }
+                    >
                       <td className="month-cell">
                         {monthLabel(
                           row.month
@@ -3282,7 +3872,7 @@ export default function App() {
                                   * 100
                                 }%`,
                             }}
-                            title="Combined Expected"
+                            title="Selected Expected"
                           />
 
                           <div
@@ -3302,6 +3892,183 @@ export default function App() {
                         </div>
                       </td>
                     </tr>
+
+                    {selectedComparisonMonth
+                      === row.month
+                      && (
+                        <tr
+                          key={
+                            `${row.month}-detail`
+                          }
+                          className="monthly-project-detail-row"
+                        >
+                          <td colSpan="6">
+                            <div className="monthly-project-detail">
+                              <div className="monthly-project-detail-heading">
+                                <div>
+                                  <span className="section-kicker">
+                                    MONTH DETAIL
+                                  </span>
+
+                                  <strong>
+                                    {monthLabel(
+                                      row.month
+                                    )}
+                                  </strong>
+                                </div>
+
+                                <span>
+                                  {
+                                    selectedMonthDetailRows.length
+                                  } forecasted records
+                                </span>
+                              </div>
+
+                              <div className="monthly-project-table-wrap">
+                                <table className="monthly-project-table">
+                                  <thead>
+                                    <tr>
+                                      <th>Source</th>
+                                      <th>Project / Bid</th>
+                                      <th>PM</th>
+                                      <th>Due Date</th>
+                                      <th className="numeric">
+                                        Expected
+                                      </th>
+                                      <th className="numeric">
+                                        Actual
+                                      </th>
+                                      <th className="numeric">
+                                        Variance
+                                      </th>
+                                    </tr>
+                                  </thead>
+
+                                  <tbody>
+                                    {
+                                      selectedMonthDetailRows.map(
+                                        detail => (
+                                          <tr
+                                            key={
+                                              detail.key
+                                            }
+                                            className={
+                                              detail.source
+                                                === 'Current Project'
+                                                ? 'month-current-project-row'
+                                                : undefined
+                                            }
+                                            onClick={
+                                              detail.source
+                                                === 'Current Project'
+                                                ? event => {
+                                                    event.stopPropagation();
+
+                                                    setSelectedCurrentProject(
+                                                      detail.raw
+                                                    );
+                                                  }
+                                                : event =>
+                                                    event.stopPropagation()
+                                            }
+                                          >
+                                            <td>
+                                              <span
+                                                className={
+                                                  detail.source
+                                                    === 'Active Bid'
+                                                    ? 'source-chip bid'
+                                                    : 'source-chip current'
+                                                }
+                                              >
+                                                {detail.source}
+                                              </span>
+                                            </td>
+
+                                            <td className="project-cell">
+                                              <strong>
+                                                {displayValue(
+                                                  detail.name
+                                                )}
+                                              </strong>
+
+                                              <span>
+                                                {
+                                                  detail.number
+                                                    ? `Job ${detail.number}`
+                                                    : `Bid ${detail.nativeId}`
+                                                }
+                                              </span>
+                                            </td>
+
+                                            <td>
+                                              {detail.pm}
+                                            </td>
+
+                                            <td>
+                                              {
+                                                detail.dueDate
+                                                  ? dateLabel(
+                                                      detail.dueDate
+                                                    )
+                                                  : '—'
+                                              }
+                                            </td>
+
+                                            <td className="numeric strong-cell">
+                                              {currency(
+                                                detail.expected
+                                              )}
+                                            </td>
+
+                                            <td className="numeric">
+                                              {
+                                                detail.actual
+                                                  === null
+                                                  ? '—'
+                                                  : currency(
+                                                      detail.actual
+                                                    )
+                                              }
+                                            </td>
+
+                                            <td
+                                              className={
+                                                detail.variance
+                                                  === null
+                                                  ? 'numeric'
+                                                  : (
+                                                      detail.variance > 0
+                                                        ? 'numeric variance-positive'
+                                                        : (
+                                                            detail.variance < 0
+                                                              ? 'numeric variance-negative'
+                                                              : 'numeric'
+                                                          )
+                                                    )
+                                              }
+                                            >
+                                              {
+                                                detail.variance
+                                                  === null
+                                                  ? '—'
+                                                  : currency(
+                                                      detail.variance
+                                                    )
+                                              }
+                                            </td>
+                                          </tr>
+                                        )
+                                      )
+                                    }
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   )
                 )}
 
@@ -3333,9 +4100,45 @@ export default function App() {
               </h2>
             </div>
 
-            <span className="section-note">
-              {detailRows.length} rows
-            </span>
+            <div className="detail-heading-actions">
+              <label className="compact-sort-field">
+                <span>Sort</span>
+
+                <select
+                  value={detailSort}
+                  onChange={
+                    event =>
+                      setDetailSort(
+                        event.target.value
+                      )
+                  }
+                >
+                  <option value="smart">
+                    Smart
+                  </option>
+
+                  <option value="job-desc">
+                    Job # High → Low
+                  </option>
+
+                  <option value="due-asc">
+                    Due Date Soonest
+                  </option>
+
+                  <option value="expected-desc">
+                    Expected High → Low
+                  </option>
+
+                  <option value="name-asc">
+                    Name A → Z
+                  </option>
+                </select>
+              </label>
+
+              <span className="section-note">
+                {detailRows.length} rows
+              </span>
+            </div>
           </div>
 
           <div className="detail-table-wrap">
@@ -3364,7 +4167,40 @@ export default function App() {
               <tbody>
                 {detailRows.map(
                   row => (
-                    <tr key={row.key}>
+                    <tr
+                      key={row.key}
+                      className={
+                        row.source === 'Current Project'
+                          ? 'clickable-project-row'
+                          : undefined
+                      }
+                      onClick={
+                        row.source === 'Current Project'
+                          ? () => setSelectedCurrentProject(row.raw)
+                          : undefined
+                      }
+                      onKeyDown={
+                        row.source === 'Current Project'
+                          ? event => {
+                              if (
+                                event.key === 'Enter'
+                                || event.key === ' '
+                              ) {
+                                event.preventDefault();
+
+                                setSelectedCurrentProject(
+                                  row.raw
+                                );
+                              }
+                            }
+                          : undefined
+                      }
+                      tabIndex={
+                        row.source === 'Current Project'
+                          ? 0
+                          : undefined
+                      }
+                    >
                       <td>
                         <span
                           className={
@@ -3391,6 +4227,9 @@ export default function App() {
                             : `Bid ${row.nativeId}`}
                           {row.location
                             ? ` · ${row.location}`
+                            : ''}
+                          {row.dueDate
+                            ? ` · Due ${dateLabel(row.dueDate)}`
                             : ''}
                         </span>
                       </td>
@@ -3501,6 +4340,23 @@ export default function App() {
           user={user}
         />
       )}
+
+      <CurrentProjectBillingDrawer
+        project={selectedCurrentProject}
+        monthlyRows={
+          selectedCurrentProject
+            ? (
+                currentMonthly.get(
+                  selectedCurrentProject.jobListId
+                )
+                || []
+              )
+            : []
+        }
+        onClose={
+          () => setSelectedCurrentProject(null)
+        }
+      />
     </div>
   );
 }

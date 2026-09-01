@@ -648,3 +648,52 @@ def get_project_close_accountability() -> list[dict]:
         operation=operation,
     )
 
+
+
+def get_completed_projects() -> list[dict]:
+    operation = "Completed Projects"
+
+    response = _get_service_response(
+        "/v1/bid-log/completed-projects",
+        operation=operation,
+    )
+
+    return _json_object_list(
+        response,
+        operation=operation,
+    )
+
+
+def get_completed_project_monthly(
+    job_list_id: int,
+) -> dict:
+    operation = "Completed Project monthly billings"
+
+    response = _get_service_response(
+        (
+            "/v1/bid-log/completed-projects/"
+            f"{job_list_id}/monthly"
+        ),
+        operation=operation,
+        resource_not_found=True,
+    )
+
+    payload = _json_object(
+        response,
+        operation=operation,
+    )
+
+    items = payload.get(
+        "items"
+    )
+
+    if not isinstance(
+        items,
+        list,
+    ):
+        raise DataAPIInvalidResponse(
+            "Completed Project monthly response "
+            "is missing its items list."
+        )
+
+    return payload

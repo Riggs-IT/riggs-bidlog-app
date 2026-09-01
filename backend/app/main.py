@@ -43,6 +43,8 @@ from .data_api import (
     get_active_bid_projected_billings,
     get_current_project_monthly,
     get_current_projected_billings,
+    get_completed_project_monthly,
+    get_completed_projects,
     get_project_close_accountability,
 )
 
@@ -85,6 +87,37 @@ oauth.register(
             "S256",
     },
 )
+
+
+_AUTH_ERROR_CODES = {
+    "microsoft_sign_in_failed",
+    "microsoft_identity_missing",
+    "bid_log_user_not_authorized",
+    "bid_log_identity_conflict",
+    "data_api_cloudflare_access_rejected",
+    "data_api_bid_log_service_auth_rejected",
+    "sql_capacity_unavailable",
+    "sql_unavailable",
+    "data_api_unavailable",
+    "data_api_not_configured",
+    "invalid_data_api_response",
+    "entra_not_configured",
+}
+
+
+def _auth_error_redirect(
+    detail: str,
+) -> RedirectResponse:
+    safe_detail = (
+        detail
+        if detail in _AUTH_ERROR_CODES
+        else "data_api_unavailable"
+    )
+
+    return RedirectResponse(
+        url=f"/?auth_error={safe_detail}",
+        status_code=303,
+    )
 
 
 @app.middleware("http")
@@ -296,9 +329,9 @@ async def auth_login(
         )
 
     if not settings.entra_configured:
-        raise HTTPException(
-            status_code=503,
-            detail="entra_not_configured",
+        request.session.clear()
+        return _auth_error_redirect(
+            "entra_not_configured"
         )
 
     return_path = _safe_return_path(
@@ -334,9 +367,9 @@ async def auth_callback(
         return RedirectResponse("/")
 
     if not settings.entra_configured:
-        raise HTTPException(
-            status_code=503,
-            detail="entra_not_configured",
+        request.session.clear()
+        return _auth_error_redirect(
+            "entra_not_configured"
         )
 
     try:
@@ -346,13 +379,12 @@ async def auth_callback(
             )
         )
 
-    except OAuthError as exc:
+    except OAuthError:
         request.session.clear()
 
-        raise HTTPException(
-            status_code=401,
-            detail="microsoft_sign_in_failed",
-        ) from exc
+        return _auth_error_redirect(
+            "microsoft_sign_in_failed"
+        )
 
     userinfo = token.get(
         "userinfo"
@@ -361,9 +393,8 @@ async def auth_callback(
     if not userinfo:
         request.session.clear()
 
-        raise HTTPException(
-            status_code=401,
-            detail="microsoft_identity_missing",
+        return _auth_error_redirect(
+            "microsoft_identity_missing"
         )
 
     identity = {
@@ -386,9 +417,21 @@ async def auth_callback(
             identity
         )
 
-    except HTTPException:
+    except HTTPException as exc:
         request.session.clear()
-        raise
+
+        detail = (
+            exc.detail
+            if isinstance(
+                exc.detail,
+                str,
+            )
+            else "data_api_unavailable"
+        )
+
+        return _auth_error_redirect(
+            detail
+        )
 
     return_to = _safe_return_path(
         request.session.get(
@@ -599,6 +642,49 @@ def projected_billings_active_bid_monthly(
     try:
         return get_active_bid_monthly(
             sharepoint_item_id
+        )
+
+    except Exception as exc:
+        _raise_projected_billings_error(
+            exc
+        )
+
+
+@app.get(
+    "/api/completed-projects"
+)
+def completed_projects(
+    _current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    try:
+        return get_completed_projects()
+
+    except Exception as exc:
+        _raise_projected_billings_error(
+            exc
+        )
+
+
+@app.get(
+    (
+        "/api/completed-projects/"
+        "{job_list_id}/monthly"
+    )
+)
+def completed_project_monthly(
+    job_list_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    _current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    try:
+        return get_completed_project_monthly(
+            job_list_id
         )
 
     except Exception as exc:
