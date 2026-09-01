@@ -5144,3 +5144,167 @@ h2 {
   }
 }
 
+
+
+/* ============================================================
+   BILLING DRAWER - PRINT
+   ============================================================ */
+
+@media print {
+
+  @page {
+    margin: 0.45in;
+  }
+
+
+  html,
+  body,
+  #root {
+    height: auto !important;
+
+    overflow: visible !important;
+
+    background: #fff !important;
+  }
+
+
+  /*
+    When a billing drawer is open, print the drawer as the
+    document instead of printing the dashboard behind it.
+  */
+  .app-shell > :not(.billing-drawer-backdrop) {
+    display: none !important;
+  }
+
+
+  /*
+    The screen version is position:fixed. Fixed elements can
+    repeat on every physical print page, so restore normal
+    document flow for print.
+  */
+  .billing-drawer-backdrop {
+    position: static !important;
+
+    inset: auto !important;
+
+    display: block !important;
+
+    width: 100% !important;
+    height: auto !important;
+
+    background: transparent !important;
+
+    backdrop-filter: none !important;
+  }
+
+
+  .billing-drawer {
+    display: block !important;
+
+    width: 100% !important;
+    height: auto !important;
+
+    max-width: none !important;
+    max-height: none !important;
+
+    overflow: visible !important;
+
+    border: 0 !important;
+
+    box-shadow: none !important;
+
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+
+  .billing-drawer-header {
+    position: static !important;
+
+    break-after: avoid-page;
+
+    border-bottom-color: #aaa !important;
+  }
+
+
+  .billing-drawer-body {
+    display: block !important;
+
+    height: auto !important;
+
+    max-height: none !important;
+
+    overflow: visible !important;
+  }
+
+
+  /*
+    There is nothing to close or interact with on paper.
+  */
+  .billing-drawer-close,
+  .billing-drawer button {
+    display: none !important;
+  }
+
+
+  /*
+    Scrollable table wrappers must also become normal flowing
+    content or Chrome may clip/repeat them.
+  */
+  .billing-monthly-table-wrap {
+    width: 100% !important;
+
+    max-height: none !important;
+
+    overflow: visible !important;
+  }
+
+
+  .billing-monthly-table {
+    width: 100% !important;
+
+    min-width: 0 !important;
+
+    table-layout: fixed;
+  }
+
+
+  /*
+    Repeat the column headings when the monthly table naturally
+    spans multiple sheets.
+  */
+  .billing-monthly-table thead {
+    display: table-header-group;
+  }
+
+
+  /*
+    Avoid cutting important cards and individual months in half
+    wherever the browser can reasonably move them.
+  */
+  .billing-monthly-table tr,
+  .billing-drawer-meta > span,
+  .billing-assumption-grid > div,
+  .pm-history-card,
+  .pm-forecast-section {
+    break-inside: avoid;
+
+    page-break-inside: avoid;
+  }
+
+
+  .billing-monthly-table th,
+  .billing-monthly-table td {
+    border-color: #bbb !important;
+
+    color: #111 !important;
+  }
+
+
+  .billing-monthly-table td small,
+  .billing-drawer small,
+  .billing-drawer .section-kicker,
+  .billing-drawer .section-note {
+    color: #555 !important;
+  }
+}
