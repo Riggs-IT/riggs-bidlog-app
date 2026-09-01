@@ -1425,17 +1425,64 @@ export default function App() {
       setDataError(null);
 
       try {
+        let loadedBatches = 0;
+
+        setMonthlyProgress({
+          loaded: 0,
+          total: 3,
+        });
+
+
+        const track = promise =>
+          promise.then(
+            payload => {
+              loadedBatches += 1;
+
+              if (!cancelled) {
+                setMonthlyProgress({
+                  loaded:
+                    loadedBatches,
+
+                  total:
+                    3,
+                });
+              }
+
+              return payload;
+            }
+          );
+
+
         const [
           currentPayload,
-          bidPayload,
+          currentMonthlyPayload,
+          bidDashboardPayload,
         ] = await Promise.all([
-          fetchJson(
-            '/api/projected-billings/current-projects'
+          track(
+            fetchJson(
+              '/api/projected-billings/current-projects'
+            )
           ),
-          fetchJson(
-            '/api/projected-billings/active-bids'
+
+          track(
+            fetchJson(
+              '/api/projected-billings/current-projects/monthly'
+            )
+          ),
+
+          track(
+            fetchJson(
+              '/api/projected-billings/active-bids/dashboard'
+            )
           ),
         ]);
+
+
+        const bidPayload =
+          bidDashboardPayload
+            ?.projects
+          || {};
+
 
         const bids =
           Array.isArray(
@@ -1444,9 +1491,11 @@ export default function App() {
             ? bidPayload.items
             : [];
 
+
         if (cancelled) {
           return;
         }
+
 
         setCurrentProjects(
           currentPayload
@@ -1456,88 +1505,36 @@ export default function App() {
           bids
         );
 
-        const readyBids =
-          bids.filter(
-            row =>
-              row.forecastReady
-              === true
+
+        const currentMap =
+          new Map(
+            (
+              currentMonthlyPayload
+                ?.items
+              || []
+            ).map(
+              row => [
+                row.jobListId,
+                row.items || [],
+              ]
+            )
           );
 
-        const totalRequests =
-          currentPayload.length
-          + readyBids.length;
 
-        let loadedRequests = 0;
-
-        setMonthlyProgress({
-          loaded: 0,
-          total:
-            totalRequests,
-        });
-
-        const onProgress = () => {
-          loadedRequests += 1;
-
-          if (!cancelled) {
-            setMonthlyProgress({
-              loaded:
-                loadedRequests,
-              total:
-                totalRequests,
-            });
-          }
-        };
-
-        const [
-          currentMap,
-          bidMap,
-        ] = await Promise.all([
-          mapWithConcurrency(
-            currentPayload,
-            6,
-            async row => {
-              const payload =
-                await fetchJson(
-                  (
-                    '/api/projected-billings/'
-                    + 'current-projects/'
-                    + `${row.jobListId}/monthly`
-                  )
-                );
-
-              return [
-                row.jobListId,
-                payload.items || [],
-              ];
-            },
-            onProgress,
-          ),
-
-          mapWithConcurrency(
-            readyBids,
-            4,
-            async row => {
-              const payload =
-                await fetchJson(
-                  (
-                    '/api/projected-billings/'
-                    + 'active-bids/'
-                    + `${row.sharePointItemId}/monthly`
-                  )
-                );
-
-              return [
+        const bidMap =
+          new Map(
+            (
+              bidDashboardPayload
+                ?.monthly
+              || []
+            ).map(
+              row => [
                 row.sharePointItemId,
-                payload.items || [],
-              ];
-            },
-            onProgress,
-          ),
-        ]);
+                row.items || [],
+              ]
+            )
+          );
 
-        if (cancelled) {
-          return;
-        }
 
         setCurrentMonthly(
           currentMap
@@ -1546,7 +1543,6 @@ export default function App() {
         setBidMonthly(
           bidMap
         );
-
       } catch (error) {
         if (!cancelled) {
           setDataError(
@@ -3651,7 +3647,7 @@ export default function App() {
           <section className="loading-panel">
             <div>
               <strong>
-                Loading monthly allocations
+                Loading billing data
               </strong>
 
               <span>
@@ -3672,7 +3668,7 @@ export default function App() {
             </div>
 
             <small>
-              Preparing the selected forecast view.
+              Preparing projects and forecast data.
             </small>
           </section>
         )}

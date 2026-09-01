@@ -41,10 +41,12 @@ from .data_api import (
     DataAPISQLUnavailable,
     DataAPIUnavailable,
     check_data_api_ready,
+    get_active_bid_dashboard,
     get_active_bid_monthly,
     get_active_bid_projected_billings,
     get_current_project_monthly,
     get_current_projected_billings,
+    get_current_projects_monthly_bulk,
     get_completed_project_monthly,
     get_completed_projects,
     get_project_close_accountability,
@@ -635,6 +637,23 @@ def projected_billings_current_projects(
 
 
 @app.get(
+    "/api/projected-billings/current-projects/monthly"
+)
+def projected_billings_current_projects_monthly_bulk(
+    _current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    try:
+        return get_current_projects_monthly_bulk()
+
+    except Exception as exc:
+        _raise_projected_billings_error(
+            exc
+        )
+
+
+@app.get(
     (
         "/api/projected-billings/"
         "current-projects/"
@@ -671,6 +690,23 @@ def projected_billings_active_bids(
 ):
     try:
         return get_active_bid_projected_billings()
+
+    except Exception as exc:
+        _raise_projected_billings_error(
+            exc
+        )
+
+
+@app.get(
+    "/api/projected-billings/active-bids/dashboard"
+)
+def projected_billings_active_bid_dashboard(
+    _current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    try:
+        return get_active_bid_dashboard()
 
     except Exception as exc:
         _raise_projected_billings_error(

@@ -934,3 +934,316 @@ def save_current_project_pm_forecast(
         )
 
     return payload_out
+
+
+def get_current_projects_monthly_bulk() -> dict:
+    operation = (
+        "Current Project monthly bulk"
+    )
+
+    response = _get_service_response(
+        "/v1/bid-log/current-projects/monthly",
+        operation=operation,
+    )
+
+    payload = _json_object(
+        response,
+        operation=operation,
+    )
+
+    items = payload.get(
+        "items"
+    )
+
+    if not isinstance(
+        items,
+        list,
+    ):
+        raise DataAPIInvalidResponse(
+            "Current Project monthly bulk response "
+            "is missing its items list."
+        )
+
+    return payload
+
+
+def get_active_bid_dashboard() -> dict:
+    operation = (
+        "Active Bid projected-billings dashboard"
+    )
+
+    response = _get_service_response(
+        "/v1/bid-log/projected-billings/dashboard",
+        operation=operation,
+    )
+
+    payload = _json_object(
+        response,
+        operation=operation,
+    )
+
+    projects = payload.get(
+        "projects"
+    )
+
+    monthly = payload.get(
+        "monthly"
+    )
+
+    if not isinstance(
+        projects,
+        dict,
+    ):
+        raise DataAPIInvalidResponse(
+            "Active Bid dashboard response "
+            "is missing projects."
+        )
+
+    if not isinstance(
+        monthly,
+        list,
+    ):
+        raise DataAPIInvalidResponse(
+            "Active Bid dashboard response "
+            "is missing monthly data."
+        )
+
+    return payload
+
+
+# ============================================================
+# DASHBOARD READ CACHE
+#
+# Short-lived process-local cache for the three expensive
+# portfolio/dashboard datasets.
+#
+# Direct project detail, PM Forecast, history, writes, auth,
+# health, etc. remain uncached.
+#
+# Cache is process-local by design. Multiple Cloud Run
+# instances may each hold their own <=30 second copy.
+# ============================================================
+
+import os as _dashboard_os
+import threading as _dashboard_threading
+import time as _dashboard_time
+
+
+def _dashboard_cache_ttl_seconds() -> float:
+    raw = _dashboard_os.getenv(
+        "BID_LOG_DASHBOARD_CACHE_TTL_SECONDS",
+        "30",
+    ).strip()
+
+    try:
+        value = float(raw)
+    except ValueError:
+        return 30.0
+
+    return max(
+        0.0,
+        min(
+            value,
+            300.0,
+        ),
+    )
+
+
+_dashboard_cache_guard = (
+    _dashboard_threading.Lock()
+)
+
+_dashboard_cache_values: dict[
+    str,
+    tuple[
+        float,
+        object,
+    ],
+] = {}
+
+_dashboard_cache_key_locks: dict[
+    str,
+    _dashboard_threading.Lock,
+] = {}
+
+
+def _dashboard_cache_key_lock(
+    key: str,
+):
+    with _dashboard_cache_guard:
+        lock = (
+            _dashboard_cache_key_locks
+            .get(key)
+        )
+
+        if lock is None:
+            lock = (
+                _dashboard_threading.Lock()
+            )
+
+            _dashboard_cache_key_locks[
+                key
+            ] = lock
+
+        return lock
+
+
+def _dashboard_cached(
+    key: str,
+    loader,
+):
+    ttl = (
+        _dashboard_cache_ttl_seconds()
+    )
+
+    if ttl <= 0:
+        return loader()
+
+
+    now = (
+        _dashboard_time.monotonic()
+    )
+
+
+    with _dashboard_cache_guard:
+        cached = (
+            _dashboard_cache_values
+            .get(key)
+        )
+
+        if (
+            cached is not None
+            and cached[0] > now
+        ):
+            return cached[1]
+
+
+    key_lock = (
+        _dashboard_cache_key_lock(
+            key
+        )
+    )
+
+
+    # Only serialize callers for the SAME dataset.
+    #
+    # Current summary, current monthly, and Active Bid
+    # dashboard can still load concurrently.
+    with key_lock:
+
+        now = (
+            _dashboard_time.monotonic()
+        )
+
+
+        # Re-check after acquiring the per-key lock.
+        # Another request may have filled the cache while
+        # this request was waiting.
+        with _dashboard_cache_guard:
+            cached = (
+                _dashboard_cache_values
+                .get(key)
+            )
+
+            if (
+                cached is not None
+                and cached[0] > now
+            ):
+                return cached[1]
+
+
+        value = loader()
+
+
+        expires_at = (
+            _dashboard_time.monotonic()
+            + ttl
+        )
+
+
+        with _dashboard_cache_guard:
+            _dashboard_cache_values[
+                key
+            ] = (
+                expires_at,
+                value,
+            )
+
+
+        return value
+
+
+# ============================================================
+# Wrap only the three portfolio-load functions.
+#
+# Preserve the original implementations for direct invocation
+# and easy rollback/debugging.
+# ============================================================
+
+_uncached_get_current_projected_billings = (
+    get_current_projected_billings
+)
+
+_uncached_get_current_projects_monthly_bulk = (
+    get_current_projects_monthly_bulk
+)
+
+_uncached_get_active_bid_dashboard = (
+    get_active_bid_dashboard
+)
+
+
+def get_current_projected_billings(
+    *args,
+    **kwargs,
+):
+    # If some future caller adds parameters, do not accidentally
+    # mix parameterized datasets into this dashboard cache key.
+    if args or kwargs:
+        return (
+            _uncached_get_current_projected_billings(
+                *args,
+                **kwargs,
+            )
+        )
+
+    return _dashboard_cached(
+        "current_project_summary",
+        _uncached_get_current_projected_billings,
+    )
+
+
+def get_current_projects_monthly_bulk(
+    *args,
+    **kwargs,
+):
+    if args or kwargs:
+        return (
+            _uncached_get_current_projects_monthly_bulk(
+                *args,
+                **kwargs,
+            )
+        )
+
+    return _dashboard_cached(
+        "current_project_monthly_bulk",
+        _uncached_get_current_projects_monthly_bulk,
+    )
+
+
+def get_active_bid_dashboard(
+    *args,
+    **kwargs,
+):
+    if args or kwargs:
+        return (
+            _uncached_get_active_bid_dashboard(
+                *args,
+                **kwargs,
+            )
+        )
+
+    return _dashboard_cached(
+        "active_bid_dashboard",
+        _uncached_get_active_bid_dashboard,
+    )
