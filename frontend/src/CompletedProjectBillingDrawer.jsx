@@ -970,7 +970,7 @@ export default function CompletedProjectBillingDrawer({
                       </th>
 
                       <th className="numeric">
-                        Cumulative Actual
+                        Running Actual
                       </th>
 
                       <th>

@@ -3,6 +3,8 @@ import {
   useMemo,
 } from 'react';
 
+import PMForecastPanel from './PMForecastPanel.jsx';
+
 
 function money(value) {
   if (
@@ -167,6 +169,7 @@ function varianceClass(value) {
 export default function CurrentProjectBillingDrawer({
   project,
   monthlyRows,
+  user,
   onClose,
 }) {
   useEffect(
@@ -620,137 +623,13 @@ export default function CurrentProjectBillingDrawer({
           </section>
 
 
-          <section className="billing-monthly-section">
-            <div className="section-heading compact">
-              <div>
-                <span className="section-kicker">
-                  MONTHLY BILLING
-                </span>
+          
+          <PMForecastPanel
+            project={project}
+            monthlyRows={monthlyRows}
+            user={user}
+          />
 
-                <h3>
-                  Expected vs Foundation actual
-                </h3>
-              </div>
-
-              <span className="section-note">
-                {rows.length} months
-              </span>
-            </div>
-
-
-            <div className="billing-monthly-table-wrap">
-              <table className="billing-monthly-table">
-                <thead>
-                  <tr>
-                    <th>Month</th>
-
-                    <th className="numeric">
-                      Expected
-                    </th>
-
-                    <th className="numeric">
-                      Actual
-                    </th>
-
-                    <th className="numeric">
-                      Variance
-                    </th>
-
-                    <th className="numeric">
-                      Cum. Expected
-                    </th>
-
-                    <th className="numeric">
-                      Cum. Actual
-                    </th>
-
-                    <th className="numeric">
-                      Cum. Variance
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {rows.map(
-                    row => (
-                      <tr key={row.monthStart}>
-                        <td>
-                          {monthLabel(
-                            row.monthStart
-                          )}
-                        </td>
-
-                        <td className="numeric">
-                          {money(
-                            row.projectedAmount
-                          )}
-                        </td>
-
-                        <td className="numeric">
-                          {money(
-                            row.actualAmount
-                          )}
-                        </td>
-
-                        <td
-                          className={
-                            (
-                              'numeric '
-                              + varianceClass(
-                                  row.monthlyVariance
-                                )
-                            )
-                          }
-                        >
-                          {money(
-                            row.monthlyVariance
-                          )}
-                        </td>
-
-                        <td className="numeric">
-                          {money(
-                            row.cumulativeExpected
-                          )}
-                        </td>
-
-                        <td className="numeric">
-                          {money(
-                            row.cumulativeActual
-                          )}
-                        </td>
-
-                        <td
-                          className={
-                            (
-                              'numeric '
-                              + varianceClass(
-                                  row.cumulativeVariance
-                                )
-                            )
-                          }
-                        >
-                          {money(
-                            row.cumulativeVariance
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  )}
-
-                  {!rows.length && (
-                    <tr>
-                      <td
-                        colSpan="7"
-                        className="empty-cell"
-                      >
-                        No monthly projected or Foundation billing rows are available for this project.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
         </div>
       </aside>
     </div>

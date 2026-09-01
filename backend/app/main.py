@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from uuid import UUID, uuid4
 
 from authlib.integrations.starlette_client import (
     OAuth,
@@ -33,6 +34,7 @@ from .data_api import (
     DataAPIConfigurationError,
     DataAPIEdgeRejected,
     DataAPIInvalidResponse,
+    DataAPIRequestRejected,
     DataAPIResourceNotFound,
     DataAPIServiceAuthRejected,
     DataAPISQLCapacityUnavailable,
@@ -46,6 +48,11 @@ from .data_api import (
     get_completed_project_monthly,
     get_completed_projects,
     get_project_close_accountability,
+    get_pm_forecast_policy,
+    get_current_project_pm_forecast,
+    get_current_project_pm_forecast_history,
+    get_current_project_pm_forecast_version,
+    save_current_project_pm_forecast,
 )
 
 
@@ -298,6 +305,54 @@ def _raise_projected_billings_error(
         ) from exc
 
     raise exc
+
+
+def _browser_request_id(
+    request: Request,
+) -> str:
+    raw = (
+        request.headers
+        .get(
+            "X-Request-ID",
+            "",
+        )
+        .strip()
+    )
+
+    if not raw:
+        return str(
+            uuid4()
+        )
+
+    try:
+        return str(
+            UUID(
+                raw
+            )
+        )
+
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_request_id",
+        ) from exc
+
+
+def _raise_pm_forecast_proxy_error(
+    exc: Exception,
+) -> None:
+    if isinstance(
+        exc,
+        DataAPIRequestRejected,
+    ):
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=exc.detail,
+        ) from exc
+
+    _raise_projected_billings_error(
+        exc
+    )
 
 
 @app.get("/api/health")
@@ -646,6 +701,177 @@ def projected_billings_active_bid_monthly(
 
     except Exception as exc:
         _raise_projected_billings_error(
+            exc
+        )
+
+
+# ============================================================
+# PM / OPERATIONS FORECAST
+# ============================================================
+
+@app.get(
+    "/api/pm-forecast/policy"
+)
+def pm_forecast_policy(
+    _current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    try:
+        return get_pm_forecast_policy()
+
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(
+            exc
+        )
+
+
+@app.get(
+    "/api/current-projects/{job_list_id}/pm-forecast"
+)
+def current_project_pm_forecast(
+    job_list_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    _current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    try:
+        return get_current_project_pm_forecast(
+            job_list_id
+        )
+
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(
+            exc
+        )
+
+
+@app.get(
+    (
+        "/api/current-projects/"
+        "{job_list_id}/pm-forecast/history"
+    )
+)
+def current_project_pm_forecast_history(
+    job_list_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    _current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    try:
+        return (
+            get_current_project_pm_forecast_history(
+                job_list_id
+            )
+        )
+
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(
+            exc
+        )
+
+
+@app.get(
+    (
+        "/api/current-projects/"
+        "{job_list_id}/pm-forecast/history/"
+        "{forecast_version_id}"
+    )
+)
+def current_project_pm_forecast_version(
+    job_list_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    forecast_version_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    _current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    try:
+        return (
+            get_current_project_pm_forecast_version(
+                job_list_id,
+                forecast_version_id,
+            )
+        )
+
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(
+            exc
+        )
+
+
+@app.post(
+    "/api/current-projects/{job_list_id}/pm-forecast"
+)
+async def save_current_project_pm_forecast_proxy(
+    request: Request,
+    job_list_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    try:
+        payload = await request.json()
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_json_body",
+        ) from exc
+
+
+    if not isinstance(
+        payload,
+        dict,
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_pm_forecast_payload",
+        )
+
+
+    role = (
+        current_user.app_role
+        .strip()
+        .upper()
+    )
+
+    if role not in {
+        "ADMIN",
+        "OPERATIONS",
+    }:
+        raise HTTPException(
+            status_code=403,
+            detail="bid_log_pm_forecast_user_not_authorized",
+        )
+
+
+    try:
+        return save_current_project_pm_forecast(
+            job_list_id,
+            payload,
+            actor_eid=current_user.eid,
+            request_id=_browser_request_id(
+                request
+            ),
+        )
+
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(
             exc
         )
 

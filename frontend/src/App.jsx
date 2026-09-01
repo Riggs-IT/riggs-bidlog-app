@@ -3752,17 +3752,17 @@ export default function App() {
           <div className="section-heading">
             <div>
               <span className="section-kicker">
-                MONTHLY COMPARISON
+                MONTHLY BILLING COMPARISON
               </span>
 
               <h2>
-                Expected vs. actual
+                Forecast vs. Actual Billings
               </h2>
             </div>
 
             <div className="monthly-heading-actions">
               <span className="section-note">
-                Selected expected excludes actual billing
+                Forecast amounts shown separately from Foundation actuals
               </span>
 
               <button
@@ -3872,7 +3872,7 @@ export default function App() {
                                   * 100
                                 }%`,
                             }}
-                            title="Selected Expected"
+                            title="Selected Forecast"
                           />
 
                           <div
@@ -3931,9 +3931,8 @@ export default function App() {
                                       <th>Source</th>
                                       <th>Project / Bid</th>
                                       <th>PM</th>
-                                      <th>Due Date</th>
                                       <th className="numeric">
-                                        Expected
+                                        Forecast
                                       </th>
                                       <th className="numeric">
                                         Actual
@@ -4003,16 +4002,6 @@ export default function App() {
 
                                             <td>
                                               {detail.pm}
-                                            </td>
-
-                                            <td>
-                                              {
-                                                detail.dueDate
-                                                  ? dateLabel(
-                                                      detail.dueDate
-                                                    )
-                                                  : '—'
-                                              }
                                             </td>
 
                                             <td className="numeric strong-cell">
@@ -4343,6 +4332,7 @@ export default function App() {
 
       <CurrentProjectBillingDrawer
         project={selectedCurrentProject}
+        user={user}
         monthlyRows={
           selectedCurrentProject
             ? (

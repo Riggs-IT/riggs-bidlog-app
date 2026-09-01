@@ -56,6 +56,21 @@ class DataAPIInvalidResponse(DataAPIError):
     pass
 
 
+class DataAPIRequestRejected(DataAPIError):
+    def __init__(
+        self,
+        status_code: int,
+        detail: str,
+    ):
+        super().__init__(
+            f"Riggs Data API rejected request: "
+            f"HTTP {status_code} {detail}"
+        )
+
+        self.status_code = status_code
+        self.detail = detail
+
+
 @dataclass(frozen=True)
 class BidLogAccessUser:
     eid: int
@@ -128,11 +143,23 @@ atexit.register(_close_http_client)
 def _request_headers(
     *,
     include_service_auth: bool,
+    request_id: str | None = None,
+    actor_eid: int | None = None,
 ) -> dict[str, str]:
 
     headers = {
-        "X-Request-ID": str(uuid4()),
+        "X-Request-ID": (
+            request_id
+            or str(uuid4())
+        ),
     }
+
+    if actor_eid is not None:
+        headers[
+            "X-Riggs-User-EID"
+        ] = str(
+            actor_eid
+        )
 
     cf_id = (
         settings.data_api_cf_access_client_id
@@ -697,3 +724,213 @@ def get_completed_project_monthly(
         )
 
     return payload
+
+
+
+# ============================================================
+# PM / OPERATIONS FORECAST
+# ============================================================
+
+def get_pm_forecast_policy() -> dict:
+    operation = "PM Forecast policy"
+
+    response = _get_service_response(
+        "/v1/bid-log/pm-forecast/policy",
+        operation=operation,
+    )
+
+    return _json_object(
+        response,
+        operation=operation,
+    )
+
+
+def get_current_project_pm_forecast(
+    job_list_id: int,
+) -> dict:
+    operation = (
+        "Current Project PM Forecast"
+    )
+
+    response = _get_service_response(
+        (
+            "/v1/bid-log/current-projects/"
+            f"{job_list_id}/pm-forecast"
+        ),
+        operation=operation,
+        resource_not_found=True,
+    )
+
+    payload = _json_object(
+        response,
+        operation=operation,
+    )
+
+    items = payload.get("items")
+
+    if not isinstance(items, list):
+        raise DataAPIInvalidResponse(
+            "Current Project PM Forecast response "
+            "is missing its items list."
+        )
+
+    return payload
+
+
+def get_current_project_pm_forecast_history(
+    job_list_id: int,
+) -> dict:
+    operation = (
+        "Current Project PM Forecast history"
+    )
+
+    response = _get_service_response(
+        (
+            "/v1/bid-log/current-projects/"
+            f"{job_list_id}/pm-forecast/history"
+        ),
+        operation=operation,
+        resource_not_found=True,
+    )
+
+    payload = _json_object(
+        response,
+        operation=operation,
+    )
+
+    items = payload.get("items")
+
+    if not isinstance(items, list):
+        raise DataAPIInvalidResponse(
+            "PM Forecast history response "
+            "is missing its items list."
+        )
+
+    return payload
+
+
+def get_current_project_pm_forecast_version(
+    job_list_id: int,
+    forecast_version_id: int,
+) -> dict:
+    operation = (
+        "Current Project PM Forecast version"
+    )
+
+    response = _get_service_response(
+        (
+            "/v1/bid-log/current-projects/"
+            f"{job_list_id}/pm-forecast/history/"
+            f"{forecast_version_id}"
+        ),
+        operation=operation,
+        resource_not_found=True,
+    )
+
+    payload = _json_object(
+        response,
+        operation=operation,
+    )
+
+    items = payload.get("items")
+
+    if not isinstance(items, list):
+        raise DataAPIInvalidResponse(
+            "PM Forecast version response "
+            "is missing its items list."
+        )
+
+    return payload
+
+
+def save_current_project_pm_forecast(
+    job_list_id: int,
+    payload: dict,
+    *,
+    actor_eid: int,
+    request_id: str,
+) -> dict:
+    operation = (
+        "Save Current Project PM Forecast"
+    )
+
+    try:
+        response = _get_http_client().post(
+            (
+                "/v1/bid-log/current-projects/"
+                f"{job_list_id}/pm-forecast"
+            ),
+            json=payload,
+            headers=_request_headers(
+                include_service_auth=True,
+                request_id=request_id,
+                actor_eid=actor_eid,
+            ),
+        )
+
+    except httpx.TimeoutException as exc:
+        raise DataAPIUnavailable(
+            "Riggs Data API request timed out "
+            f"during {operation}."
+        ) from exc
+
+    except httpx.RequestError as exc:
+        raise DataAPIUnavailable(
+            "Unable to connect to the Riggs Data API "
+            f"during {operation}."
+        ) from exc
+
+
+    # Application-level rejections from the Data API.
+    # A Cloudflare 403 normally has no Riggs JSON detail and
+    # therefore falls through to _raise_common_failure().
+    if response.status_code in {
+        400,
+        403,
+        404,
+        409,
+        422,
+    }:
+        detail = _detail(
+            response
+        )
+
+        if detail is not None:
+            raise DataAPIRequestRejected(
+                response.status_code,
+                detail,
+            )
+
+
+    _raise_common_failure(
+        response,
+        operation=operation,
+    )
+
+
+    if response.status_code != 200:
+        raise DataAPIInvalidResponse(
+            "Unexpected Riggs Data API response "
+            f"during {operation}."
+        )
+
+
+    payload_out = _json_object(
+        response,
+        operation=operation,
+    )
+
+    items = payload_out.get(
+        "items"
+    )
+
+    if not isinstance(
+        items,
+        list,
+    ):
+        raise DataAPIInvalidResponse(
+            "PM Forecast save response "
+            "is missing its items list."
+        )
+
+    return payload_out
