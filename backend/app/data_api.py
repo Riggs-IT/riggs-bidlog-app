@@ -1022,6 +1022,224 @@ def save_current_project_pm_forecast(
     return payload_out
 
 
+# ============================================================
+# ORIGINATING BID / CURRENT PROJECT LINK
+# ============================================================
+
+def _originating_bid_request(
+    method: str,
+    path: str,
+    *,
+    operation: str,
+    request_id: str | None = None,
+    actor_eid: int | None = None,
+    params: dict | None = None,
+    json_payload: dict | None = None,
+) -> dict:
+    try:
+        response = _get_http_client().request(
+            method,
+            path,
+            params=params,
+            json=json_payload,
+            headers=_request_headers(
+                include_service_auth=True,
+                request_id=request_id,
+                actor_eid=actor_eid,
+            ),
+        )
+
+    except httpx.TimeoutException as exc:
+        raise DataAPIUnavailable(
+            "Riggs Data API request timed out "
+            f"during {operation}."
+        ) from exc
+
+    except httpx.RequestError as exc:
+        raise DataAPIUnavailable(
+            "Unable to connect to the Riggs Data API "
+            f"during {operation}."
+        ) from exc
+
+
+    if response.status_code in {
+        400,
+        403,
+        404,
+        409,
+        422,
+    }:
+        detail = _detail(
+            response
+        )
+
+        if detail is not None:
+            raise DataAPIRequestRejected(
+                response.status_code,
+                detail,
+            )
+
+
+    _raise_common_failure(
+        response,
+        operation=operation,
+    )
+
+
+    if response.status_code != 200:
+        raise DataAPIInvalidResponse(
+            "Unexpected Riggs Data API response "
+            f"during {operation}."
+        )
+
+
+    return _json_object(
+        response,
+        operation=operation,
+    )
+
+
+def get_current_project_originating_bid(
+    job_list_id: int,
+) -> dict:
+    return _originating_bid_request(
+        "GET",
+        (
+            "/v1/bid-log/current-projects/"
+            f"{job_list_id}/originating-bid"
+        ),
+        operation=(
+            "Current Project originating bid"
+        ),
+    )
+
+
+def get_current_project_bid_candidates(
+    job_list_id: int,
+    *,
+    actor_eid: int,
+    request_id: str,
+    search: str | None = None,
+    limit: int = 15,
+) -> dict:
+    params = {
+        "limit":
+            limit,
+    }
+
+
+    if (
+        search is not None
+        and search.strip()
+    ):
+        params[
+            "search"
+        ] = search.strip()
+
+
+    payload = _originating_bid_request(
+        "GET",
+        (
+            "/v1/bid-log/current-projects/"
+            f"{job_list_id}/bid-candidates"
+        ),
+        operation=(
+            "Current Project bid candidates"
+        ),
+        request_id=request_id,
+        actor_eid=actor_eid,
+        params=params,
+    )
+
+
+    project = payload.get(
+        "project"
+    )
+
+    items = payload.get(
+        "items"
+    )
+
+    candidate_count = payload.get(
+        "candidateCount"
+    )
+
+
+    if not isinstance(
+        project,
+        dict,
+    ):
+        raise DataAPIInvalidResponse(
+            "Bid candidate response is "
+            "missing project detail."
+        )
+
+
+    if (
+        not isinstance(
+            items,
+            list,
+        )
+        or not all(
+            isinstance(
+                item,
+                dict,
+            )
+            for item in items
+        )
+    ):
+        raise DataAPIInvalidResponse(
+            "Bid candidate response is "
+            "missing its items list."
+        )
+
+
+    if (
+        not isinstance(
+            candidate_count,
+            int,
+        )
+        or isinstance(
+            candidate_count,
+            bool,
+        )
+        or candidate_count < 0
+    ):
+        raise DataAPIInvalidResponse(
+            "Bid candidate response is "
+            "missing candidateCount."
+        )
+
+
+    return payload
+
+
+def link_current_project_originating_bid(
+    job_list_id: int,
+    original_bid_log_id: int,
+    *,
+    actor_eid: int,
+    request_id: str,
+) -> dict:
+    return _originating_bid_request(
+        "POST",
+        (
+            "/v1/bid-log/current-projects/"
+            f"{job_list_id}/originating-bid"
+        ),
+        operation=(
+            "Link Current Project originating bid"
+        ),
+        request_id=request_id,
+        actor_eid=actor_eid,
+        json_payload={
+            "originalBidLogId":
+                original_bid_log_id,
+        },
+    )
+
+
+
 def get_current_projects_monthly_bulk() -> dict:
     operation = (
         "Current Project monthly bulk"

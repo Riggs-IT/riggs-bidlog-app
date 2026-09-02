@@ -12,6 +12,7 @@ from fastapi import (
     FastAPI,
     HTTPException,
     Path as FastAPIPath,
+    Query as FastAPIQuery,
     Request,
 )
 from fastapi.responses import (
@@ -47,6 +48,9 @@ from .data_api import (
     get_current_project_monthly,
     get_current_projected_billings,
     get_current_projects_monthly_bulk,
+    get_current_project_originating_bid,
+    get_current_project_bid_candidates,
+    link_current_project_originating_bid,
     get_completed_project_monthly,
     get_completed_projects,
     get_project_close_accountability,
@@ -990,6 +994,227 @@ async def save_current_project_pm_forecast_proxy(
         _raise_pm_forecast_proxy_error(
             exc
         )
+
+
+# ============================================================
+# ORIGINATING BID / CURRENT PROJECT LINK
+# ============================================================
+
+def _require_bid_link_editor(
+    current_user: CurrentUser,
+) -> None:
+    role = (
+        current_user.app_role
+        .strip()
+        .upper()
+    )
+
+    if role not in {
+        "ADMIN",
+        "OPERATIONS",
+    }:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "bid_log_bid_link_user_not_authorized"
+            ),
+        )
+
+
+@app.get(
+    (
+        "/api/current-projects/"
+        "{job_list_id}/originating-bid"
+    )
+)
+def current_project_originating_bid_proxy(
+    job_list_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    _current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    try:
+        return (
+            get_current_project_originating_bid(
+                job_list_id
+            )
+        )
+
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(
+            exc
+        )
+
+
+@app.get(
+    (
+        "/api/current-projects/"
+        "{job_list_id}/bid-candidates"
+    )
+)
+def current_project_bid_candidates_proxy(
+    request: Request,
+
+    job_list_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+
+    search: str | None = FastAPIQuery(
+        default=None,
+        max_length=100,
+    ),
+
+    limit: int = FastAPIQuery(
+        default=15,
+        ge=1,
+        le=50,
+    ),
+
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    _require_bid_link_editor(
+        current_user
+    )
+
+    try:
+        return (
+            get_current_project_bid_candidates(
+                job_list_id,
+
+                actor_eid=
+                    current_user.eid,
+
+                request_id=
+                    _browser_request_id(
+                        request
+                    ),
+
+                search=search,
+                limit=limit,
+            )
+        )
+
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(
+            exc
+        )
+
+
+@app.post(
+    (
+        "/api/current-projects/"
+        "{job_list_id}/originating-bid"
+    )
+)
+async def link_current_project_originating_bid_proxy(
+    request: Request,
+
+    job_list_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    _require_bid_link_editor(
+        current_user
+    )
+
+
+    try:
+        payload = await request.json()
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_json_body",
+        ) from exc
+
+
+    if not isinstance(
+        payload,
+        dict,
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "invalid_originating_bid_link_payload"
+            ),
+        )
+
+
+    if (
+        set(
+            payload.keys()
+        )
+        != {
+            "originalBidLogId"
+        }
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "invalid_originating_bid_link_payload"
+            ),
+        )
+
+
+    original_bid_log_id = payload.get(
+        "originalBidLogId"
+    )
+
+
+    if (
+        not isinstance(
+            original_bid_log_id,
+            int,
+        )
+        or isinstance(
+            original_bid_log_id,
+            bool,
+        )
+        or original_bid_log_id <= 0
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "invalid_originating_bid_link_payload"
+            ),
+        )
+
+
+    try:
+        return (
+            link_current_project_originating_bid(
+                job_list_id,
+
+                original_bid_log_id,
+
+                # Trusted actor identity comes only from the
+                # authenticated application session.
+                actor_eid=
+                    current_user.eid,
+
+                request_id=
+                    _browser_request_id(
+                        request
+                    ),
+            )
+        )
+
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(
+            exc
+        )
+
 
 
 @app.get(
