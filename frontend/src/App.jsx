@@ -150,31 +150,6 @@ function addMonths(
 }
 
 
-function dateLabel(value) {
-  if (!value) {
-    return '—';
-  }
-
-  const parsed =
-    new Date(
-      `${String(value).slice(0, 10)}T12:00:00`
-    );
-
-  if (Number.isNaN(parsed.getTime())) {
-    return String(value);
-  }
-
-  return new Intl.DateTimeFormat(
-    'en-US',
-    {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    },
-  ).format(parsed);
-}
-
-
 function monthLabel(
   monthValue,
 ) {
@@ -1259,7 +1234,7 @@ function SignInView({
       <main className="auth-layout">
         <section className="auth-intro">
           <div className="auth-kicker">
-            ESTIMATING · FORECASTING · ACCOUNTABILITY
+            ESTIMATING · PROJECTED BILLINGS · PROJECT HISTORY
           </div>
 
           <h1>
@@ -1272,7 +1247,7 @@ function SignInView({
 
           <p className="auth-intro-copy">
             A secure internal workspace for Riggs Companies bidding,
-            projected billings, and project accountability.
+            projected billings, and completed-project performance.
           </p>
 
           <div className="auth-trust-list">
@@ -3970,11 +3945,11 @@ export default function App() {
                       </option>
 
                       <option value="over">
-                        Actual Over Forecast
+                        Actual Over Projection
                       </option>
 
                       <option value="under">
-                        Actual Under Forecast
+                        Actual Under Projection
                       </option>
 
                       <option value="even">
@@ -4104,7 +4079,7 @@ export default function App() {
         {!rangeValid && (
           <div className="page-alert">
             <strong>
-              Invalid forecast range.
+              Invalid projection range.
             </strong>
 
             <span>
@@ -4141,7 +4116,7 @@ export default function App() {
             </div>
 
             <small>
-              Preparing projects and forecast data.
+              Preparing projects and projection data.
             </small>
           </section>
         )}
@@ -4617,7 +4592,7 @@ export default function App() {
               </span>
 
               <h2>
-                Projected Billing Breakdown
+                Projected Billings Breakdown
               </h2>
             </div>
 

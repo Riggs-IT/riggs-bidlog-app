@@ -5770,35 +5770,7 @@ tfoot th {
 }
 
 
-.billing-drawer-meta-five
-.drawer-pm-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 32px;
-  height: 32px;
-
-  padding: 0;
-
-  border: 0;
-
-  border-radius: 7px;
-
-  background: inherit;
-
-  font-size: 10px;
-  font-weight: 800;
-
-  letter-spacing: 0.025em;
-
-  box-shadow:
-    inset 0 0 0 1px
-    rgba(255, 255, 255, 0.15);
-}
-
-
-.drawer-tbt-value {
+.drawer-tbd-value {
   color:
     var(--muted);
 
@@ -5856,24 +5828,6 @@ tfoot th {
 
   font-size: 10px;
   line-height: 1.35;
-}
-
-
-.billing-kpi-grid
-.projection-basis-warning {
-  border-color:
-    rgba(
-      224,
-      168,
-      74,
-      0.5
-    );
-}
-
-
-.projection-basis-warning > small {
-  color:
-    #e0a84a !important;
 }
 
 
@@ -6131,6 +6085,164 @@ tfoot th {
 
 @media print {
   .billing-curve-help {
+    display: none !important;
+  }
+}
+
+
+/* ============================================================
+   H4B - FOUNDATION COMMERCIALS / ADMIN SOURCE COMPARISON
+   ============================================================ */
+
+.money-negative {
+  color:
+    var(--negative)
+    !important;
+}
+
+
+.commercial-source-note {
+  display: block;
+
+  margin-top: 5px;
+
+  color:
+    var(--muted);
+
+  font-size: 10px;
+  font-weight: 650;
+
+  letter-spacing: 0.02em;
+}
+
+
+.admin-source-hint {
+  display: block;
+
+  margin-top: 4px;
+
+  color:
+    var(--muted);
+
+  font-size: 10px;
+}
+
+
+.source-comparison {
+  width: 100%;
+
+  margin-top: 9px;
+}
+
+
+.source-comparison > summary {
+  width: fit-content;
+
+  cursor: pointer;
+
+  list-style: none;
+
+  color:
+    var(--accent);
+
+  font-size: 10px;
+  font-weight: 750;
+
+  letter-spacing: 0.025em;
+}
+
+
+.source-comparison > summary::-webkit-details-marker {
+  display: none;
+}
+
+
+.source-comparison > summary::after {
+  content: ' ▾';
+}
+
+
+.source-comparison[open] > summary::after {
+  content: ' ▴';
+}
+
+
+.source-comparison-panel {
+  display: grid;
+
+  gap: 6px;
+
+  margin-top: 9px;
+  padding-top: 9px;
+
+  border-top:
+    1px solid
+    var(--border);
+}
+
+
+.source-comparison-row {
+  display: flex;
+
+  align-items: baseline;
+  justify-content: space-between;
+
+  gap: 14px;
+
+  font-size: 11px;
+}
+
+
+.source-comparison-row > span {
+  margin: 0;
+
+  color:
+    var(--muted);
+
+  font-size: 10px;
+  font-weight: 600;
+
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+
+.source-comparison-row > strong {
+  color:
+    var(--text);
+
+  font-size: 11px;
+
+  text-align: right;
+}
+
+
+.completed-commercial-grid,
+.completed-lifecycle-summary-grid {
+  margin-bottom: 12px;
+}
+
+
+.completed-drawer-meta-five {
+  display: grid;
+}
+
+
+.completed-curve-summary {
+  margin-bottom: 0;
+}
+
+
+.completed-project-table
+.commercial-source-note,
+.completed-project-table
+.admin-source-hint {
+  white-space: normal;
+}
+
+
+@media print {
+  .source-comparison {
     display: none !important;
   }
 }

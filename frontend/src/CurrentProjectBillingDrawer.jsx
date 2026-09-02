@@ -1,35 +1,15 @@
+import { useEffect } from 'react';
+
 import {
-  useEffect,
-  useMemo,
-} from 'react';
-
+  commercialSourceLabel,
+  ComparisonDetails,
+  money,
+  moneyDifference,
+  MoneyValue,
+  retentionLabel,
+  retentionNumber,
+} from './BillingDisplay.jsx';
 import PMForecastPanel from './PMForecastPanel.jsx';
-
-
-function money(value) {
-  if (
-    value === null
-    || value === undefined
-    || value === ''
-  ) {
-    return '—';
-  }
-
-  const number = Number(value);
-
-  if (!Number.isFinite(number)) {
-    return '—';
-  }
-
-  return new Intl.NumberFormat(
-    'en-US',
-    {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0,
-    },
-  ).format(number);
-}
 
 
 function text(
@@ -70,256 +50,6 @@ function dateLabel(value) {
       year: 'numeric',
     },
   ).format(parsed);
-}
-
-
-function monthLabel(value) {
-  if (!value) {
-    return '—';
-  }
-
-  const [
-    year,
-    month,
-  ] = String(value)
-    .slice(0, 7)
-    .split('-')
-    .map(Number);
-
-  if (!year || !month) {
-    return text(value);
-  }
-
-  return new Intl.DateTimeFormat(
-    'en-US',
-    {
-      month: 'short',
-      year: 'numeric',
-    },
-  ).format(
-    new Date(
-      year,
-      month - 1,
-      1,
-    )
-  );
-}
-
-
-function sourceLabel(value) {
-  const labels = {
-    OVERRIDE:
-      'Forecast override',
-
-    CONTRACT:
-      'Job contract',
-
-    JOB_PLANNED_START:
-      'Planned start',
-
-    JOB_ANTICIPATED_START:
-      'Anticipated start',
-
-    BID_ANTICIPATED_START_FALLBACK:
-      'Bid start fallback',
-
-    JOB_PLANNED_END:
-      'Planned end',
-
-    ESTIMATED_DURATION:
-      'Estimated duration',
-
-    MISSING:
-      'Missing',
-  };
-
-  return (
-    labels[value]
-    || text(value)
-  );
-}
-
-
-function retentionLabel(value) {
-  if (
-    value === null
-    || value === undefined
-    || String(value).trim() === ''
-  ) {
-    return 'TBT';
-  }
-
-
-  const raw =
-    String(value).trim();
-
-
-  if (raw.includes('%')) {
-    return raw;
-  }
-
-
-  const number =
-    Number(raw);
-
-
-  if (!Number.isFinite(number)) {
-    return raw;
-  }
-
-
-  const percent =
-    number > 0
-    && number <= 1
-      ? number * 100
-      : number;
-
-
-  return `${
-    new Intl.NumberFormat(
-      'en-US',
-      {
-        maximumFractionDigits: 2,
-      },
-    ).format(percent)
-  }%`;
-}
-
-
-function pmBadgeTextColor(
-  hexColor,
-) {
-  const match =
-    String(
-      hexColor || ''
-    )
-      .trim()
-      .match(
-        /^#?([0-9a-f]{6})$/i
-      );
-
-
-  if (!match) {
-    return '#ffffff';
-  }
-
-
-  const value =
-    match[1];
-
-  const red =
-    parseInt(
-      value.slice(0, 2),
-      16,
-    );
-
-  const green =
-    parseInt(
-      value.slice(2, 4),
-      16,
-    );
-
-  const blue =
-    parseInt(
-      value.slice(4, 6),
-      16,
-    );
-
-
-  const luminance =
-    (
-      red * 299
-      + green * 587
-      + blue * 114
-    ) / 1000;
-
-
-  return luminance > 160
-    ? '#111111'
-    : '#ffffff';
-}
-
-
-function PMInitialsBadge({
-  initials,
-  hexColor,
-}) {
-  const value =
-    String(
-      initials || ''
-    ).trim();
-
-
-  if (!value) {
-    return (
-      <strong className="drawer-tbt-value">
-        TBT
-      </strong>
-    );
-  }
-
-
-  const background =
-    /^#[0-9a-f]{6}$/i.test(
-      String(
-        hexColor || ''
-      ).trim()
-    )
-      ? String(
-          hexColor
-        ).trim()
-      : '#4b5563';
-
-
-  return (
-    <span
-      className="drawer-pm-badge"
-      title="Project Manager"
-      style={{
-        backgroundColor:
-          background,
-
-        color:
-          pmBadgeTextColor(
-            background
-          ),
-      }}
-    >
-      {value}
-    </span>
-  );
-}
-
-
-function projectionAmountSourceLabel(
-  source,
-) {
-  const labels = {
-    JOB_CONTRACT_AMOUNT:
-      'Contract Amount',
-
-    CONTRACT:
-      'Contract Amount',
-
-    BID_ESTIMATED_PRICE_FALLBACK:
-      'Bid Estimate',
-
-    BID:
-      'Bid Estimate',
-
-    OVERRIDE:
-      'Projection Override',
-  };
-
-
-  return (
-    labels[
-      String(
-        source || ''
-      ).trim().toUpperCase()
-    ]
-    || 'Projection Source'
-  );
 }
 
 
@@ -428,133 +158,55 @@ export default function CurrentProjectBillingDrawer({
     ],
   );
 
-
-  const rows =
-    useMemo(
-      () => {
-        let cumulativeExpected = 0;
-        let cumulativeActual = 0;
-
-        return (
-          monthlyRows || []
-        ).map(
-          row => {
-            const expected =
-              row.projectedAmount
-                === null
-                || row.projectedAmount
-                  === undefined
-                ? null
-                : Number(
-                    row.projectedAmount
-                  );
-
-            const actual =
-              row.actualAmount
-                === null
-                || row.actualAmount
-                  === undefined
-                ? null
-                : Number(
-                    row.actualAmount
-                  );
-
-            if (
-              Number.isFinite(
-                expected
-              )
-            ) {
-              cumulativeExpected +=
-                expected;
-            }
-
-            if (
-              Number.isFinite(
-                actual
-              )
-            ) {
-              cumulativeActual +=
-                actual;
-            }
-
-            return {
-              ...row,
-
-              cumulativeExpected,
-              cumulativeActual,
-
-              cumulativeVariance:
-                actual === null
-                  ? null
-                  : (
-                      cumulativeActual
-                      - cumulativeExpected
-                    ),
-            };
-          }
-        );
-      },
-      [
-        monthlyRows,
-      ],
-    );
-
-
   if (!project) {
     return null;
   }
 
 
-  const hasOriginalContract =
-    project.originalContractAmount !== null
-    && project.originalContractAmount !== undefined
-    && String(
-         project.originalContractAmount
-       ).trim() !== '';
-
-
-  const hasProjectionAmount =
-    project.effectiveAmount !== null
-    && project.effectiveAmount !== undefined
-    && String(
-         project.effectiveAmount
-       ).trim() !== '';
-
-
-  const originalContract =
-    hasOriginalContract
-      ? Number(
-          project.originalContractAmount
-        )
-      : null;
-
-
-  const projectionAmount =
-    hasProjectionAmount
-      ? Number(
-          project.effectiveAmount
-        )
-      : null;
-
-
-  const projectionBasisDiffers =
-    originalContract !== null
-    && projectionAmount !== null
-    && Number.isFinite(
-         originalContract
-       )
-    && Number.isFinite(
-         projectionAmount
-       )
-    && Math.abs(
-         originalContract
-         - projectionAmount
-       ) >= 0.005;
-
-
   const projectionMessage =
     projectionStatusMessage(
       project.forecastState
+    );
+
+
+  const isAdmin =
+    String(
+      user?.appRole
+      || ''
+    ).toUpperCase()
+    === 'ADMIN';
+
+
+  const foundationVsCognito =
+    moneyDifference(
+      project.foundationOriginalContractAmount,
+      project.cognitoContractAmount,
+    );
+
+
+  const foundationVsBid =
+    moneyDifference(
+      project.foundationOriginalContractAmount,
+      project.bidEstimatedPrice,
+    );
+
+
+  const foundationVsProjection =
+    moneyDifference(
+      project.foundationOriginalContractAmount,
+      project.projectionAmount,
+    );
+
+
+  const foundationRetention =
+    retentionNumber(
+      project.foundationRetentionPercent
+    );
+
+
+  const cognitoRetention =
+    retentionNumber(
+      project.cognitoRetention
     );
 
 
@@ -617,7 +269,7 @@ export default function CurrentProjectBillingDrawer({
               <strong>
                 {text(
                   project.pm,
-                  'TBT',
+                  'TBD',
                 )}
               </strong>
             </article>
@@ -628,8 +280,8 @@ export default function CurrentProjectBillingDrawer({
                 Estimator
               </small>
 
-              <strong className="drawer-tbt-value">
-                TBT
+              <strong className="drawer-tbd-value">
+                TBD
               </strong>
             </article>
 
@@ -691,6 +343,58 @@ export default function CurrentProjectBillingDrawer({
                   project.retention
                 )}
               </strong>
+
+              <small className="commercial-source-note">
+                {
+                  commercialSourceLabel(
+                    project.retentionSource
+                  )
+                }
+              </small>
+
+              {isAdmin && (
+                <ComparisonDetails
+                  rows={[
+                    {
+                      label:
+                        'Foundation',
+
+                      display:
+                        retentionLabel(
+                          project.foundationRetentionPercent
+                        ),
+                    },
+
+                    {
+                      label:
+                        'Cognito',
+
+                      display:
+                        retentionLabel(
+                          project.cognitoRetention
+                        ),
+                    },
+
+                    {
+                      label:
+                        'Difference',
+
+                      display:
+                        (
+                          foundationRetention !== null
+                          && cognitoRetention !== null
+                            ? `${
+                                (
+                                  foundationRetention
+                                  - cognitoRetention
+                                ).toFixed(2)
+                              } pts`
+                            : '—'
+                        ),
+                    },
+                  ]}
+                />
+              )}
             </article>
 
 
@@ -699,8 +403,8 @@ export default function CurrentProjectBillingDrawer({
                 CY
               </span>
 
-              <strong className="drawer-tbt-value">
-                TBT
+              <strong className="drawer-tbd-value">
+                TBD
               </strong>
             </article>
 
@@ -710,69 +414,144 @@ export default function CurrentProjectBillingDrawer({
                 SF
               </span>
 
-              <strong className="drawer-tbt-value">
-                TBT
+              <strong className="drawer-tbd-value">
+                TBD
               </strong>
             </article>
           </section>
 
 
           <section className="billing-kpi-grid billing-kpi-primary-grid">
-            <article
-              className={
-                projectionBasisDiffers
-                  ? 'projection-basis-warning'
-                  : undefined
-              }
-            >
+            <article>
               <span>
                 Original Contract
               </span>
 
               <strong>
-                {hasOriginalContract
-                  ? money(
-                      project.originalContractAmount
-                    )
-                  : (
-                      hasProjectionAmount
-                        ? money(
-                            project.effectiveAmount
-                          )
-                        : 'TBT'
-                    )}
+                <MoneyValue
+                  value={
+                    project.originalContractAmount
+                  }
+                />
               </strong>
 
+              <small className="commercial-source-note">
+                {
+                  commercialSourceLabel(
+                    project.originalContractSource
+                  )
+                }
+              </small>
 
-              {!hasOriginalContract
-                && hasProjectionAmount
-                && (
-                  <small className="projection-source-note">
+              {isAdmin && (
+                <ComparisonDetails
+                  rows={[
                     {
-                      projectionAmountSourceLabel(
-                        project.amountSource
-                      )
-                    }
-                    {' · '}
-                    used until contract amount is available
-                  </small>
-                )}
+                      label:
+                        'Foundation',
 
+                      value:
+                        project.foundationOriginalContractAmount,
 
-              {projectionBasisDiffers && (
-                <small className="projection-source-note">
-                  Projection uses {
-                    money(
-                      project.effectiveAmount
-                    )
-                  }
-                  {' · '}
-                  {
-                    projectionAmountSourceLabel(
-                      project.amountSource
-                    )
-                  }
-                </small>
+                      money: true,
+
+                      display:
+                        money(
+                          project.foundationOriginalContractAmount
+                        ),
+                    },
+
+                    {
+                      label:
+                        'Cognito',
+
+                      value:
+                        project.cognitoContractAmount,
+
+                      money: true,
+
+                      display:
+                        money(
+                          project.cognitoContractAmount
+                        ),
+                    },
+
+                    {
+                      label:
+                        'Bid Estimate',
+
+                      value:
+                        project.bidEstimatedPrice,
+
+                      money: true,
+
+                      display:
+                        money(
+                          project.bidEstimatedPrice
+                        ),
+                    },
+
+                    {
+                      label:
+                        'Projection Amount',
+
+                      value:
+                        project.projectionAmount,
+
+                      money: true,
+
+                      display:
+                        money(
+                          project.projectionAmount
+                        ),
+                    },
+
+                    {
+                      label:
+                        'Foundation vs Cognito',
+
+                      value:
+                        foundationVsCognito,
+
+                      money: true,
+
+                      display:
+                        money(
+                          foundationVsCognito
+                        ),
+                    },
+
+                    {
+                      label:
+                        'Foundation vs Bid',
+
+                      value:
+                        foundationVsBid,
+
+                      money: true,
+
+                      display:
+                        money(
+                          foundationVsBid
+                        ),
+                    },
+
+                    {
+                      label:
+                        'Foundation vs Projection',
+
+                      value:
+                        foundationVsProjection,
+
+                      money: true,
+
+                      display:
+                        money(
+                          foundationVsProjection
+                        ),
+                    },
+                  ]}
+                />
               )}
             </article>
 
@@ -782,8 +561,8 @@ export default function CurrentProjectBillingDrawer({
                 Approved Change Orders
               </span>
 
-              <strong className="drawer-tbt-value">
-                TBT
+              <strong className="drawer-tbd-value">
+                TBD
               </strong>
             </article>
 
@@ -794,9 +573,11 @@ export default function CurrentProjectBillingDrawer({
               </span>
 
               <strong>
-                {money(
-                  project.projectedToDate
-                )}
+                <MoneyValue
+                  value={
+                    project.projectedToDate
+                  }
+                />
               </strong>
             </article>
 
@@ -807,9 +588,11 @@ export default function CurrentProjectBillingDrawer({
               </span>
 
               <strong>
-                {money(
-                  project.actualToDate
-                )}
+                <MoneyValue
+                  value={
+                    project.actualToDate
+                  }
+                />
               </strong>
             </article>
           </section>
@@ -828,9 +611,11 @@ export default function CurrentProjectBillingDrawer({
               </span>
 
               <strong>
-                {money(
-                  project.varianceToDate
-                )}
+                <MoneyValue
+                  value={
+                    project.varianceToDate
+                  }
+                />
               </strong>
             </article>
 
@@ -841,9 +626,11 @@ export default function CurrentProjectBillingDrawer({
               </span>
 
               <strong>
-                {money(
-                  project.remainingAmount
-                )}
+                <MoneyValue
+                  value={
+                    project.remainingAmount
+                  }
+                />
               </strong>
             </article>
 

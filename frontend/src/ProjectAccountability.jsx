@@ -6,6 +6,13 @@ import {
 
 import CompletedProjectBillingDrawer
   from './CompletedProjectBillingDrawer.jsx';
+import {
+  commercialSourceLabel,
+  moneyDifference,
+  MoneyValue,
+  retentionLabel,
+  retentionNumber,
+} from './BillingDisplay.jsx';
 
 
 const ALL = '__ALL__';
@@ -18,28 +25,6 @@ function toNumber(value) {
   return Number.isFinite(number)
     ? number
     : 0;
-}
-
-
-function currency(value) {
-  if (
-    value === null
-    || value === undefined
-    || value === ''
-  ) {
-    return '—';
-  }
-
-  return new Intl.NumberFormat(
-    'en-US',
-    {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0,
-    },
-  ).format(
-    toNumber(value),
-  );
 }
 
 
@@ -253,22 +238,6 @@ function StatCard({
 }
 
 
-function StatusPill({
-  children,
-  tone = 'neutral',
-}) {
-  return (
-    <span
-      className={
-        `completed-project-pill ${tone}`
-      }
-    >
-      {children}
-    </span>
-  );
-}
-
-
 function dataStateLabel(value) {
   const labels = {
     NO_BID_LINK:
@@ -321,6 +290,14 @@ export default function ProjectAccountability({
 
   const [dataFilter, setDataFilter] =
     useState(ALL);
+
+
+  const isAdmin =
+    String(
+      user?.appRole
+      || ''
+    ).toUpperCase()
+    === 'ADMIN';
 
 
   useEffect(() => {
@@ -428,6 +405,20 @@ export default function ProjectAccountability({
 
   const metrics = useMemo(
     () => {
+      const contract =
+        rows.reduce(
+          (
+            total,
+            row,
+          ) => (
+            total
+            + toNumber(
+                row.contractAmount
+              )
+          ),
+          0,
+        );
+
       const billed =
         rows.reduce(
           (
@@ -442,25 +433,13 @@ export default function ProjectAccountability({
           0,
         );
 
-      const foundationDerived =
+      const historicalEstimates =
         rows.filter(
           row => (
-            row.foundationDerivedStart
-            || row.foundationDerivedEnd
-          ),
-        ).length;
-
-      const missingEstimator =
-        rows.filter(
-          row => (
-            row.missingEstimatorBidLink
-          ),
-        ).length;
-
-      const invalidDates =
-        rows.filter(
-          row => (
-            row.invalidResolvedDateRange
+            row.estimatorEstimatedAmount
+              !== null
+            && row.estimatorEstimatedAmount
+              !== undefined
           ),
         ).length;
 
@@ -468,13 +447,13 @@ export default function ProjectAccountability({
         total:
           rows.length,
 
+        contract,
         billed,
 
-        foundationDerived,
+        actualVsContract:
+          billed - contract,
 
-        missingEstimator,
-
-        invalidDates,
+        historicalEstimates,
       };
     },
     [rows],
@@ -623,11 +602,9 @@ export default function ProjectAccountability({
           </h1>
 
           <p>
-            Review actual Foundation billing, completed-project
-            lifecycle, and available estimator assumptions.
-            Missing historical information stays visible while
-            Foundation billing activity supplies documented
-            fallback dates where needed.
+            Review original contract values, actual billings,
+            completed-project performance, and available
+            historical estimating information.
           </p>
         </div>
 
@@ -679,46 +656,50 @@ export default function ProjectAccountability({
         />
 
         <StatCard
-          label="Foundation Billed"
+          label="Original Contract Value"
           value={
-            currency(
-              metrics.billed
-            )
+            <MoneyValue
+              value={
+                metrics.contract
+              }
+            />
           }
-          detail="Net posted billing across completed projects"
+          detail="Foundation original contract"
         />
 
         <StatCard
-          label="Foundation-Derived Dates"
+          label="Actual Billings"
           value={
-            metrics.foundationDerived.toLocaleString(
-              'en-US'
-            )
+            <MoneyValue
+              value={
+                metrics.billed
+              }
+            />
           }
-          detail="Start or completion uses billing activity"
-          tone="review"
+          detail="Posted Foundation billings"
         />
 
         <StatCard
-          label="Missing Historical Bid Link"
+          label="Actual vs Original Contract"
           value={
-            metrics.missingEstimator.toLocaleString(
-              'en-US'
-            )
+            <MoneyValue
+              value={
+                metrics.actualVsContract
+              }
+            />
           }
-          detail="Estimator history unavailable"
-          tone="warning"
+          detail="Actual billings less original contract"
         />
 
         <StatCard
-          label="Invalid Date Ranges"
+          label="Historical Estimates"
           value={
-            metrics.invalidDates.toLocaleString(
-              'en-US'
-            )
+            metrics.historicalEstimates
+              .toLocaleString(
+                'en-US'
+              )
           }
-          detail="Resolved start occurs after completion"
-          tone="critical"
+          detail="Projects with historical estimate amount"
         />
       </section>
 
@@ -727,11 +708,11 @@ export default function ProjectAccountability({
         <div className="section-heading">
           <div>
             <span className="section-kicker">
-              PROJECT HISTORY
+              COMPLETED PROJECT BILLINGS
             </span>
 
             <h2>
-              Billing & accountability
+              Completed Project Billing Breakdown
             </h2>
           </div>
 
@@ -922,15 +903,19 @@ export default function ProjectAccountability({
                 </th>
 
                 <th className="numeric">
-                  Contract
+                  Original Contract
                 </th>
 
                 <th className="numeric">
-                  Foundation Billed
+                  Actual Billings
                 </th>
 
                 <th className="numeric">
                   Actual vs Contract
+                </th>
+
+                <th>
+                  Retention
                 </th>
 
                 <th>
@@ -939,10 +924,6 @@ export default function ProjectAccountability({
 
                 <th>
                   Estimator
-                </th>
-
-                <th>
-                  Data Quality
                 </th>
               </tr>
             </thead>
@@ -1015,36 +996,94 @@ export default function ProjectAccountability({
                     </td>
 
                     <td className="numeric">
-                      {currency(
-                        row.contractAmount
-                      )}
+                      <MoneyValue
+                        value={
+                          row.contractAmount
+                        }
+                      />
+
+                      <small className="cell-subtext commercial-source-note">
+                        {
+                          commercialSourceLabel(
+                            row.contractAmountSource
+                          )
+                        }
+                      </small>
+
+                      {isAdmin
+                        && moneyDifference(
+                             row.foundationOriginalContractAmount,
+                             row.cognitoContractAmount
+                           ) !== null
+                        && Math.abs(
+                             moneyDifference(
+                               row.foundationOriginalContractAmount,
+                               row.cognitoContractAmount
+                             )
+                           ) >= 0.005
+                        && (
+                          <small className="cell-subtext admin-source-hint">
+                            Cognito difference:{' '}
+                            <MoneyValue
+                              value={
+                                moneyDifference(
+                                  row.foundationOriginalContractAmount,
+                                  row.cognitoContractAmount
+                                )
+                              }
+                            />
+                          </small>
+                        )}
                     </td>
 
                     <td className="numeric strong-cell">
-                      {currency(
-                        row.foundationActualTotal
-                      )}
+                      <MoneyValue
+                        value={
+                          row.foundationActualTotal
+                        }
+                      />
                     </td>
 
-                    <td
-                      className={
-                        (
+                    <td className="numeric">
+                      <MoneyValue
+                        value={
                           row.contractVsActualVariance
-                          > 0
-                        )
-                          ? 'numeric variance-positive'
-                          : (
-                            row.contractVsActualVariance
-                            < 0
-                          )
-                            ? 'numeric variance-negative'
-                            : 'numeric'
-                      }
-                    >
-                      {currency(
-                        row.contractVsActualVariance
-                      )}
+                        }
+                      />
                     </td>
+
+                    <td>
+                      <strong>
+                        {retentionLabel(
+                          row.retention
+                        )}
+                      </strong>
+
+                      <small className="cell-subtext commercial-source-note">
+                        {
+                          commercialSourceLabel(
+                            row.retentionSource
+                          )
+                        }
+                      </small>
+
+                      {isAdmin
+                        && row.cognitoRetention
+                        && retentionNumber(
+                             row.cognitoRetention
+                           ) !== retentionNumber(
+                             row.foundationRetentionPercent
+                           )
+                        && (
+                          <small className="cell-subtext admin-source-hint">
+                            Cognito:{' '}
+                            {retentionLabel(
+                              row.cognitoRetention
+                            )}
+                          </small>
+                        )}
+                    </td>
+
 
                     <td>
                       <div className="completed-lifecycle-cell">
@@ -1087,8 +1126,12 @@ export default function ProjectAccountability({
                             !== null
                             && row.estimatorEstimatedAmount
                             !== undefined
-                            ? currency(
-                                row.estimatorEstimatedAmount
+                            ? (
+                                <MoneyValue
+                                  value={
+                                    row.estimatorEstimatedAmount
+                                  }
+                                />
                               )
                             : dataStateLabel(
                                 row.estimatorDataState
@@ -1097,42 +1140,6 @@ export default function ProjectAccountability({
                       </div>
                     </td>
 
-                    <td>
-                      <div className="completed-quality-stack">
-                        {row.invalidResolvedDateRange && (
-                          <StatusPill tone="critical">
-                            Invalid dates
-                          </StatusPill>
-                        )}
-
-                        {row.foundationDerivedStart && (
-                          <StatusPill tone="derived">
-                            Derived start
-                          </StatusPill>
-                        )}
-
-                        {row.foundationDerivedEnd && (
-                          <StatusPill tone="derived">
-                            Derived end
-                          </StatusPill>
-                        )}
-
-                        {row.missingEstimatorBidLink && (
-                          <StatusPill tone="warning">
-                            Missing estimator history
-                          </StatusPill>
-                        )}
-
-                        {!row.invalidResolvedDateRange
-                         && !row.foundationDerivedStart
-                         && !row.foundationDerivedEnd
-                         && !row.missingEstimatorBidLink && (
-                          <StatusPill tone="success">
-                            Complete
-                          </StatusPill>
-                        )}
-                      </div>
-                    </td>
                   </tr>
                 )
               )}
@@ -1159,6 +1166,7 @@ export default function ProjectAccountability({
         project={
           selectedProject
         }
+        user={user}
         onClose={
           () => setSelectedProject(
             null

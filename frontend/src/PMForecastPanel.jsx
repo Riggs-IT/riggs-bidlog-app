@@ -201,7 +201,7 @@ const varianceClass = value => {
 
 const errorText = detail => ({
   pm_forecast_test_job_only:
-    'Forecast editing is still limited to the controlled test project.',
+    'Projection editing is still limited to the controlled test project.',
 
   bid_log_pm_forecast_changed:
     'This projection changed after you opened it. Reload it before saving.',
@@ -746,7 +746,7 @@ export default function PMForecastPanel({
     } catch (err) {
       setPolicyError(
         err.message
-        || 'Unable to update the forecast total setting.'
+        || 'Unable to update the projection total setting.'
       );
 
     } finally {
@@ -874,7 +874,7 @@ export default function PMForecastPanel({
     } catch (err) {
       setSaveError(
         err.message
-        || 'Unable to save the billing forecast.'
+        || 'Unable to save the billing projection.'
       );
 
     } finally {
@@ -908,9 +908,7 @@ export default function PMForecastPanel({
                   !editableRows.length
                 }
               >
-                {forecast?.hasPmForecast
-                  ? 'Revise Projections'
-                  : 'Revise Projections'}
+                Revise Projections
               </button>
             )}
         </div>
@@ -1050,7 +1048,7 @@ export default function PMForecastPanel({
                 && (
                   <div className="pm-latest-note">
                     <span>
-                      Latest forecast note
+                      Latest projection note
                     </span>
 
                     <p>
@@ -1444,7 +1442,7 @@ export default function PMForecastPanel({
           <div className="pm-history-list">
             {!history.length && (
               <div className="pm-forecast-message">
-                No forecast versions have been saved yet.
+                No projection versions have been saved yet.
               </div>
             )}
 

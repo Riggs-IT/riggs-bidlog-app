@@ -4,6 +4,16 @@ import {
   useState,
 } from 'react';
 
+import {
+  commercialSourceLabel,
+  ComparisonDetails,
+  money as currency,
+  moneyDifference,
+  MoneyValue,
+  retentionLabel,
+  retentionNumber,
+} from './BillingDisplay.jsx';
+
 
 function toNumber(value) {
   const number = Number(value);
@@ -11,28 +21,6 @@ function toNumber(value) {
   return Number.isFinite(number)
     ? number
     : 0;
-}
-
-
-function currency(value) {
-  if (
-    value === null
-    || value === undefined
-    || value === ''
-  ) {
-    return '—';
-  }
-
-  return new Intl.NumberFormat(
-    'en-US',
-    {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0,
-    },
-  ).format(
-    toNumber(value),
-  );
 }
 
 
@@ -253,6 +241,7 @@ function DataPill({
 function DetailValue({
   label,
   value,
+  moneyValue,
   subtext,
   source,
 }) {
@@ -261,7 +250,15 @@ function DetailValue({
       <span>{label}</span>
 
       <strong>
-        {value}
+        {moneyValue !== undefined
+          ? (
+              <MoneyValue
+                value={
+                  moneyValue
+                }
+              />
+            )
+          : value}
       </strong>
 
       {source && (
@@ -290,6 +287,7 @@ function DetailValue({
 
 export default function CompletedProjectBillingDrawer({
   project,
+  user,
   onClose,
 }) {
   const [monthly, setMonthly] =
@@ -449,6 +447,40 @@ export default function CompletedProjectBillingDrawer({
       );
 
 
+  const isAdmin =
+    String(
+      user?.appRole
+      || ''
+    ).toUpperCase()
+    === 'ADMIN';
+
+
+  const foundationVsCognito =
+    moneyDifference(
+      project.foundationOriginalContractAmount,
+      project.cognitoContractAmount,
+    );
+
+
+  const foundationVsEstimator =
+    moneyDifference(
+      project.foundationOriginalContractAmount,
+      project.estimatorEstimatedAmount,
+    );
+
+
+  const foundationRetention =
+    retentionNumber(
+      project.foundationRetentionPercent
+    );
+
+
+  const cognitoRetention =
+    retentionNumber(
+      project.cognitoRetention
+    );
+
+
   return (
     <div
       className="completed-drawer-backdrop"
@@ -502,64 +534,284 @@ export default function CompletedProjectBillingDrawer({
         </header>
 
 
-        <div className="completed-drawer-meta">
-          <DataPill>
-            {displayValue(
-              project.projectType,
-              'No Type',
+        <div className="completed-drawer-meta billing-drawer-meta-five">
+          <article className="billing-meta-card">
+            <small className="billing-meta-label">
+              PM
+            </small>
+
+            <strong>
+              {displayValue(
+                project.projectManager,
+                'TBD',
+              )}
+            </strong>
+          </article>
+
+
+          <article className="billing-meta-card">
+            <small className="billing-meta-label">
+              Estimator
+            </small>
+
+            <strong>
+              {estimatorNames
+                || 'TBD'}
+            </strong>
+          </article>
+
+
+          <article className="billing-meta-card">
+            <small className="billing-meta-label">
+              Purpose
+            </small>
+
+            <strong>
+              {displayValue(
+                project.purpose
+              )}
+            </strong>
+          </article>
+
+
+          <article className="billing-meta-card">
+            <small className="billing-meta-label">
+              GC
+            </small>
+
+            <strong>
+              {displayValue(
+                project.generalContractor,
+                'TBD',
+              )}
+            </strong>
+          </article>
+
+
+          <article className="billing-meta-card billing-location-card">
+            <small className="billing-meta-label">
+              Location
+            </small>
+
+            <strong>
+              {displayValue(
+                project.streetAddress,
+                'TBD',
+              )}
+            </strong>
+
+            {project.cityStateZip && (
+              <small>
+                {project.cityStateZip}
+              </small>
             )}
-          </DataPill>
-
-          <DataPill>
-            {displayValue(
-              project.purpose,
-              'No Purpose',
-            )}
-          </DataPill>
-
-          {project.foundationDerivedStart && (
-            <DataPill tone="derived">
-              Foundation-derived start
-            </DataPill>
-          )}
-
-          {project.foundationDerivedEnd && (
-            <DataPill tone="derived">
-              Foundation-derived completion
-            </DataPill>
-          )}
-
-          {project.invalidResolvedDateRange && (
-            <DataPill tone="warning">
-              Invalid lifecycle dates
-            </DataPill>
-          )}
-
-          {project.missingEstimatorBidLink && (
-            <DataPill tone="warning">
-              No historical bid link
-            </DataPill>
-          )}
+          </article>
         </div>
 
 
         <div className="completed-drawer-scroll">
-          <section className="completed-kpi-grid">
-            <DetailValue
-              label="Contract"
-              value={
-                currency(
-                  project.contractAmount
-                )
-              }
-            />
+          <section className="billing-characteristics-grid">
+            <article>
+              <span>
+                Retention
+              </span>
+
+              <strong>
+                {retentionLabel(
+                  project.retention
+                )}
+              </strong>
+
+              <small className="commercial-source-note">
+                {
+                  commercialSourceLabel(
+                    project.retentionSource
+                  )
+                }
+              </small>
+
+              {isAdmin && (
+                <ComparisonDetails
+                  rows={[
+                    {
+                      label:
+                        'Foundation',
+
+                      display:
+                        retentionLabel(
+                          project.foundationRetentionPercent
+                        ),
+                    },
+
+                    {
+                      label:
+                        'Cognito',
+
+                      display:
+                        retentionLabel(
+                          project.cognitoRetention
+                        ),
+                    },
+
+                    {
+                      label:
+                        'Difference',
+
+                      display:
+                        (
+                          foundationRetention !== null
+                          && cognitoRetention !== null
+                            ? `${
+                                (
+                                  foundationRetention
+                                  - cognitoRetention
+                                ).toFixed(2)
+                              } pts`
+                            : '—'
+                        ),
+                    },
+                  ]}
+                />
+              )}
+            </article>
+
+
+            <article>
+              <span>
+                CY
+              </span>
+
+              <strong className="drawer-tbd-value">
+                TBD
+              </strong>
+            </article>
+
+
+            <article>
+              <span>
+                SF
+              </span>
+
+              <strong className="drawer-tbd-value">
+                TBD
+              </strong>
+            </article>
+          </section>
+          <section className="completed-kpi-grid completed-commercial-grid">
+            <div className="completed-detail-value">
+              <span>
+                Original Contract
+              </span>
+
+              <strong>
+                <MoneyValue
+                  value={
+                    project.contractAmount
+                  }
+                />
+              </strong>
+
+              <small className="commercial-source-note">
+                {
+                  commercialSourceLabel(
+                    project.contractAmountSource
+                  )
+                }
+              </small>
+
+              {isAdmin && (
+                <ComparisonDetails
+                  rows={[
+                    {
+                      label:
+                        'Foundation',
+
+                      value:
+                        project.foundationOriginalContractAmount,
+
+                      money: true,
+
+                      display:
+                        currency(
+                          project.foundationOriginalContractAmount
+                        ),
+                    },
+
+                    {
+                      label:
+                        'Cognito',
+
+                      value:
+                        project.cognitoContractAmount,
+
+                      money: true,
+
+                      display:
+                        currency(
+                          project.cognitoContractAmount
+                        ),
+                    },
+
+                    {
+                      label:
+                        'Historical Estimate',
+
+                      value:
+                        project.estimatorEstimatedAmount,
+
+                      money: true,
+
+                      display:
+                        currency(
+                          project.estimatorEstimatedAmount
+                        ),
+                    },
+
+                    {
+                      label:
+                        'Foundation vs Cognito',
+
+                      value:
+                        foundationVsCognito,
+
+                      money: true,
+
+                      display:
+                        currency(
+                          foundationVsCognito
+                        ),
+                    },
+
+                    {
+                      label:
+                        'Foundation vs Estimate',
+
+                      value:
+                        foundationVsEstimator,
+
+                      money: true,
+
+                      display:
+                        currency(
+                          foundationVsEstimator
+                        ),
+                    },
+                  ]}
+                />
+              )}
+            </div>
+
 
             <DetailValue
-              label="Foundation Billed"
-              value={
-                currency(
-                  project.foundationActualTotal
-                )
+              label="Approved Change Orders"
+              value="TBD"
+            />
+
+
+            <DetailValue
+              label="Actual Billings"
+              moneyValue={
+                project.foundationActualTotal
               }
               subtext={
                 (
@@ -570,12 +822,11 @@ export default function CompletedProjectBillingDrawer({
               }
             />
 
+
             <DetailValue
-              label="Actual vs Contract"
-              value={
-                currency(
-                  project.contractVsActualVariance
-                )
+              label="Actual vs Original Contract"
+              moneyValue={
+                project.contractVsActualVariance
               }
               subtext={
                 (
@@ -583,19 +834,22 @@ export default function CompletedProjectBillingDrawer({
                     project.contractVsActualVariance
                   ) > 0
                 )
-                  ? 'Actual billing above contract'
+                  ? 'Actual billings above original contract'
                   : (
                     toNumber(
                       project.contractVsActualVariance
                     ) < 0
                   )
-                    ? 'Actual billing below contract'
-                    : 'Actual equals contract'
+                    ? 'Actual billings below original contract'
+                    : 'Actual equals original contract'
               }
             />
+          </section>
 
+
+          <section className="completed-kpi-grid completed-lifecycle-summary-grid">
             <DetailValue
-              label="Resolved Duration"
+              label="Project Duration"
               value={
                 project.resolvedDurationDays
                   ? (
@@ -614,8 +868,36 @@ export default function CompletedProjectBillingDrawer({
                   )
                   : null
               }
-              source={
-                project.resolvedDurationSource
+            />
+
+
+            <DetailValue
+              label="Project Start"
+              value={
+                dateLabel(
+                  project.resolvedStartDate
+                )
+              }
+            />
+
+
+            <DetailValue
+              label="Project Completion"
+              value={
+                dateLabel(
+                  project.resolvedEndDate
+                )
+              }
+            />
+
+
+            <DetailValue
+              label="Billing History"
+              value={
+                `${
+                  project.foundationBillingMonthCount
+                  || 0
+                } months`
               }
             />
           </section>
@@ -625,66 +907,57 @@ export default function CompletedProjectBillingDrawer({
             <div className="completed-section-heading">
               <div>
                 <span className="section-kicker">
-                  STANDARD BENCHMARK
+                  BILLING CURVE
                 </span>
 
                 <h3>
-                  Standard Benchmark Curve
+                  Standard billing benchmark
                 </h3>
               </div>
-
-              <span className="section-note">
-                Retrospective Riggs standard
-              </span>
             </div>
 
-            <div className="completed-benchmark-card">
-              <div className="completed-benchmark-heading">
-                <div>
-                  <strong>
-                    {project.benchmarkCurveDisplayName
-                      || 'Benchmark unavailable'}
 
-                    {project.benchmarkCurveVersion && (
-                      <span className="billing-curve-version">
-                        {' · '}
-                        v{project.benchmarkCurveVersion}
-                      </span>
-                    )}
-                  </strong>
+            <div className="billing-curve-summary completed-curve-summary">
+              <div>
+                <span className="billing-detail-label">
+                  Billing Curve
+                </span>
 
-                  <span>
-                    {project.benchmarkDistributionMethod
-                      || 'NOT_CONFIGURED'}
-                  </span>
-                </div>
-
-                <DataPill
-                  tone={
-                    project.benchmarkCurveSource
-                    === 'PROJECT_TYPE_DEFAULT'
-                      ? 'derived'
-                      : 'neutral'
-                  }
-                >
-                  {project.benchmarkCurveSource
-                   === 'PROJECT_TYPE_DEFAULT'
-                    ? `${project.projectType} standard`
-                    : 'Straight Line fallback'}
-                </DataPill>
+                <strong className="billing-curve-tag">
+                  {project.benchmarkCurveDisplayName
+                    || 'Not configured'}
+                </strong>
               </div>
 
-              <p>
-                {project.benchmarkCurveDescription
-                 || 'No benchmark description is available.'}
-              </p>
 
-              <small>
-                This is the current Riggs standard benchmark
-                for comparison. It is not being presented as
-                the historical estimator forecast for this
-                completed project.
-              </small>
+              <details className="billing-curve-help">
+                <summary
+                  aria-label="What the completed project billing curve means"
+                  title="What the billing curve means"
+                >
+                  ⓘ
+                </summary>
+
+                <div className="billing-curve-help-popover">
+                  <strong>
+                    What does this curve mean?
+                  </strong>
+
+                  <p>
+                    This is the current Riggs standard used to
+                    compare a completed project's billing shape.
+                    It is a retrospective benchmark, not a claim
+                    about the projection used when this project
+                    was originally estimated.
+                  </p>
+
+                  {project.benchmarkCurveDescription && (
+                    <p>
+                      {project.benchmarkCurveDescription}
+                    </p>
+                  )}
+                </div>
+              </details>
             </div>
           </section>
 
@@ -770,16 +1043,16 @@ export default function CompletedProjectBillingDrawer({
             <div className="completed-section-heading">
               <div>
                 <span className="section-kicker">
-                  ESTIMATOR ACCOUNTABILITY
+                  ESTIMATOR HISTORY
                 </span>
 
                 <h3>
-                  Historical estimate
+                  Original estimate
                 </h3>
               </div>
 
               <span className="section-note">
-                Missing historical fields stay flagged
+                Available historical Bid Log information
               </span>
             </div>
 
@@ -796,10 +1069,8 @@ export default function CompletedProjectBillingDrawer({
 
                   <DetailValue
                     label="Estimated Amount"
-                    value={
-                      currency(
-                        project.estimatorEstimatedAmount
-                      )
+                    moneyValue={
+                      project.estimatorEstimatedAmount
                     }
                     source={
                       project.estimatorAmountSource
@@ -831,12 +1102,8 @@ export default function CompletedProjectBillingDrawer({
 
                   <DetailValue
                     label="Actual vs Estimate"
-                    value={
-                      actualVsEstimate === null
-                        ? '—'
-                        : currency(
-                            actualVsEstimate
-                          )
+                    moneyValue={
+                      actualVsEstimate
                     }
                   />
 
@@ -920,11 +1187,11 @@ export default function CompletedProjectBillingDrawer({
             <div className="completed-section-heading">
               <div>
                 <span className="section-kicker">
-                  MONTHLY BILLING
+                  MONTHLY BILLINGS
                 </span>
 
                 <h3>
-                  Foundation actuals
+                  Actual Billings
                 </h3>
               </div>
 
@@ -966,11 +1233,11 @@ export default function CompletedProjectBillingDrawer({
                       </th>
 
                       <th className="numeric">
-                        Foundation Actual
+                        Actual Billings
                       </th>
 
                       <th className="numeric">
-                        Running Actual
+                        Running Total
                       </th>
 
                       <th>
@@ -996,15 +1263,19 @@ export default function CompletedProjectBillingDrawer({
                           </td>
 
                           <td className="numeric strong-cell">
-                            {currency(
-                              row.actualAmount
-                            )}
+                            <MoneyValue
+                              value={
+                                row.actualAmount
+                              }
+                            />
                           </td>
 
                           <td className="numeric">
-                            {currency(
-                              row.cumulativeActualAmount
-                            )}
+                            <MoneyValue
+                              value={
+                                row.cumulativeActualAmount
+                              }
+                            />
                           </td>
 
                           <td>
@@ -1049,17 +1320,21 @@ export default function CompletedProjectBillingDrawer({
                         </td>
 
                         <td className="numeric strong-cell">
-                          {currency(
-                            actualTotal
-                          )}
+                          <MoneyValue
+                            value={
+                              actualTotal
+                            }
+                          />
                         </td>
 
                         <td className="numeric">
-                          {currency(
-                            monthly[
-                              monthly.length - 1
-                            ]?.cumulativeActualAmount
-                          )}
+                          <MoneyValue
+                            value={
+                              monthly[
+                                monthly.length - 1
+                              ]?.cumulativeActualAmount
+                            }
+                          />
                         </td>
 
                         <td />
