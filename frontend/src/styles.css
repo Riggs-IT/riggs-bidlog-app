@@ -6582,3 +6582,636 @@ th.pivot-project-column {
     display: none !important;
   }
 }
+
+
+/* ============================================================
+   PROJECT PIVOT - COMPACT METRIC / PM + GC META
+   ============================================================ */
+
+.project-pivot-shell {
+  display: grid;
+  gap: 10px;
+}
+
+
+.project-pivot-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 8px;
+}
+
+
+.project-pivot-toolbar-label {
+  color:
+    var(--muted);
+
+  font-size: 10px;
+  font-weight: 750;
+
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+
+.project-pivot-metric-toggle {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 3px;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 8px;
+
+  background:
+    var(--surface-2);
+}
+
+
+.project-pivot-metric-toggle button {
+  min-height: 28px;
+
+  padding:
+    4px
+    11px;
+
+  border: 0;
+
+  border-radius: 5px;
+
+  background:
+    transparent;
+
+  color:
+    var(--muted);
+
+  font: inherit;
+  font-size: 10px;
+  font-weight: 750;
+
+  cursor: pointer;
+}
+
+
+.project-pivot-metric-toggle button:hover {
+  color:
+    var(--text);
+}
+
+
+.project-pivot-metric-toggle button.active {
+  background:
+    var(--accent-soft);
+
+  color:
+    var(--accent);
+
+  box-shadow:
+    inset 0 0 0 1px
+    color-mix(
+      in srgb,
+      var(--accent) 28%,
+      transparent
+    );
+}
+
+
+/*
+   The original pivot used fixed 162px month cells because
+   each cell carried three stacked numbers.
+
+   The selected-metric view only needs one value, so let the
+   browser size the columns around the chosen content.
+*/
+
+.project-pivot-table
+.pivot-month-column,
+.project-pivot-table
+.pivot-total-column {
+  width: auto;
+  min-width: 112px;
+  max-width: none;
+}
+
+
+.project-pivot-table.pivot-metric-variance
+.pivot-month-column,
+.project-pivot-table.pivot-metric-variance
+.pivot-total-column {
+  min-width: 120px;
+}
+
+
+.pivot-single-value {
+  display: block;
+
+  color:
+    var(--text);
+
+  font-size: 10px;
+  font-weight: 750;
+
+  white-space: nowrap;
+}
+
+
+.pivot-single-value.variance-negative {
+  color:
+    var(--negative);
+}
+
+
+.pivot-project-meta {
+  display: flex;
+  align-items: center;
+
+  min-width: 0;
+
+  gap: 6px;
+
+  color:
+    var(--muted);
+
+  font-size: 9px;
+  font-weight: 650;
+
+  line-height: 1.35;
+}
+
+
+.pivot-pm-meta {
+  display: inline-flex;
+  align-items: center;
+
+  flex: 0 0 auto;
+
+  gap: 5px;
+}
+
+
+.pivot-pm-color-dot {
+  width: 8px;
+  height: 8px;
+
+  flex: 0 0 8px;
+
+  border-radius: 999px;
+
+  box-shadow:
+    0 0 0 1px
+    rgba(255, 255, 255, 0.16);
+}
+
+
+.pivot-pm-initials {
+  color:
+    var(--text-soft);
+
+  font-weight: 800;
+
+  letter-spacing: 0.025em;
+}
+
+
+.pivot-project-meta-separator {
+  color:
+    var(--muted-2);
+}
+
+
+.pivot-project-gc {
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+@media (max-width: 760px) {
+  .project-pivot-toolbar {
+    justify-content:
+      flex-start;
+  }
+}
+
+
+@media print {
+  .project-pivot-toolbar {
+    display: none !important;
+  }
+}
+
+
+/* ============================================================
+   PROJECT PIVOT - CLEAN META / ALL-ONE STICKY METRIC CONTROL
+   ============================================================ */
+
+.project-pivot-shell {
+  display: grid;
+  gap: 5px;
+}
+
+
+.project-pivot-toolbar {
+  min-height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 7px;
+}
+
+
+.project-pivot-toolbar-label {
+  color:
+    var(--muted);
+
+  font-size: 9px;
+  font-weight: 750;
+
+  letter-spacing: 0.055em;
+
+  text-transform: uppercase;
+}
+
+
+.project-pivot-metric-toggle {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 3px;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 8px;
+
+  background:
+    var(--surface-2);
+}
+
+
+.project-pivot-metric-toggle button {
+  min-height: 27px;
+
+  padding:
+    4px
+    10px;
+
+  border: 0;
+
+  border-radius: 5px;
+
+  background:
+    transparent;
+
+  color:
+    var(--muted);
+
+  font: inherit;
+  font-size: 9px;
+  font-weight: 750;
+
+  cursor: pointer;
+}
+
+
+.project-pivot-metric-toggle button:hover {
+  color:
+    var(--text);
+}
+
+
+.project-pivot-metric-toggle button.active {
+  background:
+    var(--accent-soft);
+
+  color:
+    var(--accent);
+
+  box-shadow:
+    inset 0 0 0 1px
+    color-mix(
+      in srgb,
+      var(--accent) 28%,
+      transparent
+    );
+}
+
+
+/* Project / Bid identity */
+
+.pivot-project-info {
+  min-width: 0;
+
+  display: grid;
+
+  gap: 3px;
+}
+
+
+.pivot-project-name {
+  display: block;
+
+  overflow: hidden;
+
+  color:
+    var(--text);
+
+  font-size: 11px;
+  font-weight: 750;
+
+  line-height: 1.3;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.pivot-project-pm-line {
+  min-height: 13px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+
+  margin: 0;
+  padding: 0;
+
+  line-height: 1;
+}
+
+
+.pivot-pm-color-dot {
+  width: 8px;
+  height: 8px;
+
+  display: inline-block;
+
+  flex:
+    0 0 8px;
+
+  margin: 0;
+
+  border-radius: 50%;
+
+  box-shadow:
+    0 0 0 1px
+    rgba(
+      255,
+      255,
+      255,
+      0.16
+    );
+}
+
+
+.pivot-pm-initials {
+  display: inline-block;
+
+  margin: 0;
+  padding: 0;
+
+  color:
+    var(--text);
+
+  font-size: 9px;
+  font-weight: 800;
+
+  letter-spacing: 0.045em;
+
+  line-height: 1;
+}
+
+
+.pivot-project-gc {
+  min-width: 0;
+
+  overflow: hidden;
+
+  margin-top: 2px;
+
+  padding-top: 4px;
+
+  border-top:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--border) 72%,
+      transparent
+    );
+
+  color:
+    var(--muted);
+
+  font-size: 9px;
+  font-weight: 600;
+
+  line-height: 1.2;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* Billing cells */
+
+.pivot-billing-cell {
+  display: grid;
+
+  gap: 3px;
+}
+
+
+.pivot-billing-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+
+  gap: 8px;
+}
+
+
+.pivot-billing-line small {
+  color:
+    var(--muted);
+
+  font-size: 7px;
+  font-weight: 700;
+
+  letter-spacing: 0.025em;
+
+  text-transform: uppercase;
+}
+
+
+.pivot-billing-line strong {
+  color:
+    var(--text);
+
+  font-size: 9px;
+  font-weight: 750;
+
+  white-space: nowrap;
+}
+
+
+.pivot-single-value {
+  display: inline-block;
+
+  color:
+    var(--text);
+
+  font-size: 10px;
+  font-weight: 800;
+
+  white-space: nowrap;
+}
+
+
+.pivot-billing-line.variance-negative strong,
+.pivot-single-value.variance-negative {
+  color:
+    var(--negative);
+}
+
+
+/*
+   ALL = original three-value comparison.
+   Single metric = compact spreadsheet view.
+*/
+
+.project-pivot-table.pivot-metric-all
+.pivot-month-column,
+.project-pivot-table.pivot-metric-all
+.pivot-total-column {
+  width: 154px;
+  min-width: 154px;
+  max-width: 154px;
+}
+
+
+.project-pivot-table:not(.pivot-metric-all)
+.pivot-month-column,
+.project-pivot-table:not(.pivot-metric-all)
+.pivot-total-column {
+  width: 108px;
+  min-width: 108px;
+  max-width: 108px;
+}
+
+
+.project-pivot-table.pivot-metric-variance
+.pivot-month-column,
+.project-pivot-table.pivot-metric-variance
+.pivot-total-column {
+  width: 116px;
+  min-width: 116px;
+  max-width: 116px;
+}
+
+
+.project-pivot-table.pivot-metric-all
+tbody td {
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+
+
+.project-pivot-table:not(.pivot-metric-all)
+tbody td {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+
+/* Floating metric selector */
+
+.floating-table-controls.project-pivot-toolbar {
+  min-height: 0;
+  max-height: 0;
+
+  overflow: hidden;
+
+  justify-content: flex-end;
+
+  padding:
+    0
+    10px;
+
+  border-bottom:
+    0 solid
+    transparent;
+
+  background:
+    var(--surface-2);
+
+  opacity: 0;
+
+  pointer-events: none;
+
+  transition:
+    max-height 170ms ease,
+    padding 170ms ease,
+    opacity 140ms ease,
+    border-color 170ms ease;
+}
+
+
+.floating-table-header.controls-visible
+.floating-table-controls.project-pivot-toolbar {
+  max-height: 42px;
+
+  padding:
+    5px
+    10px;
+
+  border-bottom-width: 1px;
+
+  border-bottom-color:
+    var(--border);
+
+  opacity: 1;
+
+  pointer-events: auto;
+}
+
+
+.floating-table-controls
+.project-pivot-metric-toggle {
+  background:
+    var(--surface-3);
+}
+
+
+@media (max-width: 760px) {
+  .project-pivot-toolbar {
+    justify-content:
+      flex-start;
+  }
+
+
+  .project-pivot-table:not(.pivot-metric-all)
+  .pivot-month-column,
+  .project-pivot-table:not(.pivot-metric-all)
+  .pivot-total-column {
+    width: 102px;
+    min-width: 102px;
+    max-width: 102px;
+  }
+}
+
+
+@media print {
+  .project-pivot-toolbar,
+  .floating-table-controls {
+    display: none !important;
+  }
+}

@@ -26,7 +26,8 @@ function stickyTopOffset() {
 
   return Math.max(
     0,
-    topbar.getBoundingClientRect()
+    topbar
+      .getBoundingClientRect()
       .bottom,
   );
 }
@@ -48,6 +49,7 @@ export default function useStickyTableHeader(
       [],
     );
 
+
   useEffect(
     () => {
       const table =
@@ -68,6 +70,19 @@ export default function useStickyTableHeader(
         return undefined;
       }
 
+
+      const shell =
+        wrapper.closest(
+          '.project-pivot-shell'
+        );
+
+      const controls =
+        shell?.querySelector(
+          '[data-sticky-table-controls]'
+        )
+        || null;
+
+
       const floating =
         document.createElement(
           'div'
@@ -81,12 +96,50 @@ export default function useStickyTableHeader(
         'true',
       );
 
+
+      let floatingControls =
+        null;
+
+      if (controls) {
+        floatingControls =
+          controls.cloneNode(true);
+
+        floatingControls.classList.add(
+          'floating-table-controls'
+        );
+
+        floatingControls
+          .querySelectorAll('[id]')
+          .forEach(
+            element =>
+              element.removeAttribute(
+                'id'
+              )
+          );
+
+        floatingControls
+          .querySelectorAll(
+            'button, a, input, select'
+          )
+          .forEach(
+            element => {
+              element.tabIndex = -1;
+            }
+          );
+
+        floating.appendChild(
+          floatingControls
+        );
+      }
+
+
       const floatingTable =
         table.cloneNode(false);
 
       floatingTable.classList.add(
         'floating-table-header-table'
       );
+
 
       const floatingHeader =
         header.cloneNode(true);
@@ -110,6 +163,7 @@ export default function useStickyTableHeader(
           }
         );
 
+
       floatingTable.appendChild(
         floatingHeader
       );
@@ -122,7 +176,50 @@ export default function useStickyTableHeader(
         floating
       );
 
-      let frame = null;
+
+      let frame =
+        null;
+
+      let controlsIdleTimer =
+        null;
+
+
+      const hideFloatingControls =
+        () => {
+          floating.classList.remove(
+            'controls-visible'
+          );
+
+          controlsIdleTimer =
+            null;
+        };
+
+
+      const showFloatingControls =
+        () => {
+          if (!floatingControls) {
+            return;
+          }
+
+          floating.classList.add(
+            'controls-visible'
+          );
+
+          if (
+            controlsIdleTimer !== null
+          ) {
+            window.clearTimeout(
+              controlsIdleTimer
+            );
+          }
+
+          controlsIdleTimer =
+            window.setTimeout(
+              hideFloatingControls,
+              1200,
+            );
+        };
+
 
       const syncColumnWidths =
         () => {
@@ -146,7 +243,8 @@ export default function useStickyTableHeader(
               }
 
               const width =
-                cell.getBoundingClientRect()
+                cell
+                  .getBoundingClientRect()
                   .width;
 
               floatingCell.style.width =
@@ -161,106 +259,149 @@ export default function useStickyTableHeader(
           );
         };
 
-      const update = () => {
-        frame = null;
 
-        const wrapperRect =
-          wrapper.getBoundingClientRect();
+      const update =
+        () => {
+          frame =
+            null;
 
-        const headerRect =
-          header.getBoundingClientRect();
+          const wrapperRect =
+            wrapper
+              .getBoundingClientRect();
 
-        const tableRect =
-          table.getBoundingClientRect();
+          const headerRect =
+            header
+              .getBoundingClientRect();
 
-        const top =
-          stickyTopOffset();
+          const tableRect =
+            table
+              .getBoundingClientRect();
 
-        const visibleLeft =
-          Math.max(
-            0,
-            wrapperRect.left,
-          );
+          const top =
+            stickyTopOffset();
 
-        const visibleRight =
-          Math.min(
-            window.innerWidth,
-            wrapperRect.right,
-          );
+          const visibleLeft =
+            Math.max(
+              0,
+              wrapperRect.left,
+            );
 
-        const width =
-          Math.max(
-            0,
-            visibleRight
-            - visibleLeft,
-          );
+          const visibleRight =
+            Math.min(
+              window.innerWidth,
+              wrapperRect.right,
+            );
 
-        const shouldShow =
-          width > 0
-          && headerRect.top < top
-          && tableRect.bottom
-            > top + headerRect.height;
+          const width =
+            Math.max(
+              0,
+              visibleRight
+              - visibleLeft,
+            );
 
-        if (!shouldShow) {
-          floating.classList.remove(
+          const shouldShow =
+            width > 0
+            && headerRect.top < top
+            && tableRect.bottom
+              > top
+                + headerRect.height;
+
+          if (!shouldShow) {
+            floating.classList.remove(
+              'visible'
+            );
+
+            floating.classList.remove(
+              'controls-visible'
+            );
+
+            return;
+          }
+
+
+          syncColumnWidths();
+
+
+          floating.style.top =
+            `${top}px`;
+
+          floating.style.left =
+            `${visibleLeft}px`;
+
+          floating.style.width =
+            `${width}px`;
+
+
+          floatingTable.style.width =
+            `${table.scrollWidth}px`;
+
+          floatingTable.style.transform =
+            `translateX(${
+              -wrapper.scrollLeft
+            }px)`;
+
+
+          floatingHeader
+            .querySelectorAll(
+              '.pivot-source-column, '
+              + '.pivot-job-column, '
+              + '.pivot-project-column'
+            )
+            .forEach(
+              cell => {
+                cell.style.position =
+                  'relative';
+
+                cell.style.zIndex =
+                  '2';
+
+                cell.style.transform =
+                  `translateX(${
+                    wrapper.scrollLeft
+                  }px)`;
+              }
+            );
+
+
+          floating.classList.add(
             'visible'
           );
+        };
 
-          return;
-        }
 
-        syncColumnWidths();
+      const scheduleUpdate =
+        () => {
+          if (frame !== null) {
+            return;
+          }
 
-        floating.style.top =
-          `${top}px`;
+          frame =
+            window.requestAnimationFrame(
+              update
+            );
+        };
 
-        floating.style.left =
-          `${visibleLeft}px`;
 
-        floating.style.width =
-          `${width}px`;
+      const handleScroll =
+        () => {
+          showFloatingControls();
+          scheduleUpdate();
+        };
 
-        floatingTable.style.width =
-          `${table.scrollWidth}px`;
 
-        floatingTable.style.transform =
-          `translateX(${-wrapper.scrollLeft}px)`;
+      const handlePointerEnter =
+        () => {
+          if (
+            floating.classList.contains(
+              'visible'
+            )
+          ) {
+            showFloatingControls();
+          }
+        };
 
-        floatingHeader
-          .querySelectorAll(
-            '.pivot-source-column, '
-            + '.pivot-job-column, '
-            + '.pivot-project-column'
-          )
-          .forEach(
-            cell => {
-              cell.style.position =
-                'relative';
 
-              cell.style.zIndex = '2';
-
-              cell.style.transform =
-                `translateX(${wrapper.scrollLeft}px)`;
-            }
-          );
-
-        floating.classList.add(
-          'visible'
-        );
-      };
-
-      const scheduleUpdate = () => {
-        if (frame !== null) {
-          return;
-        }
-
-        frame =
-          window.requestAnimationFrame(
-            update
-          );
-      };
-
-      const forwardHeaderClick =
+      const forwardFloatingClick =
         event => {
           const clickedButton =
             event.target.closest(
@@ -271,18 +412,57 @@ export default function useStickyTableHeader(
             return;
           }
 
+
+          if (
+            floatingControls
+            && floatingControls.contains(
+              clickedButton
+            )
+          ) {
+            const floatingButtons =
+              Array.from(
+                floatingControls
+                  .querySelectorAll(
+                    'button'
+                  )
+              );
+
+            const originalButtons =
+              Array.from(
+                controls
+                  .querySelectorAll(
+                    'button'
+                  )
+              );
+
+            const index =
+              floatingButtons.indexOf(
+                clickedButton
+              );
+
+            originalButtons[index]
+              ?.click();
+
+            showFloatingControls();
+
+            return;
+          }
+
+
           const floatingButtons =
             Array.from(
-              floatingHeader.querySelectorAll(
-                'button'
-              )
+              floatingHeader
+                .querySelectorAll(
+                  'button'
+                )
             );
 
           const originalButtons =
             Array.from(
-              header.querySelectorAll(
-                'button'
-              )
+              header
+                .querySelectorAll(
+                  'button'
+                )
             );
 
           const index =
@@ -290,8 +470,10 @@ export default function useStickyTableHeader(
               clickedButton
             );
 
-          originalButtons[index]?.click();
+          originalButtons[index]
+            ?.click();
         };
+
 
       const resizeObserver =
         new ResizeObserver(
@@ -306,9 +488,10 @@ export default function useStickyTableHeader(
         table
       );
 
+
       window.addEventListener(
         'scroll',
-        scheduleUpdate,
+        handleScroll,
         {
           passive: true,
         },
@@ -321,7 +504,23 @@ export default function useStickyTableHeader(
 
       wrapper.addEventListener(
         'scroll',
-        scheduleUpdate,
+        handleScroll,
+        {
+          passive: true,
+        },
+      );
+
+      wrapper.addEventListener(
+        'pointerenter',
+        handlePointerEnter,
+        {
+          passive: true,
+        },
+      );
+
+      floating.addEventListener(
+        'pointerenter',
+        handlePointerEnter,
         {
           passive: true,
         },
@@ -329,10 +528,12 @@ export default function useStickyTableHeader(
 
       floating.addEventListener(
         'click',
-        forwardHeaderClick,
+        forwardFloatingClick,
       );
 
+
       scheduleUpdate();
+
 
       return () => {
         if (frame !== null) {
@@ -341,11 +542,21 @@ export default function useStickyTableHeader(
           );
         }
 
+        if (
+          controlsIdleTimer !== null
+        ) {
+          window.clearTimeout(
+            controlsIdleTimer
+          );
+        }
+
+
         resizeObserver.disconnect();
+
 
         window.removeEventListener(
           'scroll',
-          scheduleUpdate,
+          handleScroll,
         );
 
         window.removeEventListener(
@@ -355,13 +566,24 @@ export default function useStickyTableHeader(
 
         wrapper.removeEventListener(
           'scroll',
-          scheduleUpdate,
+          handleScroll,
+        );
+
+        wrapper.removeEventListener(
+          'pointerenter',
+          handlePointerEnter,
+        );
+
+        floating.removeEventListener(
+          'pointerenter',
+          handlePointerEnter,
         );
 
         floating.removeEventListener(
           'click',
-          forwardHeaderClick,
+          forwardFloatingClick,
         );
+
 
         floating.remove();
       };
@@ -371,6 +593,7 @@ export default function useStickyTableHeader(
       wrapper,
     ],
   );
+
 
   return wrapperRef;
 }

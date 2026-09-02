@@ -1,8 +1,29 @@
 import {
   useMemo,
+  useState,
 } from 'react';
 
 import useStickyTableHeader from './useStickyTableHeader.js';
+
+
+const BILLING_METRICS = [
+  {
+    key: 'all',
+    label: 'All',
+  },
+  {
+    key: 'projected',
+    label: 'Projected',
+  },
+  {
+    key: 'actual',
+    label: 'Actual',
+  },
+  {
+    key: 'variance',
+    label: 'Variance',
+  },
+];
 
 
 function toNumber(value) {
@@ -38,89 +59,184 @@ function monthlyIndex(rows) {
 }
 
 
+function displayText(
+  value,
+  fallback,
+) {
+  if (Array.isArray(value)) {
+    const joined =
+      value
+        .filter(Boolean)
+        .join(', ')
+        .trim();
+
+    return joined || fallback;
+  }
+
+  const text =
+    String(
+      value ?? ''
+    ).trim();
+
+  return text || fallback;
+}
+
+
+function initialsFromName(name) {
+  const words =
+    String(name || '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+  if (!words.length) {
+    return '—';
+  }
+
+  return words
+    .slice(0, 2)
+    .map(
+      word =>
+        word.charAt(0)
+    )
+    .join('')
+    .toUpperCase();
+}
+
+
+function normalizedPmColor(value) {
+  const color =
+    String(value || '').trim();
+
+  return /^#[0-9a-f]{6}$/i.test(
+    color
+  )
+    ? color
+    : '#6b7280';
+}
+
+
 function currentProjectPivotRow(
   project,
   months,
   rows,
 ) {
-  const indexed = monthlyIndex(
-    rows
-  );
+  const indexed =
+    monthlyIndex(rows);
 
-  const cells = months.map(
-    month => {
-      const row = indexed.get(
-        month
-      );
+  const cells =
+    months.map(
+      month => {
+        const row =
+          indexed.get(month);
 
-      if (!row) {
+        if (!row) {
+          return {
+            month,
+            hasActivity: false,
+            projected: null,
+            actual: null,
+            variance: null,
+          };
+        }
+
+        const projected =
+          toNumber(
+            row.projectedAmount
+          );
+
+        const hasActual =
+          row.actualAmount !== null
+          && row.actualAmount !== undefined;
+
+        const actual =
+          hasActual
+            ? toNumber(
+                row.actualAmount
+              )
+            : null;
+
         return {
           month,
-          hasActivity: false,
-          projected: null,
-          actual: null,
-          variance: null,
+
+          hasActivity:
+            projected !== 0
+            || hasActual,
+
+          projected,
+
+          actual,
+
+          variance:
+            hasActual
+              ? actual - projected
+              : null,
         };
       }
+    );
 
-      const projected =
-        toNumber(
-          row.projectedAmount
-        );
-
-      const hasActual =
-        row.actualAmount !== null
-        && row.actualAmount !== undefined;
-
-      const actual =
-        hasActual
-          ? toNumber(
-              row.actualAmount
-            )
-          : null;
-
-      return {
-        month,
-        hasActivity:
-          projected !== 0
-          || hasActual,
-        projected,
-        actual,
-        variance:
-          hasActual
-            ? actual - projected
-            : null,
-      };
-    }
-  );
+  const pmName =
+    displayText(
+      project.pm,
+      'No PM Assigned',
+    );
 
   return {
     key:
       `pivot-current-${project.jobListId}`,
-    source: 'current',
-    sourceLabel: 'Active',
+
+    source:
+      'current',
+
+    sourceLabel:
+      'Active',
+
     number:
       project.jobNumber || '—',
+
     name:
-      project.jobName || 'Unnamed project',
-    secondary:
-      project.pm || 'No PM Assigned',
+      project.jobName
+      || 'Unnamed project',
+
+    pmName,
+
+    pmInitials:
+      displayText(
+        project.pmInitials,
+        initialsFromName(pmName),
+      ),
+
+    pmHexColor:
+      project.pmHexColor,
+
+    gc:
+      displayText(
+        project.generalContractors
+        || project.gc,
+        'No GC',
+      ),
+
     cells,
+
     total: {
       projected:
         toNumber(
           project.selectedProjected
         ),
+
       actual:
         toNumber(
           project.selectedActual
         ),
+
       variance:
         toNumber(
           project.selectedVariance
         ),
     },
-    raw: project,
+
+    raw:
+      project,
   };
 }
 
@@ -130,76 +246,159 @@ function bidPivotRow(
   months,
   rows,
 ) {
-  const indexed = monthlyIndex(
-    rows
-  );
+  const indexed =
+    monthlyIndex(rows);
 
-  const cells = months.map(
-    month => {
-      const row = indexed.get(
-        month
-      );
+  const cells =
+    months.map(
+      month => {
+        const row =
+          indexed.get(month);
 
-      if (!row) {
+        if (!row) {
+          return {
+            month,
+            hasActivity: false,
+            projected: null,
+            actual: null,
+            variance: null,
+          };
+        }
+
+        const projected =
+          toNumber(
+            row.weightedMonthlyForecastAmount
+          );
+
         return {
           month,
-          hasActivity: false,
-          projected: null,
-          actual: null,
-          variance: null,
+
+          hasActivity:
+            projected !== 0,
+
+          projected,
+
+          actual:
+            null,
+
+          variance:
+            null,
         };
       }
+    );
 
-      const projected =
-        toNumber(
-          row.weightedMonthlyForecastAmount
-        );
-
-      return {
-        month,
-        hasActivity:
-          projected !== 0,
-        projected,
-        actual: null,
-        variance: null,
-      };
-    }
-  );
+  const pmName =
+    displayText(
+      bid.pm,
+      'No PM Assigned',
+    );
 
   return {
     key:
       `pivot-bid-${bid.sharePointItemId}`,
-    source: 'bid',
-    sourceLabel: 'Bid',
-    number: '—',
+
+    source:
+      'bid',
+
+    sourceLabel:
+      'Bid',
+
+    number:
+      '—',
+
     name:
-      bid.bidName || 'Unnamed bid',
-    secondary:
-      bid.pm || 'No PM Assigned',
+      bid.bidName
+      || 'Unnamed bid',
+
+    pmName,
+
+    pmInitials:
+      displayText(
+        bid.pmInitials,
+        initialsFromName(pmName),
+      ),
+
+    pmHexColor:
+      bid.pmHexColor,
+
+    gc:
+      displayText(
+        bid.generalContractors
+        || bid.gc,
+        'No GC',
+      ),
+
     cells,
+
     total: {
       projected:
         toNumber(
           bid.selectedWeightedForecast
         ),
-      actual: null,
-      variance: null,
+
+      actual:
+        null,
+
+      variance:
+        null,
     },
-    raw: bid,
+
+    raw:
+      bid,
   };
 }
 
 
-function varianceClass(value) {
-  if (value === null) {
-    return '';
-  }
+function ProjectMeta({
+  row,
+}) {
+  return (
+    <div className="pivot-project-info">
+      <strong className="pivot-project-name">
+        {row.name}
+      </strong>
 
-  if (value > 0) {
-    return 'variance-positive';
-  }
+      <div
+        className="pivot-project-pm-line"
+        title={`PM: ${row.pmName}`}
+      >
+        <span
+          className="pivot-pm-color-dot"
+          style={{
+            backgroundColor:
+              normalizedPmColor(
+                row.pmHexColor
+              ),
+          }}
+          aria-hidden="true"
+        />
 
-  if (value < 0) {
+        <span className="pivot-pm-initials">
+          {row.pmInitials}
+        </span>
+      </div>
+
+      <div
+        className="pivot-project-gc"
+        title={`GC: ${row.gc}`}
+      >
+        {row.gc}
+      </div>
+    </div>
+  );
+}
+
+
+function metricClass(
+  metric,
+  value,
+) {
+  if (
+    metric === 'variance'
+    && value !== null
+    && value !== undefined
+    && value < 0
+  ) {
     return 'variance-negative';
   }
 
@@ -207,7 +406,39 @@ function varianceClass(value) {
 }
 
 
-function BillingCell({
+function BillingLine({
+  label,
+  metric,
+  value,
+  currency,
+}) {
+  return (
+    <span
+      className={
+        `pivot-billing-line ${
+          metricClass(
+            metric,
+            value,
+          )
+        }`
+      }
+    >
+      <small>
+        {label}
+      </small>
+
+      <strong>
+        {value === null
+          || value === undefined
+            ? '—'
+            : currency(value)}
+      </strong>
+    </span>
+  );
+}
+
+
+function AllBillingValues({
   cell,
   currency,
 }) {
@@ -221,46 +452,87 @@ function BillingCell({
 
   return (
     <div className="pivot-billing-cell">
-      <span>
-        <small>Projected</small>
+      <BillingLine
+        label="Projected"
+        metric="projected"
+        value={cell.projected}
+        currency={currency}
+      />
 
-        <strong>
-          {currency(
-            cell.projected
-          )}
-        </strong>
-      </span>
+      <BillingLine
+        label="Actual"
+        metric="actual"
+        value={cell.actual}
+        currency={currency}
+      />
 
-      <span>
-        <small>Actual</small>
-
-        <strong>
-          {cell.actual === null
-            ? '—'
-            : currency(
-                cell.actual
-              )}
-        </strong>
-      </span>
-
-      <span
-        className={
-          varianceClass(
-            cell.variance
-          )
-        }
-      >
-        <small>Variance</small>
-
-        <strong>
-          {cell.variance === null
-            ? '—'
-            : currency(
-                cell.variance
-              )}
-        </strong>
-      </span>
+      <BillingLine
+        label="Variance"
+        metric="variance"
+        value={cell.variance}
+        currency={currency}
+      />
     </div>
+  );
+}
+
+
+function SingleBillingValue({
+  cell,
+  metric,
+  currency,
+}) {
+  const value =
+    cell[metric];
+
+  if (
+    value === null
+    || value === undefined
+  ) {
+    return (
+      <span className="pivot-empty-value">
+        —
+      </span>
+    );
+  }
+
+  return (
+    <strong
+      className={
+        `pivot-single-value ${
+          metricClass(
+            metric,
+            value,
+          )
+        }`
+      }
+    >
+      {currency(value)}
+    </strong>
+  );
+}
+
+
+function BillingValue({
+  cell,
+  metric,
+  currency,
+}) {
+  if (metric === 'all') {
+    return (
+      <AllBillingValues
+        cell={cell}
+        currency={currency}
+      />
+    );
+  }
+
+  return (
+    <SingleBillingValue
+      cell={cell}
+      metric={metric}
+      currency={currency}
+    />
   );
 }
 
@@ -275,9 +547,16 @@ export default function ProjectBillingPivot({
   monthLabel,
   onSelectCurrentProject,
 }) {
+  const [
+    billingMetric,
+    setBillingMetric,
+  ] = useState(
+    'projected'
+  );
+
   const stickyTableRef =
     useStickyTableHeader(
-      months.join('|')
+      `${months.join('|')}|${billingMetric}`
     );
 
   const rows =
@@ -314,159 +593,216 @@ export default function ProjectBillingPivot({
       ],
     );
 
+
   return (
     <div
-      className="monthly-table-wrap project-pivot-wrap"
-      ref={stickyTableRef}
+      className={
+        `project-pivot-shell pivot-view-${billingMetric}`
+      }
     >
-      <table className="monthly-table project-pivot-table">
-        <thead>
-          <tr>
-            <th className="pivot-source-column">
-              Source
-            </th>
+      <div
+        className="project-pivot-toolbar"
+        data-sticky-table-controls
+      >
+        <span className="project-pivot-toolbar-label">
+          Show
+        </span>
 
-            <th className="pivot-job-column">
-              Job #
-            </th>
-
-            <th className="pivot-project-column">
-              Project / Bid
-            </th>
-
-            {months.map(
-              month => (
-                <th
-                  className="numeric pivot-month-column"
-                  key={month}
-                >
-                  {monthLabel(month)}
-                </th>
-              )
-            )}
-
-            <th className="numeric pivot-total-column">
-              Total
-            </th>
-          </tr>
-        </thead>
-
-
-        <tbody>
-          {rows.map(
-            row => (
-              <tr
-                key={row.key}
+        <div
+          className="project-pivot-metric-toggle"
+          role="group"
+          aria-label="Project billing values"
+        >
+          {BILLING_METRICS.map(
+            metric => (
+              <button
+                type="button"
+                key={metric.key}
                 className={
-                  row.source === 'current'
-                    ? 'pivot-project-row clickable-project-row'
-                    : 'pivot-project-row'
+                  billingMetric
+                  === metric.key
+                    ? 'active'
+                    : undefined
+                }
+                aria-pressed={
+                  billingMetric
+                  === metric.key
                 }
                 onClick={
-                  row.source === 'current'
-                    ? () =>
-                        onSelectCurrentProject(
-                          row.raw
-                        )
-                    : undefined
-                }
-                onKeyDown={
-                  row.source === 'current'
-                    ? event => {
-                        if (
-                          event.key === 'Enter'
-                          || event.key === ' '
-                        ) {
-                          event.preventDefault();
-
-                          onSelectCurrentProject(
-                            row.raw
-                          );
-                        }
-                      }
-                    : undefined
-                }
-                role={
-                  row.source === 'current'
-                    ? 'button'
-                    : undefined
-                }
-                tabIndex={
-                  row.source === 'current'
-                    ? 0
-                    : undefined
+                  () =>
+                    setBillingMetric(
+                      metric.key
+                    )
                 }
               >
-                <td className="pivot-source-column">
-                  <span
+                {metric.label}
+              </button>
+            )
+          )}
+        </div>
+      </div>
+
+
+      <div
+        className="monthly-table-wrap project-pivot-wrap"
+        ref={stickyTableRef}
+      >
+        <table
+          className={
+            `monthly-table project-pivot-table pivot-metric-${billingMetric}`
+          }
+        >
+          <thead>
+            <tr>
+              <th className="pivot-source-column">
+                Source
+              </th>
+
+              <th className="pivot-job-column">
+                Job #
+              </th>
+
+              <th className="pivot-project-column">
+                Project / Bid
+              </th>
+
+              {months.map(
+                month => (
+                  <th
+                    className="numeric pivot-month-column"
+                    key={month}
+                  >
+                    {monthLabel(month)}
+                  </th>
+                )
+              )}
+
+              <th className="numeric pivot-total-column">
+                Total
+              </th>
+            </tr>
+          </thead>
+
+
+          <tbody>
+            {rows.map(
+              row => {
+                const totalCell = {
+                  ...row.total,
+
+                  hasActivity:
+                    row.total.projected !== 0
+                    || row.total.actual !== null,
+                };
+
+                return (
+                  <tr
+                    key={row.key}
                     className={
                       row.source === 'current'
-                        ? 'source-chip current'
-                        : 'source-chip bid'
+                        ? 'pivot-project-row clickable-project-row'
+                        : 'pivot-project-row'
+                    }
+                    onClick={
+                      row.source === 'current'
+                        ? () =>
+                            onSelectCurrentProject(
+                              row.raw
+                            )
+                        : undefined
+                    }
+                    onKeyDown={
+                      row.source === 'current'
+                        ? event => {
+                            if (
+                              event.key === 'Enter'
+                              || event.key === ' '
+                            ) {
+                              event.preventDefault();
+
+                              onSelectCurrentProject(
+                                row.raw
+                              );
+                            }
+                          }
+                        : undefined
+                    }
+                    role={
+                      row.source === 'current'
+                        ? 'button'
+                        : undefined
+                    }
+                    tabIndex={
+                      row.source === 'current'
+                        ? 0
+                        : undefined
                     }
                   >
-                    {row.sourceLabel}
-                  </span>
-                </td>
+                    <td className="pivot-source-column">
+                      <span
+                        className={
+                          row.source === 'current'
+                            ? 'source-chip current'
+                            : 'source-chip bid'
+                        }
+                      >
+                        {row.sourceLabel}
+                      </span>
+                    </td>
 
-                <td className="pivot-job-column">
-                  {row.number}
-                </td>
+                    <td className="pivot-job-column">
+                      {row.number}
+                    </td>
 
-                <td className="project-cell pivot-project-column">
-                  <strong>
-                    {row.name}
-                  </strong>
+                    <td className="pivot-project-column">
+                      <ProjectMeta
+                        row={row}
+                      />
+                    </td>
 
-                  <span>
-                    {row.secondary}
-                  </span>
-                </td>
+                    {row.cells.map(
+                      cell => (
+                        <td
+                          className="numeric pivot-month-column"
+                          key={cell.month}
+                        >
+                          <BillingValue
+                            cell={cell}
+                            metric={billingMetric}
+                            currency={currency}
+                          />
+                        </td>
+                      )
+                    )}
 
-                {row.cells.map(
-                  cell => (
-                    <td
-                      className="numeric pivot-month-column"
-                      key={cell.month}
-                    >
-                      <BillingCell
-                        cell={cell}
+                    <td className="numeric pivot-total-column">
+                      <BillingValue
+                        cell={totalCell}
+                        metric={billingMetric}
                         currency={currency}
                       />
                     </td>
-                  )
-                )}
+                  </tr>
+                );
+              }
+            )}
 
-                <td className="numeric pivot-total-column">
-                  <BillingCell
-                    cell={{
-                      ...row.total,
-                      hasActivity:
-                        row.total.projected !== 0
-                        || row.total.actual !== null,
-                    }}
-                    currency={currency}
-                  />
+
+            {!rows.length && (
+              <tr>
+                <td
+                  className="empty-cell"
+                  colSpan={
+                    months.length + 4
+                  }
+                >
+                  No projects match the selected filters.
                 </td>
               </tr>
-            )
-          )}
-
-
-          {!rows.length && (
-            <tr>
-              <td
-                className="empty-cell"
-                colSpan={
-                  months.length + 4
-                }
-              >
-                No projects match the selected filters.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
