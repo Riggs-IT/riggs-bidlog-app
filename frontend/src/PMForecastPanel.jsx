@@ -99,6 +99,90 @@ const fmtDateTime = value => {
 };
 
 
+const makeRequestId = () => {
+  const cryptoApi =
+    window.crypto;
+
+
+  if (
+    cryptoApi
+    && typeof cryptoApi.randomUUID
+       === 'function'
+  ) {
+    return cryptoApi.randomUUID();
+  }
+
+
+  if (
+    cryptoApi
+    && typeof cryptoApi.getRandomValues
+       === 'function'
+  ) {
+    const bytes =
+      new Uint8Array(16);
+
+    cryptoApi.getRandomValues(
+      bytes
+    );
+
+    bytes[6] =
+      (bytes[6] & 0x0f)
+      | 0x40;
+
+    bytes[8] =
+      (bytes[8] & 0x3f)
+      | 0x80;
+
+
+    const hex =
+      Array.from(
+        bytes,
+        value =>
+          value
+            .toString(16)
+            .padStart(2, '0')
+      );
+
+
+    return [
+      hex.slice(0, 4).join(''),
+      hex.slice(4, 6).join(''),
+      hex.slice(6, 8).join(''),
+      hex.slice(8, 10).join(''),
+      hex.slice(10, 16).join(''),
+    ].join('-');
+  }
+
+
+  /*
+    Extremely old/non-WebCrypto browser:
+    omit the browser request ID and allow the trusted
+    Bid Log backend to generate one.
+  */
+  return null;
+};
+
+
+const requestHeaders = () => {
+  const requestId =
+    makeRequestId();
+
+  return {
+    'Content-Type':
+      'application/json',
+
+    ...(
+      requestId
+        ? {
+            'X-Request-ID':
+              requestId,
+          }
+        : {}
+    ),
+  };
+};
+
+
 const varianceClass = value => {
   const number = Number(value);
 
@@ -120,24 +204,27 @@ const errorText = detail => ({
     'Forecast editing is still limited to the controlled test project.',
 
   bid_log_pm_forecast_changed:
-    'This forecast changed after you opened it. Reload it before saving.',
+    'This projection changed after you opened it. Reload it before saving.',
 
   bid_log_pm_forecast_month_locked:
-    'One of these months is now locked. Reload the forecast before saving.',
+    'One of these months is now locked. Reload the projection before saving.',
 
   bid_log_pm_forecast_total_mismatch:
-    'The forecast total must match the System Baseline total with the current total setting.',
+    'The projection total must match the System Baseline total.',
 
   bid_log_pm_forecast_baseline_not_ready:
-    'This project does not have a ready System Baseline yet.',
+    'This project does not have a complete System Baseline yet.',
 
   bid_log_pm_forecast_user_not_authorized:
-    'Your account is not authorized to edit this forecast.',
+    'Your account is not authorized to edit this projection.',
 
   pm_forecast_writes_disabled:
-    'Forecast editing is not enabled yet.',
+    'Projection editing is not enabled yet.',
+
+  bid_log_admin_required:
+    'Only Bid Log administrators can change this setting.',
 }[detail]
-  || 'Unable to complete the forecast request.');
+  || 'Unable to complete the projection request.');
 
 
 async function fetchJson(
@@ -237,6 +324,18 @@ export default function PMForecastPanel({
   ] = useState(false);
 
 
+
+  const [
+    policySaving,
+    setPolicySaving,
+  ] = useState(false);
+
+  const [
+    policyError,
+    setPolicyError,
+  ] = useState(null);
+
+
   const load = async () => {
     if (!project?.jobListId) {
       return;
@@ -283,7 +382,7 @@ export default function PMForecastPanel({
     } catch (err) {
       setError(
         err.message
-        || 'Unable to load the billing forecast.'
+        || 'Unable to load billing projections.'
       );
 
     } finally {
@@ -303,6 +402,7 @@ export default function PMForecastPanel({
       setNotes('');
 
       setSaveError(null);
+      setPolicyError(null);
       setHistoryOpen(false);
 
       load();
@@ -446,9 +546,7 @@ export default function PMForecastPanel({
             }
 
             const plan =
-              displayedPm !== null
-                ? displayedPm
-                : baseline;
+              displayedPm;
 
             if (
               Number.isFinite(
@@ -467,6 +565,7 @@ export default function PMForecastPanel({
 
             const runningVariance =
               actual === null
+              || plan === null
                 ? null
                 : (
                     runningActual
@@ -523,6 +622,11 @@ export default function PMForecastPanel({
       'ADMIN',
       'OPERATIONS',
     ].includes(role);
+
+
+
+  const isAdmin =
+    role === 'ADMIN';
 
   const canEdit =
     canSubmit
@@ -596,6 +700,61 @@ export default function PMForecastPanel({
     );
 
 
+  const changeTotalSetting = async () => {
+    if (
+      !isAdmin
+      || !policy
+      || policySaving
+    ) {
+      return;
+    }
+
+
+    const nextValue =
+      !policy
+        .requireBaselineTotalMatch;
+
+
+    setPolicySaving(true);
+    setPolicyError(null);
+
+
+    try {
+      const updated =
+        await fetchJson(
+          '/api/pm-forecast/policy',
+          {
+            method:
+              'PUT',
+
+            headers:
+              requestHeaders(),
+
+            body:
+              JSON.stringify({
+                requireBaselineTotalMatch:
+                  nextValue,
+              }),
+          },
+        );
+
+
+      setPolicy(
+        updated
+      );
+
+    } catch (err) {
+      setPolicyError(
+        err.message
+        || 'Unable to update the forecast total setting.'
+      );
+
+    } finally {
+      setPolicySaving(false);
+    }
+  };
+
+
   const beginEdit = () => {
     const next = {};
 
@@ -645,7 +804,7 @@ export default function PMForecastPanel({
 
       if (totalMismatch) {
         throw new Error(
-          'The forecast total must match the System Baseline total with the current total setting.'
+          'The projection total must match the System Baseline total.'
         );
       }
 
@@ -671,7 +830,7 @@ export default function PMForecastPanel({
         )
       ) {
         throw new Error(
-          'Forecast amounts cannot be negative.'
+          'Projection amounts cannot be negative.'
         );
       }
 
@@ -730,11 +889,11 @@ export default function PMForecastPanel({
         <div className="section-heading compact pm-forecast-heading">
           <div>
             <span className="section-kicker">
-              PM / OPERATIONS FORECAST
+              PM PROJECTIONS
             </span>
 
             <h3>
-              Billing forecast
+              Billing projections
             </h3>
           </div>
 
@@ -750,8 +909,8 @@ export default function PMForecastPanel({
                 }
               >
                 {forecast?.hasPmForecast
-                  ? 'Edit PM Forecast'
-                  : 'Start PM Forecast'}
+                  ? 'Revise Projections'
+                  : 'Revise Projections'}
               </button>
             )}
         </div>
@@ -759,7 +918,7 @@ export default function PMForecastPanel({
 
         {loading && (
           <div className="pm-forecast-message">
-            Loading billing forecast…
+            Loading billing projections…
           </div>
         )}
 
@@ -779,43 +938,111 @@ export default function PMForecastPanel({
               <div className="pm-forecast-status-line">
                 <strong>
                   {forecast.hasPmForecast
-                    ? `Version ${latest?.versionNumber}`
-                    : 'Not started'}
+                    ? 'PM Projection'
+                    : 'Using System Baseline'}
                 </strong>
 
-                <span>
-                  ·
-                </span>
+                {forecast.hasPmForecast
+                  && latest?.submittedAtUTC
+                  && (
+                    <>
+                      <span>
+                        ·
+                      </span>
 
-                <span>
-                  {forecast.hasPmForecast
-                    ? (
-                        <>
-                          {latest?.submittedByName
-                            || 'Unknown'}
-                          {' · '}
-                          {fmtDateTime(
-                            latest?.submittedAtUTC
-                          )}
-                        </>
-                      )
-                    : 'No forecast saved yet'}
-                </span>
-
-                <span>
-                  ·
-                </span>
-
-                <span>
-                  Total setting:{' '}
-                  <strong>
-                    {policy
-                      ?.requireBaselineTotalMatch
-                      ? 'Must match baseline'
-                      : 'Can vary from baseline'}
-                  </strong>
-                </span>
+                      <span>
+                        Updated {
+                          fmtDateTime(
+                            latest.submittedAtUTC
+                          )
+                        }
+                      </span>
+                    </>
+                  )}
               </div>
+
+
+              {isAdmin && policy && (
+                <div className="pm-policy-admin-control">
+                  <div className="pm-policy-admin-copy">
+                    <span className="pm-policy-admin-kicker">
+                      PROJECTION TOTAL SETTING
+                    </span>
+
+                    <strong>
+                      Keep editable projection total equal to baseline
+                    </strong>
+
+                    <small>
+                      Applies to all current-project PM projections. {
+                        policy.requireBaselineTotalMatch
+                          ? 'PMs can adjust billing timing between editable months, while the editable total stays aligned with the System Baseline.'
+                          : 'PMs can adjust both billing timing and the remaining projection total.'
+                      }
+                    </small>
+
+                    {policy.updatedByName && (
+                      <small className="pm-policy-updated">
+                        Last changed by {
+                          policy.updatedByName
+                        }
+                        {' · '}
+                        {
+                          fmtDateTime(
+                            policy.updatedAtUTC
+                          )
+                        }
+                      </small>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={
+                      policy.requireBaselineTotalMatch
+                    }
+                    className={
+                      (
+                        'pm-policy-switch '
+                        + (
+                            policy.requireBaselineTotalMatch
+                              ? 'is-on'
+                              : ''
+                          )
+                      )
+                    }
+                    disabled={
+                      policySaving
+                      || saving
+                    }
+                    onClick={
+                      changeTotalSetting
+                    }
+                  >
+                    <span className="pm-policy-switch-track">
+                      <span className="pm-policy-switch-thumb" />
+                    </span>
+
+                    <strong>
+                      {policySaving
+                        ? 'Saving…'
+                        : (
+                            policy.requireBaselineTotalMatch
+                              ? 'ON'
+                              : 'OFF'
+                          )}
+                    </strong>
+                  </button>
+                </div>
+              )}
+
+
+              {policyError && (
+                <div className="pm-forecast-message error">
+                  {policyError}
+                </div>
+              )}
 
 
               {latest?.notes
@@ -840,11 +1067,11 @@ export default function PMForecastPanel({
         <div className="section-heading compact">
           <div>
             <span className="section-kicker">
-              MONTHLY BILLING
+              MONTHLY BILLINGS
             </span>
 
             <h3>
-              Billing Forecast vs Foundation Actual
+              Projected vs Actual Billings
             </h3>
           </div>
 
@@ -865,11 +1092,11 @@ export default function PMForecastPanel({
                 </th>
 
                 <th className="numeric">
-                  PM Forecast
+                  PM Projection
                 </th>
 
                 <th className="numeric">
-                  Foundation Actual
+                  Actual Billings
                 </th>
 
                 <th className="numeric">
@@ -938,7 +1165,7 @@ export default function PMForecastPanel({
                                 aria-label={
                                   `${fmtMonth(
                                     row.monthStart
-                                  )} PM Forecast`
+                                  )} PM Projection`
                                 }
                                 type="number"
                                 min="0"
@@ -1040,7 +1267,7 @@ export default function PMForecastPanel({
                     colSpan="5"
                     className="empty-cell"
                   >
-                    No System Baseline or Foundation billing rows are available for this project.
+                    No System Baseline or actual billing rows are available for this project.
                   </td>
                 </tr>
               )}
@@ -1054,7 +1281,7 @@ export default function PMForecastPanel({
             <div className="pm-inline-edit-intro">
               <strong>
                 {forecast.hasPmForecast
-                  ? 'Update PM Forecast'
+                  ? 'Revise PM Projection'
                   : 'Start from System Baseline'}
               </strong>
 
@@ -1067,7 +1294,7 @@ export default function PMForecastPanel({
             <div className="pm-inline-totals">
               <div>
                 <span>
-                  Editable baseline
+                  Editable System Baseline
                 </span>
 
                 <strong>
@@ -1080,7 +1307,7 @@ export default function PMForecastPanel({
 
               <div>
                 <span>
-                  PM Forecast
+                  PM Projection
                 </span>
 
                 <strong>
@@ -1114,14 +1341,14 @@ export default function PMForecastPanel({
 
             {totalMismatch && (
               <div className="pm-forecast-message warning">
-                The current total setting requires the editable PM Forecast total to match the editable System Baseline total.
+                The PM Projection total must equal the editable System Baseline total.
               </div>
             )}
 
 
             <label className="pm-inline-note">
               <span>
-                Forecast note
+                Projection note
                 <small>
                   Optional
                 </small>
@@ -1175,7 +1402,7 @@ export default function PMForecastPanel({
               >
                 {saving
                   ? 'Saving…'
-                  : 'Save PM Forecast'}
+                  : 'Save Projections'}
               </button>
             </div>
           </div>
@@ -1187,11 +1414,11 @@ export default function PMForecastPanel({
         <div className="section-heading compact pm-history-heading">
           <div>
             <span className="section-kicker">
-              PM FORECAST HISTORY
+              PM PROJECTION HISTORY
             </span>
 
             <h3>
-              Forecast history
+              Projection history
             </h3>
           </div>
 
@@ -1267,7 +1494,7 @@ export default function PMForecastPanel({
 
                       <span>
                         <small>
-                          PM Forecast
+                          PM Projection
                         </small>
 
                         <strong>

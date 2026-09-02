@@ -745,6 +745,92 @@ def get_pm_forecast_policy() -> dict:
     )
 
 
+def update_pm_forecast_policy(
+    payload: dict,
+    *,
+    actor_eid: int,
+    request_id: str,
+) -> dict:
+    operation = (
+        "Update PM Forecast policy"
+    )
+
+    try:
+        response = _get_http_client().put(
+            "/v1/bid-log/pm-forecast/policy",
+            json=payload,
+            headers=_request_headers(
+                include_service_auth=True,
+                request_id=request_id,
+                actor_eid=actor_eid,
+            ),
+        )
+
+    except httpx.TimeoutException as exc:
+        raise DataAPIUnavailable(
+            "Riggs Data API request timed out "
+            f"during {operation}."
+        ) from exc
+
+    except httpx.RequestError as exc:
+        raise DataAPIUnavailable(
+            "Unable to connect to the Riggs Data API "
+            f"during {operation}."
+        ) from exc
+
+
+    if response.status_code in {
+        400,
+        403,
+        404,
+        409,
+        422,
+    }:
+        detail = _detail(
+            response
+        )
+
+        if detail is not None:
+            raise DataAPIRequestRejected(
+                response.status_code,
+                detail,
+            )
+
+
+    _raise_common_failure(
+        response,
+        operation=operation,
+    )
+
+
+    if response.status_code != 200:
+        raise DataAPIInvalidResponse(
+            "Unexpected Riggs Data API response "
+            f"during {operation}."
+        )
+
+
+    payload_out = _json_object(
+        response,
+        operation=operation,
+    )
+
+
+    if not isinstance(
+        payload_out.get(
+            "requireBaselineTotalMatch"
+        ),
+        bool,
+    ):
+        raise DataAPIInvalidResponse(
+            "PM Forecast policy response is "
+            "missing requireBaselineTotalMatch."
+        )
+
+
+    return payload_out
+
+
 def get_current_project_pm_forecast(
     job_list_id: int,
 ) -> dict:

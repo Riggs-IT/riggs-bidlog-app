@@ -140,6 +140,220 @@ function sourceLabel(value) {
 }
 
 
+function retentionLabel(value) {
+  if (
+    value === null
+    || value === undefined
+    || String(value).trim() === ''
+  ) {
+    return 'TBT';
+  }
+
+
+  const raw =
+    String(value).trim();
+
+
+  if (raw.includes('%')) {
+    return raw;
+  }
+
+
+  const number =
+    Number(raw);
+
+
+  if (!Number.isFinite(number)) {
+    return raw;
+  }
+
+
+  const percent =
+    number > 0
+    && number <= 1
+      ? number * 100
+      : number;
+
+
+  return `${
+    new Intl.NumberFormat(
+      'en-US',
+      {
+        maximumFractionDigits: 2,
+      },
+    ).format(percent)
+  }%`;
+}
+
+
+function pmBadgeTextColor(
+  hexColor,
+) {
+  const match =
+    String(
+      hexColor || ''
+    )
+      .trim()
+      .match(
+        /^#?([0-9a-f]{6})$/i
+      );
+
+
+  if (!match) {
+    return '#ffffff';
+  }
+
+
+  const value =
+    match[1];
+
+  const red =
+    parseInt(
+      value.slice(0, 2),
+      16,
+    );
+
+  const green =
+    parseInt(
+      value.slice(2, 4),
+      16,
+    );
+
+  const blue =
+    parseInt(
+      value.slice(4, 6),
+      16,
+    );
+
+
+  const luminance =
+    (
+      red * 299
+      + green * 587
+      + blue * 114
+    ) / 1000;
+
+
+  return luminance > 160
+    ? '#111111'
+    : '#ffffff';
+}
+
+
+function PMInitialsBadge({
+  initials,
+  hexColor,
+}) {
+  const value =
+    String(
+      initials || ''
+    ).trim();
+
+
+  if (!value) {
+    return (
+      <strong className="drawer-tbt-value">
+        TBT
+      </strong>
+    );
+  }
+
+
+  const background =
+    /^#[0-9a-f]{6}$/i.test(
+      String(
+        hexColor || ''
+      ).trim()
+    )
+      ? String(
+          hexColor
+        ).trim()
+      : '#4b5563';
+
+
+  return (
+    <span
+      className="drawer-pm-badge"
+      title="Project Manager"
+      style={{
+        backgroundColor:
+          background,
+
+        color:
+          pmBadgeTextColor(
+            background
+          ),
+      }}
+    >
+      {value}
+    </span>
+  );
+}
+
+
+function projectionAmountSourceLabel(
+  source,
+) {
+  const labels = {
+    JOB_CONTRACT_AMOUNT:
+      'Contract Amount',
+
+    CONTRACT:
+      'Contract Amount',
+
+    BID_ESTIMATED_PRICE_FALLBACK:
+      'Bid Estimate',
+
+    BID:
+      'Bid Estimate',
+
+    OVERRIDE:
+      'Projection Override',
+  };
+
+
+  return (
+    labels[
+      String(
+        source || ''
+      ).trim().toUpperCase()
+    ]
+    || 'Projection Source'
+  );
+}
+
+
+function projectionStatusMessage(
+  state,
+) {
+  const messages = {
+    EXCLUDED:
+      'This project is not included in projected billings.',
+
+    MISSING_AMOUNT:
+      'Projection needs a project value.',
+
+    MISSING_START_DATE:
+      'Projection needs a projected start date.',
+
+    MISSING_DURATION_OR_END:
+      'Projection needs an estimated duration.',
+
+    INVALID_DATE_RANGE:
+      'Projected start and completion dates need review.',
+
+    NOT_CONFIGURED:
+      'Projection details have not been configured yet.',
+  };
+
+
+  return (
+    messages[state]
+    || null
+  );
+}
+
+
 function varianceClass(value) {
   if (
     value === null
@@ -291,6 +505,59 @@ export default function CurrentProjectBillingDrawer({
   }
 
 
+  const hasOriginalContract =
+    project.originalContractAmount !== null
+    && project.originalContractAmount !== undefined
+    && String(
+         project.originalContractAmount
+       ).trim() !== '';
+
+
+  const hasProjectionAmount =
+    project.effectiveAmount !== null
+    && project.effectiveAmount !== undefined
+    && String(
+         project.effectiveAmount
+       ).trim() !== '';
+
+
+  const originalContract =
+    hasOriginalContract
+      ? Number(
+          project.originalContractAmount
+        )
+      : null;
+
+
+  const projectionAmount =
+    hasProjectionAmount
+      ? Number(
+          project.effectiveAmount
+        )
+      : null;
+
+
+  const projectionBasisDiffers =
+    originalContract !== null
+    && projectionAmount !== null
+    && Number.isFinite(
+         originalContract
+       )
+    && Number.isFinite(
+         projectionAmount
+       )
+    && Math.abs(
+         originalContract
+         - projectionAmount
+       ) >= 0.005;
+
+
+  const projectionMessage =
+    projectionStatusMessage(
+      project.forecastState
+    );
+
+
   return (
     <div
       className="billing-drawer-backdrop"
@@ -315,7 +582,7 @@ export default function CurrentProjectBillingDrawer({
         <header className="billing-drawer-header">
           <div>
             <span className="section-kicker">
-              ACTIVE PROJECT · BILLING ACCOUNTABILITY
+              ACTIVE PROJECT · PROJECTED BILLINGS
             </span>
 
             <h2 id="billing-drawer-title">
@@ -326,11 +593,6 @@ export default function CurrentProjectBillingDrawer({
 
             <p>
               Job {text(project.jobNumber)}
-              {' · '}
-              {text(
-                project.generalContractors,
-                'No GC listed',
-              )}
             </p>
           </div>
 
@@ -346,54 +608,189 @@ export default function CurrentProjectBillingDrawer({
 
 
         <div className="billing-drawer-body">
-          <section className="billing-drawer-meta">
-            <span>
-              <strong>PM</strong>
-              {text(
-                project.pm,
-                'No PM assigned',
-              )}
-            </span>
-
-            <span>
-              <strong>Type</strong>
-              {text(
-                project.projectType
-              )}
-            </span>
-
-            <span>
-              <strong>Purpose</strong>
-              {text(
-                project.purpose
-              )}
-            </span>
-
-            <span>
-              <strong>Location</strong>
-              {text(
-                project.cityStateZip
-              )}
-            </span>
-          </section>
-
-
-          <section className="billing-kpi-grid">
-            <article>
-              <span>
-                Contract / Forecast Amount
-              </span>
+          <section className="billing-drawer-meta billing-drawer-meta-five">
+            <article className="billing-meta-card">
+              <small className="billing-meta-label">
+                PM
+              </small>
 
               <strong>
-                {money(
-                  project.effectiveAmount
+                {text(
+                  project.pm,
+                  'TBT',
                 )}
               </strong>
             </article>
 
+
+            <article className="billing-meta-card">
+              <small className="billing-meta-label">
+                Estimator
+              </small>
+
+              <strong className="drawer-tbt-value">
+                TBT
+              </strong>
+            </article>
+
+
+            <article className="billing-meta-card">
+              <small className="billing-meta-label">
+                Purpose
+              </small>
+
+              <strong>
+                {text(
+                  project.purpose
+                )}
+              </strong>
+            </article>
+
+
+            <article className="billing-meta-card">
+              <small className="billing-meta-label">
+                GC
+              </small>
+
+              <strong>
+                {text(
+                  project.generalContractors
+                )}
+              </strong>
+            </article>
+
+
+            <article className="billing-meta-card billing-location-card">
+              <small className="billing-meta-label">
+                Location
+              </small>
+
+              <strong>
+                {text(
+                  project.streetAddress
+                )}
+              </strong>
+
+              {project.cityStateZip && (
+                <small>
+                  {project.cityStateZip}
+                </small>
+              )}
+            </article>
+          </section>
+
+
+          <section className="billing-characteristics-grid">
             <article>
               <span>
-                Expected To Date
+                Retention
+              </span>
+
+              <strong>
+                {retentionLabel(
+                  project.retention
+                )}
+              </strong>
+            </article>
+
+
+            <article>
+              <span>
+                CY
+              </span>
+
+              <strong className="drawer-tbt-value">
+                TBT
+              </strong>
+            </article>
+
+
+            <article>
+              <span>
+                SF
+              </span>
+
+              <strong className="drawer-tbt-value">
+                TBT
+              </strong>
+            </article>
+          </section>
+
+
+          <section className="billing-kpi-grid billing-kpi-primary-grid">
+            <article
+              className={
+                projectionBasisDiffers
+                  ? 'projection-basis-warning'
+                  : undefined
+              }
+            >
+              <span>
+                Original Contract
+              </span>
+
+              <strong>
+                {hasOriginalContract
+                  ? money(
+                      project.originalContractAmount
+                    )
+                  : (
+                      hasProjectionAmount
+                        ? money(
+                            project.effectiveAmount
+                          )
+                        : 'TBT'
+                    )}
+              </strong>
+
+
+              {!hasOriginalContract
+                && hasProjectionAmount
+                && (
+                  <small className="projection-source-note">
+                    {
+                      projectionAmountSourceLabel(
+                        project.amountSource
+                      )
+                    }
+                    {' · '}
+                    used until contract amount is available
+                  </small>
+                )}
+
+
+              {projectionBasisDiffers && (
+                <small className="projection-source-note">
+                  Projection uses {
+                    money(
+                      project.effectiveAmount
+                    )
+                  }
+                  {' · '}
+                  {
+                    projectionAmountSourceLabel(
+                      project.amountSource
+                    )
+                  }
+                </small>
+              )}
+            </article>
+
+
+            <article>
+              <span>
+                Approved Change Orders
+              </span>
+
+              <strong className="drawer-tbt-value">
+                TBT
+              </strong>
+            </article>
+
+
+            <article>
+              <span>
+                Projected To Date
               </span>
 
               <strong>
@@ -403,9 +800,10 @@ export default function CurrentProjectBillingDrawer({
               </strong>
             </article>
 
+
             <article>
               <span>
-                Foundation Actual To Date
+                Actual To Date
               </span>
 
               <strong>
@@ -414,7 +812,10 @@ export default function CurrentProjectBillingDrawer({
                 )}
               </strong>
             </article>
+          </section>
 
+
+          <section className="billing-kpi-grid billing-kpi-secondary-grid">
             <article
               className={
                 varianceClass(
@@ -433,6 +834,7 @@ export default function CurrentProjectBillingDrawer({
               </strong>
             </article>
 
+
             <article>
               <span>
                 Remaining Amount
@@ -444,6 +846,7 @@ export default function CurrentProjectBillingDrawer({
                 )}
               </strong>
             </article>
+
 
             <article>
               <span>
@@ -459,136 +862,113 @@ export default function CurrentProjectBillingDrawer({
           </section>
 
 
-          <section className="billing-assumptions">
+          <section className="billing-assumptions projection-details-section">
             <div className="section-heading compact">
               <div>
                 <span className="section-kicker">
-                  FORECAST ASSUMPTIONS
+                  PROJECTION DETAILS
                 </span>
 
                 <h3>
-                  What drives the baseline
+                  Billing projection setup
                 </h3>
               </div>
-
-              <span
-                className={
-                  (
-                    'billing-state '
-                    + (
-                      project.forecastReady
-                        ? 'ready'
-                        : ''
-                    )
-                  )
-                }
-              >
-                {text(
-                  project.forecastState,
-                  'NOT_CONFIGURED',
-                )}
-              </span>
             </div>
 
 
-            <div className="billing-assumption-grid">
-              <div className="billing-assumption-curve">
-                <span>
-                  System Billing Curve
+            <div className="billing-curve-summary">
+              <div>
+                <span className="billing-detail-label">
+                  Billing Curve
                 </span>
 
-                <strong>
+                <strong className="billing-curve-tag">
                   {project.curveDisplayName
                     || 'Not configured'}
-
-                  {project.curveVersion && (
-                    <>
-                      {' · '}
-                      v{project.curveVersion}
-                    </>
-                  )}
                 </strong>
+              </div>
 
-                <small>
-                  {project.distributionMethod
-                    || 'NOT_CONFIGURED'}
-                </small>
 
-                {project.curveDescription && (
-                  <p className="billing-assumption-curve-description">
-                    {project.curveDescription}
+              <details className="billing-curve-help">
+                <summary
+                  aria-label="What the billing curve means"
+                  title="What the billing curve means"
+                >
+                  ⓘ
+                </summary>
+
+                <div className="billing-curve-help-popover">
+                  <strong>
+                    What does the billing curve mean?
+                  </strong>
+
+                  <p>
+                    The billing curve controls how the System Baseline distributes the project value across the expected project duration.
                   </p>
-                )}
-              </div>
 
-              <div>
-                <span>Effective amount</span>
-
-                <strong>
-                  {money(
-                    project.effectiveAmount
+                  {project.curveDescription && (
+                    <p>
+                      {project.curveDescription}
+                    </p>
                   )}
-                </strong>
+                </div>
+              </details>
+            </div>
 
-                <small>
-                  {sourceLabel(
-                    project.amountSource
-                  )}
-                </small>
+
+            {projectionMessage && (
+              <div className="projection-attention-message">
+                {projectionMessage}
               </div>
+            )}
 
+
+            <div className="billing-assumption-grid projection-detail-grid">
               <div>
-                <span>Effective start</span>
+                <span>
+                  Projected Start Date
+                </span>
 
                 <strong>
                   {dateLabel(
                     project.effectiveStartDate
                   )}
                 </strong>
-
-                <small>
-                  {sourceLabel(
-                    project.startDateSource
-                  )}
-                </small>
               </div>
 
+
               <div>
-                <span>Duration</span>
+                <span>
+                  Estimated Duration
+                </span>
 
                 <strong>
-                  {
-                    project.estimatedDurationMonths
-                      ? (
-                          `${project.estimatedDurationMonths} months`
-                        )
-                      : '—'
-                  }
+                  {project.estimatedDurationMonths
+                    ? (
+                        `${project.estimatedDurationMonths} months`
+                      )
+                    : '—'}
                 </strong>
-
-                <small>
-                  Forecast duration
-                </small>
               </div>
 
+
               <div>
-                <span>Completion</span>
+                <span>
+                  Projected Completion Date
+                </span>
 
                 <strong>
                   {dateLabel(
                     project.projectedCompletionDate
                   )}
                 </strong>
-
-                <small>
-                  {sourceLabel(
-                    project.endDateSource
-                  )}
-                </small>
               </div>
 
+
               <div>
-                <span>Foundation history</span>
+                <span>
+                  Foundation Billing History
+                </span>
 
                 <strong>
                   {
@@ -596,28 +976,19 @@ export default function CurrentProjectBillingDrawer({
                     || 0
                   } months
                 </strong>
-
-                <small>
-                  {
-                    project.hasFoundationBillingHistory
-                      ? 'Billing history found'
-                      : 'No billing history'
-                  }
-                </small>
               </div>
 
+
               <div>
-                <span>Future expected</span>
+                <span>
+                  Future Projected Billings
+                </span>
 
                 <strong>
                   {money(
                     project.futureProjectedAmount
                   )}
                 </strong>
-
-                <small>
-                  After current month
-                </small>
               </div>
             </div>
           </section>

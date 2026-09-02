@@ -51,6 +51,7 @@ from .data_api import (
     get_completed_projects,
     get_project_close_accountability,
     get_pm_forecast_policy,
+    update_pm_forecast_policy,
     get_current_project_pm_forecast,
     get_current_project_pm_forecast_history,
     get_current_project_pm_forecast_version,
@@ -755,6 +756,85 @@ def pm_forecast_policy(
 ):
     try:
         return get_pm_forecast_policy()
+
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(
+            exc
+        )
+
+
+@app.put(
+    "/api/pm-forecast/policy"
+)
+async def update_pm_forecast_policy_proxy(
+    request: Request,
+
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    role = (
+        current_user.app_role
+        .strip()
+        .upper()
+    )
+
+    if role != "ADMIN":
+        raise HTTPException(
+            status_code=403,
+            detail="bid_log_admin_required",
+        )
+
+
+    try:
+        payload = await request.json()
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_json_body",
+        ) from exc
+
+
+    if not isinstance(
+        payload,
+        dict,
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_pm_forecast_policy_payload",
+        )
+
+
+    value = payload.get(
+        "requireBaselineTotalMatch"
+    )
+
+    if not isinstance(
+        value,
+        bool,
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_pm_forecast_policy_payload",
+        )
+
+
+    try:
+        return update_pm_forecast_policy(
+            {
+                "requireBaselineTotalMatch":
+                    value,
+            },
+
+            # Browser-supplied actor headers are ignored.
+            # The authenticated session owns actor identity.
+            actor_eid=current_user.eid,
+
+            request_id=_browser_request_id(
+                request
+            ),
+        )
 
     except Exception as exc:
         _raise_pm_forecast_proxy_error(

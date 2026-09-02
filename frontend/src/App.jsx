@@ -328,6 +328,273 @@ function normalizeProjectType(
 }
 
 
+function projectMonthDisplay(
+  effectiveStartDate,
+  estimatedDurationMonths,
+) {
+  const duration =
+    Number(
+      estimatedDurationMonths
+    );
+
+  if (
+    !effectiveStartDate
+    || !Number.isFinite(duration)
+    || duration <= 0
+  ) {
+    return {
+      label: '—',
+      sortValue: null,
+    };
+  }
+
+
+  const start =
+    new Date(
+      `${String(effectiveStartDate).slice(0, 10)}T12:00:00`
+    );
+
+
+  if (
+    Number.isNaN(
+      start.getTime()
+    )
+  ) {
+    return {
+      label: '—',
+      sortValue: null,
+    };
+  }
+
+
+  const now =
+    new Date();
+
+
+  const monthDifference =
+    (
+      now.getFullYear()
+      - start.getFullYear()
+    ) * 12
+    + now.getMonth()
+    - start.getMonth();
+
+
+  if (monthDifference < 0) {
+    return {
+      label:
+        `Starts ${monthLabel(
+          monthKey(
+            effectiveStartDate
+          )
+        )}`,
+
+      sortValue:
+        0,
+    };
+  }
+
+
+  const currentMonth =
+    Math.min(
+      duration,
+      monthDifference + 1,
+    );
+
+
+  return {
+    label:
+      `${currentMonth}/${duration}`,
+
+    sortValue:
+      currentMonth,
+  };
+}
+
+
+function pmBadgeTextColor(
+  hexColor,
+) {
+  const match =
+    String(
+      hexColor || ''
+    )
+      .trim()
+      .match(
+        /^#?([0-9a-f]{6})$/i
+      );
+
+
+  if (!match) {
+    return '#ffffff';
+  }
+
+
+  const value =
+    match[1];
+
+
+  const red =
+    parseInt(
+      value.slice(0, 2),
+      16,
+    );
+
+  const green =
+    parseInt(
+      value.slice(2, 4),
+      16,
+    );
+
+  const blue =
+    parseInt(
+      value.slice(4, 6),
+      16,
+    );
+
+
+  const luminance =
+    (
+      red * 299
+      + green * 587
+      + blue * 114
+    ) / 1000;
+
+
+  return luminance > 160
+    ? '#111111'
+    : '#ffffff';
+}
+
+
+function PMInitialsBadge({
+  initials,
+  hexColor,
+}) {
+  const value =
+    String(
+      initials || ''
+    ).trim();
+
+
+  if (!value) {
+    return (
+      <span className="pm-badge-empty">
+        —
+      </span>
+    );
+  }
+
+
+  const background =
+    /^#[0-9a-f]{6}$/i.test(
+      String(
+        hexColor || ''
+      ).trim()
+    )
+      ? String(
+          hexColor
+        ).trim()
+      : '#4b5563';
+
+
+  return (
+    <span
+      className="pm-initials-badge"
+      title="Project Manager"
+      style={{
+        backgroundColor:
+          background,
+
+        color:
+          pmBadgeTextColor(
+            background
+          ),
+      }}
+    >
+      {value}
+    </span>
+  );
+}
+
+
+function SortHeader({
+  label,
+  sortKey,
+  currentSort,
+  onSort,
+  firstDirection = 'asc',
+  numeric = false,
+}) {
+  const ascending =
+    currentSort
+    === `${sortKey}-asc`;
+
+
+  const descending =
+    currentSort
+    === `${sortKey}-desc`;
+
+
+  const active =
+    ascending
+    || descending;
+
+
+  return (
+    <th
+      className={
+        numeric
+          ? 'numeric sortable-column'
+          : 'sortable-column'
+      }
+      aria-sort={
+        ascending
+          ? 'ascending'
+          : (
+              descending
+                ? 'descending'
+                : 'none'
+            )
+      }
+    >
+      <button
+        type="button"
+        className={
+          active
+            ? 'table-sort-button active'
+            : 'table-sort-button'
+        }
+        onClick={
+          () =>
+            onSort(
+              sortKey,
+              firstDirection,
+            )
+        }
+      >
+        <span>
+          {label}
+        </span>
+
+        <span
+          className="table-sort-indicator"
+          aria-hidden="true"
+        >
+          {ascending
+            ? '↑'
+            : (
+                descending
+                  ? '↓'
+                  : '↕'
+              )}
+        </span>
+      </button>
+    </th>
+  );
+}
+
+
 function projectTypeLabel(
   value,
 ) {
@@ -1181,14 +1448,14 @@ export default function App() {
     bidScope,
     setBidScope,
   ] = useState(
-    'all'
+    'none'
   );
 
   const [
     detailSort,
     setDetailSort,
   ] = useState(
-    'smart'
+    'job-desc'
   );
 
   const [
@@ -1613,7 +1880,7 @@ export default function App() {
         if (bidScope === 'potential') {
           return activeBids.filter(
             row =>
-              Number(row.probability) > 0.85
+              Number(row.probability) >= 0.85
           );
         }
 
@@ -1631,7 +1898,7 @@ export default function App() {
       () =>
         activeBids.filter(
           row =>
-            Number(row.probability) > 0.85
+            Number(row.probability) >= 0.85
         ).length,
       [activeBids],
     );
@@ -1663,6 +1930,42 @@ export default function App() {
 
     setIncludeActiveProjects(
       value => !value
+    );
+  }
+
+
+
+  function toggleDetailSort(
+    key,
+    firstDirection = 'asc',
+  ) {
+    setDetailSort(
+      current => {
+        const ascending =
+          `${key}-asc`;
+
+        const descending =
+          `${key}-desc`;
+
+
+        if (
+          current === ascending
+        ) {
+          return descending;
+        }
+
+
+        if (
+          current === descending
+        ) {
+          return ascending;
+        }
+
+
+        return (
+          `${key}-${firstDirection}`
+        );
+      }
     );
   }
 
@@ -2355,14 +2658,23 @@ export default function App() {
               }
             }
 
+            const combinedProjected =
+              currentProjected
+              + weightedBids;
+
+
             return {
               month,
               currentProjected,
               currentActual,
               weightedBids,
+
               combinedExpected:
-                currentProjected
-                + weightedBids,
+                combinedProjected,
+
+              variance:
+                currentActual
+                - combinedProjected,
             };
           }
         );
@@ -2375,6 +2687,46 @@ export default function App() {
         currentMonthly,
         bidMonthly,
       ],
+    );
+
+
+  const monthlyComparisonTotals =
+    useMemo(
+      () =>
+        monthlyComparison.reduce(
+          (
+            totals,
+            row,
+          ) => ({
+            currentProjected:
+              totals.currentProjected
+              + row.currentProjected,
+
+            weightedBids:
+              totals.weightedBids
+              + row.weightedBids,
+
+            combinedExpected:
+              totals.combinedExpected
+              + row.combinedExpected,
+
+            currentActual:
+              totals.currentActual
+              + row.currentActual,
+
+            variance:
+              totals.variance
+              + row.variance,
+          }),
+          {
+            currentProjected: 0,
+            weightedBids: 0,
+            combinedExpected: 0,
+            currentActual: 0,
+            variance: 0,
+          },
+        ),
+      [monthlyComparison],
     );
 
 
@@ -2441,6 +2793,21 @@ export default function App() {
                 project.pm,
                 'No PM Assigned',
               ),
+
+            pmInitials:
+              project.pmInitials,
+
+            pmHexColor:
+              project.pmHexColor,
+
+            location:
+              [
+                project.streetAddress,
+                project.cityStateZip,
+              ]
+                .filter(Boolean)
+                .join(' · '),
+
             dueDate:
               null,
             probability:
@@ -2496,6 +2863,27 @@ export default function App() {
                 bid.pm,
                 'No PM Assigned',
               ),
+
+            pmInitials:
+              bid.pmInitials,
+
+            pmHexColor:
+              bid.pmHexColor,
+
+            location:
+              [
+                bid.streetAddress,
+
+                [
+                  bid.city,
+                  bid.state,
+                ]
+                  .filter(Boolean)
+                  .join(', '),
+              ]
+                .filter(Boolean)
+                .join(' · '),
+
             dueDate:
               bid.dueDate || null,
             probability:
@@ -2560,239 +2948,339 @@ export default function App() {
       () => {
         const currentRows =
           currentDetails.map(
-            row => ({
-              key:
-                `current-${row.jobListId}`,
-              source:
-                'Current Project',
-              nativeId:
-                row.jobListId,
-              number:
-                row.jobNumber,
-              name:
-                row.jobName,
-              pm:
-                displayValue(
-                  row.pm,
-                  'No PM Assigned',
-                ),
-              projectType:
-                projectTypeLabel(
-                  row.projectType
-                ),
-              purpose:
-                displayValue(
-                  row.purpose
-                ),
-              gc:
-                displayValue(
-                  row.generalContractors
-                ),
-              state:
-                row.forecastState,
-              expected:
-                row.selectedProjected,
-              actual:
-                row.selectedActual,
-              variance:
-                row.selectedVariance,
-              probability:
-                null,
-              location:
-                displayValue(
-                  row.cityStateZip
-                ),
-              dueDate:
-                null,
-              raw:
-                row,
-            })
+            row => {
+              const monthPosition =
+                projectMonthDisplay(
+                  row.effectiveStartDate,
+                  row.estimatedDurationMonths,
+                );
+
+
+              return {
+                key:
+                  `current-${row.jobListId}`,
+
+                source:
+                  'Current Project',
+
+                nativeId:
+                  row.jobListId,
+
+                number:
+                  row.jobNumber,
+
+                name:
+                  row.jobName,
+
+                pm:
+                  displayValue(
+                    row.pm,
+                    'No PM Assigned',
+                  ),
+
+                pmInitials:
+                  row.pmInitials,
+
+                pmHexColor:
+                  row.pmHexColor,
+
+                projectValue:
+                  row.effectiveAmount,
+
+                projectMonth:
+                  monthPosition.label,
+
+                projectMonthSort:
+                  monthPosition.sortValue,
+
+                expected:
+                  row.selectedProjected,
+
+                actual:
+                  row.selectedActual,
+
+                variance:
+                  row.selectedVariance,
+
+                probability:
+                  null,
+
+                location:
+                  [
+                    row.streetAddress,
+                    row.cityStateZip,
+                  ]
+                    .filter(Boolean)
+                    .join(' · '),
+
+                raw:
+                  row,
+              };
+            }
           );
+
 
         const bidRows =
           bidDetails.map(
             row => ({
               key:
                 `bid-${row.sharePointItemId}`,
+
               source:
                 'Active Bid',
+
               nativeId:
                 row.sharePointItemId,
+
               number:
                 null,
+
               name:
                 row.bidName,
+
               pm:
                 displayValue(
                   row.pm,
                   'No PM Assigned',
                 ),
-              projectType:
-                projectTypeLabel(
-                  row.projectType
-                ),
-              purpose:
-                displayValue(
-                  row.purpose
-                ),
-              gc:
-                displayValue(
-                  row.generalContractors
-                ),
-              state:
-                row.forecastState,
+
+              pmInitials:
+                row.pmInitials,
+
+              pmHexColor:
+                row.pmHexColor,
+
+              projectValue:
+                row.effectiveAmount
+                ?? row.estimatedPrice,
+
+              projectMonth:
+                '—',
+
+              projectMonthSort:
+                null,
+
               expected:
                 row.selectedWeightedForecast,
+
               actual:
                 null,
+
               variance:
                 null,
+
               probability:
                 row.probability,
+
               location:
                 [
-                  row.city,
-                  row.state,
+                  row.streetAddress,
+
+                  [
+                    row.city,
+                    row.state,
+                  ]
+                    .filter(Boolean)
+                    .join(', '),
                 ]
                   .filter(Boolean)
-                  .join(', '),
-              dueDate:
-                row.dueDate || null,
+                  .join(' · '),
+
               raw:
                 row,
             })
           );
 
-        return [
+
+        const rows = [
           ...currentRows,
           ...bidRows,
-        ].sort(
-          (a, b) => {
-            const nameCompare =
+        ];
+
+
+        const direction =
+          detailSort.endsWith(
+            '-asc'
+          )
+            ? 1
+            : -1;
+
+
+        const sortKey =
+          detailSort.replace(
+            /-(asc|desc)$/,
+            '',
+          );
+
+
+        const sourceName =
+          row =>
+            row.source
+            === 'Current Project'
+              ? 'Active'
+              : 'Bid';
+
+
+        const compareText =
+          (a, b) =>
+            String(
+              a || ''
+            ).localeCompare(
               String(
-                a.name || ''
-              ).localeCompare(
-                String(
-                  b.name || ''
-                )
+                b || ''
+              )
+            ) * direction;
+
+
+        const compareNumber =
+          (a, b) => {
+            const aNumber =
+              Number(a);
+
+            const bNumber =
+              Number(b);
+
+
+            const aMissing =
+              a === null
+              || a === undefined
+              || !Number.isFinite(
+                aNumber
               );
 
-            const jobNumberValue =
-              row => {
-                const value =
-                  Number(row.number);
 
-                return Number.isFinite(value)
-                  ? value
-                  : -1;
-              };
-
-            const dueDateValue =
-              row => {
-                if (!row.dueDate) {
-                  return Number.MAX_SAFE_INTEGER;
-                }
-
-                const value =
-                  new Date(
-                    `${String(row.dueDate).slice(0, 10)}T12:00:00`
-                  ).getTime();
-
-                return Number.isFinite(value)
-                  ? value
-                  : Number.MAX_SAFE_INTEGER;
-              };
-
-            if (
-              detailSort === 'job-desc'
-            ) {
-              const difference =
-                jobNumberValue(b)
-                - jobNumberValue(a);
-
-              return (
-                difference
-                || nameCompare
+            const bMissing =
+              b === null
+              || b === undefined
+              || !Number.isFinite(
+                bNumber
               );
-            }
+
 
             if (
-              detailSort === 'due-asc'
+              aMissing
+              && bMissing
             ) {
-              const difference =
-                dueDateValue(a)
-                - dueDateValue(b);
-
-              return (
-                difference
-                || nameCompare
-              );
+              return 0;
             }
 
-            if (
-              detailSort === 'expected-desc'
-            ) {
-              const difference =
-                Number(b.expected || 0)
-                - Number(a.expected || 0);
 
-              return (
-                difference
-                || nameCompare
-              );
+            if (aMissing) {
+              return 1;
             }
 
-            if (
-              detailSort === 'name-asc'
-            ) {
-              return nameCompare;
+
+            if (bMissing) {
+              return -1;
             }
 
-            /*
-             * SMART
-             *
-             * Current Projects:
-             *     Job Number high -> low
-             *
-             * Active Bids:
-             *     Due Date soonest -> latest
-             *
-             * Mixed:
-             *     Keep the two business populations visually
-             *     understandable rather than pretending Job Number
-             *     and Bid Due Date share one meaningful scale.
-             */
-            if (
-              a.source !== b.source
-            ) {
-              return (
-                a.source === 'Current Project'
-                  ? -1
-                  : 1
-              );
-            }
-
-            if (
-              a.source
-                === 'Current Project'
-            ) {
-              const difference =
-                jobNumberValue(b)
-                - jobNumberValue(a);
-
-              return (
-                difference
-                || nameCompare
-              );
-            }
-
-            const difference =
-              dueDateValue(a)
-              - dueDateValue(b);
 
             return (
-              difference
-              || nameCompare
+              aNumber
+              - bNumber
+            ) * direction;
+          };
+
+
+        return rows.sort(
+          (a, b) => {
+            let result = 0;
+
+
+            if (
+              sortKey === 'source'
+            ) {
+              result =
+                compareText(
+                  sourceName(a),
+                  sourceName(b),
+                );
+
+            } else if (
+              sortKey === 'job'
+            ) {
+              result =
+                compareNumber(
+                  a.number,
+                  b.number,
+                );
+
+            } else if (
+              sortKey === 'project'
+            ) {
+              result =
+                compareText(
+                  a.name,
+                  b.name,
+                );
+
+            } else if (
+              sortKey === 'pm'
+            ) {
+              result =
+                compareText(
+                  a.pmInitials,
+                  b.pmInitials,
+                );
+
+            } else if (
+              sortKey === 'value'
+            ) {
+              result =
+                compareNumber(
+                  a.projectValue,
+                  b.projectValue,
+                );
+
+            } else if (
+              sortKey === 'month'
+            ) {
+              result =
+                compareNumber(
+                  a.projectMonthSort,
+                  b.projectMonthSort,
+                );
+
+            } else if (
+              sortKey === 'projected'
+            ) {
+              result =
+                compareNumber(
+                  a.expected,
+                  b.expected,
+                );
+
+            } else if (
+              sortKey === 'actual'
+            ) {
+              result =
+                compareNumber(
+                  a.actual,
+                  b.actual,
+                );
+
+            } else if (
+              sortKey === 'variance'
+            ) {
+              result =
+                compareNumber(
+                  a.variance,
+                  b.variance,
+                );
+            }
+
+
+            if (result !== 0) {
+              return result;
+            }
+
+
+            return String(
+              a.name || ''
+            ).localeCompare(
+              String(
+                b.name || ''
+              )
             );
           }
         );
@@ -2803,6 +3291,7 @@ export default function App() {
         detailSort,
       ],
     );
+
 
 
   function exportCurrentView() {
@@ -2818,15 +3307,15 @@ export default function App() {
       'General Contractor',
       'Location',
       'Due Date',
-      'Forecast State',
+      'Projection State',
       'Probability',
-      'Forecast From',
-      'Forecast Through',
-      'Expected In Range',
+      'Projected From',
+      'Projected Through',
+      'Projected Billings In Range',
       'Actual In Range',
       'Variance In Range',
-      'Unweighted Bid Forecast In Range',
-      'Effective Amount',
+      'Unweighted Bid Projected Billings In Range',
+      'Project Value',
       'Effective Start',
       'Estimated Duration Months',
       'Est. Complete Date',
@@ -2908,19 +3397,19 @@ export default function App() {
                   )
                 : '',
 
-            'Forecast State':
+            'Projection State':
               row.state,
 
             'Probability':
               probabilityValue,
 
-            'Forecast From':
+            'Projected From':
               fromMonth,
 
-            'Forecast Through':
+            'Projected Through':
               throughMonth,
 
-            'Expected In Range':
+            'Projected Billings In Range':
               row.expected,
 
             'Actual In Range':
@@ -2935,7 +3424,7 @@ export default function App() {
                 ? ''
                 : row.variance,
 
-            'Unweighted Bid Forecast In Range':
+            'Unweighted Bid Projected Billings In Range':
               isBid
                 ? (
                     raw.selectedBidForecast
@@ -2943,7 +3432,7 @@ export default function App() {
                   )
                 : '',
 
-            'Effective Amount':
+            'Project Value':
               raw.effectiveAmount
               ?? '',
 
@@ -3129,7 +3618,7 @@ export default function App() {
         <div className="page-heading">
           <div>
             <div className="eyebrow">
-              FORECASTING
+              PROJECTED BILLINGS
             </div>
 
             <h1>
@@ -3137,8 +3626,8 @@ export default function App() {
             </h1>
 
             <p>
-              Choose the bids and active projects you want to review.
-              Forecast totals update to the selected sources and month range,
+              Review active projects and high-probability potential projects.
+              Projected billings update to the selected sources and month range,
               while Foundation actual billings remain separate.
             </p>
           </div>
@@ -3162,29 +3651,13 @@ export default function App() {
 
         <section className="source-selector" aria-label="Projected billing sources">
           <div className="source-selector-copy">
-            <span>SHOW IN FORECAST</span>
+            <span>SHOW IN PROJECTED BILLINGS</span>
             <small>
-              Select a bid pool, active projects, or both.
+              Show active projects, potential projects, or both.
             </small>
           </div>
 
           <div className="source-toggles">
-            <button
-              type="button"
-              aria-pressed={bidScope === 'all'}
-              className={
-                bidScope === 'all'
-                  ? 'active'
-                  : ''
-              }
-              onClick={() => toggleBidScope('all')}
-            >
-              <span className="toggle-label">
-                <strong>All Bids</strong>
-                <small>{activeBids.length} bids</small>
-              </span>
-            </button>
-
             <button
               type="button"
               aria-pressed={bidScope === 'potential'}
@@ -3196,8 +3669,8 @@ export default function App() {
               onClick={() => toggleBidScope('potential')}
             >
               <span className="toggle-label">
-                <strong>Potential Bids</strong>
-                <small>Probability above 85% · {potentialBidCount}</small>
+                <strong>Potential Projects</strong>
+                <small>Probability 85% or higher · {potentialBidCount}</small>
               </span>
             </button>
 
@@ -3373,7 +3846,7 @@ export default function App() {
                 </SelectField>
 
                 <SelectField
-                  label="Forecast State"
+                  label="Projection State"
                   value={forecastStateFilter}
                   onChange={setForecastStateFilter}
                 >
@@ -3676,7 +4149,7 @@ export default function App() {
 
         <section className="stats-grid">
           <StatCard
-            label="Active Project Forecast"
+            label="Projected Billings · Active Projects"
             value={
               dataLoading
                 ? 'Loading…'
@@ -3692,7 +4165,7 @@ export default function App() {
           />
 
           <StatCard
-            label={bidScope === 'potential' ? 'Potential Bid Forecast' : 'Selected Bid Forecast'}
+            label="Projected Billings · Potential Projects"
             value={
               dataLoading
                 ? 'Loading…'
@@ -3702,13 +4175,13 @@ export default function App() {
             }
             detail={
               includeBids
-                ? `${bidDetails.length} selected bids · ${currency(rawBidTotal)} unweighted`
-                : 'Bids not selected'
+                ? `${bidDetails.length} potential projects · ${currency(rawBidTotal)} project value`
+                : 'Potential Projects not selected'
             }
           />
 
           <StatCard
-            label="Selected Expected Billings"
+            label="Total Projected Billings"
             value={
               dataLoading
                 ? 'Loading…'
@@ -3719,13 +4192,13 @@ export default function App() {
             detail={
               rangeValid
                 ? `${monthLabel(fromMonth)} through ${monthLabel(throughMonth)}`
-                : 'Select a valid forecast month range'
+                : 'Select a valid projected billing month range'
             }
             emphasis
           />
 
           <StatCard
-            label="Active Project Actual"
+            label="Actual Billings"
             value={
               dataLoading
                 ? 'Loading…'
@@ -3733,7 +4206,7 @@ export default function App() {
                     currentActualTotal
                   )
             }
-            detail={includeActiveProjects ? "Foundation actuals · shown separately" : "Active Projects not selected"}
+            detail={includeActiveProjects ? "Foundation actual billings" : "Active Projects not selected"}
           />
         </section>
 
@@ -3748,17 +4221,17 @@ export default function App() {
           <div className="section-heading">
             <div>
               <span className="section-kicker">
-                MONTHLY BILLING COMPARISON
+                MONTHLY BILLINGS
               </span>
 
               <h2>
-                Forecast vs. Actual Billings
+                Projected vs Actual Billings
               </h2>
             </div>
 
             <div className="monthly-heading-actions">
               <span className="section-note">
-                Forecast amounts shown separately from Foundation actuals
+                Potential Projects are probability weighted
               </span>
 
               <button
@@ -3779,283 +4252,295 @@ export default function App() {
             </div>
           </div>
 
+
           <div className="monthly-table-wrap">
-            <table className="monthly-table">
+            <table className="monthly-table projected-monthly-table">
               <thead>
                 <tr>
                   <th>Month</th>
-                  <th>
-                    Active Project Forecast
+
+                  <th className="numeric">
+                    Active Project
                   </th>
-                  <th>
-                    Selected Bid Forecast
+
+                  <th className="numeric">
+                    Potential Projects
                   </th>
-                  <th>
-                    Selected Expected
+
+                  <th className="numeric">
+                    Total Projected Billing
                   </th>
-                  <th>
-                    Active Project Actual
+
+                  <th className="numeric">
+                    Actual Billings
                   </th>
-                  <th className="visual-column">
-                    Comparison
+
+                  <th className="numeric">
+                    Variance
                   </th>
                 </tr>
               </thead>
+
 
               <tbody>
                 {monthlyComparison.map(
                   row => (
                     <>
-                    <tr
-                      key={row.month}
-                      className={
-                        selectedComparisonMonth
-                          === row.month
-                          ? 'monthly-comparison-row selected'
-                          : 'monthly-comparison-row'
-                      }
-                      onClick={
-                        () =>
-                          setSelectedComparisonMonth(
-                            current =>
-                              current === row.month
-                                ? null
-                                : row.month
-                          )
-                      }
-                    >
-                      <td className="month-cell">
-                        {monthLabel(
-                          row.month
-                        )}
-                      </td>
+                      <tr
+                        key={row.month}
+                        className={
+                          selectedComparisonMonth
+                            === row.month
+                            ? 'monthly-comparison-row selected'
+                            : 'monthly-comparison-row'
+                        }
+                        onClick={
+                          () =>
+                            setSelectedComparisonMonth(
+                              current =>
+                                current === row.month
+                                  ? null
+                                  : row.month
+                            )
+                        }
+                      >
+                        <td className="month-cell">
+                          {monthLabel(
+                            row.month
+                          )}
+                        </td>
 
-                      <td>
-                        {currency(
-                          row.currentProjected
-                        )}
-                      </td>
+                        <td className="numeric">
+                          {currency(
+                            row.currentProjected
+                          )}
+                        </td>
 
-                      <td>
-                        {currency(
-                          row.weightedBids
-                        )}
-                      </td>
+                        <td className="numeric">
+                          {currency(
+                            row.weightedBids
+                          )}
+                        </td>
 
-                      <td className="strong-cell">
-                        {currency(
-                          row.combinedExpected
-                        )}
-                      </td>
+                        <td className="numeric strong-cell">
+                          {currency(
+                            row.combinedExpected
+                          )}
+                        </td>
 
-                      <td>
-                        {currency(
-                          row.currentActual
-                        )}
-                      </td>
+                        <td className="numeric">
+                          {currency(
+                            row.currentActual
+                          )}
+                        </td>
 
-                      <td className="visual-column">
-                        <div className="comparison-bars">
-                          <div
-                            className="comparison-bar expected"
-                            style={{
-                              width:
-                                `${
-                                  (
-                                    row.combinedExpected
-                                    / maxMonthlyValue
-                                  )
-                                  * 100
-                                }%`,
-                            }}
-                            title="Selected Forecast"
-                          />
-
-                          <div
-                            className="comparison-bar actual"
-                            style={{
-                              width:
-                                `${
-                                  (
-                                    row.currentActual
-                                    / maxMonthlyValue
-                                  )
-                                  * 100
-                                }%`,
-                            }}
-                            title="Current Project Actual"
-                          />
-                        </div>
-                      </td>
-                    </tr>
-
-                    {selectedComparisonMonth
-                      === row.month
-                      && (
-                        <tr
-                          key={
-                            `${row.month}-detail`
+                        <td
+                          className={
+                            row.variance > 0
+                              ? 'numeric variance-positive'
+                              : (
+                                  row.variance < 0
+                                    ? 'numeric variance-negative'
+                                    : 'numeric'
+                                )
                           }
-                          className="monthly-project-detail-row"
                         >
-                          <td colSpan="6">
-                            <div className="monthly-project-detail">
-                              <div className="monthly-project-detail-heading">
-                                <div>
-                                  <span className="section-kicker">
-                                    MONTH DETAIL
-                                  </span>
+                          {currency(
+                            row.variance
+                          )}
+                        </td>
+                      </tr>
 
-                                  <strong>
-                                    {monthLabel(
-                                      row.month
-                                    )}
-                                  </strong>
+
+                      {selectedComparisonMonth
+                        === row.month
+                        && (
+                          <tr
+                            key={
+                              `${row.month}-detail`
+                            }
+                            className="monthly-project-detail-row"
+                          >
+                            <td colSpan="6">
+                              <div className="monthly-project-detail">
+                                <div className="monthly-project-detail-heading">
+                                  <div>
+                                    <span className="section-kicker">
+                                      MONTH DETAIL
+                                    </span>
+
+                                    <strong>
+                                      {monthLabel(
+                                        row.month
+                                      )}
+                                    </strong>
+                                  </div>
+
+                                  <span>
+                                    {
+                                      selectedMonthDetailRows.length
+                                    } projected records
+                                  </span>
                                 </div>
 
-                                <span>
-                                  {
-                                    selectedMonthDetailRows.length
-                                  } forecasted records
-                                </span>
-                              </div>
 
-                              <div className="monthly-project-table-wrap">
-                                <table className="monthly-project-table">
-                                  <thead>
-                                    <tr>
-                                      <th>Source</th>
-                                      <th>Project / Bid</th>
-                                      <th>PM</th>
-                                      <th className="numeric">
-                                        Forecast
-                                      </th>
-                                      <th className="numeric">
-                                        Actual
-                                      </th>
-                                      <th className="numeric">
-                                        Variance
-                                      </th>
-                                    </tr>
-                                  </thead>
+                                <div className="monthly-project-table-wrap">
+                                  <table className="monthly-project-table">
+                                    <thead>
+                                      <tr>
+                                        <th>
+                                          Source
+                                        </th>
 
-                                  <tbody>
-                                    {
-                                      selectedMonthDetailRows.map(
-                                        detail => (
-                                          <tr
-                                            key={
-                                              detail.key
-                                            }
-                                            className={
-                                              detail.source
-                                                === 'Current Project'
-                                                ? 'month-current-project-row'
-                                                : undefined
-                                            }
-                                            onClick={
-                                              detail.source
-                                                === 'Current Project'
-                                                ? event => {
-                                                    event.stopPropagation();
+                                        <th>
+                                          Job #
+                                        </th>
 
-                                                    setSelectedCurrentProject(
-                                                      detail.raw
-                                                    );
+                                        <th>
+                                          Project / Bid
+                                        </th>
+
+                                        <th>
+                                          PM
+                                        </th>
+
+                                        <th className="numeric">
+                                          Projected
+                                        </th>
+
+                                        <th className="numeric">
+                                          Actual Billings
+                                        </th>
+
+                                        <th className="numeric">
+                                          Variance
+                                        </th>
+                                      </tr>
+                                    </thead>
+
+
+                                    <tbody>
+                                      {
+                                        selectedMonthDetailRows.map(
+                                          detail => (
+                                            <tr
+                                              key={
+                                                detail.key
+                                              }
+                                              className={
+                                                detail.source
+                                                  === 'Current Project'
+                                                  ? 'month-current-project-row'
+                                                  : undefined
+                                              }
+                                              onClick={
+                                                detail.source
+                                                  === 'Current Project'
+                                                  ? event => {
+                                                      event.stopPropagation();
+
+                                                      setSelectedCurrentProject(
+                                                        detail.raw
+                                                      );
+                                                    }
+                                                  : event =>
+                                                      event.stopPropagation()
+                                              }
+                                            >
+                                              <td>
+                                                <span
+                                                  className={
+                                                    detail.source
+                                                      === 'Active Bid'
+                                                      ? 'source-chip bid'
+                                                      : 'source-chip current'
                                                   }
-                                                : event =>
-                                                    event.stopPropagation()
-                                            }
-                                          >
-                                            <td>
-                                              <span
-                                                className={
-                                                  detail.source
-                                                    === 'Active Bid'
-                                                    ? 'source-chip bid'
-                                                    : 'source-chip current'
-                                                }
-                                              >
-                                                {detail.source}
-                                              </span>
-                                            </td>
+                                                >
+                                                  {detail.source
+                                                    === 'Current Project'
+                                                    ? 'Active'
+                                                    : 'Bid'}
+                                                </span>
+                                              </td>
 
-                                            <td className="project-cell">
-                                              <strong>
-                                                {displayValue(
-                                                  detail.name
+                                              <td>
+                                                {detail.number
+                                                  || '—'}
+                                              </td>
+
+                                              <td className="project-cell">
+                                                <strong>
+                                                  {displayValue(
+                                                    detail.name
+                                                  )}
+                                                </strong>
+
+                                                <span>
+                                                  {detail.location
+                                                    || '—'}
+                                                </span>
+                                              </td>
+
+                                              <td>
+                                                <PMInitialsBadge
+                                                  initials={detail.pmInitials}
+                                                  hexColor={detail.pmHexColor}
+                                                />
+                                              </td>
+
+                                              <td className="numeric strong-cell">
+                                                {currency(
+                                                  detail.expected
                                                 )}
-                                              </strong>
+                                              </td>
 
-                                              <span>
-                                                {
-                                                  detail.number
-                                                    ? `Job ${detail.number}`
-                                                    : `Bid ${detail.nativeId}`
-                                                }
-                                              </span>
-                                            </td>
-
-                                            <td>
-                                              {detail.pm}
-                                            </td>
-
-                                            <td className="numeric strong-cell">
-                                              {currency(
-                                                detail.expected
-                                              )}
-                                            </td>
-
-                                            <td className="numeric">
-                                              {
-                                                detail.actual
+                                              <td className="numeric">
+                                                {detail.actual
                                                   === null
                                                   ? '—'
                                                   : currency(
                                                       detail.actual
-                                                    )
-                                              }
-                                            </td>
+                                                    )}
+                                              </td>
 
-                                            <td
-                                              className={
-                                                detail.variance
-                                                  === null
-                                                  ? 'numeric'
-                                                  : (
-                                                      detail.variance > 0
-                                                        ? 'numeric variance-positive'
-                                                        : (
-                                                            detail.variance < 0
-                                                              ? 'numeric variance-negative'
-                                                              : 'numeric'
-                                                          )
-                                                    )
-                                              }
-                                            >
-                                              {
-                                                detail.variance
+                                              <td
+                                                className={
+                                                  detail.variance
+                                                    === null
+                                                    ? 'numeric'
+                                                    : (
+                                                        detail.variance > 0
+                                                          ? 'numeric variance-positive'
+                                                          : (
+                                                              detail.variance < 0
+                                                                ? 'numeric variance-negative'
+                                                                : 'numeric'
+                                                            )
+                                                      )
+                                                }
+                                              >
+                                                {detail.variance
                                                   === null
                                                   ? '—'
                                                   : currency(
                                                       detail.variance
-                                                    )
-                                              }
-                                            </td>
-                                          </tr>
+                                                    )}
+                                              </td>
+                                            </tr>
+                                          )
                                         )
-                                      )
-                                    }
-                                  </tbody>
-                                </table>
+                                      }
+                                    </tbody>
+                                  </table>
+                                </div>
                               </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
+                            </td>
+                          </tr>
+                        )}
                     </>
                   )
                 )}
+
 
                 {!monthlyComparison.length && (
                   <tr>
@@ -4068,6 +4553,57 @@ export default function App() {
                   </tr>
                 )}
               </tbody>
+
+
+              {monthlyComparison.length > 0 && (
+                <tfoot>
+                  <tr className="monthly-total-row">
+                    <th>
+                      Total
+                    </th>
+
+                    <td className="numeric">
+                      {currency(
+                        monthlyComparisonTotals.currentProjected
+                      )}
+                    </td>
+
+                    <td className="numeric">
+                      {currency(
+                        monthlyComparisonTotals.weightedBids
+                      )}
+                    </td>
+
+                    <td className="numeric strong-cell">
+                      {currency(
+                        monthlyComparisonTotals.combinedExpected
+                      )}
+                    </td>
+
+                    <td className="numeric">
+                      {currency(
+                        monthlyComparisonTotals.currentActual
+                      )}
+                    </td>
+
+                    <td
+                      className={
+                        monthlyComparisonTotals.variance > 0
+                          ? 'numeric variance-positive'
+                          : (
+                              monthlyComparisonTotals.variance < 0
+                                ? 'numeric variance-negative'
+                                : 'numeric'
+                            )
+                      }
+                    >
+                      {currency(
+                        monthlyComparisonTotals.variance
+                      )}
+                    </td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           </div>
         </section>
@@ -4077,77 +4613,99 @@ export default function App() {
           <div className="section-heading">
             <div>
               <span className="section-kicker">
-                FILTERED DETAIL
+                PROJECTED BILLING DETAIL
               </span>
 
               <h2>
-                Forecast sources
+                Projected Billing Breakdown
               </h2>
             </div>
 
-            <div className="detail-heading-actions">
-              <label className="compact-sort-field">
-                <span>Sort</span>
-
-                <select
-                  value={detailSort}
-                  onChange={
-                    event =>
-                      setDetailSort(
-                        event.target.value
-                      )
-                  }
-                >
-                  <option value="smart">
-                    Smart
-                  </option>
-
-                  <option value="job-desc">
-                    Job # High → Low
-                  </option>
-
-                  <option value="due-asc">
-                    Due Date Soonest
-                  </option>
-
-                  <option value="expected-desc">
-                    Expected High → Low
-                  </option>
-
-                  <option value="name-asc">
-                    Name A → Z
-                  </option>
-                </select>
-              </label>
-
-              <span className="section-note">
-                {detailRows.length} rows
-              </span>
-            </div>
+            <span className="section-note">
+              {detailRows.length} rows
+            </span>
           </div>
 
-          <div className="detail-table-wrap">
-            <table className="detail-table">
+
+          <div className="detail-table-wrap projected-breakdown-wrap">
+            <table className="detail-table projected-breakdown-table">
               <thead>
                 <tr>
-                  <th>Source</th>
-                  <th>Project / Bid</th>
-                  <th>PM</th>
-                  <th>Type</th>
-                  <th>Purpose</th>
-                  <th>GC</th>
-                  <th>Forecast State</th>
-                  <th className="numeric">
-                    Expected
-                  </th>
-                  <th className="numeric">
-                    Actual
-                  </th>
-                  <th className="numeric">
-                    Variance
-                  </th>
+                  <SortHeader
+                    label="Source"
+                    sortKey="source"
+                    currentSort={detailSort}
+                    onSort={toggleDetailSort}
+                  />
+
+                  <SortHeader
+                    label="Job #"
+                    sortKey="job"
+                    currentSort={detailSort}
+                    onSort={toggleDetailSort}
+                    firstDirection="desc"
+                  />
+
+                  <SortHeader
+                    label="Project / Bid"
+                    sortKey="project"
+                    currentSort={detailSort}
+                    onSort={toggleDetailSort}
+                  />
+
+                  <SortHeader
+                    label="PM"
+                    sortKey="pm"
+                    currentSort={detailSort}
+                    onSort={toggleDetailSort}
+                  />
+
+                  <SortHeader
+                    label="Project Value"
+                    sortKey="value"
+                    currentSort={detailSort}
+                    onSort={toggleDetailSort}
+                    firstDirection="desc"
+                    numeric
+                  />
+
+                  <SortHeader
+                    label="Project Month"
+                    sortKey="month"
+                    currentSort={detailSort}
+                    onSort={toggleDetailSort}
+                    firstDirection="desc"
+                  />
+
+                  <SortHeader
+                    label="Projected Billings"
+                    sortKey="projected"
+                    currentSort={detailSort}
+                    onSort={toggleDetailSort}
+                    firstDirection="desc"
+                    numeric
+                  />
+
+                  <SortHeader
+                    label="Actual Billings"
+                    sortKey="actual"
+                    currentSort={detailSort}
+                    onSort={toggleDetailSort}
+                    firstDirection="desc"
+                    numeric
+                  />
+
+                  <SortHeader
+                    label="Variance"
+                    sortKey="variance"
+                    currentSort={detailSort}
+                    onSort={toggleDetailSort}
+                    firstDirection="desc"
+                    numeric
+                  />
                 </tr>
               </thead>
+
 
               <tbody>
                 {detailRows.map(
@@ -4155,17 +4713,23 @@ export default function App() {
                     <tr
                       key={row.key}
                       className={
-                        row.source === 'Current Project'
+                        row.source
+                        === 'Current Project'
                           ? 'clickable-project-row'
                           : undefined
                       }
                       onClick={
-                        row.source === 'Current Project'
-                          ? () => setSelectedCurrentProject(row.raw)
+                        row.source
+                        === 'Current Project'
+                          ? () =>
+                              setSelectedCurrentProject(
+                                row.raw
+                              )
                           : undefined
                       }
                       onKeyDown={
-                        row.source === 'Current Project'
+                        row.source
+                        === 'Current Project'
                           ? event => {
                               if (
                                 event.key === 'Enter'
@@ -4181,7 +4745,8 @@ export default function App() {
                           : undefined
                       }
                       tabIndex={
-                        row.source === 'Current Project'
+                        row.source
+                        === 'Current Project'
                           ? 0
                           : undefined
                       }
@@ -4190,13 +4755,20 @@ export default function App() {
                         <span
                           className={
                             row.source
-                              === 'Active Bid'
+                            === 'Active Bid'
                               ? 'source-chip bid'
                               : 'source-chip current'
                           }
                         >
-                          {row.source}
+                          {row.source
+                            === 'Current Project'
+                            ? 'Active'
+                            : 'Bid'}
                         </span>
+                      </td>
+
+                      <td className="job-number-cell">
+                        {row.number || '—'}
                       </td>
 
                       <td className="project-cell">
@@ -4206,62 +4778,31 @@ export default function App() {
                           )}
                         </strong>
 
-                        <span>
-                          {row.number
-                            ? `Job ${row.number}`
-                            : `Bid ${row.nativeId}`}
-                          {row.location
-                            ? ` · ${row.location}`
-                            : ''}
-                          {row.dueDate
-                            ? ` · Due ${dateLabel(row.dueDate)}`
-                            : ''}
+                        <span className="project-location-line">
+                          {row.location || '—'}
                         </span>
                       </td>
 
-                      <td>
-                        {row.pm}
+                      <td className="pm-badge-cell">
+                        <PMInitialsBadge
+                          initials={row.pmInitials}
+                          hexColor={row.pmHexColor}
+                        />
                       </td>
 
-                      <td>
-                        {row.projectType}
+                      <td className="numeric">
+                        {row.projectValue
+                          === null
+                          || row.projectValue
+                            === undefined
+                          ? '—'
+                          : currency(
+                              row.projectValue
+                            )}
                       </td>
 
-                      <td>
-                        {row.purpose}
-                      </td>
-
-                      <td className="gc-cell">
-                        {row.gc}
-                      </td>
-
-                      <td>
-                        <div className="state-cell">
-                          <span
-                            className={
-                              row.state === 'READY'
-                                ? 'state-dot ready'
-                                : 'state-dot'
-                            }
-                          />
-
-                          <span>
-                            {row.state === 'READY'
-                              ? 'Ready'
-                              : 'Not Configured'}
-                          </span>
-
-                          {row.probability !== null
-                            && row.probability !== undefined
-                            ? (
-                              <small>
-                                {percent(
-                                  row.probability
-                                )}
-                              </small>
-                            )
-                            : null}
-                        </div>
+                      <td className="project-month-cell">
+                        {row.projectMonth}
                       </td>
 
                       <td className="numeric strong-cell">
@@ -4283,14 +4824,14 @@ export default function App() {
                           row.variance === null
                             ? 'numeric'
                             : (
-                              row.variance > 0
-                                ? 'numeric variance-positive'
-                                : (
-                                  row.variance < 0
-                                    ? 'numeric variance-negative'
-                                    : 'numeric'
-                                )
-                            )
+                                row.variance > 0
+                                  ? 'numeric variance-positive'
+                                  : (
+                                      row.variance < 0
+                                        ? 'numeric variance-negative'
+                                        : 'numeric'
+                                    )
+                              )
                         }
                       >
                         {row.variance === null
@@ -4303,14 +4844,15 @@ export default function App() {
                   )
                 )}
 
+
                 {!detailRows.length && (
                   <tr>
                     <td
-                      colSpan="10"
+                      colSpan="9"
                       className="empty-cell"
                     >
                       {dataLoading
-                        ? 'Loading forecast detail…'
+                        ? 'Loading projected billing detail…'
                         : 'No records match the current filters.'}
                     </td>
                   </tr>
