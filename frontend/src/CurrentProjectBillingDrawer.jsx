@@ -1,4 +1,7 @@
-import { useEffect } from 'react';
+import {
+  useEffect,
+  useState,
+} from 'react';
 
 import {
   commercialSourceLabel,
@@ -10,6 +13,7 @@ import {
   retentionNumber,
 } from './BillingDisplay.jsx';
 import PMForecastPanel from './PMForecastPanel.jsx';
+import OriginatingBidPanel from './OriginatingBidPanel.jsx';
 
 
 function text(
@@ -110,12 +114,66 @@ function varianceClass(value) {
 }
 
 
+function drawerBidEstimatorLabel(bid) {
+  if (!bid) {
+    return '—';
+  }
+
+  const names = [
+    bid.primaryEstimator,
+    bid.secondaryEstimator,
+  ].filter(Boolean);
+
+  return names.length
+    ? names.join(' / ')
+    : '—';
+}
+
+
+function drawerQuantityLabel(value) {
+  if (
+    value === null
+    || value === undefined
+    || value === ''
+  ) {
+    return '—';
+  }
+
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return '—';
+  }
+
+  return new Intl.NumberFormat(
+    'en-US',
+    {
+      maximumFractionDigits: 0,
+    },
+  ).format(number);
+}
+
+
 export default function CurrentProjectBillingDrawer({
   project,
   monthlyRows,
   user,
   onClose,
 }) {
+  const [
+    originatingBidDetail,
+    setOriginatingBidDetail,
+  ] = useState(null);
+
+
+  useEffect(
+    () => {
+      setOriginatingBidDetail(null);
+    },
+    [project?.jobListId],
+  );
+
+
   useEffect(
     () => {
       if (!project) {
@@ -177,6 +235,11 @@ export default function CurrentProjectBillingDrawer({
     === 'ADMIN';
 
 
+  const effectiveBidEstimate =
+    originatingBidDetail?.estimatedPrice
+    ?? project.bidEstimatedPrice;
+
+
   const foundationVsCognito =
     moneyDifference(
       project.foundationOriginalContractAmount,
@@ -187,7 +250,7 @@ export default function CurrentProjectBillingDrawer({
   const foundationVsBid =
     moneyDifference(
       project.foundationOriginalContractAmount,
-      project.bidEstimatedPrice,
+      effectiveBidEstimate,
     );
 
 
@@ -280,9 +343,23 @@ export default function CurrentProjectBillingDrawer({
                 Estimator
               </small>
 
-              <strong className="drawer-tbd-value">
-                TBD
-              </strong>
+              {originatingBidDetail ? (
+                <>
+                  <strong>
+                    {drawerBidEstimatorLabel(
+                      originatingBidDetail
+                    )}
+                  </strong>
+
+                  <small className="commercial-source-note">
+                    Originating bid
+                  </small>
+                </>
+              ) : (
+                <strong className="drawer-tbd-value">
+                  TBD
+                </strong>
+              )}
             </article>
 
 
@@ -403,9 +480,23 @@ export default function CurrentProjectBillingDrawer({
                 CY
               </span>
 
-              <strong className="drawer-tbd-value">
-                TBD
-              </strong>
+              {originatingBidDetail ? (
+                <>
+                  <strong>
+                    {drawerQuantityLabel(
+                      originatingBidDetail.cubicYards
+                    )}
+                  </strong>
+
+                  <small className="commercial-source-note">
+                    Originating bid
+                  </small>
+                </>
+              ) : (
+                <strong className="drawer-tbd-value">
+                  TBD
+                </strong>
+              )}
             </article>
 
 
@@ -414,9 +505,23 @@ export default function CurrentProjectBillingDrawer({
                 SF
               </span>
 
-              <strong className="drawer-tbd-value">
-                TBD
-              </strong>
+              {originatingBidDetail ? (
+                <>
+                  <strong>
+                    {drawerQuantityLabel(
+                      originatingBidDetail.squareFootage
+                    )}
+                  </strong>
+
+                  <small className="commercial-source-note">
+                    Originating bid
+                  </small>
+                </>
+              ) : (
+                <strong className="drawer-tbd-value">
+                  TBD
+                </strong>
+              )}
             </article>
           </section>
 
@@ -481,13 +586,13 @@ export default function CurrentProjectBillingDrawer({
                         'Bid Estimate',
 
                       value:
-                        project.bidEstimatedPrice,
+                        effectiveBidEstimate,
 
                       money: true,
 
                       display:
                         money(
-                          project.bidEstimatedPrice
+                          effectiveBidEstimate
                         ),
                     },
 
@@ -653,53 +758,61 @@ export default function CurrentProjectBillingDrawer({
             <div className="section-heading compact">
               <div>
                 <span className="section-kicker">
-                  PROJECTION DETAILS
+                  PROJECT CONTROLS
                 </span>
 
                 <h3>
-                  Billing projection setup
+                  Forecast Configuration
                 </h3>
               </div>
             </div>
 
 
-            <div className="billing-curve-summary">
-              <div>
+            <div className="project-setup-flags">
+              <div className="project-setup-flag">
                 <span className="billing-detail-label">
                   Billing Curve
                 </span>
 
-                <strong className="billing-curve-tag">
-                  {project.curveDisplayName
-                    || 'Not configured'}
-                </strong>
+                <div className="project-setup-flag-row">
+                  <strong className="project-setup-tag">
+                    {project.curveDisplayName
+                      || 'Not configured'}
+                  </strong>
+
+                  <details className="billing-curve-help project-setup-help">
+                    <summary
+                      aria-label="What the billing curve means"
+                      title="What the billing curve means"
+                    >
+                      ⓘ
+                    </summary>
+
+                    <div className="billing-curve-help-popover">
+                      <strong>
+                        What does the billing curve mean?
+                      </strong>
+
+                      <p>
+                        The billing curve controls how the System Baseline distributes the project value across the expected project duration.
+                      </p>
+
+                      {project.curveDescription && (
+                        <p>
+                          {project.curveDescription}
+                        </p>
+                      )}
+                    </div>
+                  </details>
+                </div>
               </div>
 
 
-              <details className="billing-curve-help">
-                <summary
-                  aria-label="What the billing curve means"
-                  title="What the billing curve means"
-                >
-                  ⓘ
-                </summary>
-
-                <div className="billing-curve-help-popover">
-                  <strong>
-                    What does the billing curve mean?
-                  </strong>
-
-                  <p>
-                    The billing curve controls how the System Baseline distributes the project value across the expected project duration.
-                  </p>
-
-                  {project.curveDescription && (
-                    <p>
-                      {project.curveDescription}
-                    </p>
-                  )}
-                </div>
-              </details>
+              <OriginatingBidPanel
+                project={project}
+                user={user}
+                onBidLoaded={setOriginatingBidDetail}
+              />
             </div>
 
 
