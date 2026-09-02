@@ -6246,3 +6246,339 @@ tfoot th {
     display: none !important;
   }
 }
+
+
+/* ============================================================
+   PROJECTED BILLINGS TABLE VIEWS / STICKY TABLE HEADERS
+   ============================================================ */
+
+.comparison-view-toggle {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 3px;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 8px;
+
+  background:
+    var(--surface-2);
+}
+
+
+.comparison-view-toggle button {
+  min-height: 28px;
+
+  padding:
+    4px
+    10px;
+
+  border: 0;
+
+  border-radius: 5px;
+
+  background: transparent;
+
+  color:
+    var(--muted);
+
+  font: inherit;
+  font-size: 10px;
+  font-weight: 750;
+
+  cursor: pointer;
+}
+
+
+.comparison-view-toggle button:hover {
+  color:
+    var(--text);
+}
+
+
+.comparison-view-toggle button.active {
+  background:
+    var(--accent-soft);
+
+  color:
+    var(--accent);
+
+  box-shadow:
+    inset 0 0 0 1px
+    color-mix(
+      in srgb,
+      var(--accent) 28%,
+      transparent
+    );
+}
+
+
+.project-pivot-table {
+  width: max-content;
+  min-width: 100%;
+}
+
+
+.project-pivot-table th,
+.project-pivot-table td {
+  box-sizing: border-box;
+}
+
+
+.project-pivot-table
+.pivot-source-column {
+  width: 82px;
+  min-width: 82px;
+  max-width: 82px;
+}
+
+
+.project-pivot-table
+.pivot-job-column {
+  width: 94px;
+  min-width: 94px;
+  max-width: 94px;
+}
+
+
+.project-pivot-table
+.pivot-project-column {
+  width: 270px;
+  min-width: 270px;
+  max-width: 270px;
+}
+
+
+.project-pivot-table
+.pivot-month-column,
+.project-pivot-table
+.pivot-total-column {
+  width: 162px;
+  min-width: 162px;
+  max-width: 162px;
+}
+
+
+.project-pivot-table
+th.pivot-source-column,
+.project-pivot-table
+td.pivot-source-column {
+  position: sticky;
+  left: 0;
+
+  z-index: 5;
+
+  background:
+    var(--surface);
+}
+
+
+.project-pivot-table
+th.pivot-job-column,
+.project-pivot-table
+td.pivot-job-column {
+  position: sticky;
+  left: 82px;
+
+  z-index: 5;
+
+  background:
+    var(--surface);
+}
+
+
+.project-pivot-table
+th.pivot-project-column,
+.project-pivot-table
+td.pivot-project-column {
+  position: sticky;
+  left: 176px;
+
+  z-index: 5;
+
+  background:
+    var(--surface);
+
+  box-shadow:
+    8px 0 12px
+    rgba(0, 0, 0, 0.14);
+}
+
+
+.project-pivot-table
+th.pivot-source-column,
+.project-pivot-table
+th.pivot-job-column,
+.project-pivot-table
+th.pivot-project-column {
+  z-index: 8;
+
+  background:
+    var(--surface-2);
+}
+
+
+.pivot-project-row:hover
+td.pivot-source-column,
+.pivot-project-row:hover
+td.pivot-job-column,
+.pivot-project-row:hover
+td.pivot-project-column {
+  background:
+    color-mix(
+      in srgb,
+      var(--surface) 92%,
+      var(--accent) 8%
+    );
+}
+
+
+.pivot-billing-cell {
+  display: grid;
+
+  gap: 5px;
+}
+
+
+.pivot-billing-cell > span {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+
+  gap: 9px;
+}
+
+
+.pivot-billing-cell small {
+  color:
+    var(--muted);
+
+  font-size: 8px;
+  font-weight: 650;
+
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+
+.pivot-billing-cell strong {
+  color:
+    var(--text);
+
+  font-size: 10px;
+  font-weight: 750;
+
+  white-space: nowrap;
+}
+
+
+.pivot-billing-cell
+.variance-positive strong {
+  color:
+    var(--positive);
+}
+
+
+.pivot-billing-cell
+.variance-negative strong {
+  color:
+    var(--negative);
+}
+
+
+.pivot-empty-value {
+  display: block;
+
+  color:
+    var(--muted);
+
+  text-align: center;
+}
+
+
+.floating-table-header {
+  position: fixed;
+
+  z-index: 25;
+
+  display: none;
+
+  overflow: hidden;
+
+  border-bottom:
+    1px solid
+    var(--border-strong);
+
+  background:
+    var(--surface-2);
+
+  box-shadow:
+    0 8px 18px
+    rgba(0, 0, 0, 0.22);
+}
+
+
+.floating-table-header.visible {
+  display: block;
+}
+
+
+.floating-table-header-table {
+  margin: 0;
+
+  transform-origin: left top;
+}
+
+
+.floating-table-header-table th {
+  position: static !important;
+  top: auto !important;
+
+  box-sizing: border-box;
+
+  background:
+    var(--surface-2)
+    !important;
+}
+
+
+.floating-table-header-table
+th.pivot-source-column,
+.floating-table-header-table
+th.pivot-job-column,
+.floating-table-header-table
+th.pivot-project-column {
+  position: relative !important;
+
+  z-index: 2;
+}
+
+
+@media (max-width: 900px) {
+  .monthly-heading-actions {
+    width: 100%;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+}
+
+
+@media (max-width: 760px) {
+  .project-pivot-table
+  .pivot-project-column {
+    width: 220px;
+    min-width: 220px;
+    max-width: 220px;
+  }
+}
+
+
+@media print {
+  .comparison-view-toggle,
+  .floating-table-header {
+    display: none !important;
+  }
+}

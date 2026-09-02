@@ -6,6 +6,8 @@ import {
 
 import ProjectAccountability from './ProjectAccountability.jsx';
 import CurrentProjectBillingDrawer from './CurrentProjectBillingDrawer.jsx';
+import ProjectBillingPivot from './ProjectBillingPivot.jsx';
+import useStickyTableHeader from './useStickyTableHeader.js';
 
 
 const ALL = '__ALL__';
@@ -1442,6 +1444,21 @@ export default function App() {
     monthlyComparisonOpen,
     setMonthlyComparisonOpen,
   ] = useState(true);
+
+  const [
+    monthlyComparisonView,
+    setMonthlyComparisonView,
+  ] = useState('month');
+
+  const monthlySummaryTableRef =
+    useStickyTableHeader(
+      monthlyComparisonView
+    );
+
+  const billingDetailTableRef =
+    useStickyTableHeader(
+      detailSort
+    );
 
   const [
     includeActiveProjects,
@@ -4205,6 +4222,57 @@ export default function App() {
             </div>
 
             <div className="monthly-heading-actions">
+              <div
+                className="comparison-view-toggle"
+                role="group"
+                aria-label="Projected versus actual billing view"
+              >
+                <button
+                  type="button"
+                  className={
+                    monthlyComparisonView === 'month'
+                      ? 'active'
+                      : undefined
+                  }
+                  aria-pressed={
+                    monthlyComparisonView === 'month'
+                  }
+                  onClick={
+                    () =>
+                      setMonthlyComparisonView(
+                        'month'
+                      )
+                  }
+                >
+                  By Month
+                </button>
+
+                <button
+                  type="button"
+                  className={
+                    monthlyComparisonView === 'project'
+                      ? 'active'
+                      : undefined
+                  }
+                  aria-pressed={
+                    monthlyComparisonView === 'project'
+                  }
+                  onClick={
+                    () => {
+                      setSelectedComparisonMonth(
+                        null
+                      );
+
+                      setMonthlyComparisonView(
+                        'project'
+                      );
+                    }
+                  }
+                >
+                  By Project
+                </button>
+              </div>
+
               <span className="section-note">
                 Potential Projects are probability weighted
               </span>
@@ -4228,7 +4296,26 @@ export default function App() {
           </div>
 
 
-          <div className="monthly-table-wrap">
+          {monthlyComparisonView === 'project'
+            ? (
+              <ProjectBillingPivot
+                months={monthRange}
+                currentProjects={currentDetails}
+                bidProjects={bidDetails}
+                currentMonthly={currentMonthly}
+                bidMonthly={bidMonthly}
+                currency={currency}
+                monthLabel={monthLabel}
+                onSelectCurrentProject={
+                  setSelectedCurrentProject
+                }
+              />
+            )
+            : (
+          <div
+            className="monthly-table-wrap monthly-summary-wrap"
+            ref={monthlySummaryTableRef}
+          >
             <table className="monthly-table projected-monthly-table">
               <thead>
                 <tr>
@@ -4581,6 +4668,7 @@ export default function App() {
               )}
             </table>
           </div>
+            )}
         </section>
 
 
@@ -4602,7 +4690,10 @@ export default function App() {
           </div>
 
 
-          <div className="detail-table-wrap projected-breakdown-wrap">
+          <div
+            className="detail-table-wrap projected-breakdown-wrap"
+            ref={billingDetailTableRef}
+          >
             <table className="detail-table projected-breakdown-table">
               <thead>
                 <tr>
