@@ -131,6 +131,8 @@ export function moneyDifference(
   if (
     !Number.isFinite(a)
     || !Number.isFinite(b)
+    || a === 0
+    || b === 0
   ) {
     return null;
   }
@@ -168,9 +170,60 @@ export function commercialSourceLabel(value) {
 }
 
 
+function comparisonRowHasValue(row) {
+  const candidate =
+    row?.value
+    ?? row?.display;
+
+  if (!hasValue(candidate)) {
+    return false;
+  }
+
+  const normalized =
+    String(candidate).trim();
+
+  if (
+    normalized === '—'
+    || normalized === '-'
+    || normalized.toUpperCase() === 'TBD'
+  ) {
+    return false;
+  }
+
+  const numericText =
+    normalized
+      .replaceAll(',', '')
+      .replaceAll('$', '')
+      .replaceAll('%', '')
+      .replace(/\s*pts$/i, '')
+      .trim();
+
+  const numeric =
+    Number(numericText);
+
+  if (
+    numericText !== ''
+    && Number.isFinite(numeric)
+  ) {
+    return numeric !== 0;
+  }
+
+  return true;
+}
+
+
 export function ComparisonDetails({
   rows,
 }) {
+  const visibleRows =
+    rows.filter(
+      comparisonRowHasValue
+    );
+
+  if (!visibleRows.length) {
+    return null;
+  }
+
   return (
     <details className="source-comparison">
       <summary>
@@ -178,7 +231,7 @@ export function ComparisonDetails({
       </summary>
 
       <div className="source-comparison-panel">
-        {rows.map(
+        {visibleRows.map(
           row => (
             <div
               className="source-comparison-row"

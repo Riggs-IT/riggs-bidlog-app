@@ -8264,3 +8264,489 @@ tbody td {
     justify-content: flex-end;
   }
 }
+
+
+/* ============================================================
+   H5D.3 FOUNDATION CHANGE ORDERS PROJECT CONTROL
+   ============================================================ */
+
+.project-setup-flags {
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+}
+
+
+.project-setup-tag.change-orders-present {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--accent) 44%,
+      var(--border)
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      var(--accent) 10%,
+      var(--surface-3)
+    );
+
+  color:
+    var(--accent);
+}
+
+
+.change-orders-help {
+  position:
+    relative;
+
+  min-width:
+    0;
+
+  width:
+    fit-content;
+
+  overflow:
+    visible;
+}
+
+
+.change-orders-summary {
+  min-width:
+    0;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    7px;
+
+  list-style:
+    none;
+
+  cursor:
+    pointer;
+}
+
+
+.change-orders-summary::-webkit-details-marker {
+  display:
+    none;
+}
+
+
+.change-orders-popover {
+  position:
+    absolute;
+
+  z-index:
+    130;
+
+  top:
+    calc(100% + 8px);
+
+  right:
+    0;
+
+  width:
+    min(
+      520px,
+      calc(100vw - 48px)
+    );
+
+  display:
+    grid;
+
+  gap:
+    11px;
+
+  padding:
+    13px;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius:
+    10px;
+
+  background:
+    var(--surface);
+
+  color:
+    var(--text);
+
+  opacity:
+    1;
+
+  isolation:
+    isolate;
+
+  backdrop-filter:
+    none;
+
+  box-shadow:
+    0 18px 45px
+    rgba(0, 0, 0, 0.32);
+}
+
+
+.change-orders-popover-head > div {
+  display:
+    grid;
+
+  gap:
+    3px;
+}
+
+
+.change-orders-popover-head span {
+  color:
+    var(--muted);
+
+  font-size:
+    8px;
+
+  font-weight:
+    700;
+
+  letter-spacing:
+    0.04em;
+
+  text-transform:
+    uppercase;
+}
+
+
+.change-orders-popover-head strong {
+  color:
+    var(--text);
+
+  font-size:
+    13px;
+
+  font-weight:
+    800;
+}
+
+
+.change-orders-popover-head small {
+  color:
+    var(--muted);
+
+  font-size:
+    9px;
+}
+
+
+.change-orders-summary-grid {
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap:
+    8px;
+}
+
+
+.change-orders-summary-grid > div {
+  min-width:
+    0;
+
+  display:
+    grid;
+
+  gap:
+    4px;
+
+  padding:
+    9px;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius:
+    8px;
+
+  background:
+    var(--surface-2);
+}
+
+
+.change-orders-summary-grid span {
+  color:
+    var(--muted);
+
+  font-size:
+    7px;
+
+  font-weight:
+    700;
+
+  letter-spacing:
+    0.04em;
+
+  text-transform:
+    uppercase;
+}
+
+
+.change-orders-summary-grid strong {
+  color:
+    var(--text);
+
+  font-size:
+    13px;
+
+  font-weight:
+    800;
+}
+
+
+.change-orders-context {
+  margin:
+    0;
+
+  padding:
+    8px 9px;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius:
+    7px;
+
+  background:
+    var(--surface-2);
+
+  color:
+    var(--muted);
+
+  font-size:
+    8px;
+
+  line-height:
+    1.45;
+}
+
+
+.change-orders-list {
+  max-height:
+    310px;
+
+  display:
+    grid;
+
+  gap:
+    6px;
+
+  padding-right:
+    3px;
+
+  overflow-y:
+    auto;
+}
+
+
+.change-orders-item {
+  display:
+    grid;
+
+  gap:
+    5px;
+
+  padding:
+    8px 9px;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius:
+    7px;
+
+  background:
+    var(--surface-2);
+}
+
+
+.change-orders-item-main {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    12px;
+}
+
+
+.change-orders-item-main strong {
+  color:
+    var(--text);
+
+  font-size:
+    10px;
+
+  font-weight:
+    800;
+}
+
+
+.change-orders-item-main > span {
+  font-size:
+    10px;
+
+  font-weight:
+    800;
+
+  font-variant-numeric:
+    tabular-nums;
+}
+
+
+.change-orders-item-meta {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
+  gap:
+    10px;
+
+  color:
+    var(--muted);
+
+  font-size:
+    7px;
+}
+
+
+.change-orders-popover .positive {
+  color:
+    var(--accent);
+}
+
+
+.change-orders-popover .negative {
+  color:
+    var(--negative);
+}
+
+
+.change-orders-popover .neutral {
+  color:
+    var(--muted);
+}
+
+
+.change-orders-message,
+.change-orders-empty {
+  padding:
+    10px;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius:
+    7px;
+
+  background:
+    var(--surface-2);
+
+  color:
+    var(--muted);
+
+  font-size:
+    9px;
+
+  line-height:
+    1.45;
+}
+
+
+.change-orders-message.error {
+  color:
+    var(--negative);
+}
+
+
+@media (
+  max-width: 760px
+) {
+  .project-setup-flags {
+    grid-template-columns:
+      1fr;
+
+    column-gap:
+      0;
+  }
+
+
+  .change-orders-help {
+    width:
+      100%;
+  }
+
+
+  .change-orders-summary {
+    width:
+      fit-content;
+  }
+
+
+  .change-orders-popover {
+    right:
+      auto;
+
+    left:
+      0;
+
+    width:
+      min(
+        520px,
+        calc(100vw - 64px)
+      );
+  }
+}
+
+
+
+/* ============================================================
+   H5D.3A PROJECT CONTROL POPOVER BEHAVIOR
+   ============================================================ */
+
+.billing-curve-help-popover {
+  z-index: 130;
+
+  right: auto;
+  left: 0;
+}
+
+
+.originating-bid-help-popover,
+.change-orders-popover {
+  z-index: 130;
+}

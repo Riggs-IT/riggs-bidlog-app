@@ -314,6 +314,8 @@ export default function OriginatingBidPanel({
   project,
   user,
   onBidLoaded,
+  infoOpen = false,
+  onInfoOpenChange,
 }) {
   const [
     relationship,
@@ -695,7 +697,18 @@ export default function OriginatingBidPanel({
 
 
           {linkedBid && (
-            <details className="originating-bid-help">
+            <details
+              className="originating-bid-help"
+              data-project-control="originating-bid"
+              open={infoOpen}
+              onToggle={
+                event => {
+                  onInfoOpenChange?.(
+                    event.currentTarget.open
+                  );
+                }
+              }
+            >
               <summary
                 aria-label="View originating bid details"
                 title="View originating bid details"
@@ -796,9 +809,27 @@ export default function OriginatingBidPanel({
               <button
                 type="button"
                 className="project-setup-info-button"
-                onClick={openFinder}
-                aria-label="Find an originating bid to link"
-                title="Find an originating bid to link"
+                onClick={() => {
+                  if (finderOpen) {
+                    setFinderOpen(false);
+                    setSelectedCandidate(null);
+                    setCandidateError(null);
+
+                    return;
+                  }
+
+                  openFinder();
+                }}
+                aria-label={
+                  finderOpen
+                    ? 'Close originating bid finder'
+                    : 'Find an originating bid to link'
+                }
+                title={
+                  finderOpen
+                    ? 'Close originating bid finder'
+                    : 'Find an originating bid to link'
+                }
               >
                 ⓘ
               </button>

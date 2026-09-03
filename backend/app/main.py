@@ -49,6 +49,7 @@ from .data_api import (
     get_current_projected_billings,
     get_current_projects_monthly_bulk,
     get_current_project_originating_bid,
+    get_current_project_change_orders,
     get_current_project_bid_candidates,
     link_current_project_originating_bid,
     get_completed_project_monthly,
@@ -1047,6 +1048,35 @@ def current_project_originating_bid_proxy(
         _raise_pm_forecast_proxy_error(
             exc
         )
+
+
+@app.get(
+    (
+        "/api/current-projects/"
+        "{job_list_id}/change-orders"
+    )
+)
+def current_project_change_orders_proxy(
+    job_list_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    _current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    try:
+        return (
+            get_current_project_change_orders(
+                job_list_id
+            )
+        )
+
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(
+            exc
+        )
+
 
 
 @app.get(

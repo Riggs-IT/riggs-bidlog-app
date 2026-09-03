@@ -1114,6 +1114,163 @@ def get_current_project_originating_bid(
     )
 
 
+
+def get_current_project_change_orders(
+    job_list_id: int,
+) -> dict:
+    payload = _originating_bid_request(
+        "GET",
+        (
+            "/v1/bid-log/current-projects/"
+            f"{job_list_id}/change-orders"
+        ),
+        operation=(
+            "Current Project Foundation change orders"
+        ),
+    )
+
+
+    response_job_list_id = payload.get(
+        "jobListId"
+    )
+
+    job_number = payload.get(
+        "jobNumber"
+    )
+
+    change_order_count = payload.get(
+        "changeOrderCount"
+    )
+
+    net_cost_adjustment = payload.get(
+        "netCostAdjustment"
+    )
+
+    items = payload.get(
+        "items"
+    )
+
+
+    if (
+        not isinstance(
+            response_job_list_id,
+            int,
+        )
+        or isinstance(
+            response_job_list_id,
+            bool,
+        )
+        or response_job_list_id
+            != job_list_id
+    ):
+        raise DataAPIInvalidResponse(
+            "Change order response has "
+            "an invalid jobListId."
+        )
+
+
+    if (
+        not isinstance(
+            job_number,
+            str,
+        )
+        or not job_number.strip()
+    ):
+        raise DataAPIInvalidResponse(
+            "Change order response is "
+            "missing jobNumber."
+        )
+
+
+    if (
+        not isinstance(
+            change_order_count,
+            int,
+        )
+        or isinstance(
+            change_order_count,
+            bool,
+        )
+        or change_order_count < 0
+    ):
+        raise DataAPIInvalidResponse(
+            "Change order response has "
+            "an invalid changeOrderCount."
+        )
+
+
+    if (
+        not isinstance(
+            net_cost_adjustment,
+            (
+                int,
+                float,
+            ),
+        )
+        or isinstance(
+            net_cost_adjustment,
+            bool,
+        )
+    ):
+        raise DataAPIInvalidResponse(
+            "Change order response has "
+            "an invalid netCostAdjustment."
+        )
+
+
+    if (
+        not isinstance(
+            items,
+            list,
+        )
+        or not all(
+            isinstance(
+                item,
+                dict,
+            )
+            for item in items
+        )
+    ):
+        raise DataAPIInvalidResponse(
+            "Change order response is "
+            "missing its items list."
+        )
+
+
+    if len(items) != change_order_count:
+        raise DataAPIInvalidResponse(
+            "Change order response count "
+            "does not match its items."
+        )
+
+
+    if (
+        payload.get(
+            "valueMeaning"
+        )
+        != "COST_BUDGET_ADJUSTMENT"
+    ):
+        raise DataAPIInvalidResponse(
+            "Change order response has "
+            "an unexpected value meaning."
+        )
+
+
+    if (
+        payload.get(
+            "source"
+        )
+        != "FOUNDATION_JOB_CHANGE_BUDGET"
+    ):
+        raise DataAPIInvalidResponse(
+            "Change order response has "
+            "an unexpected source."
+        )
+
+
+    return payload
+
+
 def get_current_project_bid_candidates(
     job_list_id: int,
     *,

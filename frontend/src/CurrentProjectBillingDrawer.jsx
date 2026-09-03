@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useRef,
   useState,
 } from 'react';
 
@@ -14,6 +15,7 @@ import {
 } from './BillingDisplay.jsx';
 import PMForecastPanel from './PMForecastPanel.jsx';
 import OriginatingBidPanel from './OriginatingBidPanel.jsx';
+import ChangeOrdersPanel from './ChangeOrdersPanel.jsx';
 
 
 function text(
@@ -165,12 +167,67 @@ export default function CurrentProjectBillingDrawer({
     setOriginatingBidDetail,
   ] = useState(null);
 
+  const [
+    changeOrderDetail,
+    setChangeOrderDetail,
+  ] = useState(null);
+
+  const [
+    openProjectControl,
+    setOpenProjectControl,
+  ] = useState(null);
+
+  const projectControlsRef =
+    useRef(null);
+
 
   useEffect(
     () => {
       setOriginatingBidDetail(null);
+      setChangeOrderDetail(null);
+      setOpenProjectControl(null);
     },
     [project?.jobListId],
+  );
+
+
+  useEffect(
+    () => {
+      if (!openProjectControl) {
+        return undefined;
+      }
+
+      const onPointerDown =
+        event => {
+          const activeControl =
+            projectControlsRef.current
+              ?.querySelector(
+                `[data-project-control="${openProjectControl}"]`
+              );
+
+          if (
+            activeControl
+            && !activeControl.contains(
+              event.target
+            )
+          ) {
+            setOpenProjectControl(null);
+          }
+        };
+
+      document.addEventListener(
+        'pointerdown',
+        onPointerDown,
+      );
+
+      return () => {
+        document.removeEventListener(
+          'pointerdown',
+          onPointerDown,
+        );
+      };
+    },
+    [openProjectControl],
   );
 
 
@@ -185,6 +242,11 @@ export default function CurrentProjectBillingDrawer({
           if (
             event.key === 'Escape'
           ) {
+            if (openProjectControl) {
+              setOpenProjectControl(null);
+              return;
+            }
+
             onClose();
           }
         };
@@ -213,6 +275,7 @@ export default function CurrentProjectBillingDrawer({
     [
       project,
       onClose,
+      openProjectControl,
     ],
   );
 
@@ -271,6 +334,18 @@ export default function CurrentProjectBillingDrawer({
     retentionNumber(
       project.cognitoRetention
     );
+
+
+  const retentionDifference =
+    (
+      foundationRetention !== null
+      && foundationRetention !== 0
+      && cognitoRetention !== null
+      && cognitoRetention !== 0
+    )
+      ? foundationRetention
+        - cognitoRetention
+      : null;
 
 
   return (
@@ -436,6 +511,9 @@ export default function CurrentProjectBillingDrawer({
                       label:
                         'Foundation',
 
+                      value:
+                        foundationRetention,
+
                       display:
                         retentionLabel(
                           project.foundationRetentionPercent
@@ -445,6 +523,9 @@ export default function CurrentProjectBillingDrawer({
                     {
                       label:
                         'Cognito',
+
+                      value:
+                        cognitoRetention,
 
                       display:
                         retentionLabel(
@@ -456,15 +537,14 @@ export default function CurrentProjectBillingDrawer({
                       label:
                         'Difference',
 
+                      value:
+                        retentionDifference,
+
                       display:
                         (
-                          foundationRetention !== null
-                          && cognitoRetention !== null
+                          retentionDifference !== null
                             ? `${
-                                (
-                                  foundationRetention
-                                  - cognitoRetention
-                                ).toFixed(2)
+                                retentionDifference.toFixed(2)
                               } pts`
                             : '—'
                         ),
@@ -666,9 +746,25 @@ export default function CurrentProjectBillingDrawer({
                 Approved Change Orders
               </span>
 
-              <strong className="drawer-tbd-value">
-                TBD
-              </strong>
+              {changeOrderDetail ? (
+                <>
+                  <strong>
+                    <MoneyValue
+                      value={
+                        changeOrderDetail.netCostAdjustment
+                      }
+                    />
+                  </strong>
+
+                  <small className="commercial-source-note">
+                    Foundation · Net Cost Adjustment
+                  </small>
+                </>
+              ) : (
+                <strong className="drawer-tbd-value">
+                  TBD
+                </strong>
+              )}
             </article>
 
 
@@ -768,7 +864,10 @@ export default function CurrentProjectBillingDrawer({
             </div>
 
 
-            <div className="project-setup-flags">
+            <div
+              className="project-setup-flags"
+              ref={projectControlsRef}
+            >
               <div className="project-setup-flag">
                 <span className="billing-detail-label">
                   Billing Curve
@@ -780,7 +879,30 @@ export default function CurrentProjectBillingDrawer({
                       || 'Not configured'}
                   </strong>
 
-                  <details className="billing-curve-help project-setup-help">
+                  <details
+                    className="billing-curve-help project-setup-help"
+                    data-project-control="curve"
+                    open={
+                      openProjectControl
+                      === 'curve'
+                    }
+                    onToggle={
+                      event => {
+                        if (
+                          event.currentTarget.open
+                        ) {
+                          setOpenProjectControl(
+                            'curve'
+                          );
+                        } else if (
+                          openProjectControl
+                          === 'curve'
+                        ) {
+                          setOpenProjectControl(null);
+                        }
+                      }
+                    }
+                  >
                     <summary
                       aria-label="What the billing curve means"
                       title="What the billing curve means"
@@ -812,6 +934,56 @@ export default function CurrentProjectBillingDrawer({
                 project={project}
                 user={user}
                 onBidLoaded={setOriginatingBidDetail}
+                infoOpen={
+                  openProjectControl
+                  === 'originating-bid'
+                }
+                onInfoOpenChange={
+                  open => {
+                    setOpenProjectControl(
+                      current => {
+                        if (open) {
+                          return 'originating-bid';
+                        }
+
+                        return (
+                          current
+                          === 'originating-bid'
+                            ? null
+                            : current
+                        );
+                      }
+                    );
+                  }
+                }
+              />
+
+
+              <ChangeOrdersPanel
+                project={project}
+                onLoaded={setChangeOrderDetail}
+                infoOpen={
+                  openProjectControl
+                  === 'change-orders'
+                }
+                onInfoOpenChange={
+                  open => {
+                    setOpenProjectControl(
+                      current => {
+                        if (open) {
+                          return 'change-orders';
+                        }
+
+                        return (
+                          current
+                          === 'change-orders'
+                            ? null
+                            : current
+                        );
+                      }
+                    );
+                  }
+                }
               />
             </div>
 
