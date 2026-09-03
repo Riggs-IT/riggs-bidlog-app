@@ -5783,7 +5783,7 @@ tfoot th {
 
   grid-template-columns:
     repeat(
-      3,
+      4,
       minmax(0, 1fr)
     );
 
@@ -6053,6 +6053,7 @@ tfoot th {
   }
 
 
+  .billing-characteristics-grid,
   .billing-kpi-primary-grid {
     grid-template-columns:
       repeat(

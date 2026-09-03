@@ -23,6 +23,10 @@ const BILLING_METRICS = [
     key: 'variance',
     label: 'Variance',
   },
+  {
+    key: 'marginCollected',
+    label: 'Margin Collected',
+  },
 ];
 
 
@@ -137,6 +141,7 @@ function currentProjectPivotRow(
             projected: null,
             actual: null,
             variance: null,
+            marginCollected: null,
           };
         }
 
@@ -156,6 +161,14 @@ function currentProjectPivotRow(
               )
             : null;
 
+        const marginCollected =
+          row.marginCollected === null
+          || row.marginCollected === undefined
+            ? null
+            : toNumber(
+                row.marginCollected
+              );
+
         return {
           month,
 
@@ -171,6 +184,8 @@ function currentProjectPivotRow(
             hasActual
               ? actual - projected
               : null,
+
+          marginCollected,
         };
       }
     );
@@ -233,6 +248,11 @@ function currentProjectPivotRow(
         toNumber(
           project.selectedVariance
         ),
+
+      marginCollected:
+        toNumber(
+          project.selectedMarginCollected
+        ),
     },
 
     raw:
@@ -262,6 +282,7 @@ function bidPivotRow(
             projected: null,
             actual: null,
             variance: null,
+            marginCollected: null,
           };
         }
 
@@ -282,6 +303,9 @@ function bidPivotRow(
             null,
 
           variance:
+            null,
+
+          marginCollected:
             null,
         };
       }
@@ -340,6 +364,9 @@ function bidPivotRow(
         null,
 
       variance:
+        null,
+
+      marginCollected:
         null,
     },
 
@@ -470,6 +497,13 @@ function AllBillingValues({
         label="Variance"
         metric="variance"
         value={cell.variance}
+        currency={currency}
+      />
+
+      <BillingLine
+        label="Margin"
+        metric="marginCollected"
+        value={cell.marginCollected}
         currency={currency}
       />
     </div>
@@ -692,7 +726,8 @@ export default function ProjectBillingPivot({
 
                   hasActivity:
                     row.total.projected !== 0
-                    || row.total.actual !== null,
+                    || row.total.actual !== null
+                    || row.total.marginCollected !== null,
                 };
 
                 return (

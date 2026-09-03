@@ -857,6 +857,7 @@ function aggregateCurrentMonthly(
 ) {
   let projected = 0;
   let actual = 0;
+  let marginCollected = 0;
 
   for (const row of rows || []) {
     const key =
@@ -880,11 +881,17 @@ function aggregateCurrentMonthly(
       toNumber(
         row.actualAmount
       );
+
+    marginCollected +=
+      toNumber(
+        row.marginCollected
+      );
   }
 
   return {
     projected,
     actual,
+    marginCollected,
     variance:
       actual - projected,
   };
@@ -2305,6 +2312,8 @@ export default function App() {
                   monthly.actual,
                 selectedVariance:
                   monthly.variance,
+                selectedMarginCollected:
+                  monthly.marginCollected,
               };
             }
           )
@@ -2585,6 +2594,7 @@ export default function App() {
           month => {
             let currentProjected = 0;
             let currentActual = 0;
+            let currentMarginCollected = 0;
             let weightedBids = 0;
 
             for (
@@ -2617,6 +2627,11 @@ export default function App() {
                 currentActual +=
                   toNumber(
                     monthly.actualAmount
+                  );
+
+                currentMarginCollected +=
+                  toNumber(
+                    monthly.marginCollected
                   );
               }
             }
@@ -2659,6 +2674,7 @@ export default function App() {
               month,
               currentProjected,
               currentActual,
+              currentMarginCollected,
               weightedBids,
 
               combinedExpected:
@@ -2706,6 +2722,10 @@ export default function App() {
               totals.currentActual
               + row.currentActual,
 
+            currentMarginCollected:
+              totals.currentMarginCollected
+              + row.currentMarginCollected,
+
             variance:
               totals.variance
               + row.variance,
@@ -2715,6 +2735,7 @@ export default function App() {
             weightedBids: 0,
             combinedExpected: 0,
             currentActual: 0,
+            currentMarginCollected: 0,
             variance: 0,
           },
         ),
@@ -2769,6 +2790,16 @@ export default function App() {
                   monthly.actualAmount
                 );
 
+          const marginCollected =
+            monthly.marginCollected
+              === null
+              || monthly.marginCollected
+                === undefined
+              ? null
+              : toNumber(
+                  monthly.marginCollected
+                );
+
           rows.push({
             key:
               `month-current-${project.jobListId}`,
@@ -2807,6 +2838,7 @@ export default function App() {
             expected:
               projected,
             actual,
+            marginCollected,
             variance:
               actual === null
                 ? null
@@ -2885,6 +2917,8 @@ export default function App() {
                 monthly.weightedMonthlyForecastAmount
               ),
             actual:
+              null,
+            marginCollected:
               null,
             variance:
               null,
@@ -4338,6 +4372,10 @@ export default function App() {
                   </th>
 
                   <th className="numeric">
+                    Margin Collected
+                  </th>
+
+                  <th className="numeric">
                     Variance
                   </th>
                 </tr>
@@ -4396,6 +4434,12 @@ export default function App() {
                           )}
                         </td>
 
+                        <td className="numeric">
+                          {currency(
+                            row.currentMarginCollected
+                          )}
+                        </td>
+
                         <td
                           className={
                             row.variance > 0
@@ -4423,7 +4467,7 @@ export default function App() {
                             }
                             className="monthly-project-detail-row"
                           >
-                            <td colSpan="6">
+                            <td colSpan="7">
                               <div className="monthly-project-detail">
                                 <div className="monthly-project-detail-heading">
                                   <div>
@@ -4472,6 +4516,10 @@ export default function App() {
 
                                         <th className="numeric">
                                           Actual Billings
+                                        </th>
+
+                                        <th className="numeric">
+                                          Margin Collected
                                         </th>
 
                                         <th className="numeric">
@@ -4565,6 +4613,15 @@ export default function App() {
                                                     )}
                                               </td>
 
+                                              <td className="numeric">
+                                                {detail.marginCollected
+                                                  === null
+                                                  ? '—'
+                                                  : currency(
+                                                      detail.marginCollected
+                                                    )}
+                                              </td>
+
                                               <td
                                                 className={
                                                   detail.variance
@@ -4607,7 +4664,7 @@ export default function App() {
                 {!monthlyComparison.length && (
                   <tr>
                     <td
-                      colSpan="6"
+                      colSpan="7"
                       className="empty-cell"
                     >
                       No monthly range selected.
@@ -4645,6 +4702,12 @@ export default function App() {
                     <td className="numeric">
                       {currency(
                         monthlyComparisonTotals.currentActual
+                      )}
+                    </td>
+
+                    <td className="numeric">
+                      {currency(
+                        monthlyComparisonTotals.currentMarginCollected
                       )}
                     </td>
 

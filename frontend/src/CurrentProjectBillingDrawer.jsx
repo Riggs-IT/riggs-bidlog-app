@@ -557,6 +557,23 @@ export default function CurrentProjectBillingDrawer({
 
             <article>
               <span>
+                Estimated Margin
+              </span>
+
+              <strong>
+                {retentionLabel(
+                  project.estimatedMarginPercent
+                )}
+              </strong>
+
+              <small className="commercial-source-note">
+                Foundation revised
+              </small>
+            </article>
+
+
+            <article>
+              <span>
                 CY
               </span>
 
