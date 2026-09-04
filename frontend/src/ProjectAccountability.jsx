@@ -911,6 +911,10 @@ export default function ProjectAccountability({
                 </th>
 
                 <th className="numeric">
+                  Margin Collected
+                </th>
+
+                <th className="numeric">
                   Actual vs Contract
                 </th>
 
@@ -1042,6 +1046,28 @@ export default function ProjectAccountability({
                           row.foundationActualTotal
                         }
                       />
+                    </td>
+
+                    <td className="numeric strong-cell">
+                      <MoneyValue
+                        value={
+                          row.marginCollectedTotal
+                        }
+                      />
+
+                      {row.marginDataComplete ? (
+                        <small className="cell-subtext">
+                          {retentionLabel(
+                            row.weightedHistoricalMarginPercent
+                          )}
+                        </small>
+                      ) : (
+                        <small className="cell-subtext">
+                          <span className="completed-project-pill warning">
+                            Margin incomplete
+                          </span>
+                        </small>
+                      )}
                     </td>
 
                     <td className="numeric">

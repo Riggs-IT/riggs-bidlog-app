@@ -678,6 +678,37 @@ export default function CompletedProjectBillingDrawer({
 
             <article>
               <span>
+                Historical Margin
+              </span>
+
+              {project.marginDataComplete ? (
+                <>
+                  <strong>
+                    {retentionLabel(
+                      project.weightedHistoricalMarginPercent
+                    )}
+                  </strong>
+
+                  <small className="commercial-source-note">
+                    Weighted from Foundation billings
+                  </small>
+                </>
+              ) : (
+                <>
+                  <strong className="drawer-tbd-value">
+                    —
+                  </strong>
+
+                  <DataPill tone="warning">
+                    Margin incomplete
+                  </DataPill>
+                </>
+              )}
+            </article>
+
+
+            <article>
+              <span>
                 CY
               </span>
 
@@ -821,6 +852,33 @@ export default function CompletedProjectBillingDrawer({
                 + ' billing months'
               }
             />
+
+
+            <div className="completed-detail-value">
+              <span>
+                Margin Collected
+              </span>
+
+              <strong>
+                <MoneyValue
+                  value={
+                    project.marginCollectedTotal
+                  }
+                />
+              </strong>
+
+              {project.marginDataComplete ? (
+                <small>
+                  {retentionLabel(
+                    project.weightedHistoricalMarginPercent
+                  )} weighted historical margin
+                </small>
+              ) : (
+                <DataPill tone="warning">
+                  Margin incomplete
+                </DataPill>
+              )}
+            </div>
 
 
             <DetailValue
@@ -1237,6 +1295,10 @@ export default function CompletedProjectBillingDrawer({
                       </th>
 
                       <th className="numeric">
+                        Margin Collected
+                      </th>
+
+                      <th className="numeric">
                         Running Total
                       </th>
 
@@ -1270,6 +1332,28 @@ export default function CompletedProjectBillingDrawer({
                             />
                           </td>
 
+                          <td className="numeric strong-cell">
+                            <MoneyValue
+                              value={
+                                row.marginCollected
+                              }
+                            />
+
+                            {row.marginDataComplete ? (
+                              <small className="cell-subtext">
+                                {retentionLabel(
+                                  row.weightedHistoricalMarginPercent
+                                )}
+                              </small>
+                            ) : (
+                              <small className="cell-subtext">
+                                <span className="completed-data-pill warning">
+                                  Margin incomplete
+                                </span>
+                              </small>
+                            )}
+                          </td>
+
                           <td className="numeric">
                             <MoneyValue
                               value={
@@ -1300,7 +1384,7 @@ export default function CompletedProjectBillingDrawer({
                     {!monthly.length && (
                       <tr>
                         <td
-                          colSpan="4"
+                          colSpan="5"
                           className="empty-cell"
                         >
                           No monthly Foundation billing
@@ -1323,6 +1407,14 @@ export default function CompletedProjectBillingDrawer({
                           <MoneyValue
                             value={
                               actualTotal
+                            }
+                          />
+                        </td>
+
+                        <td className="numeric strong-cell">
+                          <MoneyValue
+                            value={
+                              project.marginCollectedTotal
                             }
                           />
                         </td>

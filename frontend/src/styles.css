@@ -3475,7 +3475,7 @@ h2 {
 
 
 .completed-project-table {
-  min-width: 1320px;
+  min-width: 1460px;
 }
 
 
@@ -6218,9 +6218,38 @@ tfoot th {
 }
 
 
-.completed-commercial-grid,
+.completed-commercial-grid {
+  grid-template-columns:
+    repeat(
+      5,
+      minmax(0, 1fr)
+    );
+
+  margin-bottom: 12px;
+}
+
+
 .completed-lifecycle-summary-grid {
   margin-bottom: 12px;
+}
+
+
+@media (max-width: 1200px) {
+  .completed-commercial-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+}
+
+
+@media (max-width: 760px) {
+  .completed-commercial-grid {
+    grid-template-columns:
+      1fr;
+  }
 }
 
 
