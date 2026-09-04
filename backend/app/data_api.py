@@ -728,6 +728,150 @@ def get_completed_project_monthly(
 
 
 # ============================================================
+# BID LOG USAGE
+# ============================================================
+
+
+def _bid_log_usage_request(
+    path: str,
+    payload: dict,
+    *,
+    actor_eid: int,
+    request_id: str,
+    operation: str,
+) -> dict:
+
+    try:
+        response = _get_http_client().post(
+            path,
+            json=payload,
+            headers=_request_headers(
+                include_service_auth=True,
+                request_id=request_id,
+                actor_eid=actor_eid,
+            ),
+        )
+
+    except httpx.TimeoutException as exc:
+        raise DataAPIUnavailable(
+            "Riggs Data API request timed out "
+            f"during {operation}."
+        ) from exc
+
+    except httpx.RequestError as exc:
+        raise DataAPIUnavailable(
+            "Unable to connect to the Riggs Data API "
+            f"during {operation}."
+        ) from exc
+
+
+    if response.status_code in {
+        400,
+        403,
+        404,
+        409,
+        422,
+    }:
+        detail = _detail(
+            response
+        )
+
+        if detail is not None:
+            raise DataAPIRequestRejected(
+                response.status_code,
+                detail,
+            )
+
+
+    _raise_common_failure(
+        response,
+        operation=operation,
+    )
+
+
+    if response.status_code != 200:
+        raise DataAPIInvalidResponse(
+            "Unexpected Riggs Data API response "
+            f"during {operation}."
+        )
+
+
+    return _json_object(
+        response,
+        operation=operation,
+    )
+
+
+
+def record_bid_log_usage_heartbeat(
+    *,
+    usage_session_id: str,
+    actor_eid: int,
+    it_user_id: int,
+    display_name: str,
+    microsoft_username: str | None,
+    app_role: str,
+    current_page: str | None,
+    client_active: bool,
+    request_id: str,
+) -> dict:
+
+    return _bid_log_usage_request(
+        "/v1/bid-log/usage/heartbeat",
+        {
+            "usageSessionId":
+                usage_session_id,
+
+            "itUserId":
+                it_user_id,
+
+            "displayName":
+                display_name,
+
+            "microsoftUsername":
+                microsoft_username,
+
+            "appRole":
+                app_role,
+
+            "currentPage":
+                current_page,
+
+            "clientActive":
+                client_active,
+        },
+        actor_eid=actor_eid,
+        request_id=request_id,
+        operation="Bid Log usage heartbeat",
+    )
+
+
+
+def end_bid_log_usage_session(
+    *,
+    usage_session_id: str,
+    actor_eid: int,
+    end_reason: str,
+    request_id: str,
+) -> dict:
+
+    return _bid_log_usage_request(
+        "/v1/bid-log/usage/end",
+        {
+            "usageSessionId":
+                usage_session_id,
+
+            "endReason":
+                end_reason,
+        },
+        actor_eid=actor_eid,
+        request_id=request_id,
+        operation="Bid Log usage session end",
+    )
+
+
+
+# ============================================================
 # PM / OPERATIONS FORECAST
 # ============================================================
 

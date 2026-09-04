@@ -54,6 +54,8 @@ from .data_api import (
     link_current_project_originating_bid,
     get_completed_project_monthly,
     get_completed_projects,
+    end_bid_log_usage_session,
+    record_bid_log_usage_heartbeat,
     get_project_close_accountability,
     get_pm_forecast_policy,
     update_pm_forecast_policy,
@@ -524,6 +526,220 @@ def auth_me(
         current_user
         .to_public_dict()
     )
+
+
+@app.post(
+    "/api/usage/heartbeat"
+)
+async def bid_log_usage_heartbeat_proxy(
+    request: Request,
+
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    try:
+        payload = await request.json()
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_json_body",
+        ) from exc
+
+
+    if not isinstance(
+        payload,
+        dict,
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_usage_payload",
+        )
+
+
+    try:
+        usage_session_id = str(
+            UUID(
+                str(
+                    payload.get(
+                        "usageSessionId"
+                    )
+                )
+            )
+        )
+
+    except (
+        ValueError,
+        TypeError,
+        AttributeError,
+    ) as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_usage_session_id",
+        ) from exc
+
+
+    current_page = payload.get(
+        "currentPage"
+    )
+
+    if current_page is not None:
+        if (
+            not isinstance(
+                current_page,
+                str,
+            )
+            or len(current_page) > 100
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="invalid_usage_current_page",
+            )
+
+
+    client_active = payload.get(
+        "clientActive",
+        True,
+    )
+
+    if not isinstance(
+        client_active,
+        bool,
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_usage_active_state",
+        )
+
+
+    try:
+        return record_bid_log_usage_heartbeat(
+            usage_session_id=
+                usage_session_id,
+
+            actor_eid=
+                current_user.eid,
+
+            it_user_id=
+                current_user.it_user_id,
+
+            display_name=
+                current_user.display_name,
+
+            microsoft_username=
+                current_user.microsoft_username,
+
+            app_role=
+                current_user.app_role,
+
+            current_page=
+                current_page,
+
+            client_active=
+                client_active,
+
+            request_id=
+                _browser_request_id(
+                    request
+                ),
+        )
+
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(
+            exc
+        )
+
+
+
+@app.post(
+    "/api/usage/end"
+)
+async def bid_log_usage_end_proxy(
+    request: Request,
+
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    try:
+        payload = await request.json()
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_json_body",
+        ) from exc
+
+
+    if not isinstance(
+        payload,
+        dict,
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_usage_payload",
+        )
+
+
+    try:
+        usage_session_id = str(
+            UUID(
+                str(
+                    payload.get(
+                        "usageSessionId"
+                    )
+                )
+            )
+        )
+
+    except (
+        ValueError,
+        TypeError,
+        AttributeError,
+    ) as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_usage_session_id",
+        ) from exc
+
+
+    end_reason = payload.get(
+        "endReason"
+    )
+
+    if end_reason not in {
+        "manual_logout",
+        "inactivity_timeout",
+    }:
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_usage_end_reason",
+        )
+
+
+    try:
+        return end_bid_log_usage_session(
+            usage_session_id=
+                usage_session_id,
+
+            actor_eid=
+                current_user.eid,
+
+            end_reason=
+                end_reason,
+
+            request_id=
+                _browser_request_id(
+                    request
+                ),
+        )
+
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(
+            exc
+        )
+
 
 
 @app.post("/api/auth/logout")

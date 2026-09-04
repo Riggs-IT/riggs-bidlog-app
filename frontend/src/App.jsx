@@ -1,6 +1,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -12,6 +13,145 @@ import useStickyTableHeader from './useStickyTableHeader.js';
 
 const ALL = '__ALL__';
 const UNASSIGNED = '__UNASSIGNED__';
+
+const USAGE_SESSION_STORAGE_KEY =
+  'riggs-bid-log-usage-session-id';
+
+const INACTIVITY_TIMEOUT_MS =
+  20 * 60 * 1000;
+
+const USAGE_HEARTBEAT_INTERVAL_MS =
+  60 * 1000;
+
+const INACTIVITY_CHECK_INTERVAL_MS =
+  15 * 1000;
+
+
+function createUsageSessionId() {
+  try {
+    if (
+      window.crypto
+      && typeof window.crypto.randomUUID
+        === 'function'
+    ) {
+      return window.crypto.randomUUID();
+    }
+  } catch {
+    // Fall through to local UUID generation.
+  }
+
+
+  const bytes =
+    new Uint8Array(16);
+
+
+  try {
+    if (
+      window.crypto
+      && typeof window.crypto.getRandomValues
+        === 'function'
+    ) {
+      window.crypto.getRandomValues(
+        bytes,
+      );
+
+    } else {
+      for (
+        let index = 0;
+        index < bytes.length;
+        index += 1
+      ) {
+        bytes[index] =
+          Math.floor(
+            Math.random() * 256
+          );
+      }
+    }
+
+  } catch {
+    for (
+      let index = 0;
+      index < bytes.length;
+      index += 1
+    ) {
+      bytes[index] =
+        Math.floor(
+          Math.random() * 256
+        );
+    }
+  }
+
+
+  bytes[6] =
+    (bytes[6] & 0x0f) | 0x40;
+
+  bytes[8] =
+    (bytes[8] & 0x3f) | 0x80;
+
+
+  const hex =
+    Array.from(
+      bytes,
+      value =>
+        value
+          .toString(16)
+          .padStart(2, '0'),
+    );
+
+
+  return [
+    hex.slice(0, 4).join(''),
+    hex.slice(4, 6).join(''),
+    hex.slice(6, 8).join(''),
+    hex.slice(8, 10).join(''),
+    hex.slice(10, 16).join(''),
+  ].join('-');
+}
+
+
+function getUsageSessionId() {
+  try {
+    const existing =
+      window.sessionStorage.getItem(
+        USAGE_SESSION_STORAGE_KEY,
+      );
+
+    if (existing) {
+      return existing;
+    }
+  } catch {
+    // Tracking stays fail-open.
+  }
+
+
+  const created =
+    createUsageSessionId();
+
+
+  try {
+    window.sessionStorage.setItem(
+      USAGE_SESSION_STORAGE_KEY,
+      created,
+    );
+  } catch {
+    // The in-memory ref is still enough
+    // for this page lifecycle.
+  }
+
+
+  return created;
+}
+
+
+function clearUsageSessionId() {
+  try {
+    window.sessionStorage.removeItem(
+      USAGE_SESSION_STORAGE_KEY,
+    );
+  } catch {
+    // Never let tracking break auth/UI.
+  }
+}
 
 
 function getInitialTheme() {
@@ -59,7 +199,7 @@ function friendlyError(detail) {
       'Sign in with your Riggs Companies Microsoft account to continue.',
 
     session_inactive_timeout:
-      'Your session ended after 1 hour of inactivity. Sign in again to continue.',
+      'Your session ended after 20 minutes of inactivity. Sign in again to continue.',
 
     invalid_session:
       'Your previous Bid Log session is no longer valid. Sign in again to continue.',
@@ -1371,6 +1511,18 @@ export default function App() {
     setActivePage,
   ] = useState('projected');
 
+  const usageSessionIdRef =
+    useRef(null);
+
+  const activePageRef =
+    useRef(activePage);
+
+  const lastHumanActivityAtRef =
+    useRef(Date.now());
+
+  const logoutInProgressRef =
+    useRef(false);
+
   const [
     loading,
     setLoading,
@@ -1587,6 +1739,12 @@ export default function App() {
 
 
   useEffect(() => {
+    activePageRef.current =
+      activePage;
+  }, [activePage]);
+
+
+  useEffect(() => {
     let cancelled = false;
 
     async function loadUser() {
@@ -1609,6 +1767,12 @@ export default function App() {
           }
 
           return;
+        }
+
+        if (
+          response.status === 401
+        ) {
+          clearUsageSessionId();
         }
 
         let detail =
@@ -1677,6 +1841,361 @@ export default function App() {
     };
 
   }, []);
+
+
+  useEffect(() => {
+    if (!user) {
+      usageSessionIdRef.current =
+        null;
+
+      return undefined;
+    }
+
+
+    let stopped = false;
+
+
+    let usageSessionId = null;
+
+
+    try {
+      usageSessionId =
+        getUsageSessionId();
+
+    } catch {
+      /*
+        Usage tracking is additive.
+        If initialization ever fails,
+        leave the Bid Log functioning.
+      */
+      return undefined;
+    }
+
+
+    if (!usageSessionId) {
+      return undefined;
+    }
+
+
+    usageSessionIdRef.current =
+      usageSessionId;
+
+    lastHumanActivityAtRef.current =
+      Date.now();
+
+    logoutInProgressRef.current =
+      false;
+
+
+    function currentPageLabel() {
+      return (
+        activePageRef.current
+        === 'accountability'
+      )
+        ? 'Completed Projects'
+        : 'Projected Billings';
+    }
+
+
+    function markHumanActivity() {
+      if (stopped) {
+        return;
+      }
+
+      lastHumanActivityAtRef.current =
+        Date.now();
+    }
+
+
+    async function endUsage(
+      reason,
+    ) {
+      const currentUsageSessionId =
+        usageSessionIdRef.current;
+
+      if (!currentUsageSessionId) {
+        return;
+      }
+
+      try {
+        await window.fetch(
+          '/api/usage/end',
+          {
+            method: 'POST',
+
+            credentials:
+              'same-origin',
+
+            headers: {
+              'Content-Type':
+                'application/json',
+            },
+
+            body:
+              JSON.stringify({
+                usageSessionId:
+                  currentUsageSessionId,
+
+                endReason:
+                  reason,
+              }),
+          },
+        );
+
+      } catch {
+        // Usage tracking must never
+        // block sign-out.
+      }
+    }
+
+
+    async function finishTimeout() {
+      if (
+        logoutInProgressRef.current
+      ) {
+        return;
+      }
+
+      logoutInProgressRef.current =
+        true;
+
+      stopped = true;
+
+
+      await endUsage(
+        'inactivity_timeout',
+      );
+
+
+      try {
+        await window.fetch(
+          '/api/auth/logout',
+          {
+            method: 'POST',
+
+            credentials:
+              'same-origin',
+          },
+        );
+
+      } catch {
+        // Redirect regardless. The
+        // server-side idle timeout is
+        // still a fallback.
+      }
+
+
+      clearUsageSessionId();
+
+      usageSessionIdRef.current =
+        null;
+
+
+      window.location.replace(
+        '/?signed_out=timeout',
+      );
+    }
+
+
+    function idleMilliseconds() {
+      return (
+        Date.now()
+        - lastHumanActivityAtRef.current
+      );
+    }
+
+
+    async function heartbeat() {
+      if (
+        stopped
+        || document.visibilityState
+           !== 'visible'
+      ) {
+        return;
+      }
+
+
+      if (
+        idleMilliseconds()
+        >= INACTIVITY_TIMEOUT_MS
+      ) {
+        await finishTimeout();
+        return;
+      }
+
+
+      try {
+        const response =
+          await window.fetch(
+            '/api/usage/heartbeat',
+            {
+              method: 'POST',
+
+              credentials:
+                'same-origin',
+
+              headers: {
+                'Content-Type':
+                  'application/json',
+              },
+
+              body:
+                JSON.stringify({
+                  usageSessionId:
+                    usageSessionIdRef
+                      .current,
+
+                  currentPage:
+                    currentPageLabel(),
+
+                  clientActive:
+                    true,
+                }),
+            },
+          );
+
+
+        if (
+          response.status === 401
+        ) {
+          stopped = true;
+
+          clearUsageSessionId();
+
+          usageSessionIdRef.current =
+            null;
+
+
+          window.location.replace(
+            '/?signed_out=timeout',
+          );
+        }
+
+      } catch {
+        /*
+          Usage tracking is additive.
+          A temporary tracking/API issue
+          must not interrupt the Bid Log.
+        */
+      }
+    }
+
+
+    function checkInactivity() {
+      if (
+        idleMilliseconds()
+        >= INACTIVITY_TIMEOUT_MS
+      ) {
+        void finishTimeout();
+      }
+    }
+
+
+    function handleVisibilityChange() {
+      if (
+        document.visibilityState
+        !== 'visible'
+      ) {
+        return;
+      }
+
+
+      if (
+        idleMilliseconds()
+        >= INACTIVITY_TIMEOUT_MS
+      ) {
+        void finishTimeout();
+        return;
+      }
+
+
+      /*
+        Returning to the tab before the
+        timeout counts as user activity.
+      */
+      markHumanActivity();
+
+      void heartbeat();
+    }
+
+
+    const activityEvents = [
+      'pointerdown',
+      'keydown',
+      'scroll',
+      'touchstart',
+    ];
+
+
+    for (
+      const eventName
+      of activityEvents
+    ) {
+      window.addEventListener(
+        eventName,
+        markHumanActivity,
+        {
+          passive: true,
+        },
+      );
+    }
+
+
+    document.addEventListener(
+      'visibilitychange',
+      handleVisibilityChange,
+    );
+
+
+    void heartbeat();
+
+
+    const heartbeatTimer =
+      window.setInterval(
+        () => {
+          void heartbeat();
+        },
+        USAGE_HEARTBEAT_INTERVAL_MS,
+      );
+
+
+    const inactivityTimer =
+      window.setInterval(
+        checkInactivity,
+        INACTIVITY_CHECK_INTERVAL_MS,
+      );
+
+
+    return () => {
+      stopped = true;
+
+      window.clearInterval(
+        heartbeatTimer,
+      );
+
+      window.clearInterval(
+        inactivityTimer,
+      );
+
+
+      for (
+        const eventName
+        of activityEvents
+      ) {
+        window.removeEventListener(
+          eventName,
+          markHumanActivity,
+        );
+      }
+
+
+      document.removeEventListener(
+        'visibilitychange',
+        handleVisibilityChange,
+      );
+    };
+
+  }, [user]);
 
 
   useEffect(() => {
@@ -1834,18 +2353,73 @@ export default function App() {
 
 
   async function signOut() {
-    await window.fetch(
-      '/api/auth/logout',
-      {
-        method: 'POST',
-        credentials:
-          'same-origin',
-      },
-    );
+    if (
+      logoutInProgressRef.current
+    ) {
+      return;
+    }
 
-    window.location.assign(
-      '/?signed_out=1',
-    );
+    logoutInProgressRef.current =
+      true;
+
+
+    const usageSessionId =
+      usageSessionIdRef.current;
+
+
+    if (usageSessionId) {
+      try {
+        await window.fetch(
+          '/api/usage/end',
+          {
+            method: 'POST',
+
+            credentials:
+              'same-origin',
+
+            headers: {
+              'Content-Type':
+                'application/json',
+            },
+
+            body:
+              JSON.stringify({
+                usageSessionId,
+
+                endReason:
+                  'manual_logout',
+              }),
+          },
+        );
+
+      } catch {
+        // Usage tracking must never
+        // block manual sign-out.
+      }
+    }
+
+
+    try {
+      await window.fetch(
+        '/api/auth/logout',
+        {
+          method: 'POST',
+          credentials:
+            'same-origin',
+        },
+      );
+
+    } finally {
+      clearUsageSessionId();
+
+      usageSessionIdRef.current =
+        null;
+
+
+      window.location.assign(
+        '/?signed_out=1',
+      );
+    }
   }
 
 
