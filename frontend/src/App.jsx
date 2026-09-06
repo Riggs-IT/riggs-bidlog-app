@@ -5878,7 +5878,7 @@ export default function App() {
 
               <p className="billing-section-explainer">
                 Switch between By Month and By Project.
-                Collapse simply hides this section.
+                Collapse hides this section.
               </p>
             </div>
 
