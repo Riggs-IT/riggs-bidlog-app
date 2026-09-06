@@ -5667,6 +5667,63 @@ tfoot th {
 }
 
 
+.monthly-margin-cell {
+  min-width: 138px;
+}
+
+
+.monthly-margin-value,
+.monthly-margin-percent {
+  display: block;
+}
+
+
+.monthly-margin-value {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+
+.monthly-margin-percent {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+
+.monthly-margin-warning {
+  display: inline-flex;
+  align-items: center;
+
+  min-height: 24px;
+
+  padding: 3px 7px;
+
+  border:
+    1px solid
+    color-mix(
+      in srgb,
+      var(--warning) 48%,
+      var(--border)
+    );
+
+  border-radius: 999px;
+
+  background: var(--warning-soft);
+
+  color: var(--warning);
+
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+
+  white-space: nowrap;
+}
+
+
 @media (max-width: 900px) {
   .project-location-line {
     max-width: 240px;
@@ -7018,6 +7075,66 @@ th.pivot-project-column {
   letter-spacing: 0.045em;
 
   line-height: 1;
+}
+
+
+.pivot-project-role-label {
+  color:
+    var(--muted);
+
+  font-size: 8px;
+  font-weight: 750;
+
+  letter-spacing: 0.045em;
+
+  text-transform: uppercase;
+}
+
+
+.pivot-project-context-line {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+
+  gap: 0;
+
+  color:
+    var(--text-soft);
+
+  font-size: 8px;
+  font-weight: 700;
+
+  line-height: 1.25;
+}
+
+
+.pivot-project-context-group {
+  display: inline-flex;
+  align-items: center;
+
+  min-width: 0;
+}
+
+
+.pivot-project-context-item {
+  display: inline-flex;
+  align-items: baseline;
+
+  gap: 3px;
+
+  white-space: nowrap;
+}
+
+
+.pivot-project-context-separator {
+  margin:
+    0
+    5px;
+
+  color:
+    var(--muted-2);
 }
 
 
@@ -8779,4 +8896,796 @@ tbody td {
 .originating-bid-help-popover,
 .change-orders-popover {
   z-index: 130;
+}
+
+
+/* ============================================================
+   PROJECT TEAM COLUMN
+   ============================================================ */
+
+.project-team-column {
+  min-width: 220px;
+}
+
+
+.project-team-cell {
+  min-width: 180px;
+
+  display: grid;
+  gap: 3px;
+}
+
+
+.project-team-member {
+  min-width: 0;
+
+  display: grid;
+
+  grid-template-columns:
+    42px
+    minmax(0, 1fr);
+
+  gap: 7px;
+
+  align-items: baseline;
+}
+
+
+.project-team-role {
+  color: var(--muted);
+
+  font-size: 8px;
+  font-weight: 800;
+
+  letter-spacing: 0.045em;
+
+  line-height: 1.25;
+
+  text-transform: uppercase;
+}
+
+
+.project-team-name {
+  overflow: hidden;
+
+  color: var(--text-soft);
+
+  font-size: 10px;
+  font-weight: 700;
+
+  line-height: 1.25;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.project-team-empty {
+  color: var(--muted-2);
+}
+
+
+.project-pivot-table
+.pivot-team-column {
+  width: 220px;
+  min-width: 220px;
+  max-width: 220px;
+}
+
+
+.monthly-project-table {
+  min-width: 1040px;
+}
+
+
+.projected-breakdown-table {
+  min-width: 1480px;
+}
+
+
+.completed-project-table {
+  min-width: 1680px;
+}
+
+
+/* ============================================================
+   BRIAN B4 DETAIL DRAWER VISUAL NORMALIZATION
+   ============================================================ */
+
+/* Shared spacing rhythm across both drawers */
+.billing-drawer-meta,
+.billing-characteristics-grid,
+.billing-kpi-grid,
+.completed-drawer-meta,
+.completed-kpi-grid,
+.completed-detail-grid {
+  gap: 12px;
+  align-items: stretch;
+}
+
+.billing-drawer-meta {
+  margin-bottom: 18px;
+}
+
+.billing-characteristics-grid,
+.billing-kpi-primary-grid,
+.billing-kpi-secondary-grid,
+.completed-commercial-grid,
+.completed-detail-grid {
+  margin-bottom: 12px;
+}
+
+
+/* Retention card becomes the visual template for all cards */
+.billing-meta-card,
+.billing-characteristics-grid > article,
+.billing-kpi-grid > article,
+.completed-detail-value {
+  min-height: 106px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+
+  gap: 6px;
+
+  padding: 15px;
+
+  border: 1px solid var(--border);
+  border-radius: 10px;
+
+  background: var(--surface-2);
+}
+
+
+/* Small uppercase labels */
+.billing-meta-label,
+.billing-characteristics-grid > article > span:first-child,
+.billing-kpi-grid > article > span:first-child,
+.completed-detail-value > span:first-child,
+.billing-detail-label {
+  margin: 0;
+
+  color: var(--muted);
+
+  font-size: 10px;
+  font-weight: 750;
+
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+
+/* Main card values */
+.billing-meta-card > strong,
+.billing-characteristics-grid > article > strong,
+.billing-kpi-grid > article > strong,
+.billing-kpi-grid .date-kpi,
+.completed-detail-value > strong {
+  display: block;
+  margin: 0;
+
+  color: var(--text);
+
+  font-size: 16px;
+  font-weight: 800;
+
+  line-height: 1.25;
+}
+
+
+/* Long text behaves cleanly */
+.billing-meta-card > strong,
+.billing-location-card > strong {
+  word-break: break-word;
+}
+
+
+/* Supporting text / source notes */
+.billing-location-card > small:not(.billing-meta-label),
+.billing-kpi-grid > article > small,
+.completed-detail-value > small,
+.commercial-source-note {
+  margin: 0;
+
+  color: var(--muted);
+
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+
+/* Completed drawer top summary should visually match active drawer */
+.completed-drawer-meta {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      5,
+      minmax(0, 1fr)
+    );
+
+  gap: 12px;
+
+  padding:
+    0
+    26px
+    18px;
+
+  border-bottom: 0;
+  background: transparent;
+}
+
+.completed-drawer-scroll {
+  padding-top: 0;
+}
+
+
+/* Secondary panels should share the same clean radius / spacing feel */
+.project-setup-flags,
+.billing-curve-summary,
+.completed-derived-note,
+.completed-empty-panel,
+.completed-inline-warning {
+  border-radius: 10px;
+}
+
+.project-setup-flags {
+  column-gap: 12px;
+  row-gap: 12px;
+
+  padding: 15px;
+}
+
+.billing-curve-summary {
+  margin-bottom: 12px;
+  padding: 15px;
+
+  background: var(--surface-2);
+}
+
+
+/* Section spacing cleanup */
+.billing-assumptions,
+.billing-monthly-section,
+.completed-drawer-section {
+  margin-top: 20px;
+}
+
+.completed-drawer-section {
+  padding-top: 20px;
+}
+
+
+/* Responsive cleanup */
+@media (max-width: 1280px) {
+  .billing-drawer-meta-five,
+  .completed-drawer-meta.billing-drawer-meta-five {
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(0, 1fr)
+      );
+  }
+}
+
+@media (max-width: 900px) {
+  .billing-drawer-meta-five,
+  .completed-drawer-meta.billing-drawer-meta-five,
+  .billing-characteristics-grid,
+  .billing-kpi-primary-grid,
+  .billing-kpi-secondary-grid,
+  .completed-commercial-grid,
+  .completed-detail-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+}
+
+@media (max-width: 640px) {
+  .billing-drawer-meta-five,
+  .completed-drawer-meta.billing-drawer-meta-five,
+  .billing-characteristics-grid,
+  .billing-kpi-primary-grid,
+  .billing-kpi-secondary-grid,
+  .completed-commercial-grid,
+  .completed-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ============================================================
+   BRIAN B6A - SIDE FILTER DRAWER
+   ============================================================ */
+
+.floating-filter-tab {
+  position: fixed;
+
+  z-index: 90;
+
+  top: 50%;
+  right: 0;
+
+  transform:
+    translateY(-50%);
+
+  min-height: 92px;
+
+  padding:
+    14px
+    9px;
+
+  border:
+    1px solid
+    var(--border-strong);
+
+  border-right: 0;
+
+  border-radius:
+    10px
+    0
+    0
+    10px;
+
+  background:
+    var(--surface-2);
+
+  color:
+    var(--text);
+
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 0.08em;
+
+  cursor: pointer;
+
+  box-shadow:
+    -8px 0 24px
+    rgba(0, 0, 0, 0.2);
+}
+
+
+.floating-filter-tab span {
+  writing-mode:
+    vertical-rl;
+
+  transform:
+    rotate(180deg);
+
+  text-transform:
+    uppercase;
+}
+
+
+.floating-filter-tab:hover {
+  background:
+    var(--surface-3);
+
+  border-color:
+    var(--accent);
+}
+
+
+.side-filter-backdrop {
+  position: fixed;
+
+  z-index: 110;
+
+  inset: 0;
+
+  display: flex;
+  justify-content: flex-end;
+
+  background:
+    rgba(0, 0, 0, 0.46);
+
+  backdrop-filter:
+    blur(2px);
+}
+
+
+.side-filter-drawer {
+  width:
+    min(
+      440px,
+      calc(100vw - 28px)
+    );
+
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+  border-left:
+    1px solid
+    var(--border-strong);
+
+  background:
+    var(--surface);
+
+  box-shadow:
+    -20px 0 46px
+    rgba(0, 0, 0, 0.34);
+}
+
+
+.side-filter-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  padding:
+    22px
+    22px
+    18px;
+
+  border-bottom:
+    1px solid
+    var(--border);
+}
+
+
+.side-filter-header h2 {
+  margin:
+    5px
+    0
+    4px;
+
+  font-size: 22px;
+}
+
+
+.side-filter-header p {
+  margin: 0;
+
+  color:
+    var(--muted);
+
+  font-size: 11px;
+}
+
+
+.side-filter-close {
+  width: 36px;
+  height: 36px;
+
+  flex: 0 0 auto;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 8px;
+
+  background:
+    var(--surface-2);
+
+  color:
+    var(--text);
+
+  font: inherit;
+  font-size: 24px;
+
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+
+.side-filter-close:hover {
+  background:
+    var(--surface-3);
+
+  border-color:
+    var(--border-strong);
+}
+
+
+.side-filter-body {
+  flex: 1 1 auto;
+
+  overflow-y: auto;
+
+  padding:
+    6px
+    22px
+    24px;
+}
+
+
+.side-filter-section {
+  padding:
+    18px
+    0;
+
+  border-bottom:
+    1px solid
+    var(--border);
+}
+
+
+.side-filter-section:last-child {
+  border-bottom: 0;
+}
+
+
+.side-filter-section-title {
+  margin-bottom: 12px;
+
+  color:
+    var(--muted);
+
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 0.08em;
+
+  text-transform: uppercase;
+}
+
+
+.side-filter-fields {
+  display: grid;
+
+  grid-template-columns: 1fr;
+
+  gap: 12px;
+}
+
+
+.side-filter-fields
+.filter-field {
+  width: 100%;
+}
+
+
+.side-filter-fields
+.filter-field input,
+.side-filter-fields
+.filter-field select {
+  width: 100%;
+}
+
+
+.side-filter-source-toggles {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+  gap: 10px;
+}
+
+
+.side-filter-source-toggles button {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  gap: 3px;
+
+  padding:
+    12px
+    13px;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 8px;
+
+  background:
+    var(--surface-2);
+
+  color:
+    var(--muted);
+
+  font: inherit;
+
+  text-align: left;
+
+  cursor: pointer;
+}
+
+
+.side-filter-source-toggles button.active {
+  border-color:
+    var(--accent);
+
+  background:
+    var(--accent-soft);
+
+  color:
+    var(--text);
+}
+
+
+.side-filter-source-toggles strong {
+  font-size: 11px;
+}
+
+
+.side-filter-source-toggles small {
+  color:
+    var(--muted);
+
+  font-size: 9px;
+}
+
+
+.side-filter-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  padding:
+    14px
+    22px;
+
+  border-top:
+    1px solid
+    var(--border);
+
+  background:
+    var(--surface);
+}
+
+
+@media (max-width: 640px) {
+  .floating-filter-tab {
+    min-height: 76px;
+  }
+
+  .side-filter-source-toggles {
+    grid-template-columns:
+      1fr;
+  }
+}
+
+/* ============================================================
+   BRIAN B7A - COMPLETED PROJECT ADVANCED FILTERS
+   ============================================================ */
+
+.completed-more-filter-grid {
+  grid-column:
+    1 / -1;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    );
+
+  gap: 12px;
+
+  padding-top: 14px;
+
+  border-top:
+    1px solid
+    var(--border);
+}
+
+
+.completed-filter-reset {
+  display: flex;
+  align-items: flex-end;
+
+  gap: 8px;
+}
+
+
+@media (max-width: 1200px) {
+  .completed-more-filter-grid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+}
+
+
+@media (max-width: 700px) {
+  .completed-more-filter-grid {
+    grid-template-columns:
+      1fr;
+  }
+}
+
+
+/* BRIAN B7B COMPLETED PROJECT SORTING */
+
+.completed-job-number-column,
+.completed-job-number {
+  width: 92px;
+  min-width: 92px;
+}
+
+
+.completed-job-number {
+  color: var(--text);
+
+  font-weight: 800;
+
+  white-space: nowrap;
+}
+
+
+.completed-project-table
+.sortable-column
+.table-sort-button {
+  width: 100%;
+}
+
+
+/* BRIAN B7C COMPACT COMPLETED LIFECYCLE */
+
+.completed-lifecycle-cell {
+  min-width: 175px;
+}
+
+
+.completed-lifecycle-cell strong {
+  display: block;
+
+  font-size: 12px;
+  font-weight: 800;
+
+  line-height: 1.25;
+
+  white-space: nowrap;
+}
+
+
+.completed-lifecycle-cell span {
+  display: block;
+
+  margin-top: 3px;
+
+  font-size: 10px;
+
+  line-height: 1.25;
+
+  white-space: nowrap;
+}
+
+
+.completed-project-table td {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+
+/* BRIAN FEEDBACK - BILLING SECTION EXPLANATION */
+
+.billing-section-explainer {
+  max-width: 520px;
+
+  margin:
+    5px
+    0
+    0;
+
+  color: var(--muted);
+
+  font-size: 10px;
+  line-height: 1.4;
 }

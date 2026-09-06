@@ -9,6 +9,10 @@ import ProjectAccountability from './ProjectAccountability.jsx';
 import CurrentProjectBillingDrawer from './CurrentProjectBillingDrawer.jsx';
 import ProjectBillingPivot from './ProjectBillingPivot.jsx';
 import useStickyTableHeader from './useStickyTableHeader.js';
+import {
+  ProjectTeamCell,
+  retentionLabel,
+} from './BillingDisplay.jsx';
 
 
 const ALL = '__ALL__';
@@ -998,6 +1002,8 @@ function aggregateCurrentMonthly(
   let projected = 0;
   let actual = 0;
   let marginCollected = 0;
+  let missingMarginRows = 0;
+  let marginDataComplete = true;
 
   for (const row of rows || []) {
     const key =
@@ -1022,6 +1028,22 @@ function aggregateCurrentMonthly(
         row.actualAmount
       );
 
+    const rowMissingMarginRows =
+      toNumber(
+        row.missingMarginRows
+      );
+
+    missingMarginRows +=
+      rowMissingMarginRows;
+
+    if (
+      row.marginDataComplete === false
+      || rowMissingMarginRows > 0
+    ) {
+      marginDataComplete = false;
+      continue;
+    }
+
     marginCollected +=
       toNumber(
         row.marginCollected
@@ -1031,7 +1053,20 @@ function aggregateCurrentMonthly(
   return {
     projected,
     actual,
-    marginCollected,
+    marginCollected:
+      marginDataComplete
+        ? marginCollected
+        : null,
+    weightedHistoricalMarginPercent:
+      marginDataComplete
+      && Math.abs(actual) > 0.000001
+        ? (
+            marginCollected
+            / actual
+          ) * 100
+        : null,
+    missingMarginRows,
+    marginDataComplete,
     variance:
       actual - projected,
   };
@@ -1595,6 +1630,20 @@ export default function App() {
   );
 
   const [
+    monthlySort,
+    setMonthlySort,
+  ] = useState(
+    'month-asc'
+  );
+
+  const [
+    monthDetailSort,
+    setMonthDetailSort,
+  ] = useState(
+    'job-desc'
+  );
+
+  const [
     selectedComparisonMonth,
     setSelectedComparisonMonth,
   ] = useState(null);
@@ -1677,6 +1726,19 @@ export default function App() {
   ] = useState(false);
 
   const [
+    filterDrawerOpen,
+    setFilterDrawerOpen,
+  ] = useState(false);
+
+  const [
+    mainFiltersVisible,
+    setMainFiltersVisible,
+  ] = useState(true);
+
+  const mainFiltersRef =
+    useRef(null);
+
+  const [
     peFilter,
     setPeFilter,
   ] = useState(ALL);
@@ -1725,6 +1787,95 @@ export default function App() {
     snoozedFilter,
     setSnoozedFilter,
   ] = useState(ALL);
+
+
+  useEffect(
+    () => {
+      if (
+        activePage !== 'projected'
+        || !user
+      ) {
+        setMainFiltersVisible(true);
+        return undefined;
+      }
+
+      const element =
+        mainFiltersRef.current;
+
+      if (!element) {
+        return undefined;
+      }
+
+      if (
+        typeof IntersectionObserver
+        === 'undefined'
+      ) {
+        setMainFiltersVisible(true);
+        return undefined;
+      }
+
+      const observer =
+        new IntersectionObserver(
+          entries => {
+            const entry =
+              entries[0];
+
+            setMainFiltersVisible(
+              Boolean(
+                entry?.isIntersecting
+              )
+            );
+          },
+          {
+            threshold: 0.08,
+
+            rootMargin:
+              '-72px 0px 0px 0px',
+          },
+        );
+
+      observer.observe(element);
+
+      return () => {
+        observer.disconnect();
+      };
+    },
+    [
+      activePage,
+      user,
+    ],
+  );
+
+
+  useEffect(
+    () => {
+      if (!filterDrawerOpen) {
+        return undefined;
+      }
+
+      const onKeyDown =
+        event => {
+          if (
+            event.key === 'Escape'
+          ) {
+            setFilterDrawerOpen(false);
+          }
+        };
+
+      window.addEventListener(
+        'keydown',
+        onKeyDown,
+      );
+
+      return () => {
+        window.removeEventListener(
+          'keydown',
+          onKeyDown,
+        );
+      };
+    },
+    [filterDrawerOpen],
+  );
 
 
   useEffect(() => {
@@ -2543,6 +2694,58 @@ export default function App() {
   }
 
 
+  function toggleMonthlySort(
+    key,
+    firstDirection = 'asc',
+  ) {
+    setMonthlySort(
+      current => {
+        const ascending =
+          `${key}-asc`;
+
+        const descending =
+          `${key}-desc`;
+
+        if (current === ascending) {
+          return descending;
+        }
+
+        if (current === descending) {
+          return ascending;
+        }
+
+        return `${key}-${firstDirection}`;
+      }
+    );
+  }
+
+
+  function toggleMonthDetailSort(
+    key,
+    firstDirection = 'asc',
+  ) {
+    setMonthDetailSort(
+      current => {
+        const ascending =
+          `${key}-asc`;
+
+        const descending =
+          `${key}-desc`;
+
+        if (current === ascending) {
+          return descending;
+        }
+
+        if (current === descending) {
+          return ascending;
+        }
+
+        return `${key}-${firstDirection}`;
+      }
+    );
+  }
+
+
   const pmOptions =
     useMemo(
       () => {
@@ -3169,6 +3372,8 @@ export default function App() {
             let currentProjected = 0;
             let currentActual = 0;
             let currentMarginCollected = 0;
+            let currentMissingMarginRows = 0;
+            let currentMarginDataComplete = true;
             let weightedBids = 0;
 
             for (
@@ -3203,10 +3408,26 @@ export default function App() {
                     monthly.actualAmount
                   );
 
-                currentMarginCollected +=
+                const monthlyMissingMarginRows =
                   toNumber(
-                    monthly.marginCollected
+                    monthly.missingMarginRows
                   );
+
+                currentMissingMarginRows +=
+                  monthlyMissingMarginRows;
+
+                if (
+                  monthly.marginDataComplete === false
+                  || monthlyMissingMarginRows > 0
+                ) {
+                  currentMarginDataComplete = false;
+
+                } else {
+                  currentMarginCollected +=
+                    toNumber(
+                      monthly.marginCollected
+                    );
+                }
               }
             }
 
@@ -3248,7 +3469,20 @@ export default function App() {
               month,
               currentProjected,
               currentActual,
-              currentMarginCollected,
+              currentMarginCollected:
+                currentMarginDataComplete
+                  ? currentMarginCollected
+                  : null,
+              currentWeightedHistoricalMarginPercent:
+                currentMarginDataComplete
+                && Math.abs(currentActual) > 0.000001
+                  ? (
+                      currentMarginCollected
+                      / currentActual
+                    ) * 100
+                  : null,
+              currentMissingMarginRows,
+              currentMarginDataComplete,
               weightedBids,
 
               combinedExpected:
@@ -3272,47 +3506,176 @@ export default function App() {
     );
 
 
+  const sortedMonthlyComparison =
+    useMemo(
+      () => {
+        const [
+          key,
+          direction,
+        ] = monthlySort.split(
+          '-'
+        );
+
+        const multiplier =
+          direction === 'desc'
+            ? -1
+            : 1;
+
+        return [
+          ...monthlyComparison
+        ].sort(
+          (
+            a,
+            b,
+          ) => {
+            if (key === 'month') {
+              return (
+                String(a.month)
+                  .localeCompare(
+                    String(b.month)
+                  )
+                * multiplier
+              );
+            }
+
+            const fieldMap = {
+              active:
+                'currentProjected',
+
+              potential:
+                'weightedBids',
+
+              projected:
+                'combinedExpected',
+
+              actual:
+                'currentActual',
+
+              margin:
+                'currentMarginCollected',
+
+              variance:
+                'variance',
+            };
+
+            const field =
+              fieldMap[key];
+
+            const aValue =
+              a[field];
+
+            const bValue =
+              b[field];
+
+            if (
+              aValue === null
+              || aValue === undefined
+            ) {
+              return (
+                bValue === null
+                || bValue === undefined
+                  ? 0
+                  : 1
+              );
+            }
+
+            if (
+              bValue === null
+              || bValue === undefined
+            ) {
+              return -1;
+            }
+
+            return (
+              (
+                Number(aValue)
+                - Number(bValue)
+              )
+              * multiplier
+            );
+          }
+        );
+      },
+      [
+        monthlyComparison,
+        monthlySort,
+      ],
+    );
+
+
   const monthlyComparisonTotals =
     useMemo(
-      () =>
-        monthlyComparison.reduce(
-          (
-            totals,
-            row,
-          ) => ({
-            currentProjected:
-              totals.currentProjected
-              + row.currentProjected,
+      () => {
+        const totals =
+          monthlyComparison.reduce(
+            (
+              current,
+              row,
+            ) => ({
+              currentProjected:
+                current.currentProjected
+                + row.currentProjected,
 
-            weightedBids:
-              totals.weightedBids
-              + row.weightedBids,
+              weightedBids:
+                current.weightedBids
+                + row.weightedBids,
 
-            combinedExpected:
-              totals.combinedExpected
-              + row.combinedExpected,
+              combinedExpected:
+                current.combinedExpected
+                + row.combinedExpected,
 
-            currentActual:
+              currentActual:
+                current.currentActual
+                + row.currentActual,
+
+              currentMarginCollected:
+                current.currentMarginCollected
+                + toNumber(
+                    row.currentMarginCollected
+                  ),
+
+              currentMissingMarginRows:
+                current.currentMissingMarginRows
+                + row.currentMissingMarginRows,
+
+              currentMarginDataComplete:
+                current.currentMarginDataComplete
+                && row.currentMarginDataComplete,
+
+              variance:
+                current.variance
+                + row.variance,
+            }),
+            {
+              currentProjected: 0,
+              weightedBids: 0,
+              combinedExpected: 0,
+              currentActual: 0,
+              currentMarginCollected: 0,
+              currentMissingMarginRows: 0,
+              currentMarginDataComplete: true,
+              variance: 0,
+            },
+          );
+
+        return {
+          ...totals,
+          currentMarginCollected:
+            totals.currentMarginDataComplete
+              ? totals.currentMarginCollected
+              : null,
+          currentWeightedHistoricalMarginPercent:
+            totals.currentMarginDataComplete
+            && Math.abs(
               totals.currentActual
-              + row.currentActual,
-
-            currentMarginCollected:
-              totals.currentMarginCollected
-              + row.currentMarginCollected,
-
-            variance:
-              totals.variance
-              + row.variance,
-          }),
-          {
-            currentProjected: 0,
-            weightedBids: 0,
-            combinedExpected: 0,
-            currentActual: 0,
-            currentMarginCollected: 0,
-            variance: 0,
-          },
-        ),
+            ) > 0.000001
+              ? (
+                  totals.currentMarginCollected
+                  / totals.currentActual
+                ) * 100
+              : null,
+        };
+      },
       [monthlyComparison],
     );
 
@@ -3539,6 +3902,170 @@ export default function App() {
         bidDetails,
         currentMonthly,
         bidMonthly,
+      ],
+    );
+
+
+  const sortedSelectedMonthDetailRows =
+    useMemo(
+      () => {
+        const [
+          key,
+          direction,
+        ] = monthDetailSort.split(
+          '-'
+        );
+
+        const multiplier =
+          direction === 'desc'
+            ? -1
+            : 1;
+
+        return [
+          ...selectedMonthDetailRows
+        ].sort(
+          (
+            a,
+            b,
+          ) => {
+            const textCompare =
+              (
+                aValue,
+                bValue,
+              ) => (
+                String(
+                  aValue || ''
+                ).localeCompare(
+                  String(
+                    bValue || ''
+                  ),
+                  undefined,
+                  {
+                    numeric: true,
+                    sensitivity: 'base',
+                  },
+                )
+                * multiplier
+              );
+
+            const numberCompare =
+              (
+                aValue,
+                bValue,
+              ) => {
+                if (
+                  aValue === null
+                  || aValue === undefined
+                ) {
+                  return (
+                    bValue === null
+                    || bValue === undefined
+                      ? 0
+                      : 1
+                  );
+                }
+
+                if (
+                  bValue === null
+                  || bValue === undefined
+                ) {
+                  return -1;
+                }
+
+                return (
+                  (
+                    Number(aValue)
+                    - Number(bValue)
+                  )
+                  * multiplier
+                );
+              };
+
+            if (key === 'source') {
+              return textCompare(
+                a.source,
+                b.source,
+              );
+            }
+
+            if (key === 'job') {
+              return numberCompare(
+                a.number,
+                b.number,
+              );
+            }
+
+            if (key === 'project') {
+              return textCompare(
+                a.name,
+                b.name,
+              );
+            }
+
+            if (key === 'pm') {
+              return textCompare(
+                a.pm,
+                b.pm,
+              );
+            }
+
+            if (key === 'team') {
+              const aTeam =
+                a.source === 'Current Project'
+                  ? [
+                      a.raw?.pe,
+                      a.raw?.superintendent,
+                      a.raw?.apm,
+                    ]
+                      .filter(Boolean)
+                      .join(' ')
+                  : '';
+
+              const bTeam =
+                b.source === 'Current Project'
+                  ? [
+                      b.raw?.pe,
+                      b.raw?.superintendent,
+                      b.raw?.apm,
+                    ]
+                      .filter(Boolean)
+                      .join(' ')
+                  : '';
+
+              return textCompare(
+                aTeam,
+                bTeam,
+              );
+            }
+
+            const numericMap = {
+              projected:
+                'expected',
+
+              actual:
+                'actual',
+
+              margin:
+                'marginCollected',
+
+              variance:
+                'variance',
+            };
+
+            return numberCompare(
+              a[
+                numericMap[key]
+              ],
+              b[
+                numericMap[key]
+              ],
+            );
+          }
+        );
+      },
+      [
+        selectedMonthDetailRows,
+        monthDetailSort,
       ],
     );
 
@@ -4253,7 +4780,8 @@ export default function App() {
           <div className="source-selector-copy">
             <span>SHOW IN PROJECTED BILLINGS</span>
             <small>
-              Show active projects, potential projects, or both.
+              Controls the entire page — totals, By Month, By Project,
+              and the breakdown below.
             </small>
           </div>
 
@@ -4309,7 +4837,10 @@ export default function App() {
         )}
 
 
-        <section className="filter-panel">
+        <section
+          className="filter-panel"
+          ref={mainFiltersRef}
+        >
           <div className="filter-grid primary-filters">
             <TextField
               label="Search"
@@ -4701,6 +5232,523 @@ export default function App() {
         </section>
 
 
+        {!mainFiltersVisible
+          && !filterDrawerOpen && (
+            <button
+              type="button"
+              className="floating-filter-tab"
+              onClick={
+                () =>
+                  setFilterDrawerOpen(true)
+              }
+              aria-label="Open filters"
+            >
+              <span>
+                Filters
+              </span>
+            </button>
+          )}
+
+
+        {filterDrawerOpen && (
+          <div
+            className="side-filter-backdrop"
+            role="presentation"
+            onMouseDown={
+              event => {
+                if (
+                  event.target
+                  === event.currentTarget
+                ) {
+                  setFilterDrawerOpen(false);
+                }
+              }
+            }
+          >
+            <aside
+              className="side-filter-drawer"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="side-filter-title"
+            >
+              <header className="side-filter-header">
+                <div>
+                  <span className="section-kicker">
+                    PROJECTED BILLINGS
+                  </span>
+
+                  <h2 id="side-filter-title">
+                    Filters
+                  </h2>
+
+                  <p>
+                    These control the entire page.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className="side-filter-close"
+                  onClick={
+                    () =>
+                      setFilterDrawerOpen(false)
+                  }
+                  aria-label="Close filters"
+                >
+                  ×
+                </button>
+              </header>
+
+
+              <div className="side-filter-body">
+                <section className="side-filter-section">
+                  <div className="side-filter-section-title">
+                    Sources
+                  </div>
+
+                  <div className="side-filter-source-toggles">
+                    <button
+                      type="button"
+                      aria-pressed={
+                        bidScope === 'potential'
+                      }
+                      className={
+                        bidScope === 'potential'
+                          ? 'active'
+                          : ''
+                      }
+                      onClick={
+                        () =>
+                          toggleBidScope(
+                            'potential'
+                          )
+                      }
+                    >
+                      <strong>
+                        Potential Projects
+                      </strong>
+
+                      <small>
+                        85%+ · {potentialBidCount}
+                      </small>
+                    </button>
+
+                    <button
+                      type="button"
+                      aria-pressed={
+                        includeActiveProjects
+                      }
+                      className={
+                        includeActiveProjects
+                          ? 'active'
+                          : ''
+                      }
+                      onClick={
+                        toggleActiveProjects
+                      }
+                    >
+                      <strong>
+                        Active Projects
+                      </strong>
+
+                      <small>
+                        {currentProjects.length} projects
+                      </small>
+                    </button>
+                  </div>
+                </section>
+
+
+                <section className="side-filter-section">
+                  <div className="side-filter-section-title">
+                    Primary
+                  </div>
+
+                  <div className="side-filter-fields">
+                    <TextField
+                      label="Search"
+                      value={search}
+                      onChange={setSearch}
+                      placeholder="Project, bid, job #, GC, city…"
+                    />
+
+                    <SelectField
+                      label="PM"
+                      value={pmFilter}
+                      onChange={setPmFilter}
+                    >
+                      <option value={ALL}>
+                        All PMs
+                      </option>
+
+                      {pmOptions.map(
+                        value => (
+                          <option
+                            key={value}
+                            value={value}
+                          >
+                            {pmLabel(value)}
+                          </option>
+                        )
+                      )}
+                    </SelectField>
+
+                    <label className="filter-field">
+                      <span>
+                        From Month
+                      </span>
+
+                      <input
+                        type="month"
+                        value={fromMonth}
+                        onChange={
+                          event =>
+                            setFromMonth(
+                              event.target.value
+                            )
+                        }
+                      />
+                    </label>
+
+                    <label className="filter-field">
+                      <span>
+                        Through Month
+                      </span>
+
+                      <input
+                        type="month"
+                        value={throughMonth}
+                        onChange={
+                          event =>
+                            setThroughMonth(
+                              event.target.value
+                            )
+                        }
+                      />
+                    </label>
+
+                    <SelectField
+                      label="Project Type"
+                      value={projectTypeFilter}
+                      onChange={setProjectTypeFilter}
+                    >
+                      <option value={ALL}>
+                        All Types
+                      </option>
+
+                      {projectTypeOptions.map(
+                        value => (
+                          <option
+                            key={value}
+                            value={value}
+                          >
+                            {projectTypeLabel(value)}
+                          </option>
+                        )
+                      )}
+                    </SelectField>
+
+                    <SelectField
+                      label="Purpose"
+                      value={purposeFilter}
+                      onChange={setPurposeFilter}
+                    >
+                      <option value={ALL}>
+                        All Purposes
+                      </option>
+
+                      {purposeOptions.map(
+                        value => (
+                          <option
+                            key={value}
+                            value={value}
+                          >
+                            {value}
+                          </option>
+                        )
+                      )}
+                    </SelectField>
+
+                    <SelectField
+                      label="Projection State"
+                      value={forecastStateFilter}
+                      onChange={setForecastStateFilter}
+                    >
+                      <option value={ALL}>
+                        All States
+                      </option>
+
+                      <option value="READY">
+                        Ready
+                      </option>
+
+                      <option value="NOT_CONFIGURED">
+                        Not Configured
+                      </option>
+                    </SelectField>
+
+                    <TextField
+                      label="General Contractor"
+                      value={gcFilter}
+                      onChange={setGcFilter}
+                      placeholder="Search GC…"
+                    />
+                  </div>
+                </section>
+
+
+                {includeActiveProjects && (
+                  <section className="side-filter-section">
+                    <div className="side-filter-section-title">
+                      Current Projects
+                    </div>
+
+                    <div className="side-filter-fields">
+                      <SelectField
+                        label="PE"
+                        value={peFilter}
+                        onChange={setPeFilter}
+                      >
+                        <option value={ALL}>
+                          All PEs
+                        </option>
+
+                        {peOptions.map(
+                          value => (
+                            <option
+                              key={value}
+                              value={value}
+                            >
+                              {value}
+                            </option>
+                          )
+                        )}
+                      </SelectField>
+
+                      <SelectField
+                        label="Superintendent"
+                        value={superintendentFilter}
+                        onChange={setSuperintendentFilter}
+                      >
+                        <option value={ALL}>
+                          All Superintendents
+                        </option>
+
+                        {superintendentOptions.map(
+                          value => (
+                            <option
+                              key={value}
+                              value={value}
+                            >
+                              {value}
+                            </option>
+                          )
+                        )}
+                      </SelectField>
+
+                      <SelectField
+                        label="APM"
+                        value={apmFilter}
+                        onChange={setApmFilter}
+                      >
+                        <option value={ALL}>
+                          All APMs
+                        </option>
+
+                        {apmOptions.map(
+                          value => (
+                            <option
+                              key={value}
+                              value={value}
+                            >
+                              {value}
+                            </option>
+                          )
+                        )}
+                      </SelectField>
+
+                      <SelectField
+                        label="Foundation History"
+                        value={foundationFilter}
+                        onChange={setFoundationFilter}
+                      >
+                        <option value={ALL}>
+                          All
+                        </option>
+
+                        <option value="true">
+                          Has Billings
+                        </option>
+
+                        <option value="false">
+                          No Billings
+                        </option>
+                      </SelectField>
+
+                      <SelectField
+                        label="Selected Variance"
+                        value={varianceFilter}
+                        onChange={setVarianceFilter}
+                      >
+                        <option value={ALL}>
+                          All
+                        </option>
+
+                        <option value="over">
+                          Actual Over Projection
+                        </option>
+
+                        <option value="under">
+                          Actual Under Projection
+                        </option>
+
+                        <option value="even">
+                          Even
+                        </option>
+                      </SelectField>
+                    </div>
+                  </section>
+                )}
+
+
+                {includeBids && (
+                  <section className="side-filter-section">
+                    <div className="side-filter-section-title">
+                      Active Bids
+                    </div>
+
+                    <div className="side-filter-fields">
+                      <SelectField
+                        label="Bid Status"
+                        value={bidStatusFilter}
+                        onChange={setBidStatusFilter}
+                      >
+                        <option value={ALL}>
+                          All Statuses
+                        </option>
+
+                        {bidStatusOptions.map(
+                          value => (
+                            <option
+                              key={value}
+                              value={value}
+                            >
+                              {value}
+                            </option>
+                          )
+                        )}
+                      </SelectField>
+
+                      <SelectField
+                        label="Probability"
+                        value={probabilityStateFilter}
+                        onChange={setProbabilityStateFilter}
+                      >
+                        <option value={ALL}>
+                          All
+                        </option>
+
+                        {probabilityStateOptions.map(
+                          value => (
+                            <option
+                              key={value}
+                              value={value}
+                            >
+                              {value === 'VALID'
+                                ? 'Valid'
+                                : 'Missing / Invalid'}
+                            </option>
+                          )
+                        )}
+                      </SelectField>
+
+                      <SelectField
+                        label="State"
+                        value={stateFilter}
+                        onChange={setStateFilter}
+                      >
+                        <option value={ALL}>
+                          All States
+                        </option>
+
+                        {stateOptions.map(
+                          value => (
+                            <option
+                              key={value}
+                              value={value}
+                            >
+                              {value}
+                            </option>
+                          )
+                        )}
+                      </SelectField>
+
+                      <SelectField
+                        label="New Bid"
+                        value={isNewBidFilter}
+                        onChange={setIsNewBidFilter}
+                      >
+                        <option value={ALL}>
+                          All
+                        </option>
+
+                        <option value="true">
+                          New
+                        </option>
+
+                        <option value="false">
+                          Existing
+                        </option>
+                      </SelectField>
+
+                      <SelectField
+                        label="Snoozed"
+                        value={snoozedFilter}
+                        onChange={setSnoozedFilter}
+                      >
+                        <option value={ALL}>
+                          All
+                        </option>
+
+                        <option value="true">
+                          Snoozed
+                        </option>
+
+                        <option value="false">
+                          Not Snoozed
+                        </option>
+                      </SelectField>
+                    </div>
+                  </section>
+                )}
+              </div>
+
+
+              <footer className="side-filter-footer">
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={resetFilters}
+                >
+                  Reset Filters
+                </button>
+
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={
+                    () =>
+                      setFilterDrawerOpen(false)
+                  }
+                >
+                  Done
+                </button>
+              </footer>
+            </aside>
+          </div>
+        )}
+
+
         {!rangeValid && (
           <div className="page-alert">
             <strong>
@@ -4827,6 +5875,11 @@ export default function App() {
               <h2>
                 Projected vs Actual Billings
               </h2>
+
+              <p className="billing-section-explainer">
+                Switch between By Month and By Project.
+                Collapse simply hides this section.
+              </p>
             </div>
 
             <div className="monthly-heading-actions">
@@ -4927,37 +5980,66 @@ export default function App() {
             <table className="monthly-table projected-monthly-table">
               <thead>
                 <tr>
-                  <th>Month</th>
+                  <SortHeader
+                    label="Month"
+                    sortKey="month"
+                    currentSort={monthlySort}
+                    onSort={toggleMonthlySort}
+                  />
 
-                  <th className="numeric">
-                    Active Project
-                  </th>
+                  <SortHeader
+                    label="Active Project"
+                    sortKey="active"
+                    currentSort={monthlySort}
+                    onSort={toggleMonthlySort}
+                    numeric
+                  />
 
-                  <th className="numeric">
-                    Potential Projects
-                  </th>
+                  <SortHeader
+                    label="Potential Projects"
+                    sortKey="potential"
+                    currentSort={monthlySort}
+                    onSort={toggleMonthlySort}
+                    numeric
+                  />
 
-                  <th className="numeric">
-                    Total Projected Billing
-                  </th>
+                  <SortHeader
+                    label="Total Projected Billing"
+                    sortKey="projected"
+                    currentSort={monthlySort}
+                    onSort={toggleMonthlySort}
+                    numeric
+                  />
 
-                  <th className="numeric">
-                    Actual Billings
-                  </th>
+                  <SortHeader
+                    label="Actual Billings"
+                    sortKey="actual"
+                    currentSort={monthlySort}
+                    onSort={toggleMonthlySort}
+                    numeric
+                  />
 
-                  <th className="numeric">
-                    Margin Collected
-                  </th>
+                  <SortHeader
+                    label="Margin Collected"
+                    sortKey="margin"
+                    currentSort={monthlySort}
+                    onSort={toggleMonthlySort}
+                    numeric
+                  />
 
-                  <th className="numeric">
-                    Variance
-                  </th>
+                  <SortHeader
+                    label="Variance"
+                    sortKey="variance"
+                    currentSort={monthlySort}
+                    onSort={toggleMonthlySort}
+                    numeric
+                  />
                 </tr>
               </thead>
 
 
               <tbody>
-                {monthlyComparison.map(
+                {sortedMonthlyComparison.map(
                   row => (
                     <>
                       <tr
@@ -5008,9 +6090,26 @@ export default function App() {
                           )}
                         </td>
 
-                        <td className="numeric">
-                          {currency(
-                            row.currentMarginCollected
+                        <td className="numeric monthly-margin-cell">
+                          {row.currentMarginDataComplete ? (
+                            <strong
+                              className="monthly-margin-value"
+                              title={
+                                `Weighted historical margin: ${
+                                  retentionLabel(
+                                    row.currentWeightedHistoricalMarginPercent
+                                  )
+                                }`
+                              }
+                            >
+                              {currency(
+                                row.currentMarginCollected
+                              )}
+                            </strong>
+                          ) : (
+                            <span className="monthly-margin-warning">
+                              Margin incomplete
+                            </span>
                           )}
                         </td>
 
@@ -5068,44 +6167,80 @@ export default function App() {
                                   <table className="monthly-project-table">
                                     <thead>
                                       <tr>
-                                        <th>
-                                          Source
-                                        </th>
+                                        <SortHeader
+                                          label="Source"
+                                          sortKey="source"
+                                          currentSort={monthDetailSort}
+                                          onSort={toggleMonthDetailSort}
+                                        />
 
-                                        <th>
-                                          Job #
-                                        </th>
+                                        <SortHeader
+                                          label="Job #"
+                                          sortKey="job"
+                                          currentSort={monthDetailSort}
+                                          onSort={toggleMonthDetailSort}
+                                          firstDirection="desc"
+                                        />
 
-                                        <th>
-                                          Project / Bid
-                                        </th>
+                                        <SortHeader
+                                          label="Project / Bid"
+                                          sortKey="project"
+                                          currentSort={monthDetailSort}
+                                          onSort={toggleMonthDetailSort}
+                                        />
 
-                                        <th>
-                                          PM
-                                        </th>
+                                        <SortHeader
+                                          label="PM"
+                                          sortKey="pm"
+                                          currentSort={monthDetailSort}
+                                          onSort={toggleMonthDetailSort}
+                                        />
 
-                                        <th className="numeric">
-                                          Projected
-                                        </th>
+                                        <SortHeader
+                                          label="Team"
+                                          sortKey="team"
+                                          currentSort={monthDetailSort}
+                                          onSort={toggleMonthDetailSort}
+                                        />
 
-                                        <th className="numeric">
-                                          Actual Billings
-                                        </th>
+                                        <SortHeader
+                                          label="Projected"
+                                          sortKey="projected"
+                                          currentSort={monthDetailSort}
+                                          onSort={toggleMonthDetailSort}
+                                          numeric
+                                        />
 
-                                        <th className="numeric">
-                                          Margin Collected
-                                        </th>
+                                        <SortHeader
+                                          label="Actual Billings"
+                                          sortKey="actual"
+                                          currentSort={monthDetailSort}
+                                          onSort={toggleMonthDetailSort}
+                                          numeric
+                                        />
 
-                                        <th className="numeric">
-                                          Variance
-                                        </th>
+                                        <SortHeader
+                                          label="Margin Collected"
+                                          sortKey="margin"
+                                          currentSort={monthDetailSort}
+                                          onSort={toggleMonthDetailSort}
+                                          numeric
+                                        />
+
+                                        <SortHeader
+                                          label="Variance"
+                                          sortKey="variance"
+                                          currentSort={monthDetailSort}
+                                          onSort={toggleMonthDetailSort}
+                                          numeric
+                                        />
                                       </tr>
                                     </thead>
 
 
                                     <tbody>
                                       {
-                                        selectedMonthDetailRows.map(
+                                        sortedSelectedMonthDetailRows.map(
                                           detail => (
                                             <tr
                                               key={
@@ -5169,6 +6304,26 @@ export default function App() {
                                                 <PMInitialsBadge
                                                   initials={detail.pmInitials}
                                                   hexColor={detail.pmHexColor}
+                                                />
+                                              </td>
+
+                                              <td className="project-team-column">
+                                                <ProjectTeamCell
+                                                  pe={
+                                                    detail.source === 'Current Project'
+                                                      ? detail.raw?.pe
+                                                      : null
+                                                  }
+                                                  superintendent={
+                                                    detail.source === 'Current Project'
+                                                      ? detail.raw?.superintendent
+                                                      : null
+                                                  }
+                                                  apm={
+                                                    detail.source === 'Current Project'
+                                                      ? detail.raw?.apm
+                                                      : null
+                                                  }
                                                 />
                                               </td>
 
@@ -5279,9 +6434,25 @@ export default function App() {
                       )}
                     </td>
 
-                    <td className="numeric">
-                      {currency(
-                        monthlyComparisonTotals.currentMarginCollected
+                    <td className="numeric monthly-margin-cell">
+                      {monthlyComparisonTotals.currentMarginDataComplete ? (
+                        <>
+                          <strong className="monthly-margin-value">
+                            {currency(
+                              monthlyComparisonTotals.currentMarginCollected
+                            )}
+                          </strong>
+
+                          <small className="monthly-margin-percent">
+                            {retentionLabel(
+                              monthlyComparisonTotals.currentWeightedHistoricalMarginPercent
+                            )} weighted
+                          </small>
+                        </>
+                      ) : (
+                        <span className="monthly-margin-warning">
+                          Margin incomplete
+                        </span>
                       )}
                     </td>
 
@@ -5362,6 +6533,10 @@ export default function App() {
                     currentSort={detailSort}
                     onSort={toggleDetailSort}
                   />
+
+                  <th className="project-team-column">
+                    Team
+                  </th>
 
                   <SortHeader
                     label="Project Value"
@@ -5493,6 +6668,26 @@ export default function App() {
                         />
                       </td>
 
+                      <td className="project-team-column">
+                        <ProjectTeamCell
+                          pe={
+                            row.source === 'Current Project'
+                              ? row.raw?.pe
+                              : null
+                          }
+                          superintendent={
+                            row.source === 'Current Project'
+                              ? row.raw?.superintendent
+                              : null
+                          }
+                          apm={
+                            row.source === 'Current Project'
+                              ? row.raw?.apm
+                              : null
+                          }
+                        />
+                      </td>
+
                       <td className="numeric">
                         {row.projectValue
                           === null
@@ -5551,7 +6746,7 @@ export default function App() {
                 {!detailRows.length && (
                   <tr>
                     <td
-                      colSpan="9"
+                      colSpan="10"
                       className="empty-cell"
                     >
                       {dataLoading

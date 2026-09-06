@@ -4,6 +4,7 @@ import {
 } from 'react';
 
 import useStickyTableHeader from './useStickyTableHeader.js';
+import { ProjectTeamCell } from './BillingDisplay.jsx';
 
 
 const BILLING_METRICS = [
@@ -117,6 +118,47 @@ function normalizedPmColor(value) {
   )
     ? color
     : '#6b7280';
+}
+
+
+function squareFootageLabel(value) {
+  const number =
+    Number(value);
+
+  if (
+    !Number.isFinite(number)
+    || number <= 0
+  ) {
+    return null;
+  }
+
+  return (
+    `${Math.round(number).toLocaleString('en-US')} SF`
+  );
+}
+
+
+function buildingCountLabel(value) {
+  const number =
+    Number(value);
+
+  if (
+    !Number.isFinite(number)
+    || number <= 0
+  ) {
+    return null;
+  }
+
+  const count =
+    Math.round(number);
+
+  return (
+    `${count} ${
+      count === 1
+        ? 'BLDG'
+        : 'BLDGS'
+    }`
+  );
 }
 
 
@@ -345,6 +387,44 @@ function bidPivotRow(
     pmHexColor:
       bid.pmHexColor,
 
+    contextItems: [
+      squareFootageLabel(
+        bid.squareFootage
+      )
+        ? {
+            value:
+              squareFootageLabel(
+                bid.squareFootage
+              ),
+            title:
+              `Square Footage: ${
+                squareFootageLabel(
+                  bid.squareFootage
+                )
+              }`,
+          }
+        : null,
+
+      buildingCountLabel(
+        bid.numberOfBuildings
+      )
+        ? {
+            value:
+              buildingCountLabel(
+                bid.numberOfBuildings
+              ),
+            title:
+              `Buildings: ${
+                Math.round(
+                  Number(
+                    bid.numberOfBuildings
+                  )
+                )
+              }`,
+          }
+        : null,
+    ].filter(Boolean),
+
     gc:
       displayText(
         bid.generalContractors
@@ -400,10 +480,57 @@ function ProjectMeta({
           aria-hidden="true"
         />
 
+        <span className="pivot-project-role-label">
+          PM
+        </span>
+
         <span className="pivot-pm-initials">
           {row.pmInitials}
         </span>
       </div>
+
+      {row.source === 'bid'
+        && !!row.contextItems?.length && (
+        <div className="pivot-project-context-line">
+          {row.contextItems.map(
+            (
+              item,
+              index,
+            ) => (
+              <span
+                className="pivot-project-context-group"
+                key={
+                  `${item.label || 'fact'}-${index}`
+                }
+              >
+                {index > 0 && (
+                  <span
+                    className="pivot-project-context-separator"
+                    aria-hidden="true"
+                  >
+                    ·
+                  </span>
+                )}
+
+                <span
+                  className="pivot-project-context-item"
+                  title={item.title}
+                >
+                  {item.label && (
+                    <span className="pivot-project-role-label">
+                      {item.label}
+                    </span>
+                  )}
+
+                  <span>
+                    {item.value}
+                  </span>
+                </span>
+              </span>
+            )
+          )}
+        </div>
+      )}
 
       <div
         className="pivot-project-gc"
@@ -547,6 +674,81 @@ function SingleBillingValue({
 }
 
 
+function PivotSortHeader({
+  label,
+  sortKey,
+  sortState,
+  onSort,
+  firstDirection = 'asc',
+  className = '',
+  numeric = false,
+}) {
+  const active =
+    sortState.key === sortKey;
+
+  return (
+    <th
+      className={
+        [
+          className,
+          numeric
+            ? 'numeric'
+            : '',
+          'sortable-column',
+        ]
+          .filter(Boolean)
+          .join(' ')
+      }
+      aria-sort={
+        active
+          ? (
+              sortState.direction === 'asc'
+                ? 'ascending'
+                : 'descending'
+            )
+          : 'none'
+      }
+    >
+      <button
+        type="button"
+        className={
+          active
+            ? 'table-sort-button active'
+            : 'table-sort-button'
+        }
+        onClick={
+          event => {
+            event.stopPropagation();
+
+            onSort(
+              sortKey,
+              firstDirection,
+            );
+          }
+        }
+      >
+        <span>
+          {label}
+        </span>
+
+        <span
+          className="table-sort-indicator"
+          aria-hidden="true"
+        >
+          {active
+            ? (
+                sortState.direction === 'asc'
+                  ? '↑'
+                  : '↓'
+              )
+            : '↕'}
+        </span>
+      </button>
+    </th>
+  );
+}
+
+
 function BillingValue({
   cell,
   metric,
@@ -588,42 +790,286 @@ export default function ProjectBillingPivot({
     'projected'
   );
 
+  const [
+    sortState,
+    setSortState,
+  ] = useState({
+    key: 'job',
+    direction: 'desc',
+  });
+
+
+  function toggleSort(
+    key,
+    firstDirection = 'asc',
+  ) {
+    setSortState(
+      current => {
+        if (current.key !== key) {
+          return {
+            key,
+            direction:
+              firstDirection,
+          };
+        }
+
+        return {
+          key,
+          direction:
+            current.direction === 'asc'
+              ? 'desc'
+              : 'asc',
+        };
+      }
+    );
+  }
+
+
   const stickyTableRef =
     useStickyTableHeader(
-      `${months.join('|')}|${billingMetric}`
+      `${months.join('|')}|${billingMetric}|${sortState.key}|${sortState.direction}`
     );
 
   const rows =
     useMemo(
-      () => [
-        ...currentProjects.map(
-          project =>
-            currentProjectPivotRow(
-              project,
-              months,
-              currentMonthly.get(
-                project.jobListId
-              ),
-            )
-        ),
+      () => {
+        const result = [
+          ...currentProjects.map(
+            project =>
+              currentProjectPivotRow(
+                project,
+                months,
+                currentMonthly.get(
+                  project.jobListId
+                ),
+              )
+          ),
 
-        ...bidProjects.map(
-          bid =>
-            bidPivotRow(
-              bid,
-              months,
-              bidMonthly.get(
-                bid.sharePointItemId
-              ),
-            )
-        ),
-      ],
+          ...bidProjects.map(
+            bid =>
+              bidPivotRow(
+                bid,
+                months,
+                bidMonthly.get(
+                  bid.sharePointItemId
+                ),
+              )
+          ),
+        ];
+
+
+        function compareText(
+          a,
+          b,
+        ) {
+          return String(
+            a || ''
+          ).localeCompare(
+            String(
+              b || ''
+            ),
+            undefined,
+            {
+              numeric: true,
+              sensitivity: 'base',
+            },
+          );
+        }
+
+
+        function compareNumber(
+          a,
+          b,
+        ) {
+          const aNumber =
+            Number(a);
+
+          const bNumber =
+            Number(b);
+
+          const aValid =
+            Number.isFinite(
+              aNumber
+            );
+
+          const bValid =
+            Number.isFinite(
+              bNumber
+            );
+
+          if (!aValid && !bValid) {
+            return 0;
+          }
+
+          if (!aValid) {
+            return 1;
+          }
+
+          if (!bValid) {
+            return -1;
+          }
+
+          return (
+            aNumber
+            - bNumber
+          );
+        }
+
+
+        function billingSortValue(
+          row,
+          cell,
+        ) {
+          if (billingMetric === 'all') {
+            return (
+              cell?.projected
+              ?? 0
+            );
+          }
+
+          return (
+            cell?.[
+              billingMetric
+            ]
+            ?? null
+          );
+        }
+
+
+        result.sort(
+          (
+            a,
+            b,
+          ) => {
+            let comparison = 0;
+
+            if (
+              sortState.key
+              === 'source'
+            ) {
+              comparison =
+                compareText(
+                  a.sourceLabel,
+                  b.sourceLabel,
+                );
+
+            } else if (
+              sortState.key
+              === 'job'
+            ) {
+              comparison =
+                compareNumber(
+                  a.number,
+                  b.number,
+                );
+
+            } else if (
+              sortState.key
+              === 'project'
+            ) {
+              comparison =
+                compareText(
+                  a.name,
+                  b.name,
+                );
+
+            } else if (
+              sortState.key
+              === 'team'
+            ) {
+              comparison =
+                compareText(
+                  a.source === 'current'
+                    ? [
+                        a.raw?.pe,
+                        a.raw?.superintendent,
+                        a.raw?.apm,
+                      ]
+                        .filter(Boolean)
+                        .join(' ')
+                    : '',
+
+                  b.source === 'current'
+                    ? [
+                        b.raw?.pe,
+                        b.raw?.superintendent,
+                        b.raw?.apm,
+                      ]
+                        .filter(Boolean)
+                        .join(' ')
+                    : '',
+                );
+
+            } else if (
+              sortState.key
+                .startsWith(
+                  'month:'
+                )
+            ) {
+              const month =
+                sortState.key.slice(
+                  6
+                );
+
+              comparison =
+                compareNumber(
+                  billingSortValue(
+                    a,
+                    a.cells.find(
+                      cell =>
+                        cell.month
+                        === month
+                    ),
+                  ),
+
+                  billingSortValue(
+                    b,
+                    b.cells.find(
+                      cell =>
+                        cell.month
+                        === month
+                    ),
+                  ),
+                );
+
+            } else if (
+              sortState.key
+              === 'total'
+            ) {
+              comparison =
+                compareNumber(
+                  billingSortValue(
+                    a,
+                    a.total,
+                  ),
+
+                  billingSortValue(
+                    b,
+                    b.total,
+                  ),
+                );
+            }
+
+            return (
+              sortState.direction
+              === 'desc'
+                ? -comparison
+                : comparison
+            );
+          }
+        );
+
+
+        return result;
+      },
       [
         months,
         currentProjects,
         bidProjects,
         currentMonthly,
         bidMonthly,
+        billingMetric,
+        sortState,
       ],
     );
 
@@ -639,7 +1085,7 @@ export default function ProjectBillingPivot({
         data-sticky-table-controls
       >
         <span className="project-pivot-toolbar-label">
-          Show
+          Values
         </span>
 
         <div
@@ -688,32 +1134,63 @@ export default function ProjectBillingPivot({
         >
           <thead>
             <tr>
-              <th className="pivot-source-column">
-                Source
-              </th>
+              <PivotSortHeader
+                label="Source"
+                sortKey="source"
+                sortState={sortState}
+                onSort={toggleSort}
+                className="pivot-source-column"
+              />
 
-              <th className="pivot-job-column">
-                Job #
-              </th>
+              <PivotSortHeader
+                label="Job #"
+                sortKey="job"
+                sortState={sortState}
+                onSort={toggleSort}
+                firstDirection="desc"
+                className="pivot-job-column"
+              />
 
-              <th className="pivot-project-column">
-                Project / Bid
-              </th>
+              <PivotSortHeader
+                label="Project / Bid"
+                sortKey="project"
+                sortState={sortState}
+                onSort={toggleSort}
+                className="pivot-project-column"
+              />
+
+              <PivotSortHeader
+                label="Team"
+                sortKey="team"
+                sortState={sortState}
+                onSort={toggleSort}
+                className="pivot-team-column"
+              />
 
               {months.map(
                 month => (
-                  <th
-                    className="numeric pivot-month-column"
+                  <PivotSortHeader
                     key={month}
-                  >
-                    {monthLabel(month)}
-                  </th>
+                    label={monthLabel(month)}
+                    sortKey={`month:${month}`}
+                    sortState={sortState}
+                    onSort={toggleSort}
+                    firstDirection="desc"
+                    className="pivot-month-column"
+                    numeric
+                  />
                 )
               )}
 
-              <th className="numeric pivot-total-column">
-                Total
-              </th>
+              <PivotSortHeader
+                label="Total"
+                sortKey="total"
+                sortState={sortState}
+                onSort={toggleSort}
+                firstDirection="desc"
+                className="pivot-total-column"
+                numeric
+              />
             </tr>
           </thead>
 
@@ -795,6 +1272,26 @@ export default function ProjectBillingPivot({
                       />
                     </td>
 
+                    <td className="pivot-team-column">
+                      <ProjectTeamCell
+                        pe={
+                          row.source === 'current'
+                            ? row.raw?.pe
+                            : null
+                        }
+                        superintendent={
+                          row.source === 'current'
+                            ? row.raw?.superintendent
+                            : null
+                        }
+                        apm={
+                          row.source === 'current'
+                            ? row.raw?.apm
+                            : null
+                        }
+                      />
+                    </td>
+
                     {row.cells.map(
                       cell => (
                         <td
@@ -828,7 +1325,7 @@ export default function ProjectBillingPivot({
                 <td
                   className="empty-cell"
                   colSpan={
-                    months.length + 4
+                    months.length + 5
                   }
                 >
                   No projects match the selected filters.

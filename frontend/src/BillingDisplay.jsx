@@ -68,6 +68,68 @@ export function MoneyValue({
 }
 
 
+function teamName(value) {
+  const text =
+    String(value ?? '').trim();
+
+  return text || null;
+}
+
+
+export function ProjectTeamCell({
+  pe,
+  superintendent,
+  apm,
+}) {
+  const members = [
+    {
+      role: 'PE',
+      name: teamName(pe),
+    },
+    {
+      role: 'SUPER',
+      name: teamName(superintendent),
+    },
+    {
+      role: 'APM',
+      name: teamName(apm),
+    },
+  ].filter(
+    member => member.name
+  );
+
+  if (!members.length) {
+    return (
+      <span className="project-team-empty">
+        —
+      </span>
+    );
+  }
+
+  return (
+    <div className="project-team-cell">
+      {members.map(
+        member => (
+          <div
+            className="project-team-member"
+            key={member.role}
+            title={`${member.role}: ${member.name}`}
+          >
+            <span className="project-team-role">
+              {member.role}
+            </span>
+
+            <span className="project-team-name">
+              {member.name}
+            </span>
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
+
 export function retentionNumber(value) {
   if (!hasValue(value)) {
     return null;
