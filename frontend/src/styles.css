@@ -9689,3 +9689,167 @@ tbody td {
   font-size: 10px;
   line-height: 1.4;
 }
+
+
+/* ============================================================
+   DETAIL UI SPACING NORMALIZATION - FORECAST CONTROLS
+   ============================================================ */
+
+
+/* ------------------------------------------------------------
+   Close buttons
+   Keep the X optically centered inside its square.
+   Apply to Active + Completed detail views for consistency.
+   ------------------------------------------------------------ */
+
+.billing-drawer-close,
+.completed-drawer-close {
+  display: grid;
+  place-items: center;
+
+  padding: 0;
+  padding-bottom: 5px;
+
+  line-height: 1;
+  text-align: center;
+
+
+
+}
+
+
+
+
+/* ------------------------------------------------------------
+   Forecast Configuration
+   Use the same vertical rhythm as the rest of the detail page.
+   ------------------------------------------------------------ */
+
+.projection-details-section {
+  display: grid;
+
+  gap: 12px;
+}
+
+
+.projection-details-section
+> .section-heading.compact {
+  margin-bottom: 0;
+}
+
+
+/* ------------------------------------------------------------
+   Billing Curve / Originating Bid / Change Orders
+
+   Previously these shared one outer container with divider lines.
+   Make them three independent cards instead.
+   ------------------------------------------------------------ */
+
+.project-setup-flags {
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+
+  gap: 12px;
+
+  padding: 0;
+
+  border: 0;
+
+  border-radius: 0;
+
+  background: transparent;
+}
+
+
+.project-setup-flags
+> .project-setup-flag {
+  min-height: 78px;
+
+  padding: 15px;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 10px;
+
+  background:
+    var(--surface-2);
+}
+
+
+/* Kill the old connected-card divider behavior. */
+.project-setup-flags
+> .project-setup-flag
++ .project-setup-flag {
+  padding-left: 15px;
+
+  border-left:
+    1px solid
+    var(--border);
+}
+
+
+/* ------------------------------------------------------------
+   Status / attention message under the three controls
+   Give it the same separation and radius as surrounding cards.
+   ------------------------------------------------------------ */
+
+.projection-attention-message {
+  margin: 0;
+
+  padding:
+    11px
+    15px;
+
+  border-radius: 10px;
+
+  line-height: 1.4;
+}
+
+
+/* ------------------------------------------------------------
+   Five detail cards underneath
+   Match the same 12px card spacing used above.
+   ------------------------------------------------------------ */
+
+.projection-detail-grid {
+  gap: 12px;
+
+  margin: 0;
+}
+
+
+.projection-detail-grid
+> div {
+  min-height: 82px;
+
+  padding: 15px;
+
+  border-radius: 10px;
+}
+
+
+/* ------------------------------------------------------------
+   Responsive behavior
+   ------------------------------------------------------------ */
+
+@media (max-width: 1050px) {
+  .project-setup-flags {
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(0, 1fr)
+      );
+  }
+}
+
+
+@media (max-width: 700px) {
+  .project-setup-flags {
+    grid-template-columns: 1fr;
+  }
+}
