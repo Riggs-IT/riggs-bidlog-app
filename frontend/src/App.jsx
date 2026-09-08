@@ -1589,6 +1589,26 @@ export default function App() {
   ] = useState(null);
 
   const [
+    forecastAttention,
+    setForecastAttention,
+  ] = useState([]);
+
+  const [
+    attentionOpen,
+    setAttentionOpen,
+  ] = useState(false);
+
+  const [
+    attentionLoading,
+    setAttentionLoading,
+  ] = useState(false);
+
+  const [
+    attentionError,
+    setAttentionError,
+  ] = useState(null);
+
+  const [
     activeBids,
     setActiveBids,
   ] = useState([]);
@@ -1992,6 +2012,145 @@ export default function App() {
     };
 
   }, []);
+
+
+  async function loadForecastAttention() {
+    if (!user) {
+      setForecastAttention([]);
+      return [];
+    }
+
+    setAttentionLoading(true);
+    setAttentionError(null);
+
+    try {
+      const response =
+        await window.fetch(
+          '/api/pm-forecast/attention',
+          {
+            credentials:
+              'same-origin',
+          },
+        );
+
+      let payload = null;
+
+      try {
+        payload =
+          await response.json();
+      } catch {
+        payload = null;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          friendlyError(
+            payload?.detail
+          )
+        );
+      }
+
+      const rows =
+        Array.isArray(payload)
+          ? payload
+          : [];
+
+      setForecastAttention(
+        rows
+      );
+
+      return rows;
+
+    } catch (err) {
+      setAttentionError(
+        err.message
+        || 'Unable to load projection notifications.'
+      );
+
+      return [];
+
+    } finally {
+      setAttentionLoading(false);
+    }
+  }
+
+
+  useEffect(() => {
+    if (!user) {
+      setForecastAttention([]);
+      setAttentionOpen(false);
+      return undefined;
+    }
+
+    loadForecastAttention();
+
+    const intervalId =
+      window.setInterval(
+        () => {
+          loadForecastAttention();
+        },
+        60 * 1000,
+      );
+
+    const handleFocus = () => {
+      loadForecastAttention();
+    };
+
+    window.addEventListener(
+      'focus',
+      handleFocus,
+    );
+
+    return () => {
+      window.clearInterval(
+        intervalId
+      );
+
+      window.removeEventListener(
+        'focus',
+        handleFocus,
+      );
+    };
+
+  }, [
+    user?.eid,
+  ]);
+
+
+  function openAttentionProject(
+    attention,
+  ) {
+    const target =
+      currentProjects.find(
+        project =>
+          Number(
+            project.jobListId
+          )
+          ===
+          Number(
+            attention.jobListId
+          )
+      );
+
+    if (!target) {
+      setAttentionError(
+        'This project is no longer available in the active project list.'
+      );
+      return;
+    }
+
+    setActivePage(
+      'projected'
+    );
+
+    setSelectedCurrentProject(
+      target
+    );
+
+    setAttentionOpen(
+      false
+    );
+  }
 
 
   useEffect(() => {
@@ -4714,6 +4873,199 @@ export default function App() {
         </div>
 
         <div className="topbar-actions">
+          <div className="notification-center">
+            <button
+              type="button"
+              className={
+                (
+                  'notification-button '
+                  + (
+                      forecastAttention.length
+                        ? 'has-attention'
+                        : ''
+                    )
+                )
+              }
+              aria-expanded={
+                attentionOpen
+              }
+              aria-label={
+                forecastAttention.length
+                  ? `${forecastAttention.length} projection notifications`
+                  : 'Projection notifications'
+              }
+              title="Projection notifications"
+              onClick={
+                () => {
+                  setAttentionOpen(
+                    current =>
+                      !current
+                  );
+
+                  loadForecastAttention();
+                }
+              }
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"
+                />
+              </svg>
+
+              {forecastAttention.length > 0 && (
+                <span className="notification-count">
+                  {
+                    forecastAttention.length > 99
+                      ? '99+'
+                      : forecastAttention.length
+                  }
+                </span>
+              )}
+            </button>
+
+            {attentionOpen && (
+              <div className="notification-panel">
+                <div className="notification-panel-header">
+                  <div>
+                    <span>
+                      PROJECTION NOTIFICATIONS
+                    </span>
+
+                    <strong>
+                      Needs Rebalance
+                    </strong>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={
+                      () =>
+                        loadForecastAttention()
+                    }
+                    disabled={
+                      attentionLoading
+                    }
+                  >
+                    {attentionLoading
+                      ? 'Refreshing…'
+                      : 'Refresh'}
+                  </button>
+                </div>
+
+                {attentionError && (
+                  <div className="notification-message error">
+                    {attentionError}
+                  </div>
+                )}
+
+                {!attentionLoading
+                  && !forecastAttention.length
+                  && !attentionError
+                  && (
+                    <div className="notification-empty">
+                      No projections need your attention.
+                    </div>
+                  )}
+
+                {forecastAttention.length > 0 && (
+                  <div className="notification-list">
+                    {forecastAttention.map(
+                      item => (
+                        <article
+                          key={
+                            (
+                              `${item.jobListId}-`
+                              + `${item.forecastVersionId}`
+                            )
+                          }
+                          className="notification-item"
+                        >
+                          <div className="notification-item-heading">
+                            <div>
+                              <span>
+                                {item.jobNumber}
+                              </span>
+
+                              <strong>
+                                {item.jobName
+                                  || 'Current Project'}
+                              </strong>
+                            </div>
+
+                            <span
+                              className={
+                                (
+                                  'notification-variance '
+                                  + (
+                                      Number(
+                                        item.rebalanceVarianceAmount
+                                      ) < 0
+                                        ? 'variance-negative'
+                                        : ''
+                                    )
+                                )
+                              }
+                            >
+                              {
+                                currency(
+                                  item.rebalanceVarianceAmount
+                                )
+                              }
+                            </span>
+                          </div>
+
+                          <p>
+                            {item.attentionSource
+                              === 'ADMIN_CORRECTION'
+                              ? (
+                                  <>
+                                    <strong>
+                                      {
+                                        item.submittedByName
+                                        || 'An administrator'
+                                      }
+                                    </strong>
+                                    {' changed the projection total. Operations needs to rebalance it to the System Baseline.'}
+                                  </>
+                                )
+                              : (
+                                  'This projection no longer matches the editable System Baseline and needs to be rebalanced.'
+                                )}
+                          </p>
+
+                          {item.correctionReason && (
+                            <p className="notification-reason">
+                              {
+                                item.correctionReason
+                              }
+                            </p>
+                          )}
+
+                          <button
+                            type="button"
+                            className="text-button notification-view-project"
+                            onClick={
+                              () =>
+                                openAttentionProject(
+                                  item
+                                )
+                            }
+                          >
+                            View Project
+                          </button>
+                        </article>
+                      )
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="current-user">
             <strong>
               {user.displayName}
@@ -6781,6 +7133,9 @@ export default function App() {
         }
         onClose={
           () => setSelectedCurrentProject(null)
+        }
+        onAttentionChanged={
+          loadForecastAttention
         }
       />
     </div>

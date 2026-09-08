@@ -267,6 +267,7 @@ export default function PMForecastPanel({
   project,
   monthlyRows,
   user,
+  onAttentionChanged,
 }) {
   const [
     forecast,
@@ -297,6 +298,16 @@ export default function PMForecastPanel({
     editing,
     setEditing,
   ] = useState(false);
+
+  const [
+    editMode,
+    setEditMode,
+  ] = useState('pm');
+
+  const [
+    correctionReason,
+    setCorrectionReason,
+  ] = useState('');
 
   const [
     edits,
@@ -359,7 +370,7 @@ export default function PMForecastPanel({
         ),
 
         fetchJson(
-          '/api/pm-forecast/policy'
+          `/api/current-projects/${project.jobListId}/pm-forecast/policy`
         ),
       ]);
 
@@ -398,6 +409,8 @@ export default function PMForecastPanel({
       setPolicy(null);
 
       setEditing(false);
+      setEditMode('pm');
+      setCorrectionReason('');
       setEdits({});
       setNotes('');
 
@@ -689,10 +702,24 @@ export default function PMForecastPanel({
     );
 
 
+  const isAdminCorrection =
+    editMode === 'admin';
+
   const totalMismatch =
     Boolean(
       policy
         ?.requireBaselineTotalMatch
+
+      && !isAdminCorrection
+
+      && Math.abs(
+           editTotals.difference
+         ) >= 0.005
+    );
+
+  const adminCreatesVariance =
+    Boolean(
+      isAdminCorrection
 
       && Math.abs(
            editTotals.difference
@@ -722,7 +749,7 @@ export default function PMForecastPanel({
     try {
       const updated =
         await fetchJson(
-          '/api/pm-forecast/policy',
+          `/api/current-projects/${project.jobListId}/pm-forecast/policy`,
           {
             method:
               'PUT',
@@ -743,6 +770,13 @@ export default function PMForecastPanel({
         updated
       );
 
+      if (
+        typeof onAttentionChanged
+        === 'function'
+      ) {
+        await onAttentionChanged();
+      }
+
     } catch (err) {
       setPolicyError(
         err.message
@@ -755,7 +789,9 @@ export default function PMForecastPanel({
   };
 
 
-  const beginEdit = () => {
+  const beginEdit = (
+    mode = 'pm',
+  ) => {
     const next = {};
 
     editableRows.forEach(
@@ -778,13 +814,31 @@ export default function PMForecastPanel({
     );
 
     setSaveError(null);
+    setCorrectionReason('');
+    setEditMode(mode);
 
     setEditing(true);
   };
 
 
+  const beginAdminCorrection = () => {
+    if (
+      !isAdmin
+      || !latest
+    ) {
+      return;
+    }
+
+    beginEdit(
+      'admin'
+    );
+  };
+
+
   const cancelEdit = () => {
     setEditing(false);
+    setEditMode('pm');
+    setCorrectionReason('');
     setEdits({});
     setNotes('');
     setSaveError(null);
@@ -805,6 +859,24 @@ export default function PMForecastPanel({
       if (totalMismatch) {
         throw new Error(
           'The projection total must match the System Baseline total.'
+        );
+      }
+
+      if (
+        isAdminCorrection
+        && !latest?.forecastVersionId
+      ) {
+        throw new Error(
+          'An Admin Correction requires an existing projection version.'
+        );
+      }
+
+      if (
+        isAdminCorrection
+        && !correctionReason.trim()
+      ) {
+        throw new Error(
+          'Enter a reason for the Admin Correction.'
         );
       }
 
@@ -834,42 +906,67 @@ export default function PMForecastPanel({
         );
       }
 
+      const endpoint =
+        isAdminCorrection
+          ? (
+              `/api/current-projects/${project.jobListId}/pm-forecast/admin-correction`
+            )
+          : (
+              `/api/current-projects/${project.jobListId}/pm-forecast`
+            );
+
+      const payload = {
+        items,
+
+        notes:
+          notes.trim()
+          || null,
+
+        expectedLatestForecastVersionId:
+          latest
+            ?.forecastVersionId
+          ?? null,
+
+        ...(
+          isAdminCorrection
+            ? {
+                correctionReason:
+                  correctionReason.trim(),
+              }
+            : {}
+        ),
+      };
+
       await fetchJson(
-        `/api/current-projects/${project.jobListId}/pm-forecast`,
+        endpoint,
         {
           method:
             'POST',
 
-          headers: {
-            'Content-Type':
-              'application/json',
-
-            'X-Request-ID':
-              window.crypto
-                .randomUUID(),
-          },
+          headers:
+            requestHeaders(),
 
           body:
-            JSON.stringify({
-              items,
-
-              notes:
-                notes.trim()
-                || null,
-
-              expectedLatestForecastVersionId:
-                latest
-                  ?.forecastVersionId
-                ?? null,
-            }),
+            JSON.stringify(
+              payload
+            ),
         },
       );
 
       setEditing(false);
+      setEditMode('pm');
+      setCorrectionReason('');
       setEdits({});
       setNotes('');
 
       await load();
+
+      if (
+        typeof onAttentionChanged
+        === 'function'
+      ) {
+        await onAttentionChanged();
+      }
 
     } catch (err) {
       setSaveError(
@@ -900,16 +997,38 @@ export default function PMForecastPanel({
           {canEdit
             && !editing
             && (
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={beginEdit}
-                disabled={
-                  !editableRows.length
-                }
-              >
-                Revise Projections
-              </button>
+              <div className="pm-forecast-heading-actions">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={
+                    () =>
+                      beginEdit('pm')
+                  }
+                  disabled={
+                    !editableRows.length
+                  }
+                >
+                  Revise Projections
+                </button>
+
+                {isAdmin
+                  && latest
+                  && (
+                    <button
+                      type="button"
+                      className="secondary-button pm-admin-correction-button"
+                      onClick={
+                        beginAdminCorrection
+                      }
+                      disabled={
+                        !editableRows.length
+                      }
+                    >
+                      Admin Correction
+                    </button>
+                  )}
+              </div>
             )}
         </div>
 
@@ -972,26 +1091,38 @@ export default function PMForecastPanel({
                     </strong>
 
                     <small>
-                      Applies to all current-project PM projections. {
+                      Applies to this project. {
                         policy.requireBaselineTotalMatch
-                          ? 'PMs can adjust billing timing between editable months, while the editable total stays aligned with the System Baseline.'
-                          : 'PMs can adjust both billing timing and the remaining projection total.'
+                          ? 'Operations can adjust billing timing between editable months, while the editable total stays aligned with the System Baseline.'
+                          : 'Operations can adjust both billing timing and the remaining projection total.'
                       }
                     </small>
 
-                    {policy.updatedByName && (
-                      <small className="pm-policy-updated">
-                        Last changed by {
-                          policy.updatedByName
-                        }
-                        {' · '}
-                        {
-                          fmtDateTime(
-                            policy.updatedAtUTC
+                    <small className="pm-policy-updated">
+                      {policy.policySource === 'PROJECT'
+                        ? (
+                            <>
+                              Project setting
+                              {policy.projectPolicyUpdatedByName
+                                ? (
+                                    <>
+                                      {' · '}
+                                      Last changed by {
+                                        policy.projectPolicyUpdatedByName
+                                      }
+                                      {' · '}
+                                      {
+                                        fmtDateTime(
+                                          policy.projectPolicyUpdatedAtUTC
+                                        )
+                                      }
+                                    </>
+                                  )
+                                : null}
+                            </>
                           )
-                        }
-                      </small>
-                    )}
+                        : 'Using company default'}
+                    </small>
                   </div>
 
                   <button
@@ -1154,41 +1285,106 @@ export default function PMForecastPanel({
                       <td className="numeric pm-forecast-cell">
                         {inlineEdit
                           ? (
-                            <div className="pm-inline-input-wrap">
-                              <span>
-                                $
-                              </span>
+                            <div className="pm-inline-edit-control">
+                              <div className="pm-inline-input-wrap">
+                                <span>
+                                  $
+                                </span>
 
-                              <input
-                                aria-label={
-                                  `${fmtMonth(
-                                    row.monthStart
-                                  )} PM Projection`
-                                }
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                disabled={saving}
-                                value={
-                                  edits[
-                                    row.monthStart
-                                  ]
-                                  ?? ''
-                                }
-                                onChange={
-                                  event =>
-                                    setEdits(
-                                      current => ({
-                                        ...current,
+                                <input
+                                  aria-label={
+                                    `${fmtMonth(
+                                      row.monthStart
+                                    )} PM Projection`
+                                  }
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  disabled={saving}
+                                  value={
+                                    edits[
+                                      row.monthStart
+                                    ]
+                                    ?? ''
+                                  }
+                                  onChange={
+                                    event =>
+                                      setEdits(
+                                        current => ({
+                                          ...current,
 
-                                        [row.monthStart]:
-                                          event
-                                            .target
-                                            .value,
-                                      })
-                                    )
-                                }
-                              />
+                                          [row.monthStart]:
+                                            event
+                                              .target
+                                              .value,
+                                        })
+                                      )
+                                  }
+                                />
+                              </div>
+
+                              {(
+                                edits[
+                                  row.monthStart
+                                ] !== ''
+                                && Number.isFinite(
+                                  Number(
+                                    edits[
+                                      row.monthStart
+                                    ]
+                                  )
+                                )
+                                && Math.abs(
+                                  Number(
+                                    edits[
+                                      row.monthStart
+                                    ]
+                                  )
+                                  -
+                                  Number(
+                                    row.baseline
+                                    ?? 0
+                                  )
+                                ) >= 0.005
+                              ) && (
+                                <button
+                                  type="button"
+                                  className="pm-inline-reset-button"
+                                  disabled={saving}
+                                  title="Reset to System Baseline"
+                                  aria-label={
+                                    `Reset ${fmtMonth(
+                                      row.monthStart
+                                    )} to System Baseline`
+                                  }
+                                  onClick={
+                                    () =>
+                                      setEdits(
+                                        current => ({
+                                          ...current,
+
+                                          [row.monthStart]:
+                                            Number(
+                                              row.baseline
+                                              ?? 0
+                                            ).toFixed(2),
+                                        })
+                                      )
+                                  }
+                                >
+                                  <svg
+                                    aria-hidden="true"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      d="M9 7H4v5"
+                                    />
+                                    <path
+                                      d="M4.8 10.5A8 8 0 1 1 6.4 17"
+                                    />
+                                  </svg>
+                                </button>
+                              )}
                             </div>
                           )
                           : (
@@ -1278,13 +1474,19 @@ export default function PMForecastPanel({
           <div className="pm-inline-editor">
             <div className="pm-inline-edit-intro">
               <strong>
-                {forecast.hasPmForecast
-                  ? 'Revise PM Projection'
-                  : 'Start from System Baseline'}
+                {isAdminCorrection
+                  ? 'Admin Correction'
+                  : (
+                      forecast.hasPmForecast
+                        ? 'Revise PM Projection'
+                        : 'Start from System Baseline'
+                    )}
               </strong>
 
               <span>
-                Adjust the months that look different from the current plan. Past locked months stay unchanged.
+                {isAdminCorrection
+                  ? 'Use this only for an intentional administrator adjustment. A reason is required, and an unresolved total variance will notify the assigned project team.'
+                  : 'Adjust the months that look different from the current plan. Past locked months stay unchanged.'}
               </span>
             </div>
 
@@ -1343,6 +1545,48 @@ export default function PMForecastPanel({
               </div>
             )}
 
+            {adminCreatesVariance && (
+              <div className="pm-forecast-message warning">
+                This Admin Correction will leave a {
+                  fmtMoney(
+                    editTotals.difference,
+                    true,
+                  )
+                } difference from the editable System Baseline. The assigned PM, APM, PE, and Superintendent will see a Needs Rebalance notification until Operations balances the projection.
+              </div>
+            )}
+
+            {isAdminCorrection && (
+              <label className="pm-inline-note pm-admin-correction-reason">
+                <span>
+                  Admin correction reason
+                  <small>
+                    Required
+                  </small>
+                </span>
+
+                <textarea
+                  rows="3"
+                  maxLength="1000"
+                  value={
+                    correctionReason
+                  }
+                  disabled={
+                    saving
+                  }
+                  placeholder="Why is this projection being changed by an administrator?"
+                  onChange={
+                    event =>
+                      setCorrectionReason(
+                        event
+                          .target
+                          .value
+                      )
+                  }
+                />
+              </label>
+            )}
+
 
             <label className="pm-inline-note">
               <span>
@@ -1395,12 +1639,20 @@ export default function PMForecastPanel({
                   || !editableRows.length
                   || !editTotals.valid
                   || totalMismatch
+                  || (
+                    isAdminCorrection
+                    && !correctionReason.trim()
+                  )
                 }
                 onClick={save}
               >
                 {saving
                   ? 'Saving…'
-                  : 'Save Projections'}
+                  : (
+                      isAdminCorrection
+                        ? 'Save Admin Correction'
+                        : 'Save Projections'
+                    )}
               </button>
             </div>
           </div>
@@ -1457,12 +1709,22 @@ export default function PMForecastPanel({
                 >
                   <div className="pm-history-card-main">
                     <div>
-                      <strong>
-                        Version {
-                          version
-                            .versionNumber
-                        }
-                      </strong>
+                      <div className="pm-history-version-title">
+                        <strong>
+                          Version {
+                            version
+                              .versionNumber
+                          }
+                        </strong>
+
+                        {version.forecastVersionType
+                          === 'ADMIN_CORRECTION'
+                          && (
+                            <span className="pm-history-admin-badge">
+                              ADMIN CORRECTION
+                            </span>
+                          )}
+                      </div>
 
                       <span>
                         {version
@@ -1524,6 +1786,18 @@ export default function PMForecastPanel({
                       </span>
                     </div>
                   </div>
+
+                  {version.correctionReason && (
+                    <p className="pm-history-correction-reason">
+                      <strong>
+                        Admin reason:
+                      </strong>
+                      {' '}
+                      {
+                        version.correctionReason
+                      }
+                    </p>
+                  )}
 
                   {version.notes && (
                     <p className="pm-history-note">

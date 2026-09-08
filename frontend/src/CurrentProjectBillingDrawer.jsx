@@ -161,6 +161,7 @@ export default function CurrentProjectBillingDrawer({
   monthlyRows,
   user,
   onClose,
+  onAttentionChanged,
 }) {
   const [
     originatingBidDetail,
@@ -1088,6 +1089,9 @@ export default function CurrentProjectBillingDrawer({
             project={project}
             monthlyRows={monthlyRows}
             user={user}
+            onAttentionChanged={
+              onAttentionChanged
+            }
           />
 
         </div>

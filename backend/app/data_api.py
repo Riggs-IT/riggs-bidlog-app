@@ -975,6 +975,208 @@ def update_pm_forecast_policy(
     return payload_out
 
 
+def get_current_project_pm_forecast_policy(
+    job_list_id: int,
+) -> dict:
+    operation = (
+        "Current Project PM Forecast policy"
+    )
+
+    response = _get_service_response(
+        (
+            "/v1/bid-log/current-projects/"
+            f"{job_list_id}/pm-forecast/policy"
+        ),
+        operation=operation,
+        resource_not_found=True,
+    )
+
+    payload = _json_object(
+        response,
+        operation=operation,
+    )
+
+    if payload.get(
+        "jobListId"
+    ) != job_list_id:
+        raise DataAPIInvalidResponse(
+            "Project PM Forecast policy response "
+            "has an unexpected jobListId."
+        )
+
+    if not isinstance(
+        payload.get(
+            "requireBaselineTotalMatch"
+        ),
+        bool,
+    ):
+        raise DataAPIInvalidResponse(
+            "Project PM Forecast policy response is "
+            "missing requireBaselineTotalMatch."
+        )
+
+    return payload
+
+
+def _pm_forecast_write_request(
+    method: str,
+    path: str,
+    payload: dict,
+    *,
+    actor_eid: int,
+    request_id: str,
+    operation: str,
+) -> dict:
+    try:
+        response = _get_http_client().request(
+            method,
+            path,
+            json=payload,
+            headers=_request_headers(
+                include_service_auth=True,
+                request_id=request_id,
+                actor_eid=actor_eid,
+            ),
+        )
+
+    except httpx.TimeoutException as exc:
+        raise DataAPIUnavailable(
+            "Riggs Data API request timed out "
+            f"during {operation}."
+        ) from exc
+
+    except httpx.RequestError as exc:
+        raise DataAPIUnavailable(
+            "Unable to connect to the Riggs Data API "
+            f"during {operation}."
+        ) from exc
+
+
+    if response.status_code in {
+        400,
+        403,
+        404,
+        409,
+        422,
+    }:
+        detail = _detail(
+            response
+        )
+
+        if detail is not None:
+            raise DataAPIRequestRejected(
+                response.status_code,
+                detail,
+            )
+
+
+    _raise_common_failure(
+        response,
+        operation=operation,
+    )
+
+
+    if response.status_code != 200:
+        raise DataAPIInvalidResponse(
+            "Unexpected Riggs Data API response "
+            f"during {operation}."
+        )
+
+
+    return _json_object(
+        response,
+        operation=operation,
+    )
+
+
+def update_current_project_pm_forecast_policy(
+    job_list_id: int,
+    payload: dict,
+    *,
+    actor_eid: int,
+    request_id: str,
+) -> dict:
+    return _pm_forecast_write_request(
+        "PUT",
+        (
+            "/v1/bid-log/current-projects/"
+            f"{job_list_id}/pm-forecast/policy"
+        ),
+        payload,
+        actor_eid=actor_eid,
+        request_id=request_id,
+        operation=(
+            "Update Current Project PM Forecast policy"
+        ),
+    )
+
+
+def get_pm_forecast_attention(
+    actor_eid: int,
+) -> list[dict]:
+    operation = (
+        "PM Forecast attention"
+    )
+
+    try:
+        response = _get_http_client().get(
+            "/v1/bid-log/pm-forecast/attention",
+            headers=_request_headers(
+                include_service_auth=True,
+                actor_eid=actor_eid,
+            ),
+        )
+
+    except httpx.TimeoutException as exc:
+        raise DataAPIUnavailable(
+            "Riggs Data API request timed out "
+            f"during {operation}."
+        ) from exc
+
+    except httpx.RequestError as exc:
+        raise DataAPIUnavailable(
+            "Unable to connect to the Riggs Data API "
+            f"during {operation}."
+        ) from exc
+
+
+    if response.status_code in {
+        400,
+        403,
+        404,
+        409,
+        422,
+    }:
+        detail = _detail(
+            response
+        )
+
+        if detail is not None:
+            raise DataAPIRequestRejected(
+                response.status_code,
+                detail,
+            )
+
+
+    _raise_common_failure(
+        response,
+        operation=operation,
+    )
+
+
+    if response.status_code != 200:
+        raise DataAPIInvalidResponse(
+            "Unexpected Riggs Data API response "
+            f"during {operation}."
+        )
+
+
+    return _json_object_list(
+        response,
+        operation=operation,
+    )
+
+
 def get_current_project_pm_forecast(
     job_list_id: int,
 ) -> dict:
@@ -1160,6 +1362,44 @@ def save_current_project_pm_forecast(
     ):
         raise DataAPIInvalidResponse(
             "PM Forecast save response "
+            "is missing its items list."
+        )
+
+    return payload_out
+
+
+def save_current_project_pm_forecast_admin_correction(
+    job_list_id: int,
+    payload: dict,
+    *,
+    actor_eid: int,
+    request_id: str,
+) -> dict:
+    payload_out = _pm_forecast_write_request(
+        "POST",
+        (
+            "/v1/bid-log/current-projects/"
+            f"{job_list_id}/pm-forecast/admin-correction"
+        ),
+        payload,
+        actor_eid=actor_eid,
+        request_id=request_id,
+        operation=(
+            "Save Current Project PM Forecast "
+            "admin correction"
+        ),
+    )
+
+    items = payload_out.get(
+        "items"
+    )
+
+    if not isinstance(
+        items,
+        list,
+    ):
+        raise DataAPIInvalidResponse(
+            "PM Forecast admin correction response "
             "is missing its items list."
         )
 

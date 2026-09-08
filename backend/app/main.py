@@ -59,10 +59,14 @@ from .data_api import (
     get_project_close_accountability,
     get_pm_forecast_policy,
     update_pm_forecast_policy,
+    get_current_project_pm_forecast_policy,
+    update_current_project_pm_forecast_policy,
+    get_pm_forecast_attention,
     get_current_project_pm_forecast,
     get_current_project_pm_forecast_history,
     get_current_project_pm_forecast_version,
     save_current_project_pm_forecast,
+    save_current_project_pm_forecast_admin_correction,
 )
 
 
@@ -1064,6 +1068,138 @@ async def update_pm_forecast_policy_proxy(
 
 
 @app.get(
+    "/api/pm-forecast/attention"
+)
+def pm_forecast_attention(
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    try:
+        return get_pm_forecast_attention(
+            current_user.eid
+        )
+
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(
+            exc
+        )
+
+
+@app.get(
+    (
+        "/api/current-projects/"
+        "{job_list_id}/pm-forecast/policy"
+    )
+)
+def current_project_pm_forecast_policy(
+    job_list_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    _current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    try:
+        return get_current_project_pm_forecast_policy(
+            job_list_id
+        )
+
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(
+            exc
+        )
+
+
+@app.put(
+    (
+        "/api/current-projects/"
+        "{job_list_id}/pm-forecast/policy"
+    )
+)
+async def update_current_project_pm_forecast_policy_proxy(
+    request: Request,
+
+    job_list_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    role = (
+        current_user.app_role
+        .strip()
+        .upper()
+    )
+
+    if role != "ADMIN":
+        raise HTTPException(
+            status_code=403,
+            detail="bid_log_admin_required",
+        )
+
+
+    try:
+        payload = await request.json()
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_json_body",
+        ) from exc
+
+
+    if not isinstance(
+        payload,
+        dict,
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_pm_forecast_policy_payload",
+        )
+
+
+    value = payload.get(
+        "requireBaselineTotalMatch"
+    )
+
+    if not isinstance(
+        value,
+        bool,
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_pm_forecast_policy_payload",
+        )
+
+
+    try:
+        return update_current_project_pm_forecast_policy(
+            job_list_id,
+
+            {
+                "requireBaselineTotalMatch":
+                    value,
+            },
+
+            actor_eid=current_user.eid,
+
+            request_id=_browser_request_id(
+                request
+            ),
+        )
+
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(
+            exc
+        )
+
+
+@app.get(
     "/api/current-projects/{job_list_id}/pm-forecast"
 )
 def current_project_pm_forecast(
@@ -1205,6 +1341,130 @@ async def save_current_project_pm_forecast_proxy(
             request_id=_browser_request_id(
                 request
             ),
+        )
+
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(
+            exc
+        )
+
+
+@app.post(
+    (
+        "/api/current-projects/"
+        "{job_list_id}/pm-forecast/admin-correction"
+    )
+)
+async def save_current_project_pm_forecast_admin_correction_proxy(
+    request: Request,
+
+    job_list_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    role = (
+        current_user.app_role
+        .strip()
+        .upper()
+    )
+
+    if role != "ADMIN":
+        raise HTTPException(
+            status_code=403,
+            detail="bid_log_admin_required",
+        )
+
+
+    try:
+        payload = await request.json()
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_json_body",
+        ) from exc
+
+
+    if not isinstance(
+        payload,
+        dict,
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "invalid_pm_forecast_"
+                "admin_correction_payload"
+            ),
+        )
+
+
+    correction_reason = payload.get(
+        "correctionReason"
+    )
+
+    if (
+        not isinstance(
+            correction_reason,
+            str,
+        )
+        or not correction_reason.strip()
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="admin_correction_reason_required",
+        )
+
+
+    expected_version = payload.get(
+        "expectedLatestForecastVersionId"
+    )
+
+    if (
+        not isinstance(
+            expected_version,
+            int,
+        )
+        or isinstance(
+            expected_version,
+            bool,
+        )
+        or expected_version < 1
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "invalid_pm_forecast_"
+                "admin_correction_payload"
+            ),
+        )
+
+
+    forwarded_payload = dict(
+        payload
+    )
+
+    forwarded_payload[
+        "correctionReason"
+    ] = correction_reason.strip()
+
+
+    try:
+        return (
+            save_current_project_pm_forecast_admin_correction(
+                job_list_id,
+                forwarded_payload,
+
+                actor_eid=current_user.eid,
+
+                request_id=_browser_request_id(
+                    request
+                ),
+            )
         )
 
     except Exception as exc:

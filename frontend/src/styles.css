@@ -9853,3 +9853,513 @@ tbody td {
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================================
+   PM FORECAST PROJECT POLICY / ADMIN CORRECTION / NOTIFICATIONS
+   ============================================================ */
+
+
+.pm-forecast-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pm-admin-correction-button {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--accent) 55%,
+      var(--border-strong)
+    );
+}
+
+.pm-admin-correction-reason textarea {
+  min-height: 86px;
+}
+
+.pm-history-version-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pm-history-admin-badge {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 2px 6px;
+
+  border:
+    1px solid
+    var(--border-strong);
+
+  border-radius: 999px;
+
+  color:
+    var(--muted);
+
+  font-size: 8px;
+  font-weight: 800;
+
+  letter-spacing: 0.05em;
+}
+
+.pm-history-correction-reason {
+  margin:
+    8px
+    0
+    0;
+
+  padding:
+    8px
+    10px;
+
+  border-left:
+    2px solid
+    var(--accent);
+
+  background:
+    var(--surface-2);
+
+  color:
+    var(--text);
+
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+
+/* ------------------------------------------------------------
+   TOPBAR NOTIFICATIONS
+   ------------------------------------------------------------ */
+
+.notification-center {
+  position: relative;
+
+  flex:
+    0
+    0
+    auto;
+}
+
+.notification-button {
+  position: relative;
+
+  display: grid;
+  place-items: center;
+
+  width: 40px;
+  min-height: 38px;
+
+  padding: 0;
+
+  border:
+    1px solid
+    #39434d;
+
+  border-radius: 6px;
+
+  background:
+    #12171b;
+
+  color:
+    #dce2e7;
+
+  cursor: pointer;
+}
+
+.notification-button:hover,
+.notification-button[aria-expanded="true"] {
+  border-color:
+    #596774;
+
+  background:
+    #1a2026;
+}
+
+.notification-button.has-attention {
+  border-color:
+    var(--accent);
+}
+
+.notification-button svg {
+  width: 18px;
+  height: 18px;
+
+  fill: none;
+
+  stroke:
+    currentColor;
+
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.notification-count {
+  position: absolute;
+
+  top: -6px;
+  right: -6px;
+
+  display: grid;
+  place-items: center;
+
+  min-width: 18px;
+  height: 18px;
+
+  padding: 0 4px;
+
+  border:
+    2px solid
+    var(--surface);
+
+  border-radius: 999px;
+
+  background:
+    var(--accent);
+
+  color:
+    #fff;
+
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.notification-panel {
+  position: absolute;
+
+  z-index: 120;
+
+  top:
+    calc(
+      100%
+      + 10px
+    );
+
+  right: 0;
+
+  width:
+    min(
+      420px,
+      calc(
+        100vw
+        - 24px
+      )
+    );
+
+  overflow: hidden;
+
+  border:
+    1px solid
+    var(--border-strong);
+
+  border-radius: 10px;
+
+  background:
+    var(--surface);
+
+  box-shadow:
+    0
+    18px
+    50px
+    rgba(
+      0,
+      0,
+      0,
+      0.32
+    );
+}
+
+.notification-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 16px;
+
+  padding:
+    13px
+    14px;
+
+  border-bottom:
+    1px solid
+    var(--border);
+
+  background:
+    var(--surface-2);
+}
+
+.notification-panel-header > div {
+  min-width: 0;
+}
+
+.notification-panel-header span,
+.notification-panel-header strong {
+  display: block;
+}
+
+.notification-panel-header span {
+  margin-bottom: 2px;
+
+  color:
+    var(--muted);
+
+  font-size: 8px;
+  font-weight: 800;
+
+  letter-spacing: 0.07em;
+}
+
+.notification-panel-header strong {
+  font-size: 13px;
+}
+
+.notification-list {
+  max-height: 430px;
+
+  overflow-y: auto;
+}
+
+.notification-item {
+  padding:
+    12px
+    14px;
+
+  border-bottom:
+    1px solid
+    var(--border);
+}
+
+.notification-item:last-child {
+  border-bottom: 0;
+}
+
+.notification-item-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 14px;
+}
+
+.notification-item-heading > div {
+  min-width: 0;
+}
+
+.notification-item-heading > div > span,
+.notification-item-heading > div > strong {
+  display: block;
+}
+
+.notification-item-heading > div > span {
+  margin-bottom: 2px;
+
+  color:
+    var(--muted);
+
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.notification-item-heading > div > strong {
+  overflow: hidden;
+
+  font-size: 12px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notification-variance {
+  flex:
+    0
+    0
+    auto;
+
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.notification-item p {
+  margin:
+    8px
+    0
+    0;
+
+  color:
+    var(--muted);
+
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.notification-item p strong {
+  color:
+    var(--text);
+}
+
+.notification-reason {
+  padding:
+    7px
+    8px;
+
+  border-left:
+    2px solid
+    var(--accent);
+
+  background:
+    var(--surface-2);
+
+  color:
+    var(--text)
+    !important;
+}
+
+.notification-view-project {
+  margin-top: 9px;
+}
+
+.notification-empty,
+.notification-message {
+  padding:
+    18px
+    14px;
+
+  color:
+    var(--muted);
+
+  font-size: 11px;
+
+  text-align: center;
+}
+
+.notification-message.error {
+  color:
+    var(--danger);
+}
+
+
+@media (max-width: 700px) {
+  .pm-forecast-heading-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .notification-panel {
+    position: fixed;
+
+    top: 64px;
+    right: 12px;
+    left: 12px;
+
+    width: auto;
+  }
+}
+
+
+@media print {
+  .notification-center,
+  .pm-admin-correction-button {
+    display: none !important;
+  }
+}
+
+/* ============================================================
+   PM PROJECTION INPUT RESET / NUMBER SPINNER CLEANUP
+   ============================================================ */
+
+
+/*
+  Two fixed grid columns:
+  input + reserved 26px reset slot.
+  The second column remains even while the conditional reset
+  button is not rendered, so nothing moves when it appears.
+*/
+.pm-inline-edit-control {
+  display: grid;
+
+  grid-template-columns:
+    auto
+    26px;
+
+  align-items: center;
+
+  column-gap: 6px;
+
+  margin-left: auto;
+}
+
+
+/* Remove Chrome / Edge / Safari number arrows. */
+.pm-inline-input-wrap input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+
+.pm-inline-input-wrap input[type="number"]::-webkit-outer-spin-button,
+.pm-inline-input-wrap input[type="number"]::-webkit-inner-spin-button {
+  margin: 0;
+
+  -webkit-appearance: none;
+}
+
+
+.pm-inline-reset-button {
+  display: grid;
+  place-items: center;
+
+  width: 26px;
+  height: 26px;
+
+  padding: 0;
+
+  border:
+    1px solid
+    transparent;
+
+  border-radius: 5px;
+
+  background:
+    transparent;
+
+  color:
+    var(--muted);
+
+  cursor: pointer;
+}
+
+
+.pm-inline-reset-button:hover:not(:disabled) {
+  border-color:
+    var(--border-strong);
+
+  background:
+    var(--surface-2);
+
+  color:
+    var(--accent);
+}
+
+
+.pm-inline-reset-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+
+.pm-inline-reset-button svg {
+  width: 15px;
+  height: 15px;
+
+  fill: none;
+
+  stroke:
+    currentColor;
+
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
