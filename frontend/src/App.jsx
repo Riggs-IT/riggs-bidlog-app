@@ -4587,26 +4587,80 @@ export default function App() {
       'Job List ID',
       'Bid ID',
       'Project / Bid',
+
       'PM',
+      'PE',
+      'Superintendent',
+      'APM',
+
       'Project Type',
       'Purpose',
       'General Contractor',
+
+      'Street Address',
+      'City / State',
       'Location',
+
       'Due Date',
-      'Projection State',
+      'Bid Status',
       'Probability',
+
+      'Square Footage',
+      'Number of Buildings',
+
+      'Retention',
+      'Estimated Margin %',
+      'Bid Margin %',
+
+      'Projection State',
+      'Forecast Ready',
+
+      'Distribution Method',
+      'Curve',
+
+      'Amount Source',
+      'Start Date Source',
+      'End Date Source',
+
       'Projected From',
       'Projected Through',
+
       'Projected Billings In Range',
-      'Actual In Range',
-      'Variance In Range',
       'Unweighted Bid Projected Billings In Range',
+      'Actual In Range',
+
+      'Margin Collected In Range',
+      'Weighted Historical Margin % In Range',
+      'Margin Data Complete In Range',
+      'Missing Margin Rows In Range',
+
+      'Variance In Range',
+
       'Project Value',
+      'Original Contract Amount',
+      'Bid Estimated Price',
+      'Projection Amount Override',
+
       'Effective Start',
       'Estimated Duration Months',
       'Est. Complete Date',
+
       'Foundation Billing History',
+      'Foundation Billing Months',
+
+      'Projected To Date',
+      'Actual To Date',
+
+      'Margin Collected To Date',
+      'Weighted Historical Margin % To Date',
+      'Margin Data Complete To Date',
+      'Missing Margin Rows To Date',
+
+      'Variance To Date',
+      'Remaining Amount',
+      'Future Projected Amount',
     ];
+
 
     const rows =
       detailRows.map(
@@ -4614,9 +4668,23 @@ export default function App() {
           const raw =
             row.raw || {};
 
+
           const isBid =
             row.source
             === 'Active Bid';
+
+
+          const rangeMargin =
+            isBid
+              ? null
+              : aggregateCurrentMonthly(
+                  currentMonthly.get(
+                    row.nativeId
+                  ),
+                  fromMonth,
+                  throughMonth,
+                );
+
 
           const hasFoundationHistory =
             typeof raw.hasFoundationBillingHistory
@@ -4628,6 +4696,7 @@ export default function App() {
                 )
               : '';
 
+
           const probabilityValue =
             isBid
             && raw.probability !== null
@@ -4637,78 +4706,266 @@ export default function App() {
                 )
               : '';
 
+
+          const retentionValue =
+            raw.retention !== null
+            && raw.retention !== undefined
+            && raw.retention !== ''
+              ? retentionLabel(
+                  raw.retention
+                )
+              : '';
+
+
+          const estimatedMarginValue =
+            !isBid
+            && raw.estimatedMarginPercent !== null
+            && raw.estimatedMarginPercent !== undefined
+              ? retentionLabel(
+                  raw.estimatedMarginPercent
+                )
+              : '';
+
+
+          const bidMarginValue =
+            isBid
+            && raw.margin !== null
+            && raw.margin !== undefined
+              ? retentionLabel(
+                  raw.margin
+                )
+              : '';
+
+
+          const weightedRangeMargin =
+            rangeMargin
+            && rangeMargin.weightedHistoricalMarginPercent !== null
+            && rangeMargin.weightedHistoricalMarginPercent !== undefined
+              ? retentionLabel(
+                  rangeMargin.weightedHistoricalMarginPercent
+                )
+              : '';
+
+
+          const weightedToDateMargin =
+            !isBid
+            && raw.weightedHistoricalMarginPercentToDate !== null
+            && raw.weightedHistoricalMarginPercentToDate !== undefined
+              ? retentionLabel(
+                  raw.weightedHistoricalMarginPercentToDate
+                )
+              : '';
+
+
+          const cityState =
+            isBid
+              ? [
+                  raw.city,
+                  raw.state,
+                ]
+                  .filter(Boolean)
+                  .join(', ')
+              : (
+                  raw.cityStateZip
+                  || ''
+                );
+
+
           return {
             'Source':
               row.source,
+
 
             'Job Number':
               isBid
                 ? ''
                 : row.number,
 
+
             'Job List ID':
               isBid
                 ? ''
                 : row.nativeId,
+
 
             'Bid ID':
               isBid
                 ? row.nativeId
                 : '',
 
+
             'Project / Bid':
               row.name,
 
+
             'PM':
-              row.pm,
+              raw.pm
+              || row.pm
+              || '',
+
+
+            'PE':
+              isBid
+                ? ''
+                : (
+                    raw.pe
+                    || ''
+                  ),
+
+
+            'Superintendent':
+              isBid
+                ? ''
+                : (
+                    raw.superintendent
+                    || ''
+                  ),
+
+
+            'APM':
+              isBid
+                ? ''
+                : (
+                    raw.apm
+                    || ''
+                  ),
+
 
             'Project Type':
-              row.projectType,
+              raw.projectType
+              || '',
+
 
             'Purpose':
-              row.purpose,
+              raw.purpose
+              || '',
+
 
             'General Contractor':
-              row.gc,
+              raw.generalContractors
+              || raw.gc
+              || '',
+
+
+            'Street Address':
+              raw.streetAddress
+              || '',
+
+
+            'City / State':
+              cityState,
+
 
             'Location':
-              row.location,
+              row.location
+              || '',
+
 
             'Due Date':
               isBid
                 ? (
                     raw.dueDate
-                    || row.dueDate
                     || ''
                   )
                 : '',
 
-            'Projection State':
-              row.state,
+
+            'Bid Status':
+              isBid
+                ? (
+                    raw.status
+                    || ''
+                  )
+                : '',
+
 
             'Probability':
               probabilityValue,
 
+
+            'Square Footage':
+              isBid
+                ? (
+                    raw.squareFootage
+                    ?? ''
+                  )
+                : '',
+
+
+            'Number of Buildings':
+              isBid
+                ? (
+                    raw.numberOfBuildings
+                    ?? ''
+                  )
+                : '',
+
+
+            'Retention':
+              retentionValue,
+
+
+            'Estimated Margin %':
+              estimatedMarginValue,
+
+
+            'Bid Margin %':
+              bidMarginValue,
+
+
+            'Projection State':
+              raw.forecastState
+              || row.state
+              || '',
+
+
+            'Forecast Ready':
+              typeof raw.forecastReady
+                === 'boolean'
+                ? (
+                    raw.forecastReady
+                      ? 'Yes'
+                      : 'No'
+                  )
+                : '',
+
+
+            'Distribution Method':
+              raw.distributionMethod
+              || '',
+
+
+            'Curve':
+              raw.curveDisplayName
+              || '',
+
+
+            'Amount Source':
+              raw.amountSource
+              || '',
+
+
+            'Start Date Source':
+              raw.startDateSource
+              || '',
+
+
+            'End Date Source':
+              raw.endDateSource
+              || '',
+
+
             'Projected From':
               fromMonth,
+
 
             'Projected Through':
               throughMonth,
 
+
             'Projected Billings In Range':
               row.expected,
 
-            'Actual In Range':
-              row.actual === null
-                || row.actual === undefined
-                ? ''
-                : row.actual,
-
-            'Variance In Range':
-              row.variance === null
-                || row.variance === undefined
-                ? ''
-                : row.variance,
 
             'Unweighted Bid Projected Billings In Range':
               isBid
@@ -4718,30 +4975,199 @@ export default function App() {
                   )
                 : '',
 
+
+            'Actual In Range':
+              row.actual === null
+              || row.actual === undefined
+                ? ''
+                : row.actual,
+
+
+            'Margin Collected In Range':
+              isBid
+              || !rangeMargin
+              || rangeMargin.marginCollected === null
+              || rangeMargin.marginCollected === undefined
+                ? ''
+                : rangeMargin.marginCollected,
+
+
+            'Weighted Historical Margin % In Range':
+              weightedRangeMargin,
+
+
+            'Margin Data Complete In Range':
+              isBid
+              || !rangeMargin
+                ? ''
+                : (
+                    rangeMargin.marginDataComplete
+                      ? 'Yes'
+                      : 'No'
+                  ),
+
+
+            'Missing Margin Rows In Range':
+              isBid
+              || !rangeMargin
+                ? ''
+                : rangeMargin.missingMarginRows,
+
+
+            'Variance In Range':
+              row.variance === null
+              || row.variance === undefined
+                ? ''
+                : row.variance,
+
+
             'Project Value':
               raw.effectiveAmount
+              ?? row.projectValue
+              ?? raw.estimatedPrice
               ?? '',
+
+
+            'Original Contract Amount':
+              isBid
+                ? ''
+                : (
+                    raw.originalContractAmount
+                    ?? ''
+                  ),
+
+
+            'Bid Estimated Price':
+              raw.bidEstimatedPrice
+              ?? raw.estimatedPrice
+              ?? '',
+
+
+            'Projection Amount Override':
+              isBid
+                ? (
+                    raw.amountOverride
+                    ?? ''
+                  )
+                : (
+                    raw.projectionAmount
+                    ?? ''
+                  ),
+
 
             'Effective Start':
               raw.effectiveStartDate
+              ?? raw.anticipatedStartDate
               ?? '',
+
 
             'Estimated Duration Months':
               raw.estimatedDurationMonths
               ?? '',
+
 
             'Est. Complete Date':
               raw.projectedCompletionDate
               ?? raw.effectiveEndDate
               ?? '',
 
+
             'Foundation Billing History':
               isBid
                 ? ''
                 : hasFoundationHistory,
+
+
+            'Foundation Billing Months':
+              isBid
+                ? ''
+                : (
+                    raw.foundationBillingMonthCount
+                    ?? ''
+                  ),
+
+
+            'Projected To Date':
+              isBid
+                ? ''
+                : (
+                    raw.projectedToDate
+                    ?? ''
+                  ),
+
+
+            'Actual To Date':
+              isBid
+                ? ''
+                : (
+                    raw.actualToDate
+                    ?? ''
+                  ),
+
+
+            'Margin Collected To Date':
+              isBid
+                ? ''
+                : (
+                    raw.marginCollectedToDate
+                    ?? ''
+                  ),
+
+
+            'Weighted Historical Margin % To Date':
+              weightedToDateMargin,
+
+
+            'Margin Data Complete To Date':
+              isBid
+              || typeof raw.marginDataComplete
+                !== 'boolean'
+                ? ''
+                : (
+                    raw.marginDataComplete
+                      ? 'Yes'
+                      : 'No'
+                  ),
+
+
+            'Missing Margin Rows To Date':
+              isBid
+                ? ''
+                : (
+                    raw.missingMarginRows
+                    ?? ''
+                  ),
+
+
+            'Variance To Date':
+              isBid
+                ? ''
+                : (
+                    raw.varianceToDate
+                    ?? ''
+                  ),
+
+
+            'Remaining Amount':
+              isBid
+                ? ''
+                : (
+                    raw.remainingAmount
+                    ?? ''
+                  ),
+
+
+            'Future Projected Amount':
+              isBid
+                ? ''
+                : (
+                    raw.futureProjectedAmount
+                    ?? ''
+                  ),
           };
         }
       );
+
 
     downloadCsv(
       (
