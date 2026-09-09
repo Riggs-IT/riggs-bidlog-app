@@ -13,6 +13,10 @@ import {
   retentionLabel,
   retentionNumber,
 } from './BillingDisplay.jsx';
+import {
+  GeneralContractorDisplay,
+  generalContractorDisplayText,
+} from './GeneralContractors.jsx';
 
 
 function toNumber(value) {
@@ -518,7 +522,7 @@ export default function CompletedProjectBillingDrawer({
               )}
 
               {project.generalContractor
-                ? ` · ${project.generalContractor}`
+                ? ` · ${generalContractorDisplayText(project.generalContractor)}`
                 : ''}
             </p>
           </div>
@@ -579,12 +583,11 @@ export default function CompletedProjectBillingDrawer({
               GC
             </small>
 
-            <strong>
-              {displayValue(
-                project.generalContractor,
-                'TBD',
-              )}
-            </strong>
+            <GeneralContractorDisplay
+              value={project.generalContractor}
+              fallback="TBD"
+              compact
+            />
           </article>
 
 
@@ -676,35 +679,37 @@ export default function CompletedProjectBillingDrawer({
             </article>
 
 
-            <article>
-              <span>
-                Historical Margin
-              </span>
+            {isAdmin && (
+              <article>
+                <span>
+                  Historical Margin
+                </span>
 
-              {project.marginDataComplete ? (
-                <>
-                  <strong>
-                    {retentionLabel(
-                      project.weightedHistoricalMarginPercent
-                    )}
-                  </strong>
+                {project.marginDataComplete ? (
+                  <>
+                    <strong>
+                      {retentionLabel(
+                        project.weightedHistoricalMarginPercent
+                      )}
+                    </strong>
 
-                  <small className="commercial-source-note">
-                    Weighted from Foundation billings
-                  </small>
-                </>
-              ) : (
-                <>
-                  <strong className="drawer-tbd-value">
-                    —
-                  </strong>
+                    <small className="commercial-source-note">
+                      Weighted from Foundation billings
+                    </small>
+                  </>
+                ) : (
+                  <>
+                    <strong className="drawer-tbd-value">
+                      —
+                    </strong>
 
-                  <DataPill tone="warning">
-                    Margin incomplete
-                  </DataPill>
-                </>
-              )}
-            </article>
+                    <DataPill tone="warning">
+                      Margin incomplete
+                    </DataPill>
+                  </>
+                )}
+              </article>
+            )}
 
 
             <article>
@@ -854,31 +859,33 @@ export default function CompletedProjectBillingDrawer({
             />
 
 
-            <div className="completed-detail-value">
-              <span>
-                Margin Collected
-              </span>
+            {isAdmin && (
+              <div className="completed-detail-value">
+                <span>
+                  Margin Collected
+                </span>
 
-              <strong>
-                <MoneyValue
-                  value={
-                    project.marginCollectedTotal
-                  }
-                />
-              </strong>
+                <strong>
+                  <MoneyValue
+                    value={
+                      project.marginCollectedTotal
+                    }
+                  />
+                </strong>
 
-              {project.marginDataComplete ? (
-                <small>
-                  {retentionLabel(
-                    project.weightedHistoricalMarginPercent
-                  )} weighted historical margin
-                </small>
-              ) : (
-                <DataPill tone="warning">
-                  Margin incomplete
-                </DataPill>
-              )}
-            </div>
+                {project.marginDataComplete ? (
+                  <small>
+                    {retentionLabel(
+                      project.weightedHistoricalMarginPercent
+                    )} weighted historical margin
+                  </small>
+                ) : (
+                  <DataPill tone="warning">
+                    Margin incomplete
+                  </DataPill>
+                )}
+              </div>
+            )}
 
 
             <DetailValue
@@ -1294,9 +1301,11 @@ export default function CompletedProjectBillingDrawer({
                         Actual Billings
                       </th>
 
-                      <th className="numeric">
-                        Margin Collected
-                      </th>
+                      {isAdmin && (
+                        <th className="numeric">
+                          Margin Collected
+                        </th>
+                      )}
 
                       <th className="numeric">
                         Running Total
@@ -1332,27 +1341,29 @@ export default function CompletedProjectBillingDrawer({
                             />
                           </td>
 
-                          <td className="numeric strong-cell">
-                            <MoneyValue
-                              value={
-                                row.marginCollected
-                              }
-                            />
+                          {isAdmin && (
+                            <td className="numeric strong-cell">
+                              <MoneyValue
+                                value={
+                                  row.marginCollected
+                                }
+                              />
 
-                            {row.marginDataComplete ? (
-                              <small className="cell-subtext">
-                                {retentionLabel(
-                                  row.weightedHistoricalMarginPercent
-                                )}
-                              </small>
-                            ) : (
-                              <small className="cell-subtext">
-                                <span className="completed-data-pill warning">
-                                  Margin incomplete
-                                </span>
-                              </small>
-                            )}
-                          </td>
+                              {row.marginDataComplete ? (
+                                <small className="cell-subtext">
+                                  {retentionLabel(
+                                    row.weightedHistoricalMarginPercent
+                                  )}
+                                </small>
+                              ) : (
+                                <small className="cell-subtext">
+                                  <span className="completed-data-pill warning">
+                                    Margin incomplete
+                                  </span>
+                                </small>
+                              )}
+                            </td>
+                          )}
 
                           <td className="numeric">
                             <MoneyValue
@@ -1384,7 +1395,7 @@ export default function CompletedProjectBillingDrawer({
                     {!monthly.length && (
                       <tr>
                         <td
-                          colSpan="5"
+                          colSpan={isAdmin ? 5 : 4}
                           className="empty-cell"
                         >
                           No monthly Foundation billing
@@ -1411,13 +1422,15 @@ export default function CompletedProjectBillingDrawer({
                           />
                         </td>
 
-                        <td className="numeric strong-cell">
-                          <MoneyValue
-                            value={
-                              project.marginCollectedTotal
-                            }
-                          />
-                        </td>
+                        {isAdmin && (
+                          <td className="numeric strong-cell">
+                            <MoneyValue
+                              value={
+                                project.marginCollectedTotal
+                              }
+                            />
+                          </td>
+                        )}
 
                         <td className="numeric">
                           <MoneyValue

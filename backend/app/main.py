@@ -845,16 +845,58 @@ def platform_status(
     }
 
 
+def _can_view_margin(
+    current_user: CurrentUser,
+) -> bool:
+    return (
+        str(
+            current_user.app_role
+            or ""
+        ).upper()
+        == "ADMIN"
+    )
+
+
+def _redact_margin_fields(value):
+    if isinstance(value, list):
+        return [
+            _redact_margin_fields(item)
+            for item in value
+        ]
+
+    if isinstance(value, dict):
+        return {
+            key: _redact_margin_fields(item)
+            for key, item in value.items()
+            if "margin" not in str(key).lower()
+        }
+
+    return value
+
+
+def _role_scoped_financial_payload(
+    payload,
+    current_user: CurrentUser,
+):
+    if _can_view_margin(current_user):
+        return payload
+
+    return _redact_margin_fields(payload)
+
+
 @app.get(
     "/api/projected-billings/current-projects"
 )
 def projected_billings_current_projects(
-    _current_user: CurrentUser = Depends(
+    current_user: CurrentUser = Depends(
         get_current_user
     ),
 ):
     try:
-        return get_current_projected_billings()
+        return _role_scoped_financial_payload(
+            get_current_projected_billings(),
+            current_user,
+        )
 
     except Exception as exc:
         _raise_projected_billings_error(
@@ -866,12 +908,15 @@ def projected_billings_current_projects(
     "/api/projected-billings/current-projects/monthly"
 )
 def projected_billings_current_projects_monthly_bulk(
-    _current_user: CurrentUser = Depends(
+    current_user: CurrentUser = Depends(
         get_current_user
     ),
 ):
     try:
-        return get_current_projects_monthly_bulk()
+        return _role_scoped_financial_payload(
+            get_current_projects_monthly_bulk(),
+            current_user,
+        )
 
     except Exception as exc:
         _raise_projected_billings_error(
@@ -891,13 +936,16 @@ def projected_billings_current_project_monthly(
         ...,
         ge=1,
     ),
-    _current_user: CurrentUser = Depends(
+    current_user: CurrentUser = Depends(
         get_current_user
     ),
 ):
     try:
-        return get_current_project_monthly(
-            job_list_id
+        return _role_scoped_financial_payload(
+            get_current_project_monthly(
+                job_list_id
+            ),
+            current_user,
         )
 
     except Exception as exc:
@@ -910,12 +958,15 @@ def projected_billings_current_project_monthly(
     "/api/projected-billings/active-bids"
 )
 def projected_billings_active_bids(
-    _current_user: CurrentUser = Depends(
+    current_user: CurrentUser = Depends(
         get_current_user
     ),
 ):
     try:
-        return get_active_bid_projected_billings()
+        return _role_scoped_financial_payload(
+            get_active_bid_projected_billings(),
+            current_user,
+        )
 
     except Exception as exc:
         _raise_projected_billings_error(
@@ -927,12 +978,15 @@ def projected_billings_active_bids(
     "/api/projected-billings/active-bids/dashboard"
 )
 def projected_billings_active_bid_dashboard(
-    _current_user: CurrentUser = Depends(
+    current_user: CurrentUser = Depends(
         get_current_user
     ),
 ):
     try:
-        return get_active_bid_dashboard()
+        return _role_scoped_financial_payload(
+            get_active_bid_dashboard(),
+            current_user,
+        )
 
     except Exception as exc:
         _raise_projected_billings_error(
@@ -952,13 +1006,16 @@ def projected_billings_active_bid_monthly(
         ...,
         ge=1,
     ),
-    _current_user: CurrentUser = Depends(
+    current_user: CurrentUser = Depends(
         get_current_user
     ),
 ):
     try:
-        return get_active_bid_monthly(
-            sharepoint_item_id
+        return _role_scoped_financial_payload(
+            get_active_bid_monthly(
+                sharepoint_item_id
+            ),
+            current_user,
         )
 
     except Exception as exc:
@@ -1727,12 +1784,15 @@ async def link_current_project_originating_bid_proxy(
     "/api/completed-projects"
 )
 def completed_projects(
-    _current_user: CurrentUser = Depends(
+    current_user: CurrentUser = Depends(
         get_current_user
     ),
 ):
     try:
-        return get_completed_projects()
+        return _role_scoped_financial_payload(
+            get_completed_projects(),
+            current_user,
+        )
 
     except Exception as exc:
         _raise_projected_billings_error(
@@ -1751,13 +1811,16 @@ def completed_project_monthly(
         ...,
         ge=1,
     ),
-    _current_user: CurrentUser = Depends(
+    current_user: CurrentUser = Depends(
         get_current_user
     ),
 ):
     try:
-        return get_completed_project_monthly(
-            job_list_id
+        return _role_scoped_financial_payload(
+            get_completed_project_monthly(
+                job_list_id
+            ),
+            current_user,
         )
 
     except Exception as exc:
@@ -1770,12 +1833,15 @@ def completed_project_monthly(
     "/api/project-accountability"
 )
 def project_accountability(
-    _current_user: CurrentUser = Depends(
+    current_user: CurrentUser = Depends(
         get_current_user
     ),
 ):
     try:
-        return get_project_close_accountability()
+        return _role_scoped_financial_payload(
+            get_project_close_accountability(),
+            current_user,
+        )
 
     except Exception as exc:
         _raise_projected_billings_error(

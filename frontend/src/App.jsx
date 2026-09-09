@@ -13,10 +13,18 @@ import {
   ProjectTeamCell,
   retentionLabel,
 } from './BillingDisplay.jsx';
+import {
+  GeneralContractorDisplay,
+  MULTIPLE_GCS,
+  generalContractorDisplayText,
+  generalContractorFilterMatch,
+  generalContractorNames,
+} from './GeneralContractors.jsx';
 
 
 const ALL = '__ALL__';
 const UNASSIGNED = '__UNASSIGNED__';
+const DEFAULT_POTENTIAL_PROBABILITY_PERCENT = 85;
 
 const USAGE_SESSION_STORAGE_KEY =
   'riggs-bid-log-usage-session-id';
@@ -1287,6 +1295,47 @@ function TextField({
 }
 
 
+function ProbabilityInput({
+  value,
+  onChange,
+  onBlur,
+  compact = false,
+}) {
+  return (
+    <label
+      className={
+        compact
+          ? 'probability-input compact'
+          : 'probability-input'
+      }
+    >
+      <span>Potential Threshold</span>
+
+      <div className="probability-input-control">
+        <input
+          type="number"
+          min="0"
+          max="100"
+          step="1"
+          inputMode="numeric"
+          value={value}
+          onChange={
+            event =>
+              onChange(
+                event.target.value
+              )
+          }
+          onBlur={onBlur}
+          aria-label="Minimum potential project probability"
+        />
+
+        <span aria-hidden="true">%</span>
+      </div>
+    </label>
+  );
+}
+
+
 function StatCard({
   label,
   value,
@@ -1643,6 +1692,15 @@ export default function App() {
   );
 
   const [
+    potentialProbabilityInput,
+    setPotentialProbabilityInput,
+  ] = useState(
+    String(
+      DEFAULT_POTENTIAL_PROBABILITY_PERCENT
+    )
+  );
+
+  const [
     detailSort,
     setDetailSort,
   ] = useState(
@@ -1721,7 +1779,7 @@ export default function App() {
   const [
     gcFilter,
     setGcFilter,
-  ] = useState('');
+  ] = useState(ALL);
 
   const [
     fromMonth,
@@ -2064,7 +2122,7 @@ export default function App() {
     } catch (err) {
       setAttentionError(
         err.message
-        || 'Unable to load projection notifications.'
+        || 'Unable to load notifications.'
       );
 
       return [];
@@ -2733,6 +2791,104 @@ export default function App() {
   }
 
 
+  const isAdmin =
+    String(
+      user?.appRole
+      || ''
+    ).toUpperCase()
+    === 'ADMIN';
+
+
+  // Completed Projects is intentionally ADMIN-only for now.
+  // Keep this as a single capability flag because the team may
+  // reopen the page to Operations later.
+  const canViewCompletedProjects =
+    isAdmin;
+
+
+  useEffect(
+    () => {
+      if (
+        !canViewCompletedProjects
+        && activePage === 'accountability'
+      ) {
+        setActivePage('projected');
+      }
+    },
+    [
+      activePage,
+      canViewCompletedProjects,
+    ],
+  );
+
+
+  const potentialProbabilityPercent =
+    useMemo(
+      () => {
+        if (
+          String(
+            potentialProbabilityInput
+          ).trim() === ''
+        ) {
+          return DEFAULT_POTENTIAL_PROBABILITY_PERCENT;
+        }
+
+        const number =
+          Number(
+            potentialProbabilityInput
+          );
+
+        if (!Number.isFinite(number)) {
+          return DEFAULT_POTENTIAL_PROBABILITY_PERCENT;
+        }
+
+        return Math.min(
+          100,
+          Math.max(
+            0,
+            number,
+          ),
+        );
+      },
+      [potentialProbabilityInput],
+    );
+
+
+  const potentialProbabilityThreshold =
+    potentialProbabilityPercent / 100;
+
+
+  function normalizePotentialProbabilityInput() {
+    setPotentialProbabilityInput(
+      String(
+        Math.round(
+          potentialProbabilityPercent
+        )
+      )
+    );
+  }
+
+
+  function isPotentialBid(row) {
+    if (
+      row?.probability === null
+      || row?.probability === undefined
+      || row?.probability === ''
+    ) {
+      return false;
+    }
+
+    const probability =
+      Number(row.probability);
+
+    return (
+      Number.isFinite(probability)
+      && probability
+        >= potentialProbabilityThreshold
+    );
+  }
+
+
   const monthRange =
     useMemo(
       () =>
@@ -2762,8 +2918,7 @@ export default function App() {
 
         if (bidScope === 'potential') {
           return activeBids.filter(
-            row =>
-              Number(row.probability) >= 0.85
+            isPotentialBid
           );
         }
 
@@ -2773,6 +2928,7 @@ export default function App() {
         activeBids,
         bidScope,
         includeBids,
+        potentialProbabilityThreshold,
       ],
     );
 
@@ -2780,14 +2936,64 @@ export default function App() {
     useMemo(
       () =>
         activeBids.filter(
-          row =>
-            Number(row.probability) >= 0.85
+          isPotentialBid
         ).length,
-      [activeBids],
+      [
+        activeBids,
+        potentialProbabilityThreshold,
+      ],
     );
 
   const sourceSelectionKey =
     `${bidScope}-${includeActiveProjects ? 'projects' : 'no-projects'}`;
+
+  const showCombinedSources =
+    includeActiveProjects
+    && includeBids;
+
+  const showPotentialOnly =
+    includeBids
+    && !includeActiveProjects;
+
+  const showActiveOnly =
+    includeActiveProjects
+    && !includeBids;
+
+  const monthlySummaryColumnCount =
+    1
+    + (includeActiveProjects ? 1 : 0)
+    + (includeBids ? 1 : 0)
+    + (showCombinedSources ? 1 : 0)
+    + (includeActiveProjects ? 1 : 0)
+    + (includeActiveProjects && isAdmin ? 1 : 0)
+    + (includeActiveProjects ? 1 : 0);
+
+  const monthDetailColumnCount =
+    (showCombinedSources ? 1 : 0)
+    + (includeActiveProjects ? 1 : 0)
+    + 1
+    + 1
+    + 1
+    + (includeActiveProjects ? 1 : 0)
+    + (showPotentialOnly ? 1 : 0)
+    + 1
+    + (includeActiveProjects ? 1 : 0)
+    + (includeActiveProjects && isAdmin ? 1 : 0)
+    + (includeActiveProjects ? 1 : 0);
+
+  const detailColumnCount =
+    (showCombinedSources ? 1 : 0)
+    + (includeActiveProjects ? 1 : 0)
+    + 1
+    + 1
+    + 1
+    + (includeActiveProjects ? 1 : 0)
+    + 1
+    + (showPotentialOnly ? 1 : 0)
+    + (includeActiveProjects ? 1 : 0)
+    + 1
+    + (includeActiveProjects ? 1 : 0)
+    + (includeActiveProjects ? 1 : 0);
 
 
   function toggleBidScope(scope) {
@@ -3113,15 +3319,185 @@ export default function App() {
     );
 
 
+  const gcOptions =
+    useMemo(
+      () => {
+        const values = [];
+
+        if (includeActiveProjects) {
+          values.push(
+            ...currentProjects.flatMap(
+              row =>
+                generalContractorNames(
+                  row.generalContractors
+                  || row.gc
+                )
+            )
+          );
+        }
+
+        if (includeBids) {
+          values.push(
+            ...selectedBidSourceRows.flatMap(
+              row =>
+                generalContractorNames(
+                  row.generalContractors
+                  || row.gc
+                )
+            )
+          );
+        }
+
+        return sortedUnique(values);
+      },
+      [
+        includeActiveProjects,
+        includeBids,
+        currentProjects,
+        selectedBidSourceRows,
+      ],
+    );
+
+
   const normalizedSearch =
     search
       .trim()
       .toLowerCase();
 
-  const normalizedGc =
-    gcFilter
-      .trim()
-      .toLowerCase();
+
+  const multipleGcOptionAvailable =
+    useMemo(
+      () => {
+        if (!includeBids) {
+          return false;
+        }
+
+        return selectedBidSourceRows.some(
+          row => {
+            if (
+              !bidMatchesSearch(
+                row,
+                normalizedSearch,
+              )
+            ) {
+              return false;
+            }
+
+            if (
+              pmFilter !== ALL
+              && pmKey(row.pm)
+                !== pmFilter
+            ) {
+              return false;
+            }
+
+            if (
+              projectTypeFilter !== ALL
+              && normalizeProjectType(
+                row.projectType
+              ) !== projectTypeFilter
+            ) {
+              return false;
+            }
+
+            if (
+              purposeFilter !== ALL
+              && row.purpose
+                !== purposeFilter
+            ) {
+              return false;
+            }
+
+            if (
+              forecastStateFilter !== ALL
+              && row.forecastState
+                !== forecastStateFilter
+            ) {
+              return false;
+            }
+
+            if (
+              bidStatusFilter !== ALL
+              && row.status
+                !== bidStatusFilter
+            ) {
+              return false;
+            }
+
+            if (
+              probabilityStateFilter !== ALL
+              && row.probabilityState
+                !== probabilityStateFilter
+            ) {
+              return false;
+            }
+
+            if (
+              stateFilter !== ALL
+              && row.state
+                !== stateFilter
+            ) {
+              return false;
+            }
+
+            if (
+              !booleanFilterMatch(
+                row.isNewBid,
+                isNewBidFilter,
+              )
+            ) {
+              return false;
+            }
+
+            if (
+              !booleanFilterMatch(
+                row.snoozed,
+                snoozedFilter,
+              )
+            ) {
+              return false;
+            }
+
+            return (
+              generalContractorNames(
+                row.generalContractors
+                || row.gc
+              ).length > 1
+            );
+          }
+        );
+      },
+      [
+        includeBids,
+        selectedBidSourceRows,
+        normalizedSearch,
+        pmFilter,
+        projectTypeFilter,
+        purposeFilter,
+        forecastStateFilter,
+        bidStatusFilter,
+        probabilityStateFilter,
+        stateFilter,
+        isNewBidFilter,
+        snoozedFilter,
+      ],
+    );
+
+
+  useEffect(
+    () => {
+      if (
+        gcFilter === MULTIPLE_GCS
+        && !multipleGcOptionAvailable
+      ) {
+        setGcFilter(ALL);
+      }
+    },
+    [
+      gcFilter,
+      multipleGcOptionAvailable,
+    ],
+  );
 
 
   const currentDetails =
@@ -3183,10 +3559,12 @@ export default function App() {
               }
 
               if (
-                normalizedGc
-                && !containsText(
-                  row.generalContractors,
-                  normalizedGc,
+                gcFilter === MULTIPLE_GCS
+                || !generalContractorFilterMatch(
+                  row.generalContractors
+                  || row.gc,
+                  gcFilter,
+                  ALL,
                 )
               ) {
                 return false;
@@ -3300,7 +3678,7 @@ export default function App() {
         projectTypeFilter,
         purposeFilter,
         forecastStateFilter,
-        normalizedGc,
+        gcFilter,
         peFilter,
         superintendentFilter,
         apmFilter,
@@ -3371,10 +3749,11 @@ export default function App() {
               }
 
               if (
-                normalizedGc
-                && !containsText(
-                  row.generalContractors,
-                  normalizedGc,
+                !generalContractorFilterMatch(
+                  row.generalContractors
+                  || row.gc,
+                  gcFilter,
+                  ALL,
                 )
               ) {
                 return false;
@@ -3458,7 +3837,7 @@ export default function App() {
         projectTypeFilter,
         purposeFilter,
         forecastStateFilter,
-        normalizedGc,
+        gcFilter,
         bidStatusFilter,
         probabilityStateFilter,
         stateFilter,
@@ -4161,6 +4540,21 @@ export default function App() {
               );
             }
 
+            if (key === 'gc') {
+              return textCompare(
+                generalContractorDisplayText(
+                  a.raw?.generalContractors
+                  || a.raw?.gc,
+                  '',
+                ),
+                generalContractorDisplayText(
+                  b.raw?.generalContractors
+                  || b.raw?.gc,
+                  '',
+                ),
+              );
+            }
+
             if (key === 'pm') {
               return textCompare(
                 a.pm,
@@ -4206,6 +4600,9 @@ export default function App() {
 
               margin:
                 'marginCollected',
+
+              probability:
+                'probability',
 
               variance:
                 'variance',
@@ -4501,6 +4898,23 @@ export default function App() {
                 );
 
             } else if (
+              sortKey === 'gc'
+            ) {
+              result =
+                compareText(
+                  generalContractorDisplayText(
+                    a.raw?.generalContractors
+                    || a.raw?.gc,
+                    '',
+                  ),
+                  generalContractorDisplayText(
+                    b.raw?.generalContractors
+                    || b.raw?.gc,
+                    '',
+                  ),
+                );
+
+            } else if (
               sortKey === 'pm'
             ) {
               result =
@@ -4525,6 +4939,15 @@ export default function App() {
                 compareNumber(
                   a.projectMonthSort,
                   b.projectMonthSort,
+                );
+
+            } else if (
+              sortKey === 'probability'
+            ) {
+              result =
+                compareNumber(
+                  a.probability,
+                  b.probability,
                 );
 
             } else if (
@@ -4609,8 +5032,6 @@ export default function App() {
       'Number of Buildings',
 
       'Retention',
-      'Estimated Margin %',
-      'Bid Margin %',
 
       'Projection State',
       'Forecast Ready',
@@ -4629,10 +5050,6 @@ export default function App() {
       'Unweighted Bid Projected Billings In Range',
       'Actual In Range',
 
-      'Margin Collected In Range',
-      'Weighted Historical Margin % In Range',
-      'Margin Data Complete In Range',
-      'Missing Margin Rows In Range',
 
       'Variance In Range',
 
@@ -4651,15 +5068,48 @@ export default function App() {
       'Projected To Date',
       'Actual To Date',
 
-      'Margin Collected To Date',
-      'Weighted Historical Margin % To Date',
-      'Margin Data Complete To Date',
-      'Missing Margin Rows To Date',
 
       'Variance To Date',
       'Remaining Amount',
       'Future Projected Amount',
     ];
+
+
+    if (isAdmin) {
+      const afterRetention =
+        headers.indexOf('Retention') + 1;
+
+      headers.splice(
+        afterRetention,
+        0,
+        'Estimated Margin %',
+        'Bid Margin %',
+      );
+
+      const afterActualRange =
+        headers.indexOf('Actual In Range') + 1;
+
+      headers.splice(
+        afterActualRange,
+        0,
+        'Margin Collected In Range',
+        'Weighted Historical Margin % In Range',
+        'Margin Data Complete In Range',
+        'Missing Margin Rows In Range',
+      );
+
+      const afterActualToDate =
+        headers.indexOf('Actual To Date') + 1;
+
+      headers.splice(
+        afterActualToDate,
+        0,
+        'Margin Collected To Date',
+        'Weighted Historical Margin % To Date',
+        'Margin Data Complete To Date',
+        'Missing Margin Rows To Date',
+      );
+    }
 
 
     const rows =
@@ -4771,7 +5221,7 @@ export default function App() {
                 );
 
 
-          return {
+          const rowData = {
             'Source':
               row.source,
 
@@ -4842,9 +5292,11 @@ export default function App() {
 
 
             'General Contractor':
-              raw.generalContractors
-              || raw.gc
-              || '',
+              generalContractorDisplayText(
+                raw.generalContractors
+                || raw.gc,
+                '',
+              ),
 
 
             'Street Address':
@@ -5165,6 +5617,21 @@ export default function App() {
                     ?? ''
                   ),
           };
+
+
+          if (!isAdmin) {
+            for (const key of Object.keys(rowData)) {
+              if (
+                key.toLowerCase()
+                  .includes('margin')
+              ) {
+                delete rowData[key];
+              }
+            }
+          }
+
+
+          return rowData;
         }
       );
 
@@ -5187,7 +5654,12 @@ export default function App() {
     setProjectTypeFilter(ALL);
     setPurposeFilter(ALL);
     setForecastStateFilter(ALL);
-    setGcFilter('');
+    setGcFilter(ALL);
+    setPotentialProbabilityInput(
+      String(
+        DEFAULT_POTENTIAL_PROBABILITY_PERCENT
+      )
+    );
     setPeFilter(ALL);
     setSuperintendentFilter(ALL);
     setApmFilter(ALL);
@@ -5284,17 +5756,19 @@ export default function App() {
               Projected Billings
             </button>
 
-            <button
-              type="button"
-              className={
-                activePage === 'accountability'
-                  ? 'active'
-                  : ''
-              }
-              onClick={() => setActivePage('accountability')}
-            >
-              Completed Projects
-            </button>
+            {canViewCompletedProjects && (
+              <button
+                type="button"
+                className={
+                  activePage === 'accountability'
+                    ? 'active'
+                    : ''
+                }
+                onClick={() => setActivePage('accountability')}
+              >
+                Completed Projects
+              </button>
+            )}
           </nav>
         </div>
 
@@ -5317,10 +5791,10 @@ export default function App() {
               }
               aria-label={
                 forecastAttention.length
-                  ? `${forecastAttention.length} projection notifications`
-                  : 'Projection notifications'
+                  ? `${forecastAttention.length} notifications`
+                  : 'Notifications'
               }
-              title="Projection notifications"
+              title="Notifications"
               onClick={
                 () => {
                   setAttentionOpen(
@@ -5357,12 +5831,14 @@ export default function App() {
                 <div className="notification-panel-header">
                   <div>
                     <span>
-                      PROJECTION NOTIFICATIONS
+                      NOTIFICATIONS
                     </span>
 
-                    <strong>
-                      Needs Rebalance
-                    </strong>
+                    {forecastAttention.length > 0 && (
+                      <strong>
+                        {`${forecastAttention.length} active`}
+                      </strong>
+                    )}
                   </div>
 
                   <button
@@ -5393,7 +5869,7 @@ export default function App() {
                   && !attentionError
                   && (
                     <div className="notification-empty">
-                      No projections need your attention.
+                      No notifications.
                     </div>
                   )}
 
@@ -5518,7 +5994,10 @@ export default function App() {
       </header>
 
 
-      {activePage === 'projected' ? (
+      {(
+        activePage === 'projected'
+        || !canViewCompletedProjects
+      ) ? (
       <main className="page-shell">
         <div className="page-heading">
           <div>
@@ -5576,9 +6055,12 @@ export default function App() {
             >
               <span className="toggle-label">
                 <strong>Potential Projects</strong>
-                <small>Probability 85% or higher · {potentialBidCount}</small>
+                <small>
+                  {Math.round(potentialProbabilityPercent)}%+ · {potentialBidCount} projects
+                </small>
               </span>
             </button>
+
 
             <button
               type="button"
@@ -5772,12 +6254,32 @@ export default function App() {
                   </option>
                 </SelectField>
 
-                <TextField
+                <SelectField
                   label="General Contractor"
                   value={gcFilter}
                   onChange={setGcFilter}
-                  placeholder="Search GC…"
-                />
+                >
+                  <option value={ALL}>
+                    All General Contractors
+                  </option>
+
+                  {multipleGcOptionAvailable && (
+                    <option value={MULTIPLE_GCS}>
+                      Multiple GCs
+                    </option>
+                  )}
+
+                  {gcOptions.map(
+                    value => (
+                      <option
+                        key={value}
+                        value={value}
+                      >
+                        {value}
+                      </option>
+                    )
+                  )}
+                </SelectField>
               </div>
 
 
@@ -5898,10 +6400,17 @@ export default function App() {
               {includeBids && (
                 <div className="source-filter-group">
                   <div className="filter-group-title">
-                    Active Bid Filters
+                    Bid Filters
                   </div>
 
                   <div className="filter-grid">
+                    {bidScope === 'potential' && (
+                      <ProbabilityInput
+                        value={potentialProbabilityInput}
+                        onChange={setPotentialProbabilityInput}
+                        onBlur={normalizePotentialProbabilityInput}
+                      />
+                    )}
                     <SelectField
                       label="Bid Status"
                       value={bidStatusFilter}
@@ -6107,7 +6616,7 @@ export default function App() {
                       </strong>
 
                       <small>
-                        85%+ · {potentialBidCount}
+                        {Math.round(potentialProbabilityPercent)}%+ · {potentialBidCount}
                       </small>
                     </button>
 
@@ -6265,12 +6774,32 @@ export default function App() {
                       </option>
                     </SelectField>
 
-                    <TextField
+                    <SelectField
                       label="General Contractor"
                       value={gcFilter}
                       onChange={setGcFilter}
-                      placeholder="Search GC…"
-                    />
+                    >
+                      <option value={ALL}>
+                        All General Contractors
+                      </option>
+
+                      {multipleGcOptionAvailable && (
+                        <option value={MULTIPLE_GCS}>
+                          Multiple GCs
+                        </option>
+                      )}
+
+                      {gcOptions.map(
+                        value => (
+                          <option
+                            key={value}
+                            value={value}
+                          >
+                            {value}
+                          </option>
+                        )
+                      )}
+                    </SelectField>
                   </div>
                 </section>
 
@@ -6392,10 +6921,17 @@ export default function App() {
                 {includeBids && (
                   <section className="side-filter-section">
                     <div className="side-filter-section-title">
-                      Active Bids
+                      Bid Filters
                     </div>
 
                     <div className="side-filter-fields">
+                      {bidScope === 'potential' && (
+                        <ProbabilityInput
+                          value={potentialProbabilityInput}
+                          onChange={setPotentialProbabilityInput}
+                          onBlur={normalizePotentialProbabilityInput}
+                        />
+                      )}
                       <SelectField
                         label="Bid Status"
                         value={bidStatusFilter}
@@ -6748,6 +7284,9 @@ export default function App() {
                 onSelectCurrentProject={
                   setSelectedCurrentProject
                 }
+                canViewMargin={isAdmin}
+                includeActiveProjects={includeActiveProjects}
+                includeBids={includeBids}
               />
             )
             : (
@@ -6765,53 +7304,65 @@ export default function App() {
                     onSort={toggleMonthlySort}
                   />
 
-                  <SortHeader
-                    label="Active Project"
-                    sortKey="active"
-                    currentSort={monthlySort}
-                    onSort={toggleMonthlySort}
-                    numeric
-                  />
+                  {includeActiveProjects && (
+                    <SortHeader
+                      label="Active Project"
+                      sortKey="active"
+                      currentSort={monthlySort}
+                      onSort={toggleMonthlySort}
+                      numeric
+                    />
+                  )}
 
-                  <SortHeader
-                    label="Potential Projects"
-                    sortKey="potential"
-                    currentSort={monthlySort}
-                    onSort={toggleMonthlySort}
-                    numeric
-                  />
+                  {includeBids && (
+                    <SortHeader
+                      label="Potential Projects"
+                      sortKey="potential"
+                      currentSort={monthlySort}
+                      onSort={toggleMonthlySort}
+                      numeric
+                    />
+                  )}
 
-                  <SortHeader
-                    label="Total Projected Billing"
-                    sortKey="projected"
-                    currentSort={monthlySort}
-                    onSort={toggleMonthlySort}
-                    numeric
-                  />
+                  {showCombinedSources && (
+                    <SortHeader
+                      label="Total Projected Billing"
+                      sortKey="projected"
+                      currentSort={monthlySort}
+                      onSort={toggleMonthlySort}
+                      numeric
+                    />
+                  )}
 
-                  <SortHeader
-                    label="Actual Billings"
-                    sortKey="actual"
-                    currentSort={monthlySort}
-                    onSort={toggleMonthlySort}
-                    numeric
-                  />
+                  {includeActiveProjects && (
+                    <SortHeader
+                      label="Actual Billings"
+                      sortKey="actual"
+                      currentSort={monthlySort}
+                      onSort={toggleMonthlySort}
+                      numeric
+                    />
+                  )}
 
-                  <SortHeader
-                    label="Margin Collected"
-                    sortKey="margin"
-                    currentSort={monthlySort}
-                    onSort={toggleMonthlySort}
-                    numeric
-                  />
+                  {includeActiveProjects && isAdmin && (
+                    <SortHeader
+                      label="Margin Collected"
+                      sortKey="margin"
+                      currentSort={monthlySort}
+                      onSort={toggleMonthlySort}
+                      numeric
+                    />
+                  )}
 
-                  <SortHeader
-                    label="Variance"
-                    sortKey="variance"
-                    currentSort={monthlySort}
-                    onSort={toggleMonthlySort}
-                    numeric
-                  />
+                  {includeActiveProjects && (
+                    <SortHeader
+                      label="Variance"
+                      sortKey="variance"
+                      currentSort={monthlySort}
+                      onSort={toggleMonthlySort}
+                      numeric
+                    />
+                  )}
                 </tr>
               </thead>
 
@@ -6844,68 +7395,80 @@ export default function App() {
                           )}
                         </td>
 
-                        <td className="numeric">
-                          {currency(
-                            row.currentProjected
-                          )}
-                        </td>
+                        {includeActiveProjects && (
+                          <td className="numeric">
+                            {currency(
+                              row.currentProjected
+                            )}
+                          </td>
+                        )}
 
-                        <td className="numeric">
-                          {currency(
-                            row.weightedBids
-                          )}
-                        </td>
+                        {includeBids && (
+                          <td className="numeric">
+                            {currency(
+                              row.weightedBids
+                            )}
+                          </td>
+                        )}
 
-                        <td className="numeric strong-cell">
-                          {currency(
-                            row.combinedExpected
-                          )}
-                        </td>
+                        {showCombinedSources && (
+                          <td className="numeric strong-cell">
+                            {currency(
+                              row.combinedExpected
+                            )}
+                          </td>
+                        )}
 
-                        <td className="numeric">
-                          {currency(
-                            row.currentActual
-                          )}
-                        </td>
+                        {includeActiveProjects && (
+                          <td className="numeric">
+                            {currency(
+                              row.currentActual
+                            )}
+                          </td>
+                        )}
 
-                        <td className="numeric monthly-margin-cell">
-                          {row.currentMarginDataComplete ? (
-                            <strong
-                              className="monthly-margin-value"
-                              title={
-                                `Weighted historical margin: ${
-                                  retentionLabel(
-                                    row.currentWeightedHistoricalMarginPercent
+                        {includeActiveProjects && isAdmin && (
+                          <td className="numeric monthly-margin-cell">
+                            {row.currentMarginDataComplete ? (
+                              <strong
+                                className="monthly-margin-value"
+                                title={
+                                  `Weighted historical margin: ${
+                                    retentionLabel(
+                                      row.currentWeightedHistoricalMarginPercent
+                                    )
+                                  }`
+                                }
+                              >
+                                {currency(
+                                  row.currentMarginCollected
+                                )}
+                              </strong>
+                            ) : (
+                              <span className="monthly-margin-warning">
+                                Margin incomplete
+                              </span>
+                            )}
+                          </td>
+                        )}
+
+                        {includeActiveProjects && (
+                          <td
+                            className={
+                              row.variance > 0
+                                ? 'numeric variance-positive'
+                                : (
+                                    row.variance < 0
+                                      ? 'numeric variance-negative'
+                                      : 'numeric'
                                   )
-                                }`
-                              }
-                            >
-                              {currency(
-                                row.currentMarginCollected
-                              )}
-                            </strong>
-                          ) : (
-                            <span className="monthly-margin-warning">
-                              Margin incomplete
-                            </span>
-                          )}
-                        </td>
-
-                        <td
-                          className={
-                            row.variance > 0
-                              ? 'numeric variance-positive'
-                              : (
-                                  row.variance < 0
-                                    ? 'numeric variance-negative'
-                                    : 'numeric'
-                                )
-                          }
-                        >
-                          {currency(
-                            row.variance
-                          )}
-                        </td>
+                            }
+                          >
+                            {currency(
+                              row.variance
+                            )}
+                          </td>
+                        )}
                       </tr>
 
 
@@ -6918,7 +7481,7 @@ export default function App() {
                             }
                             className="monthly-project-detail-row"
                           >
-                            <td colSpan="7">
+                            <td colSpan={monthlySummaryColumnCount}>
                               <div className="monthly-project-detail">
                                 <div className="monthly-project-detail-heading">
                                   <div>
@@ -6945,24 +7508,43 @@ export default function App() {
                                   <table className="monthly-project-table">
                                     <thead>
                                       <tr>
-                                        <SortHeader
-                                          label="Source"
-                                          sortKey="source"
-                                          currentSort={monthDetailSort}
-                                          onSort={toggleMonthDetailSort}
-                                        />
+                                        {showCombinedSources && (
+                                          <SortHeader
+                                            label="Source"
+                                            sortKey="source"
+                                            currentSort={monthDetailSort}
+                                            onSort={toggleMonthDetailSort}
+                                          />
+                                        )}
+
+                                        {includeActiveProjects && (
+                                          <SortHeader
+                                            label="Job #"
+                                            sortKey="job"
+                                            currentSort={monthDetailSort}
+                                            onSort={toggleMonthDetailSort}
+                                            firstDirection="desc"
+                                          />
+                                        )}
 
                                         <SortHeader
-                                          label="Job #"
-                                          sortKey="job"
-                                          currentSort={monthDetailSort}
-                                          onSort={toggleMonthDetailSort}
-                                          firstDirection="desc"
-                                        />
-
-                                        <SortHeader
-                                          label="Project / Bid"
+                                          label={
+                                            showPotentialOnly
+                                              ? 'Potential Project'
+                                              : (
+                                                  showActiveOnly
+                                                    ? 'Project'
+                                                    : 'Project / Bid'
+                                                )
+                                          }
                                           sortKey="project"
+                                          currentSort={monthDetailSort}
+                                          onSort={toggleMonthDetailSort}
+                                        />
+
+                                        <SortHeader
+                                          label="GC"
+                                          sortKey="gc"
                                           currentSort={monthDetailSort}
                                           onSort={toggleMonthDetailSort}
                                         />
@@ -6974,12 +7556,25 @@ export default function App() {
                                           onSort={toggleMonthDetailSort}
                                         />
 
-                                        <SortHeader
-                                          label="Team"
-                                          sortKey="team"
-                                          currentSort={monthDetailSort}
-                                          onSort={toggleMonthDetailSort}
-                                        />
+                                        {includeActiveProjects && (
+                                          <SortHeader
+                                            label="Team"
+                                            sortKey="team"
+                                            currentSort={monthDetailSort}
+                                            onSort={toggleMonthDetailSort}
+                                          />
+                                        )}
+
+                                        {showPotentialOnly && (
+                                          <SortHeader
+                                            label="Probability"
+                                            sortKey="probability"
+                                            currentSort={monthDetailSort}
+                                            onSort={toggleMonthDetailSort}
+                                            firstDirection="desc"
+                                            numeric
+                                          />
+                                        )}
 
                                         <SortHeader
                                           label="Projected"
@@ -6989,29 +7584,35 @@ export default function App() {
                                           numeric
                                         />
 
-                                        <SortHeader
-                                          label="Actual Billings"
-                                          sortKey="actual"
-                                          currentSort={monthDetailSort}
-                                          onSort={toggleMonthDetailSort}
-                                          numeric
-                                        />
+                                        {includeActiveProjects && (
+                                          <SortHeader
+                                            label="Actual Billings"
+                                            sortKey="actual"
+                                            currentSort={monthDetailSort}
+                                            onSort={toggleMonthDetailSort}
+                                            numeric
+                                          />
+                                        )}
 
-                                        <SortHeader
-                                          label="Margin Collected"
-                                          sortKey="margin"
-                                          currentSort={monthDetailSort}
-                                          onSort={toggleMonthDetailSort}
-                                          numeric
-                                        />
+                                        {includeActiveProjects && isAdmin && (
+                                          <SortHeader
+                                            label="Margin Collected"
+                                            sortKey="margin"
+                                            currentSort={monthDetailSort}
+                                            onSort={toggleMonthDetailSort}
+                                            numeric
+                                          />
+                                        )}
 
-                                        <SortHeader
-                                          label="Variance"
-                                          sortKey="variance"
-                                          currentSort={monthDetailSort}
-                                          onSort={toggleMonthDetailSort}
-                                          numeric
-                                        />
+                                        {includeActiveProjects && (
+                                          <SortHeader
+                                            label="Variance"
+                                            sortKey="variance"
+                                            currentSort={monthDetailSort}
+                                            onSort={toggleMonthDetailSort}
+                                            numeric
+                                          />
+                                        )}
                                       </tr>
                                     </thead>
 
@@ -7044,26 +7645,30 @@ export default function App() {
                                                       event.stopPropagation()
                                               }
                                             >
-                                              <td>
-                                                <span
-                                                  className={
-                                                    detail.source
-                                                      === 'Active Bid'
-                                                      ? 'source-chip bid'
-                                                      : 'source-chip current'
-                                                  }
-                                                >
-                                                  {detail.source
-                                                    === 'Current Project'
-                                                    ? 'Active'
-                                                    : 'Bid'}
-                                                </span>
-                                              </td>
+                                              {showCombinedSources && (
+                                                <td>
+                                                  <span
+                                                    className={
+                                                      detail.source
+                                                        === 'Active Bid'
+                                                        ? 'source-chip bid'
+                                                        : 'source-chip current'
+                                                    }
+                                                  >
+                                                    {detail.source
+                                                      === 'Current Project'
+                                                      ? 'Active'
+                                                      : 'Bid'}
+                                                  </span>
+                                                </td>
+                                              )}
 
-                                              <td>
-                                                {detail.number
-                                                  || '—'}
-                                              </td>
+                                              {includeActiveProjects && (
+                                                <td>
+                                                  {detail.number
+                                                    || '—'}
+                                                </td>
+                                              )}
 
                                               <td className="project-cell">
                                                 <strong>
@@ -7078,6 +7683,16 @@ export default function App() {
                                                 </span>
                                               </td>
 
+                                          <td className="gc-table-cell">
+                                            <GeneralContractorDisplay
+                                              value={
+                                                detail.raw?.generalContractors
+                                                || detail.raw?.gc
+                                              }
+                                              compact
+                                            />
+                                          </td>
+
                                               <td>
                                                 <PMInitialsBadge
                                                   initials={detail.pmInitials}
@@ -7085,25 +7700,36 @@ export default function App() {
                                                 />
                                               </td>
 
-                                              <td className="project-team-column">
-                                                <ProjectTeamCell
-                                                  pe={
-                                                    detail.source === 'Current Project'
-                                                      ? detail.raw?.pe
-                                                      : null
-                                                  }
-                                                  superintendent={
-                                                    detail.source === 'Current Project'
-                                                      ? detail.raw?.superintendent
-                                                      : null
-                                                  }
-                                                  apm={
-                                                    detail.source === 'Current Project'
-                                                      ? detail.raw?.apm
-                                                      : null
-                                                  }
-                                                />
-                                              </td>
+                                              {includeActiveProjects && (
+                                                <td className="project-team-column">
+                                                  <ProjectTeamCell
+                                                    pe={
+                                                      detail.source === 'Current Project'
+                                                        ? detail.raw?.pe
+                                                        : null
+                                                    }
+                                                    superintendent={
+                                                      detail.source === 'Current Project'
+                                                        ? detail.raw?.superintendent
+                                                        : null
+                                                    }
+                                                    apm={
+                                                      detail.source === 'Current Project'
+                                                        ? detail.raw?.apm
+                                                        : null
+                                                    }
+                                                  />
+                                                </td>
+                                              )}
+
+                                              {showPotentialOnly && (
+                                                <td className="numeric">
+                                                  {detail.probability === null
+                                                    || detail.probability === undefined
+                                                      ? '—'
+                                                      : `${Math.round(Number(detail.probability) * 100)}%`}
+                                                </td>
+                                              )}
 
                                               <td className="numeric strong-cell">
                                                 {currency(
@@ -7111,47 +7737,53 @@ export default function App() {
                                                 )}
                                               </td>
 
-                                              <td className="numeric">
-                                                {detail.actual
-                                                  === null
-                                                  ? '—'
-                                                  : currency(
-                                                      detail.actual
-                                                    )}
-                                              </td>
-
-                                              <td className="numeric">
-                                                {detail.marginCollected
-                                                  === null
-                                                  ? '—'
-                                                  : currency(
-                                                      detail.marginCollected
-                                                    )}
-                                              </td>
-
-                                              <td
-                                                className={
-                                                  detail.variance
+                                              {includeActiveProjects && (
+                                                <td className="numeric">
+                                                  {detail.actual
                                                     === null
-                                                    ? 'numeric'
-                                                    : (
-                                                        detail.variance > 0
-                                                          ? 'numeric variance-positive'
-                                                          : (
-                                                              detail.variance < 0
-                                                                ? 'numeric variance-negative'
-                                                                : 'numeric'
-                                                            )
-                                                      )
-                                                }
-                                              >
-                                                {detail.variance
-                                                  === null
-                                                  ? '—'
-                                                  : currency(
-                                                      detail.variance
-                                                    )}
-                                              </td>
+                                                    ? '—'
+                                                    : currency(
+                                                        detail.actual
+                                                      )}
+                                                </td>
+                                              )}
+
+                                          {includeActiveProjects && isAdmin && (
+                                            <td className="numeric">
+                                              {detail.marginCollected
+                                                === null
+                                                ? '—'
+                                                : currency(
+                                                    detail.marginCollected
+                                                  )}
+                                            </td>
+                                          )}
+
+                                              {includeActiveProjects && (
+                                                <td
+                                                  className={
+                                                    detail.variance
+                                                      === null
+                                                      ? 'numeric'
+                                                      : (
+                                                          detail.variance > 0
+                                                            ? 'numeric variance-positive'
+                                                            : (
+                                                                detail.variance < 0
+                                                                  ? 'numeric variance-negative'
+                                                                  : 'numeric'
+                                                              )
+                                                        )
+                                                  }
+                                                >
+                                                  {detail.variance
+                                                    === null
+                                                    ? '—'
+                                                    : currency(
+                                                        detail.variance
+                                                      )}
+                                                </td>
+                                              )}
                                             </tr>
                                           )
                                         )
@@ -7171,7 +7803,7 @@ export default function App() {
                 {!monthlyComparison.length && (
                   <tr>
                     <td
-                      colSpan="7"
+                      colSpan={monthlySummaryColumnCount}
                       className="empty-cell"
                     >
                       No monthly range selected.
@@ -7188,30 +7820,39 @@ export default function App() {
                       Total
                     </th>
 
-                    <td className="numeric">
-                      {currency(
-                        monthlyComparisonTotals.currentProjected
-                      )}
-                    </td>
+                    {includeActiveProjects && (
+                      <td className="numeric">
+                        {currency(
+                          monthlyComparisonTotals.currentProjected
+                        )}
+                      </td>
+                    )}
 
-                    <td className="numeric">
-                      {currency(
-                        monthlyComparisonTotals.weightedBids
-                      )}
-                    </td>
+                    {includeBids && (
+                      <td className="numeric">
+                        {currency(
+                          monthlyComparisonTotals.weightedBids
+                        )}
+                      </td>
+                    )}
 
-                    <td className="numeric strong-cell">
-                      {currency(
-                        monthlyComparisonTotals.combinedExpected
-                      )}
-                    </td>
+                    {showCombinedSources && (
+                      <td className="numeric strong-cell">
+                        {currency(
+                          monthlyComparisonTotals.combinedExpected
+                        )}
+                      </td>
+                    )}
 
-                    <td className="numeric">
-                      {currency(
-                        monthlyComparisonTotals.currentActual
-                      )}
-                    </td>
+                    {includeActiveProjects && (
+                      <td className="numeric">
+                        {currency(
+                          monthlyComparisonTotals.currentActual
+                        )}
+                      </td>
+                    )}
 
+                  {includeActiveProjects && isAdmin && (
                     <td className="numeric monthly-margin-cell">
                       {monthlyComparisonTotals.currentMarginDataComplete ? (
                         <>
@@ -7233,22 +7874,25 @@ export default function App() {
                         </span>
                       )}
                     </td>
+                  )}
 
-                    <td
-                      className={
-                        monthlyComparisonTotals.variance > 0
-                          ? 'numeric variance-positive'
-                          : (
-                              monthlyComparisonTotals.variance < 0
-                                ? 'numeric variance-negative'
-                                : 'numeric'
-                            )
-                      }
-                    >
-                      {currency(
-                        monthlyComparisonTotals.variance
-                      )}
-                    </td>
+                    {includeActiveProjects && (
+                      <td
+                        className={
+                          monthlyComparisonTotals.variance > 0
+                            ? 'numeric variance-positive'
+                            : (
+                                monthlyComparisonTotals.variance < 0
+                                  ? 'numeric variance-negative'
+                                  : 'numeric'
+                              )
+                        }
+                      >
+                        {currency(
+                          monthlyComparisonTotals.variance
+                        )}
+                      </td>
+                    )}
                   </tr>
                 </tfoot>
               )}
@@ -7283,24 +7927,43 @@ export default function App() {
             <table className="detail-table projected-breakdown-table">
               <thead>
                 <tr>
-                  <SortHeader
-                    label="Source"
-                    sortKey="source"
-                    currentSort={detailSort}
-                    onSort={toggleDetailSort}
-                  />
+                  {showCombinedSources && (
+                    <SortHeader
+                      label="Source"
+                      sortKey="source"
+                      currentSort={detailSort}
+                      onSort={toggleDetailSort}
+                    />
+                  )}
+
+                  {includeActiveProjects && (
+                    <SortHeader
+                      label="Job #"
+                      sortKey="job"
+                      currentSort={detailSort}
+                      onSort={toggleDetailSort}
+                      firstDirection="desc"
+                    />
+                  )}
 
                   <SortHeader
-                    label="Job #"
-                    sortKey="job"
-                    currentSort={detailSort}
-                    onSort={toggleDetailSort}
-                    firstDirection="desc"
-                  />
-
-                  <SortHeader
-                    label="Project / Bid"
+                    label={
+                      showPotentialOnly
+                        ? 'Potential Project'
+                        : (
+                            showActiveOnly
+                              ? 'Project'
+                              : 'Project / Bid'
+                          )
+                    }
                     sortKey="project"
+                    currentSort={detailSort}
+                    onSort={toggleDetailSort}
+                  />
+
+                  <SortHeader
+                    label="GC"
+                    sortKey="gc"
                     currentSort={detailSort}
                     onSort={toggleDetailSort}
                   />
@@ -7312,9 +7975,11 @@ export default function App() {
                     onSort={toggleDetailSort}
                   />
 
-                  <th className="project-team-column">
-                    Team
-                  </th>
+                  {includeActiveProjects && (
+                    <th className="project-team-column">
+                      Team
+                    </th>
+                  )}
 
                   <SortHeader
                     label="Project Value"
@@ -7325,13 +7990,26 @@ export default function App() {
                     numeric
                   />
 
-                  <SortHeader
-                    label="Project Month"
-                    sortKey="month"
-                    currentSort={detailSort}
-                    onSort={toggleDetailSort}
-                    firstDirection="desc"
-                  />
+                  {showPotentialOnly && (
+                    <SortHeader
+                      label="Probability"
+                      sortKey="probability"
+                      currentSort={detailSort}
+                      onSort={toggleDetailSort}
+                      firstDirection="desc"
+                      numeric
+                    />
+                  )}
+
+                  {includeActiveProjects && (
+                    <SortHeader
+                      label="Project Month"
+                      sortKey="month"
+                      currentSort={detailSort}
+                      onSort={toggleDetailSort}
+                      firstDirection="desc"
+                    />
+                  )}
 
                   <SortHeader
                     label="Projected Billings"
@@ -7342,23 +8020,27 @@ export default function App() {
                     numeric
                   />
 
-                  <SortHeader
-                    label="Actual Billings"
-                    sortKey="actual"
-                    currentSort={detailSort}
-                    onSort={toggleDetailSort}
-                    firstDirection="desc"
-                    numeric
-                  />
+                  {includeActiveProjects && (
+                    <SortHeader
+                      label="Actual Billings"
+                      sortKey="actual"
+                      currentSort={detailSort}
+                      onSort={toggleDetailSort}
+                      firstDirection="desc"
+                      numeric
+                    />
+                  )}
 
-                  <SortHeader
-                    label="Variance"
-                    sortKey="variance"
-                    currentSort={detailSort}
-                    onSort={toggleDetailSort}
-                    firstDirection="desc"
-                    numeric
-                  />
+                  {includeActiveProjects && (
+                    <SortHeader
+                      label="Variance"
+                      sortKey="variance"
+                      currentSort={detailSort}
+                      onSort={toggleDetailSort}
+                      firstDirection="desc"
+                      numeric
+                    />
+                  )}
                 </tr>
               </thead>
 
@@ -7407,25 +8089,29 @@ export default function App() {
                           : undefined
                       }
                     >
-                      <td>
-                        <span
-                          className={
-                            row.source
-                            === 'Active Bid'
-                              ? 'source-chip bid'
-                              : 'source-chip current'
-                          }
-                        >
-                          {row.source
-                            === 'Current Project'
-                            ? 'Active'
-                            : 'Bid'}
-                        </span>
-                      </td>
+                      {showCombinedSources && (
+                        <td>
+                          <span
+                            className={
+                              row.source
+                              === 'Active Bid'
+                                ? 'source-chip bid'
+                                : 'source-chip current'
+                            }
+                          >
+                            {row.source
+                              === 'Current Project'
+                              ? 'Active'
+                              : 'Bid'}
+                          </span>
+                        </td>
+                      )}
 
-                      <td className="job-number-cell">
-                        {row.number || '—'}
-                      </td>
+                      {includeActiveProjects && (
+                        <td className="job-number-cell">
+                          {row.number || '—'}
+                        </td>
+                      )}
 
                       <td className="project-cell">
                         <strong>
@@ -7439,6 +8125,16 @@ export default function App() {
                         </span>
                       </td>
 
+                      <td className="gc-table-cell">
+                        <GeneralContractorDisplay
+                          value={
+                            row.raw?.generalContractors
+                            || row.raw?.gc
+                          }
+                          compact
+                        />
+                      </td>
+
                       <td className="pm-badge-cell">
                         <PMInitialsBadge
                           initials={row.pmInitials}
@@ -7446,25 +8142,27 @@ export default function App() {
                         />
                       </td>
 
-                      <td className="project-team-column">
-                        <ProjectTeamCell
-                          pe={
-                            row.source === 'Current Project'
-                              ? row.raw?.pe
-                              : null
-                          }
-                          superintendent={
-                            row.source === 'Current Project'
-                              ? row.raw?.superintendent
-                              : null
-                          }
-                          apm={
-                            row.source === 'Current Project'
-                              ? row.raw?.apm
-                              : null
-                          }
-                        />
-                      </td>
+                      {includeActiveProjects && (
+                        <td className="project-team-column">
+                          <ProjectTeamCell
+                            pe={
+                              row.source === 'Current Project'
+                                ? row.raw?.pe
+                                : null
+                            }
+                            superintendent={
+                              row.source === 'Current Project'
+                                ? row.raw?.superintendent
+                                : null
+                            }
+                            apm={
+                              row.source === 'Current Project'
+                                ? row.raw?.apm
+                                : null
+                            }
+                          />
+                        </td>
+                      )}
 
                       <td className="numeric">
                         {row.projectValue
@@ -7477,9 +8175,20 @@ export default function App() {
                             )}
                       </td>
 
-                      <td className="project-month-cell">
-                        {row.projectMonth}
-                      </td>
+                      {showPotentialOnly && (
+                        <td className="numeric">
+                          {row.probability === null
+                            || row.probability === undefined
+                              ? '—'
+                              : `${Math.round(Number(row.probability) * 100)}%`}
+                        </td>
+                      )}
+
+                      {includeActiveProjects && (
+                        <td className="project-month-cell">
+                          {row.projectMonth}
+                        </td>
+                      )}
 
                       <td className="numeric strong-cell">
                         {currency(
@@ -7487,35 +8196,39 @@ export default function App() {
                         )}
                       </td>
 
-                      <td className="numeric">
-                        {row.actual === null
-                          ? '—'
-                          : currency(
-                              row.actual
-                            )}
-                      </td>
+                      {includeActiveProjects && (
+                        <td className="numeric">
+                          {row.actual === null
+                            ? '—'
+                            : currency(
+                                row.actual
+                              )}
+                        </td>
+                      )}
 
-                      <td
-                        className={
-                          row.variance === null
-                            ? 'numeric'
-                            : (
-                                row.variance > 0
-                                  ? 'numeric variance-positive'
-                                  : (
-                                      row.variance < 0
-                                        ? 'numeric variance-negative'
-                                        : 'numeric'
-                                    )
-                              )
-                        }
-                      >
-                        {row.variance === null
-                          ? '—'
-                          : currency(
-                              row.variance
-                            )}
-                      </td>
+                      {includeActiveProjects && (
+                        <td
+                          className={
+                            row.variance === null
+                              ? 'numeric'
+                              : (
+                                  row.variance > 0
+                                    ? 'numeric variance-positive'
+                                    : (
+                                        row.variance < 0
+                                          ? 'numeric variance-negative'
+                                          : 'numeric'
+                                      )
+                                )
+                          }
+                        >
+                          {row.variance === null
+                            ? '—'
+                            : currency(
+                                row.variance
+                              )}
+                        </td>
+                      )}
                     </tr>
                   )
                 )}
@@ -7524,7 +8237,7 @@ export default function App() {
                 {!detailRows.length && (
                   <tr>
                     <td
-                      colSpan="10"
+                      colSpan={detailColumnCount}
                       className="empty-cell"
                     >
                       {dataLoading

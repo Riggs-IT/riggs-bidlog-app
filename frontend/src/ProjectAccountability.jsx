@@ -15,6 +15,12 @@ import {
   retentionLabel,
   retentionNumber,
 } from './BillingDisplay.jsx';
+import {
+  GeneralContractorDisplay,
+  MULTIPLE_GCS,
+  generalContractorFilterMatch,
+  generalContractorNames,
+} from './GeneralContractors.jsx';
 
 
 const ALL = '__ALL__';
@@ -420,7 +426,7 @@ export default function ProjectAccountability({
     useState(ALL);
 
   const [gcFilter, setGcFilter] =
-    useState('');
+    useState(ALL);
 
   const [
     completionYearFilter,
@@ -692,6 +698,41 @@ export default function ProjectAccountability({
   );
 
 
+  const gcOptions = useMemo(
+    () => [
+      ...new Set(
+        rows.flatMap(
+          row =>
+            generalContractorNames(
+              row.generalContractor
+            )
+        )
+      ),
+    ].sort(
+      (a, b) =>
+        a.localeCompare(
+          b,
+          undefined,
+          { sensitivity: 'base' },
+        )
+    ),
+    [rows],
+  );
+
+
+  const multipleGcOptionAvailable =
+    useMemo(
+      () =>
+        rows.some(
+          row =>
+            generalContractorNames(
+              row.generalContractor
+            ).length > 1
+        ),
+      [rows],
+    );
+
+
   const completionYearOptions =
     useMemo(
       () => [
@@ -897,12 +938,10 @@ export default function ProjectAccountability({
             }
 
             if (
-              gcFilter.trim()
-              && !containsText(
+              !generalContractorFilterMatch(
                 row.generalContractor,
-                gcFilter
-                  .trim()
-                  .toLowerCase(),
+                gcFilter,
+                ALL,
               )
             ) {
               return false;
@@ -1213,6 +1252,19 @@ export default function ProjectAccountability({
                 break;
 
 
+              case 'gc':
+                comparison =
+                  compareText(
+                    generalContractorNames(
+                      a.generalContractor
+                    ).join(' '),
+                    generalContractorNames(
+                      b.generalContractor
+                    ).join(' '),
+                  );
+                break;
+
+
               case 'type':
                 comparison =
                   compareText(
@@ -1346,7 +1398,7 @@ export default function ProjectAccountability({
     setPeFilter(ALL);
     setSuperintendentFilter(ALL);
     setApmFilter(ALL);
-    setGcFilter('');
+    setGcFilter(ALL);
     setCompletionYearFilter(ALL);
     setEstimatorFilter(ALL);
     setMarginDataFilter(ALL);
@@ -1773,8 +1825,7 @@ export default function ProjectAccountability({
                   General Contractor
                 </span>
 
-                <input
-                  type="search"
+                <select
                   value={gcFilter}
                   onChange={
                     event =>
@@ -1782,8 +1833,28 @@ export default function ProjectAccountability({
                         event.target.value
                       )
                   }
-                  placeholder="Search GC…"
-                />
+                >
+                  <option value={ALL}>
+                    All General Contractors
+                  </option>
+
+                  {multipleGcOptionAvailable && (
+                    <option value={MULTIPLE_GCS}>
+                      Multiple GCs
+                    </option>
+                  )}
+
+                  {gcOptions.map(
+                    value => (
+                      <option
+                        key={value}
+                        value={value}
+                      >
+                        {value}
+                      </option>
+                    )
+                  )}
+                </select>
               </label>
 
 
@@ -2145,8 +2216,7 @@ export default function ProjectAccountability({
 
                   <label className="filter-field">
                     <span>General Contractor</span>
-                    <input
-                      type="search"
+                    <select
                       value={gcFilter}
                       onChange={
                         event =>
@@ -2154,8 +2224,28 @@ export default function ProjectAccountability({
                             event.target.value
                           )
                       }
-                      placeholder="Search GC…"
-                    />
+                    >
+                      <option value={ALL}>
+                        All General Contractors
+                      </option>
+
+                      {multipleGcOptionAvailable && (
+                        <option value={MULTIPLE_GCS}>
+                          Multiple GCs
+                        </option>
+                      )}
+
+                      {gcOptions.map(
+                        value => (
+                          <option
+                            key={value}
+                            value={value}
+                          >
+                            {value}
+                          </option>
+                        )
+                      )}
+                    </select>
                   </label>
 
 
@@ -2325,6 +2415,14 @@ export default function ProjectAccountability({
                 />
 
                 <CompletedSortHeader
+                  label="GC"
+                  sortKey="gc"
+                  sortState={sortState}
+                  onSort={toggleSort}
+                  className="completed-gc-column"
+                />
+
+                <CompletedSortHeader
                   label="PM"
                   sortKey="pm"
                   sortState={sortState}
@@ -2364,14 +2462,16 @@ export default function ProjectAccountability({
                   numeric
                 />
 
-                <CompletedSortHeader
-                  label="Margin Collected"
-                  sortKey="margin"
-                  sortState={sortState}
-                  onSort={toggleSort}
-                  firstDirection="desc"
-                  numeric
-                />
+                {isAdmin && (
+                  <CompletedSortHeader
+                    label="Margin Collected"
+                    sortKey="margin"
+                    sortState={sortState}
+                    onSort={toggleSort}
+                    firstDirection="desc"
+                    numeric
+                  />
+                )}
 
                 <CompletedSortHeader
                   label="Actual vs Contract"
@@ -2448,11 +2548,13 @@ export default function ProjectAccountability({
                         )}
                       </strong>
 
-                      {row.generalContractor && (
-                        <span>
-                          {row.generalContractor}
-                        </span>
-                      )}
+                    </td>
+
+                    <td className="completed-gc-column">
+                      <GeneralContractorDisplay
+                        value={row.generalContractor}
+                        compact
+                      />
                     </td>
 
                     <td>
@@ -2533,27 +2635,29 @@ export default function ProjectAccountability({
                       />
                     </td>
 
-                    <td className="numeric strong-cell">
-                      <MoneyValue
-                        value={
-                          row.marginCollectedTotal
-                        }
-                      />
+                    {isAdmin && (
+                      <td className="numeric strong-cell">
+                        <MoneyValue
+                          value={
+                            row.marginCollectedTotal
+                          }
+                        />
 
-                      {row.marginDataComplete ? (
-                        <small className="cell-subtext">
-                          {retentionLabel(
-                            row.weightedHistoricalMarginPercent
-                          )}
-                        </small>
-                      ) : (
-                        <small className="cell-subtext">
-                          <span className="completed-project-pill warning">
-                            Margin incomplete
-                          </span>
-                        </small>
-                      )}
-                    </td>
+                        {row.marginDataComplete ? (
+                          <small className="cell-subtext">
+                            {retentionLabel(
+                              row.weightedHistoricalMarginPercent
+                            )}
+                          </small>
+                        ) : (
+                          <small className="cell-subtext">
+                            <span className="completed-project-pill warning">
+                              Margin incomplete
+                            </span>
+                          </small>
+                        )}
+                      </td>
+                    )}
 
                     <td className="numeric">
                       <MoneyValue

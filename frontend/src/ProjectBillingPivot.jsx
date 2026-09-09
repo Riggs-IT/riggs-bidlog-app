@@ -1,10 +1,15 @@
 import {
+  useEffect,
   useMemo,
   useState,
 } from 'react';
 
 import useStickyTableHeader from './useStickyTableHeader.js';
 import { ProjectTeamCell } from './BillingDisplay.jsx';
+import {
+  GeneralContractorDisplay,
+  generalContractorDisplayText,
+} from './GeneralContractors.jsx';
 
 
 const BILLING_METRICS = [
@@ -267,7 +272,7 @@ function currentProjectPivotRow(
       project.pmHexColor,
 
     gc:
-      displayText(
+      generalContractorDisplayText(
         project.generalContractors
         || project.gc,
         'No GC',
@@ -426,7 +431,7 @@ function bidPivotRow(
     ].filter(Boolean),
 
     gc:
-      displayText(
+      generalContractorDisplayText(
         bid.generalContractors
         || bid.gc,
         'No GC',
@@ -532,12 +537,6 @@ function ProjectMeta({
         </div>
       )}
 
-      <div
-        className="pivot-project-gc"
-        title={`GC: ${row.gc}`}
-      >
-        {row.gc}
-      </div>
     </div>
   );
 }
@@ -782,6 +781,9 @@ export default function ProjectBillingPivot({
   currency,
   monthLabel,
   onSelectCurrentProject,
+  canViewMargin = false,
+  includeActiveProjects = true,
+  includeBids = true,
 }) {
   const [
     billingMetric,
@@ -789,6 +791,50 @@ export default function ProjectBillingPivot({
   ] = useState(
     'projected'
   );
+
+  const showCombinedSources =
+    includeActiveProjects
+    && includeBids;
+
+  const showPotentialOnly =
+    includeBids
+    && !includeActiveProjects;
+
+  const availableBillingMetrics =
+    showPotentialOnly
+      ? BILLING_METRICS.filter(
+          metric =>
+            metric.key === 'projected'
+        )
+      : (
+          canViewMargin
+            ? BILLING_METRICS
+            : BILLING_METRICS.filter(
+                metric =>
+                  metric.key !== 'marginCollected'
+              )
+        );
+
+  useEffect(
+    () => {
+      if (
+        !availableBillingMetrics.some(
+          metric =>
+            metric.key === billingMetric
+        )
+      ) {
+        setBillingMetric(
+          availableBillingMetrics[0]?.key
+          || 'projected'
+        );
+      }
+    },
+    [
+      availableBillingMetrics,
+      billingMetric,
+    ],
+  );
+
 
   const [
     sortState,
@@ -827,7 +873,7 @@ export default function ProjectBillingPivot({
 
   const stickyTableRef =
     useStickyTableHeader(
-      `${months.join('|')}|${billingMetric}|${sortState.key}|${sortState.direction}`
+      `${months.join('|')}|${billingMetric}|${sortState.key}|${sortState.direction}|${includeActiveProjects}|${includeBids}`
     );
 
   const rows =
@@ -975,6 +1021,26 @@ export default function ProjectBillingPivot({
 
             } else if (
               sortState.key
+              === 'gc'
+            ) {
+              comparison =
+                compareText(
+                  a.gc,
+                  b.gc,
+                );
+
+            } else if (
+              sortState.key
+              === 'probability'
+            ) {
+              comparison =
+                compareNumber(
+                  a.raw?.probability,
+                  b.raw?.probability,
+                );
+
+            } else if (
+              sortState.key
               === 'team'
             ) {
               comparison =
@@ -1080,47 +1146,49 @@ export default function ProjectBillingPivot({
         `project-pivot-shell pivot-view-${billingMetric}`
       }
     >
-      <div
-        className="project-pivot-toolbar"
-        data-sticky-table-controls
-      >
-        <span className="project-pivot-toolbar-label">
-          Values
-        </span>
-
+      {!showPotentialOnly && (
         <div
-          className="project-pivot-metric-toggle"
-          role="group"
-          aria-label="Project billing values"
+          className="project-pivot-toolbar"
+          data-sticky-table-controls
         >
-          {BILLING_METRICS.map(
-            metric => (
-              <button
-                type="button"
-                key={metric.key}
-                className={
-                  billingMetric
-                  === metric.key
-                    ? 'active'
-                    : undefined
-                }
-                aria-pressed={
-                  billingMetric
-                  === metric.key
-                }
-                onClick={
-                  () =>
-                    setBillingMetric(
-                      metric.key
-                    )
-                }
-              >
-                {metric.label}
-              </button>
-            )
-          )}
+          <span className="project-pivot-toolbar-label">
+            Values
+          </span>
+
+          <div
+            className="project-pivot-metric-toggle"
+            role="group"
+            aria-label="Project billing values"
+          >
+            {availableBillingMetrics.map(
+              metric => (
+                <button
+                  type="button"
+                  key={metric.key}
+                  className={
+                    billingMetric
+                    === metric.key
+                      ? 'active'
+                      : undefined
+                  }
+                  aria-pressed={
+                    billingMetric
+                    === metric.key
+                  }
+                  onClick={
+                    () =>
+                      setBillingMetric(
+                        metric.key
+                      )
+                  }
+                >
+                  {metric.label}
+                </button>
+              )
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
 
       <div
@@ -1134,25 +1202,29 @@ export default function ProjectBillingPivot({
         >
           <thead>
             <tr>
-              <PivotSortHeader
-                label="Source"
-                sortKey="source"
-                sortState={sortState}
-                onSort={toggleSort}
-                className="pivot-source-column"
-              />
+              {showCombinedSources && (
+                <PivotSortHeader
+                  label="Source"
+                  sortKey="source"
+                  sortState={sortState}
+                  onSort={toggleSort}
+                  className="pivot-source-column"
+                />
+              )}
+
+              {includeActiveProjects && (
+                <PivotSortHeader
+                  label="Job #"
+                  sortKey="job"
+                  sortState={sortState}
+                  onSort={toggleSort}
+                  firstDirection="desc"
+                  className="pivot-job-column"
+                />
+              )}
 
               <PivotSortHeader
-                label="Job #"
-                sortKey="job"
-                sortState={sortState}
-                onSort={toggleSort}
-                firstDirection="desc"
-                className="pivot-job-column"
-              />
-
-              <PivotSortHeader
-                label="Project / Bid"
+                label={showPotentialOnly ? 'Potential Project' : (showCombinedSources ? 'Project / Bid' : 'Project')}
                 sortKey="project"
                 sortState={sortState}
                 onSort={toggleSort}
@@ -1160,12 +1232,34 @@ export default function ProjectBillingPivot({
               />
 
               <PivotSortHeader
-                label="Team"
-                sortKey="team"
+                label="GC"
+                sortKey="gc"
                 sortState={sortState}
                 onSort={toggleSort}
-                className="pivot-team-column"
+                className="pivot-gc-column"
               />
+
+              {showPotentialOnly && (
+                <PivotSortHeader
+                  label="Probability"
+                  sortKey="probability"
+                  sortState={sortState}
+                  onSort={toggleSort}
+                  firstDirection="desc"
+                  className="pivot-probability-column"
+                  numeric
+                />
+              )}
+
+              {includeActiveProjects && (
+                <PivotSortHeader
+                  label="Team"
+                  sortKey="team"
+                  sortState={sortState}
+                  onSort={toggleSort}
+                  className="pivot-team-column"
+                />
+              )}
 
               {months.map(
                 month => (
@@ -1250,21 +1344,25 @@ export default function ProjectBillingPivot({
                         : undefined
                     }
                   >
-                    <td className="pivot-source-column">
-                      <span
-                        className={
-                          row.source === 'current'
-                            ? 'source-chip current'
-                            : 'source-chip bid'
-                        }
-                      >
-                        {row.sourceLabel}
-                      </span>
-                    </td>
+                    {showCombinedSources && (
+                      <td className="pivot-source-column">
+                        <span
+                          className={
+                            row.source === 'current'
+                              ? 'source-chip current'
+                              : 'source-chip bid'
+                          }
+                        >
+                          {row.sourceLabel}
+                        </span>
+                      </td>
+                    )}
 
-                    <td className="pivot-job-column">
-                      {row.number}
-                    </td>
+                    {includeActiveProjects && (
+                      <td className="pivot-job-column">
+                        {row.number}
+                      </td>
+                    )}
 
                     <td className="pivot-project-column">
                       <ProjectMeta
@@ -1272,25 +1370,46 @@ export default function ProjectBillingPivot({
                       />
                     </td>
 
-                    <td className="pivot-team-column">
-                      <ProjectTeamCell
-                        pe={
-                          row.source === 'current'
-                            ? row.raw?.pe
-                            : null
+                    <td className="pivot-gc-column">
+                      <GeneralContractorDisplay
+                        value={
+                          row.raw?.generalContractors
+                          || row.raw?.gc
                         }
-                        superintendent={
-                          row.source === 'current'
-                            ? row.raw?.superintendent
-                            : null
-                        }
-                        apm={
-                          row.source === 'current'
-                            ? row.raw?.apm
-                            : null
-                        }
+                        compact
                       />
                     </td>
+
+                    {showPotentialOnly && (
+                      <td className="numeric pivot-probability-column">
+                        {row.raw?.probability === null
+                          || row.raw?.probability === undefined
+                            ? '—'
+                            : `${Math.round(Number(row.raw.probability) * 100)}%`}
+                      </td>
+                    )}
+
+                    {includeActiveProjects && (
+                      <td className="pivot-team-column">
+                        <ProjectTeamCell
+                          pe={
+                            row.source === 'current'
+                              ? row.raw?.pe
+                              : null
+                          }
+                          superintendent={
+                            row.source === 'current'
+                              ? row.raw?.superintendent
+                              : null
+                          }
+                          apm={
+                            row.source === 'current'
+                              ? row.raw?.apm
+                              : null
+                          }
+                        />
+                      </td>
+                    )}
 
                     {row.cells.map(
                       cell => (
@@ -1325,7 +1444,11 @@ export default function ProjectBillingPivot({
                 <td
                   className="empty-cell"
                   colSpan={
-                    months.length + 5
+                    months.length
+                    + 3
+                    + (showCombinedSources ? 1 : 0)
+                    + (includeActiveProjects ? 2 : 0)
+                    + (showPotentialOnly ? 1 : 0)
                   }
                 >
                   No projects match the selected filters.

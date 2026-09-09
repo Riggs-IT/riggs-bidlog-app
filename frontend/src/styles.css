@@ -10363,3 +10363,185 @@ tbody td {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+
+/* ============================================================
+   PROJECTED BILLINGS - PROBABILITY + GENERAL CONTRACTOR UX
+   ============================================================ */
+
+.probability-input {
+  min-width: 126px;
+  min-height: 50px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  gap: 3px;
+
+  padding: 7px 10px;
+
+  border: 1px solid var(--border);
+  border-radius: 7px;
+
+  background: var(--surface-2);
+}
+
+
+.probability-input > span {
+  color: var(--muted);
+
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+
+.probability-input-control {
+  display: flex;
+  align-items: center;
+
+  gap: 4px;
+}
+
+
+.probability-input-control input {
+  width: 58px;
+  min-width: 0;
+
+  padding: 0;
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+  color: var(--text);
+
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+
+.probability-input-control input::-webkit-outer-spin-button,
+.probability-input-control input::-webkit-inner-spin-button {
+  margin: 0;
+
+  -webkit-appearance: none;
+}
+
+
+.probability-input-control > span {
+  color: var(--muted);
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+
+.probability-input:focus-within {
+  border-color: var(--accent);
+
+  box-shadow:
+    0 0 0 2px
+    var(--accent-soft);
+}
+
+
+.gc-display {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+
+  gap: 5px;
+}
+
+
+.gc-display.compact {
+  max-width: 100%;
+}
+
+
+.gc-chip {
+  max-width: 180px;
+
+  overflow: hidden;
+
+  padding: 3px 7px;
+
+  border: 1px solid var(--border);
+  border-radius: 999px;
+
+  background: var(--surface-2);
+  color: var(--text-soft);
+
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.gc-chip-more {
+  flex: 0 0 auto;
+
+  color: var(--accent);
+}
+
+
+.gc-empty {
+  color: var(--muted-2);
+}
+
+
+.gc-table-cell {
+  min-width: 180px;
+  max-width: 230px;
+}
+
+
+.project-pivot-table
+.pivot-gc-column {
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+}
+
+
+.projected-breakdown-table
+.gc-table-cell,
+.monthly-project-table
+.gc-table-cell {
+  min-width: 190px;
+}
+
+
+@media (max-width: 1180px) {
+  .probability-input {
+    flex: 1 1 150px;
+  }
+}
+
+
+@media (max-width: 900px) {
+  .probability-input {
+    width: 100%;
+  }
+}
+
+/* COMPLETED PROJECTS - NORMALIZED GC COLUMN */
+.completed-project-table {
+  min-width: 1580px;
+}
+
+.completed-gc-column {
+  min-width: 155px;
+  max-width: 220px;
+}

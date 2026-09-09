@@ -15,6 +15,7 @@ import {
 } from './BillingDisplay.jsx';
 import PMForecastPanel from './PMForecastPanel.jsx';
 import OriginatingBidPanel from './OriginatingBidPanel.jsx';
+import { GeneralContractorDisplay } from './GeneralContractors.jsx';
 import ChangeOrdersPanel from './ChangeOrdersPanel.jsx';
 
 
@@ -457,11 +458,9 @@ export default function CurrentProjectBillingDrawer({
                 GC
               </small>
 
-              <strong>
-                {text(
-                  project.generalContractors
-                )}
-              </strong>
+              <GeneralContractorDisplay
+                value={project.generalContractors}
+              />
             </article>
 
 
