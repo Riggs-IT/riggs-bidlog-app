@@ -43,9 +43,12 @@ from .data_api import (
     DataAPIUnavailable,
     check_data_api_ready,
     get_active_bid_dashboard,
+    get_active_bid_detail,
     get_active_bid_monthly,
     get_active_bid_projected_billings,
+    get_active_bids,
     save_active_bid_projected_billing_settings,
+    update_active_bid,
     get_current_project_monthly,
     get_current_projected_billings,
     get_current_projects_monthly_bulk,
@@ -320,6 +323,100 @@ def _raise_projected_billings_error(
         ) from exc
 
     raise exc
+
+
+def _raise_active_bid_proxy_error(
+    exc: Exception,
+) -> None:
+    if isinstance(exc, DataAPIRequestRejected):
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=exc.detail,
+        ) from exc
+
+    if isinstance(exc, DataAPIEdgeRejected):
+        raise HTTPException(
+            status_code=503,
+            detail="data_api_cloudflare_access_rejected",
+        ) from exc
+
+    if isinstance(exc, DataAPIServiceAuthRejected):
+        raise HTTPException(
+            status_code=503,
+            detail="data_api_bid_log_service_auth_rejected",
+        ) from exc
+
+    if isinstance(exc, DataAPISQLCapacityUnavailable):
+        raise HTTPException(
+            status_code=503,
+            detail="sql_capacity_unavailable",
+        ) from exc
+
+    if isinstance(exc, DataAPISQLUnavailable):
+        raise HTTPException(
+            status_code=503,
+            detail="sql_unavailable",
+        ) from exc
+
+    if isinstance(exc, DataAPIConfigurationError):
+        raise HTTPException(
+            status_code=503,
+            detail="data_api_not_configured",
+        ) from exc
+
+    if isinstance(exc, DataAPIResourceNotFound):
+        raise HTTPException(
+            status_code=404,
+            detail="active_bid_log_bid_not_found",
+        ) from exc
+
+    if isinstance(exc, DataAPIInvalidResponse):
+        raise HTTPException(
+            status_code=502,
+            detail="invalid_data_api_response",
+        ) from exc
+
+    if isinstance(exc, DataAPIUnavailable):
+        raise HTTPException(
+            status_code=503,
+            detail="data_api_unavailable",
+        ) from exc
+
+    raise exc
+
+
+def _can_edit_bid_log(
+    current_user: CurrentUser,
+) -> bool:
+    return (
+        str(current_user.app_role or "")
+        .strip()
+        .upper()
+        in {"ADMIN", "OPERATIONS"}
+    )
+
+
+def _require_bid_log_editor(
+    current_user: CurrentUser,
+) -> None:
+    if not _can_edit_bid_log(current_user):
+        raise HTTPException(
+            status_code=403,
+            detail="bid_log_user_not_authorized",
+        )
+
+
+def _role_scoped_bid_log_payload(
+    payload,
+    current_user: CurrentUser,
+):
+    # Bid estimate Margin is editable business data for ADMIN and OPERATIONS.
+    # This is intentionally separate from historical/projected margin analytics,
+    # which remain ADMIN-only through _role_scoped_financial_payload.
+    if _can_edit_bid_log(current_user):
+        return payload
+
+    return _redact_margin_fields(payload)
 
 
 def _browser_request_id(
@@ -953,6 +1050,105 @@ def projected_billings_current_project_monthly(
         _raise_projected_billings_error(
             exc
         )
+
+
+# ============================================================
+# ACTIVE BID LOG WORKSPACE
+# ============================================================
+
+@app.get(
+    "/api/bid-log/active"
+)
+def bid_log_active_list_proxy(
+    status: str | None = FastAPIQuery(default=None),
+    search: str | None = FastAPIQuery(default=None),
+    limit: int = FastAPIQuery(default=500, ge=1, le=500),
+    offset: int = FastAPIQuery(default=0, ge=0),
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    try:
+        return _role_scoped_bid_log_payload(
+            get_active_bids(
+                bid_status=status,
+                search=search,
+                limit=limit,
+                offset=offset,
+            ),
+            current_user,
+        )
+
+    except Exception as exc:
+        _raise_active_bid_proxy_error(exc)
+
+
+@app.get(
+    "/api/bid-log/active/{sharepoint_item_id}"
+)
+def bid_log_active_detail_proxy(
+    sharepoint_item_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    try:
+        return _role_scoped_bid_log_payload(
+            get_active_bid_detail(sharepoint_item_id),
+            current_user,
+        )
+
+    except Exception as exc:
+        _raise_active_bid_proxy_error(exc)
+
+
+@app.patch(
+    "/api/bid-log/active/{sharepoint_item_id}"
+)
+async def bid_log_active_update_proxy(
+    request: Request,
+    sharepoint_item_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    _require_bid_log_editor(current_user)
+
+    try:
+        payload = await request.json()
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_json_body",
+        ) from exc
+
+    if not isinstance(payload, dict):
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_active_bid_update",
+        )
+
+    try:
+        # Browser-supplied actor identity is never trusted. The current
+        # authenticated session supplies the EID sent server-to-server.
+        return _role_scoped_bid_log_payload(
+            update_active_bid(
+                sharepoint_item_id,
+                payload,
+                actor_eid=current_user.eid,
+                request_id=_browser_request_id(request),
+            ),
+            current_user,
+        )
+
+    except Exception as exc:
+        _raise_active_bid_proxy_error(exc)
 
 
 @app.get(
