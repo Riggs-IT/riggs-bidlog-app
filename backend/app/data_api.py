@@ -662,6 +662,88 @@ def get_active_bid_monthly(
 
     return payload
 
+
+def save_active_bid_projected_billing_settings(
+    sharepoint_item_id: int,
+    payload: dict,
+    *,
+    actor_eid: int,
+    request_id: str,
+) -> dict:
+    operation = (
+        "Save Active Bid projected billing settings"
+    )
+
+    try:
+        response = _get_http_client().put(
+            (
+                "/v1/bid-log/projected-billings/"
+                f"{sharepoint_item_id}/settings"
+            ),
+            json=payload,
+            headers=_request_headers(
+                include_service_auth=True,
+                request_id=request_id,
+                actor_eid=actor_eid,
+            ),
+        )
+
+    except httpx.TimeoutException as exc:
+        raise DataAPIUnavailable(
+            "Riggs Data API request timed out "
+            f"during {operation}."
+        ) from exc
+
+    except httpx.RequestError as exc:
+        raise DataAPIUnavailable(
+            "Unable to connect to the Riggs Data API "
+            f"during {operation}."
+        ) from exc
+
+    if response.status_code in {
+        400,
+        403,
+        404,
+        409,
+        422,
+    }:
+        detail = _detail(
+            response
+        )
+
+        if detail is not None:
+            raise DataAPIRequestRejected(
+                response.status_code,
+                detail,
+            )
+
+    _raise_common_failure(
+        response,
+        operation=operation,
+    )
+
+    if response.status_code != 200:
+        raise DataAPIInvalidResponse(
+            "Unexpected Riggs Data API response "
+            f"during {operation}."
+        )
+
+    result = _json_object(
+        response,
+        operation=operation,
+    )
+
+    if not isinstance(
+        result.get("project"),
+        dict,
+    ):
+        raise DataAPIInvalidResponse(
+            "Active Bid settings response is "
+            "missing project detail."
+        )
+
+    return result
+
 def get_project_close_accountability() -> list[dict]:
     operation = "Project close accountability"
 

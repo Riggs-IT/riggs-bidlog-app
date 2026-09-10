@@ -1705,13 +1705,6 @@ h2 {
     align-items: flex-end;
   }
 
-  .stats-grid {
-    grid-template-columns:
-      repeat(
-        2,
-        minmax(0, 1fr)
-      );
-  }
 }
 
 
@@ -10370,21 +10363,12 @@ tbody td {
    ============================================================ */
 
 .probability-input {
-  min-width: 126px;
-  min-height: 50px;
+  min-width: 0;
 
   display: flex;
   flex-direction: column;
-  justify-content: center;
 
-  gap: 3px;
-
-  padding: 7px 10px;
-
-  border: 1px solid var(--border);
-  border-radius: 7px;
-
-  background: var(--surface-2);
+  gap: 5px;
 }
 
 
@@ -10400,15 +10384,25 @@ tbody td {
 
 
 .probability-input-control {
+  width: 100%;
+  min-height: 34px;
+
   display: flex;
   align-items: center;
 
   gap: 4px;
+
+  padding: 0 9px;
+
+  border: 1px solid var(--border);
+  border-radius: 5px;
+
+  background: var(--surface-2);
 }
 
 
 .probability-input-control input {
-  width: 58px;
+  width: 100%;
   min-width: 0;
 
   padding: 0;
@@ -10420,8 +10414,7 @@ tbody td {
   color: var(--text);
 
   font: inherit;
-  font-size: 15px;
-  font-weight: 800;
+  font-size: 11px;
 
   appearance: textfield;
   -moz-appearance: textfield;
@@ -10439,17 +10432,14 @@ tbody td {
 .probability-input-control > span {
   color: var(--muted);
 
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 
-.probability-input:focus-within {
+.probability-input:focus-within
+.probability-input-control {
   border-color: var(--accent);
-
-  box-shadow:
-    0 0 0 2px
-    var(--accent-soft);
 }
 
 
@@ -10544,4 +10534,335 @@ tbody td {
 .completed-gc-column {
   min-width: 155px;
   max-width: 220px;
+}
+
+/* ACTIVE BID / POTENTIAL PROJECT BILLING DRAWER */
+.active-bid-billing-drawer {
+  width: min(1040px, 94vw);
+}
+
+.active-bid-drawer-message {
+  margin-bottom: 14px;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.active-bid-drawer-message.error {
+  border-color: rgba(244, 92, 92, 0.45);
+}
+
+.active-bid-drawer-message.success {
+  border-color: rgba(103, 205, 151, 0.45);
+}
+
+.active-bid-readiness-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 10px 0 22px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.active-bid-readiness-card > div:first-child {
+  min-width: 0;
+}
+
+.active-bid-readiness-card strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 16px;
+}
+
+.active-bid-readiness-card p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.active-bid-missing-field {
+  min-width: 190px;
+  padding-left: 18px;
+  border-left: 1px solid var(--border);
+}
+
+.active-bid-missing-field small {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.active-bid-settings-section {
+  margin-top: 24px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.active-bid-settings-heading,
+.active-bid-monthly-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.active-bid-settings-form {
+  display: grid;
+  gap: 15px;
+}
+
+.active-bid-settings-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 12px 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.active-bid-settings-toggle input {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+}
+
+.active-bid-settings-toggle strong,
+.active-bid-settings-toggle small {
+  display: block;
+}
+
+.active-bid-settings-toggle strong {
+  font-size: 13px;
+}
+
+.active-bid-settings-toggle small,
+.active-bid-settings-grid small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.active-bid-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.active-bid-settings-grid > label,
+.active-bid-notes-field {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.active-bid-settings-grid > label > span,
+.active-bid-notes-field > span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+
+/* Keep projection number inputs visually clean; values are still keyboard-editable. */
+.active-bid-settings-grid input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.active-bid-settings-grid input[type="number"]::-webkit-outer-spin-button,
+.active-bid-settings-grid input[type="number"]::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+.active-bid-settings-grid input,
+.active-bid-notes-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 40px;
+  padding: 9px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+}
+
+.active-bid-notes-field textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+
+.active-bid-duration-input {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.active-bid-duration-input input {
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.active-bid-duration-input > span {
+  padding-right: 11px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.active-bid-settings-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 38px;
+}
+
+.active-bid-monthly-totals {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.active-bid-monthly-totals > span {
+  text-align: right;
+}
+
+.active-bid-monthly-totals small,
+.active-bid-monthly-totals strong {
+  display: block;
+}
+
+.active-bid-monthly-totals small {
+  margin-bottom: 3px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.active-bid-monthly-totals strong {
+  font-size: 14px;
+}
+
+.active-bid-monthly-table {
+  min-width: 680px;
+}
+
+@media (max-width: 800px) {
+  .active-bid-settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .active-bid-readiness-card,
+  .active-bid-settings-heading,
+  .active-bid-monthly-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .active-bid-missing-field {
+    min-width: 0;
+    padding: 12px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .active-bid-monthly-totals {
+    justify-content: flex-start;
+  }
+
+  .active-bid-monthly-totals > span {
+    text-align: left;
+  }
+}
+
+
+/* PROJECTED BILLINGS - SOURCE-AWARE SUMMARY + PIVOT STICKY CORRECTIONS */
+.stats-grid.stats-grid-potential-only {
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+}
+
+.probability-input.compact {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  justify-self: stretch;
+}
+
+.project-pivot-table.pivot-source-active
+th.pivot-job-column,
+.project-pivot-table.pivot-source-active
+td.pivot-job-column {
+  left: 0;
+}
+
+.project-pivot-table.pivot-source-active
+th.pivot-project-column,
+.project-pivot-table.pivot-source-active
+td.pivot-project-column {
+  left: 94px;
+}
+
+.project-pivot-table.pivot-source-potential
+th.pivot-project-column,
+.project-pivot-table.pivot-source-potential
+td.pivot-project-column {
+  left: 0;
+}
+
+.project-pivot-table
+th.pivot-project-column,
+.project-pivot-table
+td.pivot-project-column {
+  border-right: 1px solid var(--border-strong);
+  background-clip: padding-box;
+}
+
+@media (max-width: 1180px) {
+  .stats-grid.stats-grid-potential-only {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .probability-input.compact {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .stats-grid.stats-grid-potential-only {
+    grid-template-columns: 1fr;
+  }
 }

@@ -781,6 +781,7 @@ export default function ProjectBillingPivot({
   currency,
   monthLabel,
   onSelectCurrentProject,
+  onSelectBidProject,
   canViewMargin = false,
   includeActiveProjects = true,
   includeBids = true,
@@ -799,6 +800,15 @@ export default function ProjectBillingPivot({
   const showPotentialOnly =
     includeBids
     && !includeActiveProjects;
+
+  const sourceModeClass =
+    showCombinedSources
+      ? 'pivot-source-combined'
+      : (
+          showPotentialOnly
+            ? 'pivot-source-potential'
+            : 'pivot-source-active'
+        );
 
   const availableBillingMetrics =
     showPotentialOnly
@@ -1197,7 +1207,7 @@ export default function ProjectBillingPivot({
       >
         <table
           className={
-            `monthly-table project-pivot-table pivot-metric-${billingMetric}`
+            `monthly-table project-pivot-table pivot-metric-${billingMetric} ${sourceModeClass}`
           }
         >
           <thead>
@@ -1304,45 +1314,46 @@ export default function ProjectBillingPivot({
                 return (
                   <tr
                     key={row.key}
-                    className={
-                      row.source === 'current'
-                        ? 'pivot-project-row clickable-project-row'
-                        : 'pivot-project-row'
-                    }
+                    className="pivot-project-row clickable-project-row"
                     onClick={
-                      row.source === 'current'
-                        ? () =>
-                            onSelectCurrentProject(
-                              row.raw
-                            )
-                        : undefined
+                      () => {
+                        if (
+                          row.source === 'current'
+                        ) {
+                          onSelectCurrentProject(
+                            row.raw
+                          );
+                        } else {
+                          onSelectBidProject?.(
+                            row.raw
+                          );
+                        }
+                      }
                     }
                     onKeyDown={
-                      row.source === 'current'
-                        ? event => {
-                            if (
-                              event.key === 'Enter'
-                              || event.key === ' '
-                            ) {
-                              event.preventDefault();
+                      event => {
+                        if (
+                          event.key === 'Enter'
+                          || event.key === ' '
+                        ) {
+                          event.preventDefault();
 
-                              onSelectCurrentProject(
-                                row.raw
-                              );
-                            }
+                          if (
+                            row.source === 'current'
+                          ) {
+                            onSelectCurrentProject(
+                              row.raw
+                            );
+                          } else {
+                            onSelectBidProject?.(
+                              row.raw
+                            );
                           }
-                        : undefined
+                        }
+                      }
                     }
-                    role={
-                      row.source === 'current'
-                        ? 'button'
-                        : undefined
-                    }
-                    tabIndex={
-                      row.source === 'current'
-                        ? 0
-                        : undefined
-                    }
+                    role="button"
+                    tabIndex={0}
                   >
                     {showCombinedSources && (
                       <td className="pivot-source-column">

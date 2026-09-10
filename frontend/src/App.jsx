@@ -7,6 +7,7 @@ import {
 
 import ProjectAccountability from './ProjectAccountability.jsx';
 import CurrentProjectBillingDrawer from './CurrentProjectBillingDrawer.jsx';
+import ActiveBidBillingDrawer from './ActiveBidBillingDrawer.jsx';
 import ProjectBillingPivot from './ProjectBillingPivot.jsx';
 import useStickyTableHeader from './useStickyTableHeader.js';
 import {
@@ -1638,6 +1639,11 @@ export default function App() {
   ] = useState(null);
 
   const [
+    selectedActiveBid,
+    setSelectedActiveBid,
+  ] = useState(null);
+
+  const [
     forecastAttention,
     setForecastAttention,
   ] = useState([]);
@@ -2175,6 +2181,59 @@ export default function App() {
   ]);
 
 
+  function openCurrentProjectDrawer(
+    project,
+  ) {
+    setSelectedActiveBid(null);
+    setSelectedCurrentProject(project);
+  }
+
+
+  function openActiveBidDrawer(
+    bid,
+  ) {
+    setSelectedCurrentProject(null);
+    setSelectedActiveBid(bid);
+  }
+
+
+  function handleActiveBidUpdated(
+    project,
+    monthlyRows,
+  ) {
+    if (!project?.sharePointItemId) {
+      return;
+    }
+
+    setActiveBids(
+      current =>
+        current.map(
+          item =>
+            Number(item.sharePointItemId)
+            === Number(project.sharePointItemId)
+              ? project
+              : item
+        )
+    );
+
+    setBidMonthly(
+      current => {
+        const next =
+          new Map(current);
+
+        next.set(
+          project.sharePointItemId,
+          monthlyRows || [],
+        );
+
+        return next;
+      }
+    );
+
+    setSelectedActiveBid(project);
+  }
+
+
   function openAttentionProject(
     attention,
   ) {
@@ -2201,7 +2260,7 @@ export default function App() {
       'projected'
     );
 
-    setSelectedCurrentProject(
+    openCurrentProjectDrawer(
       target
     );
 
@@ -3896,6 +3955,10 @@ export default function App() {
   const combinedExpected =
     currentProjectedTotal
     + weightedBidTotal;
+
+  const currentVarianceTotal =
+    currentActualTotal
+    - currentProjectedTotal;
 
 
   const monthlyComparison =
@@ -6409,6 +6472,7 @@ export default function App() {
                         value={potentialProbabilityInput}
                         onChange={setPotentialProbabilityInput}
                         onBlur={normalizePotentialProbabilityInput}
+                        compact
                       />
                     )}
                     <SelectField
@@ -7109,67 +7173,157 @@ export default function App() {
         )}
 
 
-        <section className="stats-grid">
-          <StatCard
-            label="Projected Billings · Active Projects"
-            value={
-              dataLoading
-                ? 'Loading…'
-                : currency(
-                    currentProjectedTotal
-                  )
-            }
-            detail={
-              includeActiveProjects
-                ? `${currentDetails.length} selected projects`
-                : 'Active Projects not selected'
-            }
-          />
+        <section
+          className={
+            showPotentialOnly
+              ? 'stats-grid stats-grid-potential-only'
+              : 'stats-grid'
+          }
+        >
+          {showPotentialOnly && (
+            <>
+              <StatCard
+                label="Potential Projects"
+                value={
+                  dataLoading
+                    ? 'Loading…'
+                    : String(bidDetails.length)
+                }
+                detail={`${potentialProbabilityThreshold}%+ minimum probability`}
+              />
 
-          <StatCard
-            label="Projected Billings · Potential Projects"
-            value={
-              dataLoading
-                ? 'Loading…'
-                : currency(
-                    weightedBidTotal
-                  )
-            }
-            detail={
-              includeBids
-                ? `${bidDetails.length} potential projects · ${currency(rawBidTotal)} project value`
-                : 'Potential Projects not selected'
-            }
-          />
+              <StatCard
+                label="Potential Project Value"
+                value={
+                  dataLoading
+                    ? 'Loading…'
+                    : currency(rawBidTotal)
+                }
+                detail="Estimated bid value before probability weighting"
+              />
 
-          <StatCard
-            label="Total Projected Billings"
-            value={
-              dataLoading
-                ? 'Loading…'
-                : currency(
-                    combinedExpected
-                  )
-            }
-            detail={
-              rangeValid
-                ? `${monthLabel(fromMonth)} through ${monthLabel(throughMonth)}`
-                : 'Select a valid projected billing month range'
-            }
-            emphasis
-          />
+              <StatCard
+                label="Probability-Weighted Projection"
+                value={
+                  dataLoading
+                    ? 'Loading…'
+                    : currency(weightedBidTotal)
+                }
+                detail={
+                  rangeValid
+                    ? `${monthLabel(fromMonth)} through ${monthLabel(throughMonth)}`
+                    : 'Select a valid projected billing month range'
+                }
+                emphasis
+              />
+            </>
+          )}
 
-          <StatCard
-            label="Actual Billings"
-            value={
-              dataLoading
-                ? 'Loading…'
-                : currency(
-                    currentActualTotal
-                  )
-            }
-            detail={includeActiveProjects ? "Foundation actual billings" : "Active Projects not selected"}
-          />
+          {showActiveOnly && (
+            <>
+              <StatCard
+                label="Active Projects"
+                value={
+                  dataLoading
+                    ? 'Loading…'
+                    : String(currentDetails.length)
+                }
+                detail="Projects in the current filtered view"
+              />
+
+              <StatCard
+                label="Projected Billings"
+                value={
+                  dataLoading
+                    ? 'Loading…'
+                    : currency(currentProjectedTotal)
+                }
+                detail={
+                  rangeValid
+                    ? `${monthLabel(fromMonth)} through ${monthLabel(throughMonth)}`
+                    : 'Select a valid projected billing month range'
+                }
+                emphasis
+              />
+
+              <StatCard
+                label="Actual Billings"
+                value={
+                  dataLoading
+                    ? 'Loading…'
+                    : currency(currentActualTotal)
+                }
+                detail="Foundation actual billings"
+              />
+
+              <StatCard
+                label="Actual vs Projected"
+                value={
+                  dataLoading
+                    ? 'Loading…'
+                    : currency(Math.abs(currentVarianceTotal))
+                }
+                detail={
+                  dataLoading
+                    ? 'Comparing actual and projected billings'
+                    : currentVarianceTotal > 0
+                      ? 'Above projected billings'
+                      : currentVarianceTotal < 0
+                        ? 'Below projected billings'
+                        : 'Actual billings match projection'
+                }
+              />
+            </>
+          )}
+
+          {showCombinedSources && (
+            <>
+              <StatCard
+                label="Projected Billings · Active Projects"
+                value={
+                  dataLoading
+                    ? 'Loading…'
+                    : currency(currentProjectedTotal)
+                }
+                detail={`${currentDetails.length} selected projects`}
+              />
+
+              <StatCard
+                label="Projected Billings · Potential Projects"
+                value={
+                  dataLoading
+                    ? 'Loading…'
+                    : currency(weightedBidTotal)
+                }
+                detail={`${bidDetails.length} potential projects · ${currency(rawBidTotal)} project value`}
+              />
+
+              <StatCard
+                label="Total Projected Billings"
+                value={
+                  dataLoading
+                    ? 'Loading…'
+                    : currency(combinedExpected)
+                }
+                detail={
+                  rangeValid
+                    ? `${monthLabel(fromMonth)} through ${monthLabel(throughMonth)}`
+                    : 'Select a valid projected billing month range'
+                }
+                emphasis
+              />
+
+              <StatCard
+                label="Actual Billings"
+                value={
+                  dataLoading
+                    ? 'Loading…'
+                    : currency(currentActualTotal)
+                }
+                detail="Foundation actual billings"
+              />
+            </>
+          )}
         </section>
 
 
@@ -7282,7 +7436,10 @@ export default function App() {
                 currency={currency}
                 monthLabel={monthLabel}
                 onSelectCurrentProject={
-                  setSelectedCurrentProject
+                  openCurrentProjectDrawer
+                }
+                onSelectBidProject={
+                  openActiveBidDrawer
                 }
                 canViewMargin={isAdmin}
                 includeActiveProjects={includeActiveProjects}
@@ -7625,24 +7782,24 @@ export default function App() {
                                               key={
                                                 detail.key
                                               }
-                                              className={
-                                                detail.source
-                                                  === 'Current Project'
-                                                  ? 'month-current-project-row'
-                                                  : undefined
-                                              }
+                                              className="month-current-project-row clickable-project-row"
                                               onClick={
-                                                detail.source
-                                                  === 'Current Project'
-                                                  ? event => {
-                                                      event.stopPropagation();
+                                                event => {
+                                                  event.stopPropagation();
 
-                                                      setSelectedCurrentProject(
-                                                        detail.raw
-                                                      );
-                                                    }
-                                                  : event =>
-                                                      event.stopPropagation()
+                                                  if (
+                                                    detail.source
+                                                    === 'Current Project'
+                                                  ) {
+                                                    openCurrentProjectDrawer(
+                                                      detail.raw
+                                                    );
+                                                  } else {
+                                                    openActiveBidDrawer(
+                                                      detail.raw
+                                                    );
+                                                  }
+                                                }
                                               }
                                             >
                                               {showCombinedSources && (
@@ -8050,44 +8207,47 @@ export default function App() {
                   row => (
                     <tr
                       key={row.key}
-                      className={
-                        row.source
-                        === 'Current Project'
-                          ? 'clickable-project-row'
-                          : undefined
-                      }
+                      className="clickable-project-row"
                       onClick={
-                        row.source
-                        === 'Current Project'
-                          ? () =>
-                              setSelectedCurrentProject(
-                                row.raw
-                              )
-                          : undefined
+                        () => {
+                          if (
+                            row.source
+                            === 'Current Project'
+                          ) {
+                            openCurrentProjectDrawer(
+                              row.raw
+                            );
+                          } else {
+                            openActiveBidDrawer(
+                              row.raw
+                            );
+                          }
+                        }
                       }
                       onKeyDown={
-                        row.source
-                        === 'Current Project'
-                          ? event => {
-                              if (
-                                event.key === 'Enter'
-                                || event.key === ' '
-                              ) {
-                                event.preventDefault();
+                        event => {
+                          if (
+                            event.key === 'Enter'
+                            || event.key === ' '
+                          ) {
+                            event.preventDefault();
 
-                                setSelectedCurrentProject(
-                                  row.raw
-                                );
-                              }
+                            if (
+                              row.source
+                              === 'Current Project'
+                            ) {
+                              openCurrentProjectDrawer(
+                                row.raw
+                              );
+                            } else {
+                              openActiveBidDrawer(
+                                row.raw
+                              );
                             }
-                          : undefined
+                          }
+                        }
                       }
-                      tabIndex={
-                        row.source
-                        === 'Current Project'
-                          ? 0
-                          : undefined
-                      }
+                      tabIndex={0}
                     >
                       {showCombinedSources && (
                         <td>
@@ -8275,6 +8435,17 @@ export default function App() {
         }
         onAttentionChanged={
           loadForecastAttention
+        }
+      />
+
+      <ActiveBidBillingDrawer
+        bid={selectedActiveBid}
+        user={user}
+        onClose={
+          () => setSelectedActiveBid(null)
+        }
+        onBidUpdated={
+          handleActiveBidUpdated
         }
       />
     </div>

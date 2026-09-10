@@ -555,21 +555,23 @@ export default function CurrentProjectBillingDrawer({
             </article>
 
 
-            <article>
-              <span>
-                Estimated Margin
-              </span>
+            {isAdmin && (
+              <article>
+                <span>
+                  Estimated Margin
+                </span>
 
-              <strong>
-                {retentionLabel(
-                  project.estimatedMarginPercent
-                )}
-              </strong>
+                <strong>
+                  {retentionLabel(
+                    project.estimatedMarginPercent
+                  )}
+                </strong>
 
-              <small className="commercial-source-note">
-                Foundation revised
-              </small>
-            </article>
+                <small className="commercial-source-note">
+                  Foundation revised
+                </small>
+              </article>
+            )}
 
 
             <article>

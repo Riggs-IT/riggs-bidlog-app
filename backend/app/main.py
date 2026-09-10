@@ -45,6 +45,7 @@ from .data_api import (
     get_active_bid_dashboard,
     get_active_bid_monthly,
     get_active_bid_projected_billings,
+    save_active_bid_projected_billing_settings,
     get_current_project_monthly,
     get_current_projected_billings,
     get_current_projects_monthly_bulk,
@@ -1017,6 +1018,68 @@ def projected_billings_active_bid_monthly(
             ),
             current_user,
         )
+
+    except Exception as exc:
+        _raise_projected_billings_error(
+            exc
+        )
+
+
+@app.put(
+    (
+        "/api/projected-billings/"
+        "active-bids/"
+        "{sharepoint_item_id}/settings"
+    )
+)
+async def update_projected_billings_active_bid_settings(
+    request: Request,
+    sharepoint_item_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    try:
+        payload = await request.json()
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_json_body",
+        ) from exc
+
+    if not isinstance(
+        payload,
+        dict,
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_bid_log_forecast_settings",
+        )
+
+    try:
+        return _role_scoped_financial_payload(
+            save_active_bid_projected_billing_settings(
+                sharepoint_item_id,
+                payload,
+                # Browser-supplied actor identity is ignored.
+                # The authenticated server session owns the EID.
+                actor_eid=current_user.eid,
+                request_id=_browser_request_id(
+                    request
+                ),
+            ),
+            current_user,
+        )
+
+    except DataAPIRequestRejected as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=exc.detail,
+        ) from exc
 
     except Exception as exc:
         _raise_projected_billings_error(
