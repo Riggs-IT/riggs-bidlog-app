@@ -6,6 +6,7 @@ import {
 } from 'react';
 
 import ProjectAccountability from './ProjectAccountability.jsx';
+import BidLogWorkspace from './BidLogWorkspace.jsx';
 import CurrentProjectBillingDrawer from './CurrentProjectBillingDrawer.jsx';
 import ActiveBidBillingDrawer from './ActiveBidBillingDrawer.jsx';
 import ProjectBillingPivot from './ProjectBillingPivot.jsx';
@@ -2315,12 +2316,21 @@ export default function App() {
 
 
     function currentPageLabel() {
-      return (
+      if (
         activePageRef.current
         === 'accountability'
-      )
-        ? 'Completed Projects'
-        : 'Projected Billings';
+      ) {
+        return 'Completed Projects';
+      }
+
+      if (
+        activePageRef.current
+        === 'bid-log'
+      ) {
+        return 'Bid Log';
+      }
+
+      return 'Projected Billings';
     }
 
 
@@ -5819,6 +5829,18 @@ export default function App() {
               Projected Billings
             </button>
 
+            <button
+              type="button"
+              className={
+                activePage === 'bid-log'
+                  ? 'active'
+                  : ''
+              }
+              onClick={() => setActivePage('bid-log')}
+            >
+              Bid Log
+            </button>
+
             {canViewCompletedProjects && (
               <button
                 type="button"
@@ -6057,10 +6079,7 @@ export default function App() {
       </header>
 
 
-      {(
-        activePage === 'projected'
-        || !canViewCompletedProjects
-      ) ? (
+      {activePage === 'projected' ? (
       <main className="page-shell">
         <div className="page-heading">
           <div>
@@ -8411,6 +8430,10 @@ export default function App() {
           </div>
         </section>
       </main>
+      ) : activePage === 'bid-log' ? (
+        <BidLogWorkspace
+          user={user}
+        />
       ) : (
         <ProjectAccountability
           user={user}
