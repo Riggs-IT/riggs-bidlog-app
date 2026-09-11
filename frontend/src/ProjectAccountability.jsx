@@ -7,6 +7,7 @@ import {
 
 import CompletedProjectBillingDrawer
   from './CompletedProjectBillingDrawer.jsx';
+import ActiveProjectEditDrawer from './ActiveProjectEditDrawer.jsx';
 import {
   commercialSourceLabel,
   moneyDifference,
@@ -25,6 +26,35 @@ import {
 
 const ALL = '__ALL__';
 const UNASSIGNED = '__UNASSIGNED__';
+const COMPLETED_PROJECT_CACHE_MAX_AGE_MS = 60_000;
+
+let completedProjectListCache = {
+  items: null,
+  loadedAt: 0,
+};
+
+
+function completedProjectCacheIsFresh() {
+  return Array.isArray(completedProjectListCache.items)
+    && Date.now() - completedProjectListCache.loadedAt
+      < COMPLETED_PROJECT_CACHE_MAX_AGE_MS;
+}
+
+
+function writeCompletedProjectCache(items) {
+  completedProjectListCache = {
+    items,
+    loadedAt: Date.now(),
+  };
+}
+
+
+function invalidateCompletedProjectCache() {
+  completedProjectListCache = {
+    ...completedProjectListCache,
+    loadedAt: 0,
+  };
+}
 
 
 function toNumber(value) {
@@ -160,6 +190,94 @@ function pmLabel(value) {
 }
 
 
+function pmBadgeTextColor(hexColor) {
+  const match = String(hexColor || '')
+    .trim()
+    .match(/^#?([0-9a-f]{6})$/i);
+
+  if (!match) {
+    return '#ffffff';
+  }
+
+  const value = match[1];
+  const red = parseInt(value.slice(0, 2), 16);
+  const green = parseInt(value.slice(2, 4), 16);
+  const blue = parseInt(value.slice(4, 6), 16);
+  const luminance = (
+    red * 299
+    + green * 587
+    + blue * 114
+  ) / 1000;
+
+  return luminance > 160
+    ? '#111111'
+    : '#ffffff';
+}
+
+
+function initialsFromName(name) {
+  const words = String(name || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (!words.length) {
+    return '';
+  }
+
+  return words
+    .slice(0, 2)
+    .map(word => word.charAt(0))
+    .join('')
+    .toUpperCase();
+}
+
+
+function pmDirectoryKey(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase();
+}
+
+
+function PMInitialsBadge({
+  name,
+  initials,
+  hexColor,
+}) {
+  const value = String(
+    initials || initialsFromName(name) || '',
+  ).trim();
+
+  if (!value) {
+    return (
+      <span className="pm-badge-empty">
+        —
+      </span>
+    );
+  }
+
+  const background = /^#[0-9a-f]{6}$/i.test(
+    String(hexColor || '').trim(),
+  )
+    ? String(hexColor).trim()
+    : '#4b5563';
+
+  return (
+    <span
+      className="pm-initials-badge"
+      title={name || 'Project Manager'}
+      style={{
+        backgroundColor: background,
+        color: pmBadgeTextColor(background),
+      }}
+    >
+      {value}
+    </span>
+  );
+}
+
+
 function sourceShortLabel(value) {
   const labels = {
     OPERATIONS_PLANNED_START:
@@ -249,6 +367,27 @@ async function fetchJson(path) {
     || detail
     || 'Unable to load completed projects.',
   );
+}
+
+
+export async function prefetchCompletedBillings() {
+  if (completedProjectCacheIsFresh()) {
+    return;
+  }
+
+  try {
+    const payload = await fetchJson(
+      '/api/completed-projects',
+    );
+
+    if (Array.isArray(payload)) {
+      writeCompletedProjectCache(
+        payload,
+      );
+    }
+  } catch {
+    // Background prefetch is intentionally silent.
+  }
 }
 
 
@@ -386,18 +525,29 @@ function dataStateLabel(value) {
 
 export default function ProjectAccountability({
   user,
+  pmDirectory = [],
 }) {
   const [rows, setRows] =
-    useState([]);
+    useState(
+      () => completedProjectListCache.items || [],
+    );
 
   const [loading, setLoading] =
-    useState(true);
+    useState(
+      () => !Array.isArray(completedProjectListCache.items),
+    );
 
   const [error, setError] =
     useState(null);
 
   const [selectedProject, setSelectedProject] =
     useState(null);
+
+  const [editProjectId, setEditProjectId] =
+    useState(null);
+
+  const [completedRefreshVersion, setCompletedRefreshVersion] =
+    useState(0);
 
   const [search, setSearch] =
     useState('');
@@ -505,6 +655,42 @@ export default function ProjectAccountability({
     === 'ADMIN';
 
 
+  const pmIdentityByName = useMemo(
+    () => {
+      const map = new Map();
+
+      for (const row of pmDirectory) {
+        const name = String(row?.pm || '').trim();
+        const key = pmDirectoryKey(name);
+
+        if (!key) {
+          continue;
+        }
+
+        const current = map.get(key) || {};
+
+        map.set(
+          key,
+          {
+            name,
+            initials:
+              row?.pmInitials
+              || current.initials
+              || initialsFromName(name),
+            hexColor:
+              row?.pmHexColor
+              || current.hexColor
+              || null,
+          },
+        );
+      }
+
+      return map;
+    },
+    [pmDirectory],
+  );
+
+
   useEffect(
     () => {
       const element =
@@ -580,8 +766,23 @@ export default function ProjectAccountability({
   useEffect(() => {
     let cancelled = false;
 
+    const hasCachedRows = Array.isArray(
+      completedProjectListCache.items,
+    );
+    const forceRefresh = completedRefreshVersion > 0;
+
+    if (
+      !forceRefresh
+      && completedProjectCacheIsFresh()
+    ) {
+      return undefined;
+    }
+
     async function loadCompletedProjects() {
-      setLoading(true);
+      if (!hasCachedRows) {
+        setLoading(true);
+      }
+
       setError(null);
 
       try {
@@ -592,13 +793,10 @@ export default function ProjectAccountability({
 
         if (
           !cancelled
-          && Array.isArray(
-            payload
-          )
+          && Array.isArray(payload)
         ) {
-          setRows(
-            payload
-          );
+          writeCompletedProjectCache(payload);
+          setRows(payload);
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -608,18 +806,18 @@ export default function ProjectAccountability({
           );
         }
       } finally {
-        if (!cancelled) {
+        if (!cancelled && !hasCachedRows) {
           setLoading(false);
         }
       }
     }
 
-    loadCompletedProjects();
+    void loadCompletedProjects();
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [completedRefreshVersion]);
 
 
   const pmOptions = useMemo(
@@ -1406,6 +1604,22 @@ export default function ProjectAccountability({
     setPurposeFilter(ALL);
     setDataFilter(ALL);
   }
+
+
+  const editProjectSummary =
+    rows.find(
+      row => Number(row.jobListId) === Number(editProjectId),
+    );
+
+  const normalizedEditProjectSummary = editProjectSummary
+    ? {
+        ...editProjectSummary,
+        pm: editProjectSummary.projectManager,
+        pe: editProjectSummary.projectEngineer,
+        generalContractors: editProjectSummary.generalContractor,
+        projectCompleted: true,
+      }
+    : null;
 
 
   return (
@@ -2557,11 +2771,24 @@ export default function ProjectAccountability({
                       />
                     </td>
 
-                    <td>
-                      {displayValue(
-                        row.projectManager,
-                        'No PM Assigned',
-                      )}
+                    <td className="pm-badge-cell">
+                      {(() => {
+                        const pmName = displayValue(
+                          row.projectManager,
+                          'No PM Assigned',
+                        );
+                        const identity = pmIdentityByName.get(
+                          pmDirectoryKey(row.projectManager),
+                        );
+
+                        return (
+                          <PMInitialsBadge
+                            name={pmName}
+                            initials={identity?.initials}
+                            hexColor={identity?.hexColor}
+                          />
+                        );
+                      })()}
                     </td>
 
                     <td className="project-team-column">
@@ -2787,6 +3014,25 @@ export default function ProjectAccountability({
             null
           )
         }
+        onEditProject={() => {
+          if (!selectedProject?.jobListId) {
+            return;
+          }
+
+          setEditProjectId(selectedProject.jobListId);
+          setSelectedProject(null);
+        }}
+      />
+
+      <ActiveProjectEditDrawer
+        jobListId={editProjectId}
+        projectSummary={normalizedEditProjectSummary}
+        user={user}
+        onClose={() => setEditProjectId(null)}
+        onSaved={() => {
+          invalidateCompletedProjectCache();
+          setCompletedRefreshVersion(current => current + 1);
+        }}
       />
     </main>
   );

@@ -1,5 +1,6 @@
 :root {
   font-family:
+    "Public Sans",
     "Segoe UI",
     system-ui,
     sans-serif;
@@ -10865,4 +10866,2133 @@ td.pivot-project-column {
   .stats-grid.stats-grid-potential-only {
     grid-template-columns: 1fr;
   }
+}
+
+/* ========================================================================== */
+/* Bid Log workspace — read-only Active Bid shell                             */
+/* ========================================================================== */
+
+.bid-log-workspace-heading {
+  align-items: flex-end;
+}
+
+.bid-log-workspace-count {
+  min-width: 150px;
+  display: grid;
+  justify-items: end;
+  gap: 1px;
+  padding-bottom: 2px;
+}
+
+.bid-log-workspace-count span,
+.bid-log-workspace-count small {
+  color: var(--muted);
+}
+
+.bid-log-workspace-count span {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.bid-log-workspace-count strong {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.bid-log-workspace-count small {
+  font-size: 10px;
+}
+
+.bid-log-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.bid-log-summary-card {
+  min-width: 0;
+  min-height: 124px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 14px 16px 15px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--surface) 96%, var(--accent)),
+      var(--surface)
+    );
+  box-shadow: var(--shadow);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.bid-log-summary-card:hover,
+.bid-log-summary-card:focus-visible {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+
+.bid-log-summary-card.active {
+  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent),
+    var(--shadow);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent-soft) 68%, var(--surface)),
+      var(--surface)
+    );
+}
+
+.bid-log-summary-card > .bid-log-summary-label,
+.bid-log-summary-card small {
+  color: var(--muted);
+}
+
+.bid-log-summary-icon {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  margin-bottom: 7px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--surface-3) 90%, black);
+  color: var(--text);
+}
+
+.bid-log-summary-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.bid-log-summary-card > .bid-log-summary-label {
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+}
+
+.bid-log-summary-card strong {
+  margin-top: 2px;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.bid-log-summary-card small {
+  font-size: 9px;
+}
+
+.bid-log-workspace-filters {
+  padding: 12px 14px;
+}
+
+.bid-log-filter-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(260px, 1.8fr)
+    minmax(170px, 0.9fr)
+    minmax(170px, 0.9fr)
+    minmax(170px, 0.9fr)
+    minmax(145px, 0.7fr);
+  gap: 10px;
+}
+
+.bid-log-percent-input {
+  position: relative;
+}
+
+.bid-log-percent-input input {
+  padding-right: 28px;
+}
+
+.bid-log-percent-input > span {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 10px;
+  pointer-events: none;
+}
+
+.bid-log-probability-field input[type='number'] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.bid-log-probability-field input[type='number']::-webkit-inner-spin-button,
+.bid-log-probability-field input[type='number']::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+.bid-log-filter-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.bid-log-real-bids-toggle {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.bid-log-real-bids-toggle:hover,
+.bid-log-real-bids-toggle:focus-visible {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.bid-log-real-bids-toggle.active {
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 65%, var(--surface-2));
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.bid-log-real-bids-dot {
+  width: 8px;
+  height: 8px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.bid-log-real-bids-toggle.active .bid-log-real-bids-dot {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.bid-log-list-card {
+  overflow: visible;
+}
+
+.bid-log-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.bid-log-read-only-note {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.bid-log-table-wrap {
+  max-height: none;
+  min-height: 0;
+  overflow: visible;
+}
+
+.bid-log-table {
+  width: 100%;
+  min-width: 1460px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.bid-log-table thead th {
+  position: sticky;
+  top: 68px;
+  z-index: 2;
+  padding: 10px 10px;
+  border-bottom: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.bid-log-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 11px;
+  vertical-align: middle;
+}
+
+.bid-log-table tbody tr {
+  background: var(--surface);
+}
+
+.bid-log-table tbody tr:hover {
+  background: var(--surface-2);
+}
+
+.bid-log-table .numeric {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.bid-log-due-cell {
+  width: 96px;
+  white-space: nowrap;
+}
+
+.bid-log-due-cell strong,
+.bid-log-name-cell strong,
+.bid-log-type-stack strong {
+  display: block;
+}
+
+.bid-log-due-state {
+  display: block;
+  margin-top: 3px;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.bid-log-due-state.overdue {
+  color: var(--negative);
+}
+
+.bid-log-due-state.today {
+  color: var(--warning);
+}
+
+.bid-log-name-cell {
+  min-width: 260px;
+}
+
+.bid-log-name-cell span,
+.bid-log-type-stack span {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.bid-log-name-line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.bid-log-name-line > strong {
+  min-width: 0;
+}
+
+.bid-log-notes-button {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.bid-log-notes-button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.bid-log-notes-button:hover,
+.bid-log-notes-button:focus-visible,
+.bid-log-notes-button.active {
+  border-color: var(--border-strong);
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.bid-log-notes-row td {
+  padding: 0 10px 10px;
+  background: var(--surface-2);
+}
+
+.bid-log-notes-panel {
+  padding: 12px 14px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--surface-3) 94%, black);
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.bid-log-notes-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.bid-log-notes-heading span,
+.bid-log-notes-heading strong {
+  display: block;
+}
+
+.bid-log-notes-heading span {
+  margin-bottom: 2px;
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bid-log-notes-heading strong {
+  font-size: 11px;
+}
+
+.bid-log-notes-close {
+  padding: 4px 7px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 9px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.bid-log-notes-close:hover,
+.bid-log-notes-close:focus-visible {
+  color: var(--text);
+}
+
+.bid-log-notes-content {
+  color: var(--text);
+  font-size: 10px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.bid-log-notes-message {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.bid-log-notes-message.error {
+  color: var(--negative);
+}
+
+.bid-log-status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+@media (max-width: 1600px) {
+  .bid-log-table-wrap {
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+}
+
+@media (max-width: 1280px) {
+  .bid-log-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .bid-log-filter-grid {
+    grid-template-columns:
+      minmax(240px, 1.4fr)
+      repeat(2, minmax(160px, 0.8fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .bid-log-workspace-heading {
+    align-items: flex-start;
+  }
+
+  .bid-log-workspace-count {
+    justify-items: start;
+  }
+
+  .bid-log-summary-grid,
+  .bid-log-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bid-log-filter-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .bid-log-filter-toolbar > button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .bid-log-summary-card {
+    min-height: 88px;
+  }
+
+  .bid-log-table-wrap {
+    max-height: none;
+  }
+}
+
+/* BID LOG - ROW EDITOR */
+.bid-log-data-row {
+  cursor: pointer;
+}
+
+.bid-log-data-row:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.bid-log-edit-drawer {
+  width: min(1120px, 96vw);
+}
+
+.bid-log-edit-header {
+  flex: 0 0 auto;
+}
+
+.bid-log-edit-body {
+  display: grid;
+  gap: 18px;
+}
+
+.bid-edit-message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.bid-edit-message.error {
+  border-color: color-mix(in srgb, var(--negative) 50%, var(--border));
+  color: var(--text);
+}
+
+.bid-edit-message.warning {
+  border-color: color-mix(in srgb, var(--warning) 50%, var(--border));
+  color: var(--text);
+}
+
+.bid-edit-message.success {
+  border-color: rgba(103, 205, 151, 0.5);
+  color: var(--text);
+}
+
+.bid-edit-save-message > span {
+  min-width: 0;
+}
+
+.bid-edit-section {
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-2) 78%, transparent);
+}
+
+.bid-edit-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.bid-edit-section-heading h3 {
+  margin: 4px 0 0;
+  font-size: 17px;
+}
+
+.bid-edit-section-heading > small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.bid-edit-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.bid-edit-grid.two-column {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.bid-edit-grid.three-column {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.bid-edit-grid.four-column {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.bid-edit-field {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+
+.bid-edit-field.wide {
+  grid-column: 1 / -1;
+}
+
+.bid-edit-field > span {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.bid-edit-field > small {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.bid-edit-field input,
+.bid-edit-field select,
+.bid-edit-field textarea {
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-3);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  outline: none;
+}
+
+.bid-edit-field textarea {
+  min-height: 84px;
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.bid-edit-field input:focus,
+.bid-edit-field select:focus,
+.bid-edit-field textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.bid-edit-field input:disabled,
+.bid-edit-field select:disabled,
+.bid-edit-field textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.bid-edit-notes-textarea {
+  min-height: 220px !important;
+  white-space: pre-wrap;
+}
+
+.bid-edit-toggle-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.bid-edit-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 200px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-3);
+  cursor: pointer;
+}
+
+.bid-edit-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.bid-edit-toggle-control {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  flex: 0 0 36px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.bid-edit-toggle-control::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 120ms ease, background 120ms ease;
+}
+
+.bid-edit-toggle input:checked + .bid-edit-toggle-control {
+  border-color: color-mix(in srgb, var(--accent) 75%, var(--border));
+  background: var(--accent-soft);
+}
+
+.bid-edit-toggle input:checked + .bid-edit-toggle-control::after {
+  transform: translateX(16px);
+  background: var(--accent);
+}
+
+.bid-edit-toggle > span:last-child {
+  min-width: 0;
+}
+
+.bid-edit-toggle strong,
+.bid-edit-toggle small {
+  display: block;
+}
+
+.bid-edit-toggle strong {
+  font-size: 11px;
+}
+
+.bid-edit-toggle small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.bid-log-edit-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 30px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.12);
+}
+
+.bid-log-edit-footer small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.bid-log-edit-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 1050px) {
+  .bid-edit-grid.four-column {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .bid-log-edit-drawer {
+    width: 100vw;
+  }
+
+  .bid-edit-grid.two-column,
+  .bid-edit-grid.three-column,
+  .bid-edit-grid.four-column {
+    grid-template-columns: 1fr;
+  }
+
+  .bid-log-edit-footer {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 12px 18px;
+  }
+
+  .bid-log-edit-footer-actions {
+    width: 100%;
+  }
+
+  .bid-log-edit-footer-actions > button {
+    flex: 1;
+  }
+}
+
+
+/* BID LOG - EDITOR SAFETY/POLISH */
+.bid-edit-readonly-input {
+  cursor: default !important;
+  border-color: color-mix(in srgb, var(--border) 78%, transparent) !important;
+  background: color-mix(in srgb, var(--surface-2) 82%, var(--surface)) !important;
+  color: var(--muted) !important;
+}
+
+.bid-edit-rule-note {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent-soft) 46%, transparent);
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.bid-edit-toggle:has(input:disabled) {
+  cursor: default;
+  opacity: 0.82;
+}
+
+.bid-log-edit-drawer input[type='number']::-webkit-inner-spin-button,
+.bid-log-edit-drawer input[type='number']::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+.bid-log-edit-drawer input[type='number'] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.bid-log-save-button {
+  min-height: 40px;
+  padding: 0 18px;
+  border: 1px solid color-mix(in srgb, var(--accent) 82%, white 8%);
+  border-radius: 6px;
+  background: var(--accent);
+  color: #07121d;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.bid-log-save-button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.bid-log-save-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* BID LOG - GENERAL CONTRACTOR MULTI-SELECT */
+.bid-gc-picker {
+  position: relative;
+  width: 100%;
+}
+
+.bid-gc-picker-control {
+  min-height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-3);
+  overflow: hidden;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.bid-gc-picker.open .bid-gc-picker-control {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.bid-gc-picker.disabled .bid-gc-picker-control {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.bid-gc-selected-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 9px 2px;
+}
+
+.bid-gc-selected-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 5px 7px 5px 9px;
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--border));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent-soft) 58%, var(--surface-2));
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.bid-gc-selected-chip.current-only {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--warning) 55%, var(--border));
+}
+
+.bid-gc-selected-chip > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bid-gc-selected-chip button {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.bid-gc-selected-chip button:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.bid-gc-search-row {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 9px;
+}
+
+.bid-gc-search-icon,
+.bid-gc-chevron {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.bid-gc-search-row input[type='search'] {
+  min-width: 0;
+  min-height: 38px;
+  flex: 1;
+  padding: 7px 9px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.bid-gc-search-row input[type='search']:focus {
+  border: 0;
+  box-shadow: none;
+}
+
+.bid-gc-search-row input[type='search']::-webkit-search-cancel-button {
+  display: none;
+}
+
+.bid-gc-clear-button {
+  flex: 0 0 auto;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.bid-gc-clear-button:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.bid-gc-picker-menu {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  background: var(--surface);
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.38);
+  overflow: hidden;
+}
+
+.bid-gc-picker-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 11px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.bid-gc-option-list {
+  max-height: 270px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.bid-gc-option {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 8px;
+  width: 100%;
+  padding: 9px 11px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.bid-gc-option:last-child {
+  border-bottom: 0;
+}
+
+.bid-gc-option:hover,
+.bid-gc-option.selected {
+  background: color-mix(in srgb, var(--accent-soft) 42%, var(--surface));
+}
+
+.bid-gc-option-check {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.bid-gc-option.selected .bid-gc-option-check {
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--border));
+  background: var(--accent-soft);
+}
+
+.bid-gc-option-copy {
+  min-width: 0;
+}
+
+.bid-gc-option-copy strong,
+.bid-gc-option-copy small {
+  display: block;
+}
+
+.bid-gc-option-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.bid-gc-option-copy small {
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bid-gc-picker-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 12px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.bid-gc-picker-state.error {
+  color: var(--text);
+}
+
+.bid-gc-picker-tip {
+  padding: 7px 11px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 9px;
+}
+
+
+/* ========================================================================== */
+/* Active Projects workspace                                                   */
+/* ========================================================================== */
+
+.active-projects-workspace {
+  min-width: 0;
+}
+
+.active-project-summary-grid {
+  margin-top: 0;
+}
+
+.active-project-filter-grid {
+  grid-template-columns:
+    minmax(260px, 1.6fr)
+    repeat(5, minmax(145px, 0.8fr));
+}
+
+.active-project-filter-toolbar {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.active-project-filter-note {
+  margin-top: 12px;
+}
+
+.active-project-filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.active-project-list-error {
+  margin-bottom: 14px;
+}
+
+.active-project-table {
+  min-width: 1500px;
+}
+
+.active-project-table thead th {
+  top: 68px;
+}
+
+.active-project-job-cell {
+  width: 92px;
+  white-space: nowrap;
+}
+
+.active-project-name-cell {
+  min-width: 270px;
+}
+
+.active-project-name-cell strong,
+.active-project-name-cell span {
+  display: block;
+}
+
+.active-project-name-cell span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.active-project-gc-cell {
+  min-width: 190px;
+}
+
+.active-project-pm-cell {
+  min-width: 58px;
+  display: flex;
+  align-items: center;
+}
+
+.active-project-team-cell {
+  min-width: 190px;
+}
+
+.active-project-date-cell,
+.active-project-contract-cell {
+  white-space: nowrap;
+}
+
+.active-project-data-row {
+  cursor: pointer;
+}
+
+.active-project-data-row:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.active-project-readonly-value {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-2) 82%, var(--surface));
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.active-project-schedule-callout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-3);
+}
+
+.active-project-schedule-callout span,
+.active-project-schedule-callout strong,
+.active-project-schedule-callout small {
+  display: block;
+}
+
+.active-project-schedule-callout span {
+  margin-bottom: 2px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.active-project-schedule-callout strong {
+  font-size: 15px;
+}
+
+.active-project-schedule-callout small {
+  color: var(--muted);
+  font-size: 9px;
+  text-align: right;
+}
+
+.active-project-reference-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.active-project-reference-grid > div {
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-3);
+}
+
+.active-project-reference-grid dt,
+.active-project-reference-grid dd {
+  margin: 0;
+}
+
+.active-project-reference-grid dt {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.active-project-reference-grid dd {
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.active-project-source-link {
+  display: inline-flex;
+  margin-top: 12px;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.active-project-source-link:hover,
+.active-project-source-link:focus-visible {
+  text-decoration: underline;
+}
+
+@media (max-width: 1280px) {
+  .active-project-filter-grid {
+    grid-template-columns:
+      minmax(240px, 1.4fr)
+      repeat(2, minmax(160px, 0.8fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .active-project-filter-actions {
+    width: 100%;
+  }
+
+  .active-project-filter-actions > button {
+    flex: 1;
+  }
+
+  .active-project-schedule-callout {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .active-project-schedule-callout small {
+    text-align: left;
+  }
+
+  .active-project-reference-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ========================================================================== */
+/* Floating full-page master record editors                                   */
+/* ========================================================================== */
+
+.floating-editor-backdrop {
+  align-items: center;
+  justify-content: center;
+  padding: 14px 18px;
+  background: rgba(4, 8, 13, 0.58);
+  backdrop-filter: blur(3px);
+}
+
+.floating-editor-surface,
+.floating-editor-surface.bid-log-edit-drawer {
+  width: calc(100vw - 36px);
+  height: calc(100vh - 28px);
+  max-width: none;
+  max-height: none;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 86%, transparent);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow:
+    0 28px 90px rgba(0, 0, 0, 0.48),
+    0 0 0 1px rgba(255, 255, 255, 0.025);
+}
+
+.floating-editor-header {
+  flex: 0 0 auto;
+  align-items: flex-start;
+  padding: 17px 22px 16px;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-2) 90%, transparent),
+      color-mix(in srgb, var(--surface) 96%, transparent)
+    );
+}
+
+.floating-editor-heading {
+  min-width: 0;
+  display: grid;
+  gap: 13px;
+}
+
+.floating-editor-title-row {
+  min-width: 0;
+}
+
+.floating-editor-title-row h2 {
+  margin: 4px 0 4px;
+  font-size: clamp(24px, 2.35vw, 34px);
+  line-height: 1.05;
+}
+
+.floating-editor-title-row p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.floating-editor-back {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 9px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.floating-editor-back:hover:not(:disabled),
+.floating-editor-back:focus-visible {
+  border-color: var(--border);
+  background: var(--surface-3);
+  color: var(--text);
+  outline: none;
+}
+
+.floating-editor-back:disabled,
+.floating-editor-close:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.floating-editor-close {
+  width: 40px;
+  height: 40px;
+  flex-basis: 40px;
+  margin-top: 1px;
+  border-radius: 8px;
+  font-size: 26px;
+}
+
+.floating-editor-body {
+  min-height: 0;
+  padding: 20px 24px 34px;
+  overscroll-behavior: contain;
+}
+
+.floating-editor-body.bid-log-edit-body {
+  gap: 16px;
+}
+
+.floating-editor-body .bid-edit-section {
+  padding: 19px 20px;
+}
+
+.floating-editor-footer {
+  padding: 12px 22px;
+}
+
+.floating-editor-footer-status {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.floating-editor-footer-status small {
+  line-height: 1.4;
+}
+
+.floating-editor-dirty-indicator {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border: 1px solid color-mix(in srgb, var(--warning) 45%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--warning) 10%, transparent);
+  color: var(--text);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+@media (min-width: 1450px) {
+  .floating-editor-body .bid-edit-grid.two-column {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .floating-editor-body .bid-edit-grid.three-column {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .floating-editor-body .bid-edit-grid.four-column {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .floating-editor-backdrop {
+    padding: 0;
+  }
+
+  .floating-editor-surface,
+  .floating-editor-surface.bid-log-edit-drawer {
+    width: 100vw;
+    height: 100vh;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .floating-editor-header {
+    padding: 14px 16px 13px;
+  }
+
+  .floating-editor-body {
+    padding: 16px 16px 28px;
+  }
+
+  .floating-editor-footer {
+    padding: 11px 16px;
+  }
+
+  .floating-editor-footer-status {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* ==========================================================
+   ACTIVE PROJECT - JOB INFORMATION SHEET LAYOUT
+   ========================================================== */
+
+/* Give both floating master-record editors a deliberate visible gutter. */
+@media (min-width: 761px) {
+  .floating-editor-backdrop {
+    padding:
+      clamp(32px, 4vh, 44px)
+      clamp(56px, 5vw, 88px);
+  }
+
+  .floating-editor-surface,
+  .floating-editor-surface.bid-log-edit-drawer {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+/* Keep long-form sections content-sized inside the scrollable editor grid. */
+.active-project-edit-drawer .floating-editor-body.bid-log-edit-body {
+  align-content: start;
+  grid-auto-rows: max-content;
+}
+
+/* Active Project should read like a long form, not a dashboard. */
+.active-project-edit-drawer .bid-edit-section {
+  overflow: visible;
+  padding: 0 22px 22px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-2) 84%, transparent);
+}
+
+.active-project-edit-drawer .bid-edit-section-heading {
+  align-items: center;
+  margin: 0 -22px 20px;
+  padding: 12px 16px 11px;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--accent) 19%, var(--surface-3)),
+      color-mix(in srgb, var(--accent) 7%, var(--surface-2)) 58%,
+      var(--surface-2)
+    );
+  border-radius: 10px 10px 0 0;
+}
+
+.active-project-edit-drawer .bid-edit-section-heading h3 {
+  margin: 2px 0 0;
+  font-size: 15px;
+  letter-spacing: 0.01em;
+}
+
+.active-project-edit-drawer .bid-edit-section-heading > small {
+  max-width: 420px;
+  color: color-mix(in srgb, var(--muted) 92%, white);
+  font-size: 9px;
+  line-height: 1.45;
+  text-align: right;
+}
+
+.active-project-edit-drawer .section-kicker {
+  color: color-mix(in srgb, var(--accent) 72%, white);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.085em;
+}
+
+.information-sheet-section {
+  position: relative;
+}
+
+.information-sheet-grid {
+  column-gap: 18px;
+  row-gap: 15px;
+}
+
+.information-sheet-subheading {
+  margin: 22px 0 11px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  color: color-mix(in srgb, var(--text) 92%, var(--muted));
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.information-sheet-heading + .information-sheet-subheading {
+  margin-top: 0;
+}
+
+.cognito-read-field {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cognito-read-field.wide {
+  grid-column: 1 / -1;
+}
+
+.cognito-read-field > span {
+  color: var(--muted, #96a0ad);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.cognito-read-field > div {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-3) 72%, var(--surface-2));
+  color: var(--text, #edf1f5);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.cognito-read-field > div.is-empty {
+  background: color-mix(in srgb, var(--surface-3) 52%, var(--surface-2));
+  color: transparent;
+}
+
+.cognito-read-field small {
+  color: var(--muted, #8994a2);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.cognito-checkbox-value {
+  gap: 9px;
+}
+
+.cognito-checkbox-box {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--surface);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.cognito-checkbox-box.checked {
+  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
+  background: var(--accent);
+  color: #071019;
+}
+
+.cognito-checkbox-value strong {
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.cognito-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 15px 18px;
+}
+
+.cognito-supplier-sheet {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-3) 45%, transparent);
+}
+
+.cognito-supplier-row {
+  display: grid;
+  grid-template-columns:
+    minmax(145px, 0.8fr)
+    minmax(180px, 1.15fr)
+    minmax(120px, 0.55fr)
+    minmax(240px, 1.45fr);
+  align-items: stretch;
+}
+
+.cognito-supplier-row + .cognito-supplier-row {
+  border-top: 1px solid var(--border);
+}
+
+.cognito-supplier-row > div {
+  min-width: 0;
+  padding: 11px 12px;
+}
+
+.cognito-supplier-row > div + div {
+  border-left: 1px solid var(--border);
+}
+
+.cognito-supplier-row.header {
+  background: color-mix(in srgb, var(--surface-3) 86%, var(--surface-2));
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.cognito-supplier-label {
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 780;
+}
+
+.cognito-supplier-value {
+  color: var(--text);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.cognito-supplier-value.amount {
+  font-variant-numeric: tabular-nums;
+}
+
+.cognito-supplier-files {
+  display: flex;
+  align-items: center;
+}
+
+.cognito-file-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cognito-file-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cognito-file-row span {
+  min-width: 0;
+  color: var(--text);
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+
+.cognito-file-row small {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.cognito-file-empty {
+  color: var(--muted);
+  font-size: 10px;
+  font-style: italic;
+}
+
+.cognito-workflow-line {
+  width: min(320px, 100%);
+  margin-top: 16px;
+}
+
+@media (max-width: 1200px) {
+  .cognito-checkbox-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cognito-supplier-row {
+    grid-template-columns: minmax(135px, 0.8fr) minmax(180px, 1.2fr) minmax(110px, 0.55fr);
+  }
+
+  .cognito-supplier-row > .cognito-supplier-files {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+
+  .cognito-supplier-row.header > div:last-child {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .active-project-edit-drawer .bid-edit-section {
+    padding: 0 16px 18px;
+  }
+
+  .active-project-edit-drawer .bid-edit-section-heading {
+    align-items: flex-start;
+    margin: 0 -16px 17px;
+    padding: 11px 13px;
+  }
+
+  .active-project-edit-drawer .bid-edit-section-heading > small {
+    text-align: left;
+  }
+
+  .cognito-checkbox-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cognito-supplier-row,
+  .cognito-supplier-row.header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cognito-supplier-row.header {
+    display: none;
+  }
+
+  .cognito-supplier-row > div,
+  .cognito-supplier-row > div + div,
+  .cognito-supplier-row > .cognito-supplier-files {
+    border-left: 0;
+    border-top: 0;
+    padding: 8px 10px;
+  }
+
+  .cognito-supplier-label {
+    padding-top: 11px !important;
+  }
+
+  .cognito-supplier-files {
+    padding-bottom: 11px !important;
+  }
+}
+
+/* C11 - linked master-record editing + project directory controls */
+.billing-drawer-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.billing-drawer-edit-button {
+  min-height: 42px;
+  padding-inline: 16px;
+  white-space: nowrap;
+}
+
+.project-directory-completed-toggle {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.project-directory-completed-toggle:hover,
+.project-directory-completed-toggle:focus-visible {
+  border-color: color-mix(in srgb, #d7a842 42%, var(--border-strong));
+  color: var(--text);
+}
+
+.project-directory-completed-toggle.active {
+  border-color: color-mix(in srgb, #d7a842 70%, var(--border));
+  background: color-mix(in srgb, #d7a842 13%, var(--surface-2));
+  color: #e3bd66;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #d7a842 16%, transparent);
+}
+
+.project-directory-completed-dot {
+  width: 8px;
+  height: 8px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.project-directory-completed-toggle.active .project-directory-completed-dot {
+  border-color: #d7a842;
+  background: #d7a842;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #d7a842 14%, transparent);
+}
+
+.active-project-name-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.active-project-name-line strong {
+  min-width: 0;
+}
+
+.active-project-name-cell .project-status-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 0;
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--surface-2);
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.active-project-name-cell .project-status-pill.completed {
+  border-color: color-mix(in srgb, #d7a842 62%, var(--border));
+  background: color-mix(in srgb, #d7a842 16%, var(--surface-2));
+  color: #e3bd66;
+}
+
+.active-project-data-row:has(.project-status-pill.completed) {
+  background: color-mix(in srgb, var(--surface-2) 60%, transparent);
+}
+
+@media (max-width: 760px) {
+  .billing-drawer-header-actions {
+    align-items: flex-end;
+    flex-direction: column-reverse;
+  }
+
+  .project-directory-completed-toggle {
+    flex: 1 1 100%;
+  }
+}
+
+/* ========================================================================== */
+/* Bid Log create action                                                       */
+/* ========================================================================== */
+
+.bid-log-filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bid-log-new-bid-button {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 46%, var(--border));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--accent-soft) 34%, var(--surface-2));
+  color: var(--text);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.bid-log-new-bid-button:hover,
+.bid-log-new-bid-button:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 72%, var(--border-strong));
+  background: color-mix(in srgb, var(--accent-soft) 54%, var(--surface-2));
+}
+
+.bid-log-new-bid-plus {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid color-mix(in srgb, var(--accent) 66%, var(--border));
+  border-radius: 5px;
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.bid-log-create-drawer .bid-edit-section:first-of-type {
+  margin-top: 0;
+}
+
+@media (max-width: 760px) {
+  .bid-log-filter-actions {
+    width: 100%;
+  }
+
+  .bid-log-filter-actions > button {
+    flex: 1 1 0;
+  }
+}
+
+/* ========================================================================== */
+/* Bid Log lifecycle views                                                     */
+/* ========================================================================== */
+
+.bid-log-lifecycle-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 6px;
+  width: fit-content;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-2) 88%, transparent);
+  overflow-x: auto;
+}
+
+.bid-log-lifecycle-tab,
+.bid-log-outcome-source-label {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.bid-log-lifecycle-tab {
+  cursor: pointer;
+}
+
+.bid-log-lifecycle-tab:hover,
+.bid-log-lifecycle-tab:focus-visible {
+  border-color: var(--border);
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.bid-log-lifecycle-tab.active {
+  border-color: color-mix(in srgb, var(--accent) 58%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 48%, var(--surface-2));
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.bid-log-lifecycle-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  background: transparent;
+}
+
+.bid-log-lifecycle-tab.active .bid-log-lifecycle-dot {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.bid-log-outcome-source-label {
+  padding-left: 0;
+}
+
+.bid-log-outcome-source-label .bid-log-real-bids-dot {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.bid-edit-message.outcome {
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 28%, var(--surface-2));
+}
+
+@media (max-width: 760px) {
+  .bid-log-lifecycle-tabs {
+    width: 100%;
+  }
+}
+
+
+.bid-log-render-sentinel {
+  width: 100%;
+  height: 1px;
+  pointer-events: none;
 }

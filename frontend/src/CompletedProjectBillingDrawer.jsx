@@ -293,6 +293,7 @@ export default function CompletedProjectBillingDrawer({
   project,
   user,
   onClose,
+  onEditProject,
 }) {
   const [monthly, setMonthly] =
     useState([]);
@@ -349,7 +350,7 @@ export default function CompletedProjectBillingDrawer({
 
     loadMonthly();
 
-    return () => {
+  return () => {
       cancelled = true;
     };
   }, [
@@ -485,6 +486,14 @@ export default function CompletedProjectBillingDrawer({
     );
 
 
+  const canOpenEditor = [
+    'ADMIN',
+    'OPERATIONS',
+  ].includes(
+    String(user?.appRole || '').trim().toUpperCase(),
+  );
+
+
   return (
     <div
       className="completed-drawer-backdrop"
@@ -527,14 +536,26 @@ export default function CompletedProjectBillingDrawer({
             </p>
           </div>
 
-          <button
-            type="button"
-            className="completed-drawer-close"
-            onClick={onClose}
-            aria-label="Close completed project detail"
-          >
-            ×
-          </button>
+          <div className="billing-drawer-header-actions">
+            {canOpenEditor && onEditProject && (
+              <button
+                type="button"
+                className="secondary-button billing-drawer-edit-button"
+                onClick={() => onEditProject()}
+              >
+                Edit Project
+              </button>
+            )}
+
+            <button
+              type="button"
+              className="completed-drawer-close"
+              onClick={onClose}
+              aria-label="Close completed project detail"
+            >
+              ×
+            </button>
+          </div>
         </header>
 
 

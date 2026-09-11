@@ -306,6 +306,7 @@ export default function ActiveBidBillingDrawer({
   bid,
   user,
   onClose,
+  onEditBid,
   onBidUpdated,
 }) {
   const [
@@ -454,7 +455,7 @@ export default function ActiveBidBillingDrawer({
         onKeyDown,
       );
 
-      return () => {
+  return () => {
         cancelled = true;
 
         document.body.style.overflow =
@@ -659,6 +660,17 @@ export default function ActiveBidBillingDrawer({
   }
 
 
+  // Temporary management rollout: master-record editing
+  // remains ADMIN-only until Operations rollout is approved.
+  const canOpenEditor =
+    String(
+      user?.appRole || '',
+    )
+      .trim()
+      .toUpperCase()
+    === 'ADMIN';
+
+
   return (
     <div
       className="billing-drawer-backdrop"
@@ -706,14 +718,26 @@ export default function ActiveBidBillingDrawer({
             </p>
           </div>
 
-          <button
-            type="button"
-            className="billing-drawer-close"
-            onClick={onClose}
-            aria-label="Close bid projection detail"
-          >
-            ×
-          </button>
+          <div className="billing-drawer-header-actions">
+            {canOpenEditor && onEditBid && (
+              <button
+                type="button"
+                className="secondary-button billing-drawer-edit-button"
+                onClick={() => onEditBid()}
+              >
+                Edit Bid
+              </button>
+            )}
+
+            <button
+              type="button"
+              className="billing-drawer-close"
+              onClick={onClose}
+              aria-label="Close bid projection detail"
+            >
+              ×
+            </button>
+          </div>
         </header>
 
 

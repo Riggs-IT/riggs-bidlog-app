@@ -5,7 +5,19 @@ import {
   useState,
 } from 'react';
 
-import ProjectAccountability from './ProjectAccountability.jsx';
+import ProjectAccountability, {
+  prefetchCompletedBillings,
+} from './ProjectAccountability.jsx';
+import BidLogWorkspace, {
+  invalidateBidLogWorkspaceCache,
+  prefetchBidLogWorkspace,
+} from './BidLogWorkspace.jsx';
+import ActiveProjectsWorkspace, {
+  invalidateProjectsWorkspaceCache,
+  prefetchProjectsWorkspace,
+} from './ActiveProjectsWorkspace.jsx';
+import BidLogEditDrawer from './BidLogEditDrawer.jsx';
+import ActiveProjectEditDrawer from './ActiveProjectEditDrawer.jsx';
 import CurrentProjectBillingDrawer from './CurrentProjectBillingDrawer.jsx';
 import ActiveBidBillingDrawer from './ActiveBidBillingDrawer.jsx';
 import ProjectBillingPivot from './ProjectBillingPivot.jsx';
@@ -1602,6 +1614,9 @@ export default function App() {
   const activePageRef =
     useRef(activePage);
 
+  const backgroundPrefetchStartedRef =
+    useRef(false);
+
   const lastHumanActivityAtRef =
     useRef(Date.now());
 
@@ -1624,6 +1639,11 @@ export default function App() {
   ] = useState(false);
 
   const [
+    projectedInitialLoadComplete,
+    setProjectedInitialLoadComplete,
+  ] = useState(false);
+
+  const [
     dataError,
     setDataError,
   ] = useState(null);
@@ -1641,6 +1661,16 @@ export default function App() {
   const [
     selectedActiveBid,
     setSelectedActiveBid,
+  ] = useState(null);
+
+  const [
+    editProjectedProjectId,
+    setEditProjectedProjectId,
+  ] = useState(null);
+
+  const [
+    editProjectedBidId,
+    setEditProjectedBidId,
   ] = useState(null);
 
   const [
@@ -2234,6 +2264,63 @@ export default function App() {
   }
 
 
+  async function refreshProjectedCurrentProjectData() {
+    try {
+      const [
+        currentPayload,
+        currentMonthlyPayload,
+      ] = await Promise.all([
+        fetchJson('/api/projected-billings/current-projects'),
+        fetchJson('/api/projected-billings/current-projects/monthly'),
+      ]);
+
+      setCurrentProjects(currentPayload);
+      setCurrentMonthly(
+        new Map(
+          (currentMonthlyPayload?.items || []).map(
+            row => [row.jobListId, row.items || []],
+          ),
+        ),
+      );
+      invalidateProjectsWorkspaceCache();
+    } catch (error) {
+      setDataError(
+        error?.message
+        || 'Unable to refresh projected projects after the edit.',
+      );
+    }
+  }
+
+
+  async function refreshProjectedBidData() {
+    try {
+      const dashboard = await fetchJson(
+        '/api/projected-billings/active-bids/dashboard',
+      );
+      const projectPayload = dashboard?.projects || {};
+
+      setActiveBids(
+        Array.isArray(projectPayload?.items)
+          ? projectPayload.items
+          : [],
+      );
+      setBidMonthly(
+        new Map(
+          (dashboard?.monthly || []).map(
+            row => [row.sharePointItemId, row.items || []],
+          ),
+        ),
+      );
+      invalidateBidLogWorkspaceCache();
+    } catch (error) {
+      setDataError(
+        error?.message
+        || 'Unable to refresh projected bids after the edit.',
+      );
+    }
+  }
+
+
   function openAttentionProject(
     attention,
   ) {
@@ -2315,12 +2402,28 @@ export default function App() {
 
 
     function currentPageLabel() {
-      return (
+      if (
         activePageRef.current
         === 'accountability'
-      )
-        ? 'Completed Projects'
-        : 'Projected Billings';
+      ) {
+        return 'Completed Billings';
+      }
+
+      if (
+        activePageRef.current
+        === 'bid-log'
+      ) {
+        return 'Bid Log';
+      }
+
+      if (
+        activePageRef.current
+        === 'active-projects'
+      ) {
+        return 'Projects';
+      }
+
+      return 'Projected Billings';
     }
 
 
@@ -2633,6 +2736,8 @@ export default function App() {
     let cancelled = false;
 
     async function loadProjectedBillings() {
+      backgroundPrefetchStartedRef.current = false;
+      setProjectedInitialLoadComplete(false);
       setDataLoading(true);
       setDataError(null);
 
@@ -2755,6 +2860,10 @@ export default function App() {
         setBidMonthly(
           bidMap
         );
+
+        setProjectedInitialLoadComplete(
+          true
+        );
       } catch (error) {
         if (!cancelled) {
           setDataError(
@@ -2858,9 +2967,21 @@ export default function App() {
     === 'ADMIN';
 
 
-  // Completed Projects is intentionally ADMIN-only for now.
-  // Keep this as a single capability flag because the team may
-  // reopen the page to Operations later.
+  /*
+    Temporary controlled rollout.
+
+    Bid Log and Projects remain ADMIN-only while management
+    validates the new master-record workflows.
+
+    Keep this capability separate from the underlying Data API
+    authorization so reopening to Operations is a small,
+    deliberate application rollout change later.
+  */
+  const canViewManagementWorkspaces =
+    isAdmin;
+
+
+  // Completed Billings remains ADMIN-only for now.
   const canViewCompletedProjects =
     isAdmin;
 
@@ -2868,8 +2989,17 @@ export default function App() {
   useEffect(
     () => {
       if (
-        !canViewCompletedProjects
-        && activePage === 'accountability'
+        (
+          !canViewManagementWorkspaces
+          && (
+            activePage === 'bid-log'
+            || activePage === 'active-projects'
+          )
+        )
+        || (
+          !canViewCompletedProjects
+          && activePage === 'accountability'
+        )
       ) {
         setActivePage('projected');
       }
@@ -2877,6 +3007,150 @@ export default function App() {
     [
       activePage,
       canViewCompletedProjects,
+      canViewManagementWorkspaces,
+    ],
+  );
+
+
+  useEffect(
+    () => {
+      if (
+        !user
+        || !projectedInitialLoadComplete
+        || !canViewManagementWorkspaces
+        || backgroundPrefetchStartedRef.current
+      ) {
+        return undefined;
+      }
+
+      backgroundPrefetchStartedRef.current =
+        true;
+
+      let cancelled = false;
+
+      const runPrefetch = async () => {
+        const runStage = async task => {
+          if (cancelled) {
+            return;
+          }
+
+          await task();
+        };
+
+
+        // Highest-value workspaces first.
+        await runStage(
+          () =>
+            prefetchBidLogWorkspace(
+              ['active']
+            ),
+        );
+
+
+        await runStage(
+          () =>
+            prefetchProjectsWorkspace({
+              includeActive: true,
+              includeCompleted: false,
+            }),
+        );
+
+
+        // Smaller historical outcome lists next.
+        await runStage(
+          () =>
+            prefetchBidLogWorkspace(
+              [
+                'awarded',
+                'lost',
+              ]
+            ),
+        );
+
+
+        // Completed Billings is currently ADMIN-only.
+        if (canViewCompletedProjects) {
+          await runStage(
+            prefetchCompletedBillings,
+          );
+        }
+
+
+        // Warm the Projects -> Completed toggle.
+        await runStage(
+          () =>
+            prefetchProjectsWorkspace({
+              includeActive: false,
+              includeCompleted: true,
+            }),
+        );
+
+
+        // Largest lifecycle list goes last.
+        await runStage(
+          () =>
+            prefetchBidLogWorkspace(
+              ['unpursued']
+            ),
+        );
+      };
+
+
+      const startPrefetch = () => {
+        void runPrefetch();
+      };
+
+
+      let idleId = null;
+      let timeoutId = null;
+
+
+      if (
+        typeof window.requestIdleCallback
+        === 'function'
+      ) {
+        idleId =
+          window.requestIdleCallback(
+            startPrefetch,
+            {
+              timeout: 1500,
+            },
+          );
+
+      } else {
+        timeoutId =
+          window.setTimeout(
+            startPrefetch,
+            400,
+          );
+      }
+
+
+      return () => {
+        cancelled = true;
+
+        if (
+          idleId !== null
+          && typeof window.cancelIdleCallback
+            === 'function'
+        ) {
+          window.cancelIdleCallback(
+            idleId
+          );
+        }
+
+        if (timeoutId !== null) {
+          window.clearTimeout(
+            timeoutId
+          );
+        }
+      };
+    },
+    [
+      canViewCompletedProjects,
+      canViewManagementWorkspaces,
+      projectedInitialLoadComplete,
+      user?.eid,
     ],
   );
 
@@ -5819,6 +6093,34 @@ export default function App() {
               Projected Billings
             </button>
 
+            {canViewManagementWorkspaces && (
+              <button
+                type="button"
+                className={
+                  activePage === 'bid-log'
+                    ? 'active'
+                    : ''
+                }
+                onClick={() => setActivePage('bid-log')}
+              >
+                Bid Log
+              </button>
+            )}
+
+            {canViewManagementWorkspaces && (
+              <button
+                type="button"
+                className={
+                  activePage === 'active-projects'
+                    ? 'active'
+                    : ''
+                }
+                onClick={() => setActivePage('active-projects')}
+              >
+                Projects
+              </button>
+            )}
+
             {canViewCompletedProjects && (
               <button
                 type="button"
@@ -5829,7 +6131,7 @@ export default function App() {
                 }
                 onClick={() => setActivePage('accountability')}
               >
-                Completed Projects
+                Completed Billings
               </button>
             )}
           </nav>
@@ -6057,10 +6359,7 @@ export default function App() {
       </header>
 
 
-      {(
-        activePage === 'projected'
-        || !canViewCompletedProjects
-      ) ? (
+      {activePage === 'projected' ? (
       <main className="page-shell">
         <div className="page-heading">
           <div>
@@ -8411,9 +8710,25 @@ export default function App() {
           </div>
         </section>
       </main>
+      ) : activePage === 'bid-log' ? (
+        <BidLogWorkspace
+          user={user}
+          pmDirectory={[
+            ...currentProjects,
+            ...activeBids,
+          ]}
+        />
+      ) : activePage === 'active-projects' ? (
+        <ActiveProjectsWorkspace
+          user={user}
+        />
       ) : (
         <ProjectAccountability
           user={user}
+          pmDirectory={[
+            ...currentProjects,
+            ...activeBids,
+          ]}
         />
       )}
 
@@ -8433,6 +8748,16 @@ export default function App() {
         onClose={
           () => setSelectedCurrentProject(null)
         }
+        onEditProject={() => {
+          if (!selectedCurrentProject?.jobListId) {
+            return;
+          }
+
+          setEditProjectedProjectId(
+            selectedCurrentProject.jobListId,
+          );
+          setSelectedCurrentProject(null);
+        }}
         onAttentionChanged={
           loadForecastAttention
         }
@@ -8444,9 +8769,51 @@ export default function App() {
         onClose={
           () => setSelectedActiveBid(null)
         }
+        onEditBid={() => {
+          if (!selectedActiveBid?.sharePointItemId) {
+            return;
+          }
+
+          setEditProjectedBidId(
+            selectedActiveBid.sharePointItemId,
+          );
+          setSelectedActiveBid(null);
+        }}
         onBidUpdated={
           handleActiveBidUpdated
         }
+      />
+
+      <ActiveProjectEditDrawer
+        jobListId={editProjectedProjectId}
+        projectSummary={
+          currentProjects.find(
+            project => Number(project.jobListId)
+              === Number(editProjectedProjectId),
+          ) || null
+        }
+        user={user}
+        onClose={() => setEditProjectedProjectId(null)}
+        onSaved={() => {
+          void refreshProjectedCurrentProjectData();
+        }}
+      />
+
+      <BidLogEditDrawer
+        sharePointItemId={editProjectedBidId}
+        user={user}
+        pmOptions={[
+          ...new Set(
+            activeBids
+              .map(row => row.pm)
+              .filter(Boolean),
+          ),
+        ]}
+        onClose={() => setEditProjectedBidId(null)}
+        onSaved={() => {
+          invalidateBidLogWorkspaceCache();
+          void refreshProjectedBidData();
+        }}
       />
     </div>
   );

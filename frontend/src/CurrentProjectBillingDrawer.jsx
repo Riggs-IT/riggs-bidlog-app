@@ -162,6 +162,7 @@ export default function CurrentProjectBillingDrawer({
   monthlyRows,
   user,
   onClose,
+  onEditProject,
   onAttentionChanged,
 }) {
   const [
@@ -222,7 +223,7 @@ export default function CurrentProjectBillingDrawer({
         onPointerDown,
       );
 
-      return () => {
+  return () => {
         document.removeEventListener(
           'pointerdown',
           onPointerDown,
@@ -350,6 +351,17 @@ export default function CurrentProjectBillingDrawer({
       : null;
 
 
+  // Temporary management rollout: master-record editing
+  // remains ADMIN-only until Operations rollout is approved.
+  const canOpenEditor =
+    String(
+      user?.appRole || '',
+    )
+      .trim()
+      .toUpperCase()
+    === 'ADMIN';
+
+
   return (
     <div
       className="billing-drawer-backdrop"
@@ -388,14 +400,26 @@ export default function CurrentProjectBillingDrawer({
             </p>
           </div>
 
-          <button
-            type="button"
-            className="billing-drawer-close"
-            onClick={onClose}
-            aria-label="Close project billing detail"
-          >
-            ×
-          </button>
+          <div className="billing-drawer-header-actions">
+            {canOpenEditor && onEditProject && (
+              <button
+                type="button"
+                className="secondary-button billing-drawer-edit-button"
+                onClick={() => onEditProject()}
+              >
+                Edit Project
+              </button>
+            )}
+
+            <button
+              type="button"
+              className="billing-drawer-close"
+              onClick={onClose}
+              aria-label="Close project billing detail"
+            >
+              ×
+            </button>
+          </div>
         </header>
 
 

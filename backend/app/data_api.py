@@ -555,6 +555,34 @@ def resolve_bid_log_user(
     )
 
 
+def get_bid_log_general_contractors() -> dict:
+    operation = "Bid Log general contractor reference"
+
+    response = _get_service_response(
+        "/v1/bid-log/reference/general-contractors",
+        operation=operation,
+    )
+
+    payload = _json_object(
+        response,
+        operation=operation,
+    )
+
+    items = payload.get("items")
+
+    if not isinstance(items, list):
+        raise DataAPIInvalidResponse(
+            "General contractor reference response is missing its items list."
+        )
+
+    if payload.get("total") != len(items):
+        raise DataAPIInvalidResponse(
+            "General contractor reference response has an invalid total."
+        )
+
+    return payload
+
+
 def get_active_bids(
     *,
     bid_status: str | None = None,
@@ -609,6 +637,82 @@ def get_active_bid_detail(
         response,
         operation=operation,
     )
+
+
+def create_active_bid(
+    payload: dict,
+    *,
+    actor_eid: int,
+    request_id: str,
+) -> dict:
+    operation = "Create Active Bid Log bid"
+
+    try:
+        response = _get_http_client().post(
+            "/v1/bid-log/active",
+            json=payload,
+            headers=_request_headers(
+                include_service_auth=True,
+                request_id=request_id,
+                actor_eid=actor_eid,
+            ),
+        )
+
+    except httpx.TimeoutException as exc:
+        raise DataAPIUnavailable(
+            "Riggs Data API request timed out "
+            f"during {operation}."
+        ) from exc
+
+    except httpx.RequestError as exc:
+        raise DataAPIUnavailable(
+            "Unable to connect to the Riggs Data API "
+            f"during {operation}."
+        ) from exc
+
+    if response.status_code in {
+        400,
+        403,
+        422,
+    }:
+        detail = _detail(response)
+
+        if detail is None:
+            detail = (
+                "invalid_active_bid_create"
+                if response.status_code in {400, 422}
+                else "active_bid_create_rejected"
+            )
+
+        raise DataAPIRequestRejected(
+            response.status_code,
+            detail,
+        )
+
+    _raise_common_failure(
+        response,
+        operation=operation,
+    )
+
+    if response.status_code != 201:
+        raise DataAPIInvalidResponse(
+            "Unexpected Riggs Data API response "
+            f"during {operation}."
+        )
+
+    result = _json_object(
+        response,
+        operation=operation,
+    )
+
+    _dashboard_cache_invalidate_prefix(
+        "active_bid_list:",
+    )
+    _dashboard_cache_invalidate_key(
+        "active_bid_dashboard",
+    )
+
+    return result
 
 
 def update_active_bid(
@@ -675,11 +779,307 @@ def update_active_bid(
             f"during {operation}."
         )
 
+    result = _json_object(
+        response,
+        operation=operation,
+    )
+
+    # Active Bid edits can change values shown in both the
+    # Bid Log list and the projected-billings dashboard. Keep
+    # detail reads uncached so a newly opened editor always
+    # receives a fresh ETag.
+    _dashboard_cache_invalidate_prefix(
+        "active_bid_list:",
+    )
+    _dashboard_cache_invalidate_key(
+        "active_bid_dashboard",
+    )
+
+    return result
+
+
+
+def get_bid_log_outcome_bids(
+    *,
+    bid_status: str,
+) -> dict:
+    """Return the full decided-bid population for one lifecycle status."""
+
+    operation = f"Bid Log {bid_status} list"
+    page_size = 500
+    offset = 0
+    items: list[dict] = []
+    total: int | None = None
+
+    while total is None or offset < total:
+        response = _get_service_response(
+            "/v1/bid-log/bids",
+            operation=operation,
+            params={
+                "status": bid_status,
+                "limit": page_size,
+                "offset": offset,
+            },
+        )
+
+        payload = _json_object(
+            response,
+            operation=operation,
+        )
+
+        page_items = payload.get("items")
+
+        if not isinstance(page_items, list):
+            raise DataAPIInvalidResponse(
+                "Historical Bid Log response is missing its items list."
+            )
+
+        try:
+            page_total = int(payload.get("total"))
+        except (TypeError, ValueError) as exc:
+            raise DataAPIInvalidResponse(
+                "Historical Bid Log response has an invalid total."
+            ) from exc
+
+        if page_total < 0:
+            raise DataAPIInvalidResponse(
+                "Historical Bid Log response has an invalid total."
+            )
+
+        if total is None:
+            total = page_total
+        elif page_total != total:
+            raise DataAPIInvalidResponse(
+                "Historical Bid Log total changed while paging."
+            )
+
+        items.extend(page_items)
+
+        if not page_items:
+            break
+
+        offset += len(page_items)
+
+        if len(page_items) < page_size:
+            break
+
+    resolved_total = total or 0
+
+    return {
+        "items": items,
+        "total": resolved_total,
+        "limit": len(items),
+        "offset": 0,
+    }
+
+
+def get_bid_log_outcome_detail(
+    original_bid_log_id: int,
+    *,
+    bid_status: str,
+) -> dict:
+    operation = f"Bid Log {bid_status} outcome detail"
+
+    response = _get_service_response(
+        f"/v1/bid-log/outcomes/{original_bid_log_id}",
+        operation=operation,
+        params={"status": bid_status},
+        resource_not_found=True,
+    )
+
     return _json_object(
         response,
         operation=operation,
     )
 
+
+def update_bid_log_outcome(
+    original_bid_log_id: int,
+    payload: dict,
+    *,
+    actor_eid: int,
+    request_id: str,
+) -> dict:
+    operation = "Update decided Bid Log bid"
+
+    try:
+        response = _get_http_client().patch(
+            f"/v1/bid-log/outcomes/{original_bid_log_id}",
+            json=payload,
+            headers=_request_headers(
+                include_service_auth=True,
+                request_id=request_id,
+                actor_eid=actor_eid,
+            ),
+        )
+
+    except httpx.TimeoutException as exc:
+        raise DataAPIUnavailable(
+            "Riggs Data API request timed out "
+            f"during {operation}."
+        ) from exc
+
+    except httpx.RequestError as exc:
+        raise DataAPIUnavailable(
+            "Unable to connect to the Riggs Data API "
+            f"during {operation}."
+        ) from exc
+
+    if response.status_code in {
+        400,
+        403,
+        404,
+        409,
+        422,
+    }:
+        detail = _detail(response)
+
+        if detail is None:
+            detail = (
+                "invalid_bid_log_outcome_update"
+                if response.status_code in {400, 422}
+                else "bid_log_outcome_update_rejected"
+            )
+
+        raise DataAPIRequestRejected(
+            response.status_code,
+            detail,
+        )
+
+    _raise_common_failure(
+        response,
+        operation=operation,
+    )
+
+    if response.status_code != 200:
+        raise DataAPIInvalidResponse(
+            "Unexpected Riggs Data API response "
+            f"during {operation}."
+        )
+
+    return _json_object(
+        response,
+        operation=operation,
+    )
+
+
+def get_active_project_detail(
+    job_list_id: int,
+) -> dict:
+    operation = "Active Project detail"
+
+    response = _get_service_response(
+        f"/v1/jobs/{job_list_id}/detail",
+        operation=operation,
+        resource_not_found=True,
+    )
+
+    return _json_object(
+        response,
+        operation=operation,
+    )
+
+
+def get_active_project_cognito_detail(
+    job_list_id: int,
+) -> dict:
+    operation = "Active Project Cognito detail"
+
+    response = _get_service_response(
+        f"/v1/jobs/{job_list_id}/cognito-detail",
+        operation=operation,
+        resource_not_found=True,
+    )
+
+    return _json_object(
+        response,
+        operation=operation,
+    )
+
+
+def update_active_project(
+    job_list_id: int,
+    payload: dict,
+    *,
+    actor_eid: int,
+    request_id: str,
+) -> dict:
+    operation = "Update Active Project"
+
+    try:
+        response = _get_http_client().put(
+            f"/v1/jobs/{job_list_id}",
+            json=payload,
+            headers=_request_headers(
+                include_service_auth=True,
+                request_id=request_id,
+                actor_eid=actor_eid,
+            ),
+        )
+
+    except httpx.TimeoutException as exc:
+        raise DataAPIUnavailable(
+            "Riggs Data API request timed out "
+            f"during {operation}."
+        ) from exc
+
+    except httpx.RequestError as exc:
+        raise DataAPIUnavailable(
+            "Unable to connect to the Riggs Data API "
+            f"during {operation}."
+        ) from exc
+
+    if response.status_code in {
+        400,
+        403,
+        404,
+        409,
+        422,
+    }:
+        detail = _detail(response)
+
+        if detail is None:
+            detail = (
+                "invalid_active_project_update"
+                if response.status_code == 422
+                else "active_project_update_rejected"
+            )
+
+        raise DataAPIRequestRejected(
+            response.status_code,
+            detail,
+        )
+
+    _raise_common_failure(
+        response,
+        operation=operation,
+    )
+
+    if response.status_code != 200:
+        raise DataAPIInvalidResponse(
+            "Unexpected Riggs Data API response "
+            f"during {operation}."
+        )
+
+    result = _json_object(
+        response,
+        operation=operation,
+    )
+
+    # Job master-data edits can change the Current Project summary and
+    # projected monthly allocation. Force the next list/dashboard read to
+    # reload SQL instead of serving the pre-edit process cache.
+    _dashboard_cache_invalidate_key(
+        "current_project_summary",
+    )
+    _dashboard_cache_invalidate_key(
+        "current_project_monthly_bulk",
+    )
+    _dashboard_cache_invalidate_key(
+        "completed_projects",
+    )
+
+    return result
 
 def get_current_projected_billings() -> list[dict]:
     operation = "Current Project projected billings"
@@ -2067,11 +2467,12 @@ def get_active_bid_dashboard() -> dict:
 # ============================================================
 # DASHBOARD READ CACHE
 #
-# Short-lived process-local cache for the three expensive
-# portfolio/dashboard datasets.
+# Short-lived process-local cache for expensive portfolio and
+# list datasets.
 #
-# Direct project detail, PM Forecast, history, writes, auth,
-# health, etc. remain uncached.
+# Direct project/bid detail, PM Forecast, history, writes, auth,
+# health, etc. remain uncached. Bid detail intentionally stays
+# fresh so edit drawers always receive the latest ETag.
 #
 # Cache is process-local by design. Multiple Cloud Run
 # instances may each hold their own <=30 second copy.
@@ -2226,12 +2627,47 @@ def _dashboard_cached(
         return value
 
 
+def _dashboard_cache_invalidate_key(
+    key: str,
+) -> None:
+    with _dashboard_cache_guard:
+        _dashboard_cache_values.pop(
+            key,
+            None,
+        )
+
+
+def _dashboard_cache_invalidate_prefix(
+    prefix: str,
+) -> None:
+    with _dashboard_cache_guard:
+        keys = [
+            key
+            for key in _dashboard_cache_values
+            if key.startswith(prefix)
+        ]
+
+        for key in keys:
+            _dashboard_cache_values.pop(
+                key,
+                None,
+            )
+
+
 # ============================================================
-# Wrap only the three portfolio-load functions.
+# Wrap the expensive portfolio/list load functions.
 #
 # Preserve the original implementations for direct invocation
 # and easy rollback/debugging.
 # ============================================================
+
+_uncached_get_active_bids = (
+    get_active_bids
+)
+
+_uncached_get_completed_projects = (
+    get_completed_projects
+)
 
 _uncached_get_current_projected_billings = (
     get_current_projected_billings
@@ -2244,6 +2680,53 @@ _uncached_get_current_projects_monthly_bulk = (
 _uncached_get_active_bid_dashboard = (
     get_active_bid_dashboard
 )
+
+
+def get_active_bids(
+    *,
+    bid_status: str | None = None,
+    search: str | None = None,
+    limit: int = 500,
+    offset: int = 0,
+) -> dict:
+    normalized_status = (
+        bid_status.strip()
+        if bid_status is not None
+        else ""
+    )
+    normalized_search = (
+        search.strip()
+        if search is not None
+        else ""
+    )
+
+    key = (
+        "active_bid_list:"
+        f"{normalized_status!r}:"
+        f"{normalized_search!r}:"
+        f"{limit}:{offset}"
+    )
+
+    return _dashboard_cached(
+        key,
+        lambda: _uncached_get_active_bids(
+            bid_status=(
+                normalized_status or None
+            ),
+            search=(
+                normalized_search or None
+            ),
+            limit=limit,
+            offset=offset,
+        ),
+    )
+
+
+def get_completed_projects() -> list[dict]:
+    return _dashboard_cached(
+        "completed_projects",
+        _uncached_get_completed_projects,
+    )
 
 
 def get_current_projected_billings(

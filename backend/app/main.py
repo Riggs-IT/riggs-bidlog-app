@@ -44,11 +44,19 @@ from .data_api import (
     check_data_api_ready,
     get_active_bid_dashboard,
     get_active_bid_detail,
+    create_active_bid,
     get_active_bid_monthly,
     get_active_bid_projected_billings,
     get_active_bids,
+    get_bid_log_outcome_bids,
+    get_bid_log_outcome_detail,
+    get_active_project_detail,
+    get_active_project_cognito_detail,
+    get_bid_log_general_contractors,
     save_active_bid_projected_billing_settings,
     update_active_bid,
+    update_bid_log_outcome,
+    update_active_project,
     get_current_project_monthly,
     get_current_projected_billings,
     get_current_projects_monthly_bulk,
@@ -385,6 +393,66 @@ def _raise_active_bid_proxy_error(
     raise exc
 
 
+
+def _raise_active_project_proxy_error(
+    exc: Exception,
+) -> None:
+    if isinstance(exc, DataAPIRequestRejected):
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=exc.detail,
+        ) from exc
+
+    if isinstance(exc, DataAPIEdgeRejected):
+        raise HTTPException(
+            status_code=503,
+            detail="data_api_cloudflare_access_rejected",
+        ) from exc
+
+    if isinstance(exc, DataAPIServiceAuthRejected):
+        raise HTTPException(
+            status_code=503,
+            detail="data_api_bid_log_service_auth_rejected",
+        ) from exc
+
+    if isinstance(exc, DataAPISQLCapacityUnavailable):
+        raise HTTPException(
+            status_code=503,
+            detail="sql_capacity_unavailable",
+        ) from exc
+
+    if isinstance(exc, DataAPISQLUnavailable):
+        raise HTTPException(
+            status_code=503,
+            detail="sql_unavailable",
+        ) from exc
+
+    if isinstance(exc, DataAPIConfigurationError):
+        raise HTTPException(
+            status_code=503,
+            detail="data_api_not_configured",
+        ) from exc
+
+    if isinstance(exc, DataAPIResourceNotFound):
+        raise HTTPException(
+            status_code=404,
+            detail="active_project_not_found",
+        ) from exc
+
+    if isinstance(exc, DataAPIInvalidResponse):
+        raise HTTPException(
+            status_code=502,
+            detail="invalid_data_api_response",
+        ) from exc
+
+    if isinstance(exc, DataAPIUnavailable):
+        raise HTTPException(
+            status_code=503,
+            detail="data_api_unavailable",
+        ) from exc
+
+    raise exc
+
 def _can_edit_bid_log(
     current_user: CurrentUser,
 ) -> bool:
@@ -403,6 +471,23 @@ def _require_bid_log_editor(
         raise HTTPException(
             status_code=403,
             detail="bid_log_user_not_authorized",
+        )
+
+
+def _require_management_workspace_admin(
+    current_user: CurrentUser,
+) -> None:
+    """Temporary controlled rollout for Bid Log / Projects workspaces."""
+    role = (
+        str(current_user.app_role or "")
+        .strip()
+        .upper()
+    )
+
+    if role != "ADMIN":
+        raise HTTPException(
+            status_code=403,
+            detail="bid_log_admin_required",
         )
 
 
@@ -1052,9 +1137,188 @@ def projected_billings_current_project_monthly(
         )
 
 
+
+# ============================================================
+# ACTIVE PROJECTS WORKSPACE
+# ============================================================
+
+@app.get(
+    "/api/active-projects"
+)
+def active_projects_list_proxy(
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    _require_management_workspace_admin(current_user)
+
+    try:
+        return _role_scoped_financial_payload(
+            get_current_projected_billings(),
+            current_user,
+        )
+
+    except Exception as exc:
+        _raise_active_project_proxy_error(exc)
+
+
+@app.get(
+    "/api/projects/completed-directory"
+)
+def completed_project_directory_proxy(
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    _require_management_workspace_admin(current_user)
+
+    """Return completed projects as project-directory metadata only.
+
+    Keep completed-project financial/accountability fields out of the
+    general Projects workspace. The full completed-project endpoint remains
+    available to its dedicated reporting view.
+    """
+    try:
+        rows = get_completed_projects()
+
+        return [
+            {
+                "jobListId": row.get("jobListId"),
+                "jobNumber": row.get("jobNumber"),
+                "jobName": row.get("jobName"),
+                "generalContractors": row.get("generalContractor"),
+                "pm": row.get("projectManager"),
+                "apm": row.get("apm"),
+                "pe": row.get("projectEngineer"),
+                "superintendent": row.get("superintendent"),
+                "projectType": row.get("projectType"),
+                "purpose": row.get("purpose"),
+                "effectiveStartDate": row.get("resolvedStartDate"),
+                "projectedCompletionDate": row.get("resolvedEndDate"),
+                "originalContractAmount": row.get("contractAmount"),
+                "projectCompleted": True,
+                "dateCompleted": (
+                    row.get("operationsCompletionDate")
+                    or row.get("resolvedEndDate")
+                ),
+            }
+            for row in rows
+        ]
+
+    except Exception as exc:
+        _raise_active_project_proxy_error(exc)
+
+
+@app.get(
+    "/api/active-projects/{job_list_id}"
+)
+def active_project_detail_proxy(
+    job_list_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    _require_management_workspace_admin(current_user)
+
+    try:
+        return get_active_project_detail(
+            job_list_id
+        )
+
+    except Exception as exc:
+        _raise_active_project_proxy_error(exc)
+
+
+@app.get(
+    "/api/active-projects/{job_list_id}/cognito-detail"
+)
+def active_project_cognito_detail_proxy(
+    job_list_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    _require_management_workspace_admin(current_user)
+
+    try:
+        return get_active_project_cognito_detail(
+            job_list_id
+        )
+
+    except Exception as exc:
+        _raise_active_project_proxy_error(exc)
+
+
+@app.put(
+    "/api/active-projects/{job_list_id}"
+)
+async def active_project_update_proxy(
+    request: Request,
+    job_list_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    _require_management_workspace_admin(current_user)
+    _require_bid_log_editor(current_user)
+
+    try:
+        payload = await request.json()
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_json_body",
+        ) from exc
+
+    if not isinstance(payload, dict):
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_active_project_update",
+        )
+
+    try:
+        # Browser-supplied actor identity is never trusted. The current
+        # authenticated Bid Log session supplies the EID server-to-server.
+        return update_active_project(
+            job_list_id,
+            payload,
+            actor_eid=current_user.eid,
+            request_id=_browser_request_id(request),
+        )
+
+    except Exception as exc:
+        _raise_active_project_proxy_error(exc)
+
 # ============================================================
 # ACTIVE BID LOG WORKSPACE
 # ============================================================
+
+@app.get(
+    "/api/bid-log/reference/general-contractors"
+)
+def bid_log_general_contractors_proxy(
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    _require_management_workspace_admin(current_user)
+    _require_bid_log_editor(current_user)
+
+    try:
+        return get_bid_log_general_contractors()
+
+    except Exception as exc:
+        _raise_active_bid_proxy_error(exc)
+
 
 @app.get(
     "/api/bid-log/active"
@@ -1068,6 +1332,8 @@ def bid_log_active_list_proxy(
         get_current_user
     ),
 ):
+    _require_management_workspace_admin(current_user)
+
     try:
         return _role_scoped_bid_log_payload(
             get_active_bids(
@@ -1075,6 +1341,47 @@ def bid_log_active_list_proxy(
                 search=search,
                 limit=limit,
                 offset=offset,
+            ),
+            current_user,
+        )
+
+    except Exception as exc:
+        _raise_active_bid_proxy_error(exc)
+
+
+@app.post(
+    "/api/bid-log/active",
+    status_code=201,
+)
+async def bid_log_active_create_proxy(
+    request: Request,
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    _require_management_workspace_admin(current_user)
+    _require_bid_log_editor(current_user)
+
+    try:
+        payload = await request.json()
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_json_body",
+        ) from exc
+
+    if not isinstance(payload, dict):
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_active_bid_create",
+        )
+
+    try:
+        return _role_scoped_bid_log_payload(
+            create_active_bid(
+                payload,
+                actor_eid=current_user.eid,
+                request_id=_browser_request_id(request),
             ),
             current_user,
         )
@@ -1095,6 +1402,8 @@ def bid_log_active_detail_proxy(
         get_current_user
     ),
 ):
+    _require_management_workspace_admin(current_user)
+
     try:
         return _role_scoped_bid_log_payload(
             get_active_bid_detail(sharepoint_item_id),
@@ -1118,6 +1427,7 @@ async def bid_log_active_update_proxy(
         get_current_user
     ),
 ):
+    _require_management_workspace_admin(current_user)
     _require_bid_log_editor(current_user)
 
     try:
@@ -1140,6 +1450,106 @@ async def bid_log_active_update_proxy(
         return _role_scoped_bid_log_payload(
             update_active_bid(
                 sharepoint_item_id,
+                payload,
+                actor_eid=current_user.eid,
+                request_id=_browser_request_id(request),
+            ),
+            current_user,
+        )
+
+    except Exception as exc:
+        _raise_active_bid_proxy_error(exc)
+
+
+# ============================================================
+# DECIDED / OUTCOME BID LOG WORKSPACE
+# ============================================================
+
+@app.get(
+    "/api/bid-log/outcomes"
+)
+def bid_log_outcome_list_proxy(
+    status: str = FastAPIQuery(..., min_length=1, max_length=100),
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    _require_management_workspace_admin(current_user)
+
+    try:
+        return _role_scoped_bid_log_payload(
+            get_bid_log_outcome_bids(
+                bid_status=status,
+            ),
+            current_user,
+        )
+
+    except Exception as exc:
+        _raise_active_bid_proxy_error(exc)
+
+
+@app.get(
+    "/api/bid-log/outcomes/{original_bid_log_id}"
+)
+def bid_log_outcome_detail_proxy(
+    original_bid_log_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    status: str = FastAPIQuery(..., min_length=1, max_length=100),
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    _require_management_workspace_admin(current_user)
+
+    try:
+        return _role_scoped_bid_log_payload(
+            get_bid_log_outcome_detail(
+                original_bid_log_id,
+                bid_status=status,
+            ),
+            current_user,
+        )
+
+    except Exception as exc:
+        _raise_active_bid_proxy_error(exc)
+
+
+@app.patch(
+    "/api/bid-log/outcomes/{original_bid_log_id}"
+)
+async def bid_log_outcome_update_proxy(
+    request: Request,
+    original_bid_log_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    _require_management_workspace_admin(current_user)
+    _require_bid_log_editor(current_user)
+
+    try:
+        payload = await request.json()
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_json_body",
+        ) from exc
+
+    if not isinstance(payload, dict):
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_bid_log_outcome_update",
+        )
+
+    try:
+        return _role_scoped_bid_log_payload(
+            update_bid_log_outcome(
+                original_bid_log_id,
                 payload,
                 actor_eid=current_user.eid,
                 request_id=_browser_request_id(request),
