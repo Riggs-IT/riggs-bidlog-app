@@ -873,6 +873,10 @@ async def auth_callback(
         "entra_identity"
     ] = identity
 
+    request.session[
+        "session_revision"
+    ] = settings.session_revision
+
     if delegated_session_id:
         request.session[
             "delegated_session_id"

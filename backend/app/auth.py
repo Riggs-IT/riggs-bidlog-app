@@ -234,6 +234,29 @@ def resolve_entra_user(
     )
 
 
+def _enforce_session_revision(
+    request: Request,
+) -> None:
+
+    session_revision = str(
+        request.session.get(
+            "session_revision"
+        )
+        or ""
+    ).strip()
+
+    if (
+        session_revision
+        != settings.session_revision
+    ):
+        request.session.clear()
+
+        raise HTTPException(
+            status_code=401,
+            detail="application_updated",
+        )
+
+
 def _enforce_idle_timeout(
     request: Request,
 ) -> None:
@@ -296,6 +319,11 @@ def get_current_user(
     identity = request.session.get(
         "entra_identity"
     )
+
+    if identity:
+        _enforce_session_revision(
+            request
+        )
 
     if not identity:
         raise HTTPException(

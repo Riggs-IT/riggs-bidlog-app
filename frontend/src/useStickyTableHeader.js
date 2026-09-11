@@ -180,21 +180,6 @@ export default function useStickyTableHeader(
       let frame =
         null;
 
-      let controlsIdleTimer =
-        null;
-
-
-      const hideFloatingControls =
-        () => {
-          floating.classList.remove(
-            'controls-visible'
-          );
-
-          controlsIdleTimer =
-            null;
-        };
-
-
       const showFloatingControls =
         () => {
           if (!floatingControls) {
@@ -204,20 +189,206 @@ export default function useStickyTableHeader(
           floating.classList.add(
             'controls-visible'
           );
+        };
+
+
+      const syncHorizontalControls =
+        () => {
+          if (!controls) {
+            return;
+          }
+
+          const maxScroll =
+            Math.max(
+              0,
+              wrapper.scrollWidth
+                - wrapper.clientWidth,
+            );
+
+          [
+            controls,
+            floatingControls,
+          ]
+            .filter(Boolean)
+            .forEach(
+              controlRoot => {
+                const range =
+                  controlRoot.querySelector(
+                    '[data-table-horizontal-scroll]'
+                  );
+
+                if (!range) {
+                  return;
+                }
+
+                range.max =
+                  String(maxScroll);
+
+                range.value =
+                  String(
+                    Math.min(
+                      maxScroll,
+                      Math.max(
+                        0,
+                        wrapper.scrollLeft,
+                      ),
+                    )
+                  );
+
+                range.disabled =
+                  maxScroll <= 0;
+
+                controlRoot.classList.toggle(
+                  'horizontal-scroll-disabled',
+                  maxScroll <= 0,
+                );
+              }
+            );
+        };
+
+
+      const horizontalScrollStep =
+        () => {
+          const monthCell =
+            header.querySelector(
+              '.pivot-month-column'
+            );
+
+          return Math.max(
+            90,
+            monthCell
+              ?.getBoundingClientRect()
+              .width
+              || 112,
+          );
+        };
+
+
+      const handleHorizontalControlInput =
+        event => {
+          const range =
+            event.target.closest(
+              '[data-table-horizontal-scroll]'
+            );
+
+          if (!range) {
+            return;
+          }
+
+          wrapper.scrollLeft =
+            Number(range.value) || 0;
+
+          scheduleUpdate();
+        };
+
+
+      const handleHorizontalControlClick =
+        event => {
+          const button =
+            event.target.closest(
+              '[data-table-horizontal-scroll-step]'
+            );
+
+          if (!button) {
+            return;
+          }
+
+          const direction =
+            Number(
+              button.getAttribute(
+                'data-table-horizontal-scroll-step'
+              )
+            ) || 0;
+
+          wrapper.scrollBy({
+            left:
+              horizontalScrollStep()
+              * direction,
+            behavior: 'smooth',
+          });
+
+          showFloatingControls();
+        };
+
+
+      let floatingContentDirty =
+        true;
+
+
+      const sanitizeFloatingContent =
+        root => {
+          if (!root) {
+            return;
+          }
+
+          root
+            .querySelectorAll('[id]')
+            .forEach(
+              element =>
+                element.removeAttribute(
+                  'id'
+                )
+            );
+
+          root
+            .querySelectorAll(
+              'button, a, input, select'
+            )
+            .forEach(
+              element => {
+                element.tabIndex = -1;
+              }
+            );
+        };
+
+
+      const syncFloatingContent =
+        () => {
+          if (!floatingContentDirty) {
+            return;
+          }
+
+          /*
+            The sticky header is a detached DOM copy.
+
+            React updates the real header when async billing
+            data arrives. Refresh the detached copy from the
+            real DOM instead of relying on the original clone.
+          */
+          floatingHeader.replaceChildren(
+            ...Array.from(
+              header.childNodes
+            ).map(
+              node =>
+                node.cloneNode(true)
+            )
+          );
+
+          sanitizeFloatingContent(
+            floatingHeader
+          );
+
 
           if (
-            controlsIdleTimer !== null
+            controls
+            && floatingControls
           ) {
-            window.clearTimeout(
-              controlsIdleTimer
+            floatingControls.replaceChildren(
+              ...Array.from(
+                controls.childNodes
+              ).map(
+                node =>
+                  node.cloneNode(true)
+              )
+            );
+
+            sanitizeFloatingContent(
+              floatingControls
             );
           }
 
-          controlsIdleTimer =
-            window.setTimeout(
-              hideFloatingControls,
-              1200,
-            );
+          floatingContentDirty =
+            false;
         };
 
 
@@ -265,6 +436,8 @@ export default function useStickyTableHeader(
           frame =
             null;
 
+          syncFloatingContent();
+
           const wrapperRect =
             wrapper
               .getBoundingClientRect();
@@ -305,6 +478,10 @@ export default function useStickyTableHeader(
             && tableRect.bottom
               > top
                 + headerRect.height;
+
+
+          syncHorizontalControls();
+
 
           if (!shouldShow) {
             floating.classList.remove(
@@ -366,6 +543,8 @@ export default function useStickyTableHeader(
           floating.classList.add(
             'visible'
           );
+
+          showFloatingControls();
         };
 
 
@@ -475,6 +654,17 @@ export default function useStickyTableHeader(
         };
 
 
+      const contentObserver =
+        new MutationObserver(
+          () => {
+            floatingContentDirty =
+              true;
+
+            scheduleUpdate();
+          }
+        );
+
+
       const resizeObserver =
         new ResizeObserver(
           scheduleUpdate
@@ -487,6 +677,29 @@ export default function useStickyTableHeader(
       resizeObserver.observe(
         table
       );
+
+
+      contentObserver.observe(
+        header,
+        {
+          subtree: true,
+          childList: true,
+          characterData: true,
+          attributes: true,
+        },
+      );
+
+      if (controls) {
+        contentObserver.observe(
+          controls,
+          {
+            subtree: true,
+            childList: true,
+            characterData: true,
+            attributes: true,
+          },
+        );
+      }
 
 
       window.addEventListener(
@@ -526,6 +739,21 @@ export default function useStickyTableHeader(
         },
       );
 
+      controls?.addEventListener(
+        'input',
+        handleHorizontalControlInput,
+      );
+
+      controls?.addEventListener(
+        'click',
+        handleHorizontalControlClick,
+      );
+
+      floatingControls?.addEventListener(
+        'input',
+        handleHorizontalControlInput,
+      );
+
       floating.addEventListener(
         'click',
         forwardFloatingClick,
@@ -542,16 +770,8 @@ export default function useStickyTableHeader(
           );
         }
 
-        if (
-          controlsIdleTimer !== null
-        ) {
-          window.clearTimeout(
-            controlsIdleTimer
-          );
-        }
-
-
         resizeObserver.disconnect();
+        contentObserver.disconnect();
 
 
         window.removeEventListener(
@@ -577,6 +797,21 @@ export default function useStickyTableHeader(
         floating.removeEventListener(
           'pointerenter',
           handlePointerEnter,
+        );
+
+        controls?.removeEventListener(
+          'input',
+          handleHorizontalControlInput,
+        );
+
+        controls?.removeEventListener(
+          'click',
+          handleHorizontalControlClick,
+        );
+
+        floatingControls?.removeEventListener(
+          'input',
+          handleHorizontalControlInput,
         );
 
         floating.removeEventListener(

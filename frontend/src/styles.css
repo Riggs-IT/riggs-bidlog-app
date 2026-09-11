@@ -7308,7 +7308,7 @@ tbody td {
 
 .floating-table-header.controls-visible
 .floating-table-controls.project-pivot-toolbar {
-  max-height: 42px;
+  max-height: 56px;
 
   padding:
     5px
@@ -10876,12 +10876,27 @@ td.pivot-project-column {
   align-items: flex-end;
 }
 
+.bid-log-heading-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.bid-log-heading-title-row h1 {
+  margin-right: 2px;
+}
+
 .bid-log-workspace-count {
-  min-width: 150px;
-  display: grid;
-  justify-items: end;
-  gap: 1px;
-  padding-bottom: 2px;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-2) 90%, transparent);
+  white-space: nowrap;
 }
 
 .bid-log-workspace-count span,
@@ -10890,18 +10905,26 @@ td.pivot-project-column {
 }
 
 .bid-log-workspace-count span {
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 800;
   letter-spacing: 0.1em;
 }
 
 .bid-log-workspace-count strong {
-  font-size: 28px;
+  color: var(--text);
+  font-size: 14px;
   line-height: 1;
 }
 
 .bid-log-workspace-count small {
   font-size: 10px;
+  font-weight: 650;
+}
+
+.bid-log-heading-actions {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
 }
 
 .bid-log-summary-grid {
@@ -11345,8 +11368,17 @@ td.pivot-project-column {
     align-items: flex-start;
   }
 
+  .bid-log-heading-title-row {
+    gap: 9px;
+  }
+
   .bid-log-workspace-count {
-    justify-items: start;
+    min-height: 28px;
+  }
+
+  .bid-log-heading-actions,
+  .bid-log-new-bid-button-header {
+    width: 100%;
   }
 
   .bid-log-summary-grid,
@@ -12850,40 +12882,53 @@ td.pivot-project-column {
 }
 
 .bid-log-new-bid-button {
-  min-height: 34px;
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 12px;
-  border: 1px solid color-mix(in srgb, var(--accent) 46%, var(--border));
-  border-radius: 9px;
-  background: color-mix(in srgb, var(--accent-soft) 34%, var(--surface-2));
+  justify-content: center;
+  gap: 9px;
+  padding: 8px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 58%, var(--border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent-soft) 42%, var(--surface-2));
   color: var(--text);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 5%, transparent);
   font: inherit;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.045em;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
   cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    transform 120ms ease;
+}
+
+.bid-log-new-bid-button-header {
+  min-height: 42px;
+  padding: 9px 16px 9px 11px;
 }
 
 .bid-log-new-bid-button:hover,
 .bid-log-new-bid-button:focus-visible {
-  border-color: color-mix(in srgb, var(--accent) 72%, var(--border-strong));
-  background: color-mix(in srgb, var(--accent-soft) 54%, var(--surface-2));
+  border-color: color-mix(in srgb, var(--accent) 82%, var(--border-strong));
+  background: color-mix(in srgb, var(--accent-soft) 62%, var(--surface-2));
+  transform: translateY(-1px);
 }
 
 .bid-log-new-bid-plus {
   display: inline-grid;
   place-items: center;
-  width: 18px;
-  height: 18px;
-  border: 1px solid color-mix(in srgb, var(--accent) 66%, var(--border));
-  border-radius: 5px;
+  width: 22px;
+  height: 22px;
+  border: 1px solid color-mix(in srgb, var(--accent) 72%, var(--border));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
   color: var(--accent);
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 17px;
+  font-weight: 750;
   line-height: 1;
 }
 
@@ -13139,4 +13184,205 @@ td.pivot-project-column {
     left: 16px;
     width: auto;
   }
+}
+
+
+/* ============================================================
+   PROJECT PIVOT - COMPACT MONTH NAVIGATION
+   ============================================================ */
+
+.project-pivot-toolbar {
+  flex-wrap: wrap;
+}
+
+
+.project-pivot-month-scroll {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 5px;
+
+  min-height: 33px;
+
+  padding:
+    3px
+    6px;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 8px;
+
+  background:
+    var(--surface-2);
+}
+
+
+.project-pivot-month-scroll-label {
+  margin-right: 2px;
+
+  color:
+    var(--muted);
+
+  font-size: 9px;
+  font-weight: 750;
+
+  letter-spacing: 0.055em;
+
+  text-transform: uppercase;
+}
+
+
+.project-pivot-month-scroll-button {
+  width: 25px;
+  height: 25px;
+
+  display: inline-grid;
+  place-items: center;
+
+  padding: 0;
+
+  border:
+    1px solid
+    transparent;
+
+  border-radius: 5px;
+
+  background:
+    transparent;
+
+  color:
+    var(--text-soft);
+
+  font: inherit;
+  font-size: 17px;
+  font-weight: 800;
+
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+
+.project-pivot-month-scroll-button:hover {
+  border-color:
+    var(--border);
+
+  background:
+    var(--surface-3);
+
+  color:
+    var(--text);
+}
+
+
+.project-pivot-month-scroll-range {
+  width: 150px;
+  height: 18px;
+
+  margin: 0;
+
+  accent-color:
+    var(--accent);
+
+  cursor: ew-resize;
+}
+
+
+.project-pivot-toolbar.horizontal-scroll-disabled
+.project-pivot-month-scroll {
+  opacity: 0.45;
+}
+
+
+.project-pivot-toolbar.horizontal-scroll-disabled
+.project-pivot-month-scroll-button,
+.project-pivot-toolbar.horizontal-scroll-disabled
+.project-pivot-month-scroll-range {
+  cursor: default;
+}
+
+
+/*
+   Keep the table horizontally scrollable with a trackpad,
+   mouse gesture, or the new Values control, but remove the
+   old bottom scrollbar.
+*/
+
+.project-pivot-wrap {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+
+.project-pivot-wrap::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+
+.floating-table-controls
+.project-pivot-month-scroll {
+  background:
+    var(--surface-3);
+}
+
+
+@media (max-width: 760px) {
+  .project-pivot-month-scroll-range {
+    width: 110px;
+  }
+}
+
+
+@media print {
+  .project-pivot-month-scroll {
+    display: none !important;
+  }
+}
+
+
+/* ============================================================
+   PROJECT PIVOT - HEADER TOTALS
+   ============================================================ */
+
+.pivot-header-total {
+  display: grid;
+  justify-items: end;
+
+  gap: 3px;
+
+  min-width: 0;
+}
+
+
+.pivot-header-total-label {
+  line-height: 1.05;
+
+  white-space: nowrap;
+}
+
+
+.pivot-header-total-value {
+  color:
+    var(--accent);
+
+  font-size: 9px;
+  font-weight: 800;
+
+  letter-spacing: 0;
+  line-height: 1;
+
+  text-transform: none;
+  white-space: nowrap;
+}
+
+
+.table-sort-button:hover
+.pivot-header-total-value,
+.table-sort-button.active
+.pivot-header-total-value {
+  color:
+    var(--text);
 }

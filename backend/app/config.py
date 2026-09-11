@@ -54,6 +54,21 @@ class Settings(BaseSettings):
         )
 
     @property
+    def session_revision(self) -> str:
+        cloud_run_revision = (
+            os.getenv("K_REVISION", "")
+            .strip()
+        )
+
+        if cloud_run_revision:
+            return cloud_run_revision
+
+        return (
+            self.app_version.strip()
+            or "development"
+        )
+
+    @property
     def entra_metadata_url(self) -> str:
         return (
             "https://login.microsoftonline.com/"

@@ -1870,24 +1870,44 @@ export default function BidLogWorkspace({
             BID LOG
           </div>
 
-          <h1>
-            {currentView.title}
-          </h1>
+          <div className="bid-log-heading-title-row">
+            <h1>
+              {currentView.title}
+            </h1>
+
+            <div
+              className="bid-log-workspace-count"
+              aria-label={
+                `Showing ${visibleItems.length} of ${filteredItems.length} matching bids`
+              }
+            >
+              <span>SHOWING</span>
+              <strong>{visibleItems.length}</strong>
+              <small>
+                {filteredItems.length === items.length
+                  ? `of ${items.length}`
+                  : `of ${filteredItems.length} matching · ${items.length} total`}
+              </small>
+            </div>
+          </div>
 
           <p>
             {currentView.description}
           </p>
         </div>
 
-        <div className="bid-log-workspace-count">
-          <span>SHOWING</span>
-          <strong>{visibleItems.length}</strong>
-          <small>
-            {filteredItems.length === items.length
-              ? `of ${items.length} ${currentView.label.toLowerCase()} bids`
-              : `of ${filteredItems.length} matching · ${items.length} total`}
-          </small>
-        </div>
+        {canEdit && activeView && (
+          <div className="bid-log-heading-actions">
+            <button
+              type="button"
+              className="bid-log-new-bid-button bid-log-new-bid-button-header"
+              onClick={() => setCreateBidOpen(true)}
+            >
+              <span className="bid-log-new-bid-plus" aria-hidden="true">+</span>
+              <span>New Bid</span>
+            </button>
+          </div>
+        )}
       </div>
 
       <nav
@@ -1986,17 +2006,6 @@ export default function BidLogWorkspace({
           )}
 
           <div className="bid-log-filter-actions">
-            {canEdit && activeView && (
-              <button
-                type="button"
-                className="bid-log-new-bid-button"
-                onClick={() => setCreateBidOpen(true)}
-              >
-                <span className="bid-log-new-bid-plus" aria-hidden="true">+</span>
-                New Bid
-              </button>
-            )}
-
             <button
               type="button"
               className="secondary-button bid-log-refresh-button"

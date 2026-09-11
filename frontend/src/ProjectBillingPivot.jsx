@@ -772,6 +772,74 @@ function BillingValue({
 }
 
 
+function compactCurrency(value) {
+  if (
+    value === null
+    || value === undefined
+  ) {
+    return '—';
+  }
+
+  return new Intl.NumberFormat(
+    'en-US',
+    {
+      style: 'currency',
+      currency: 'USD',
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    },
+  ).format(value);
+}
+
+
+function headerMetricKey(metric) {
+  return metric === 'all'
+    ? 'projected'
+    : metric;
+}
+
+
+function HeaderTotal({
+  label,
+  value,
+  metric,
+  currency,
+}) {
+  const allMode =
+    metric === 'all';
+
+  return (
+    <span className="pivot-header-total">
+      <span className="pivot-header-total-label">
+        {label}
+      </span>
+
+      <small
+        className="pivot-header-total-value"
+        title={
+          value === null
+          || value === undefined
+            ? 'No value for the selected metric.'
+            : `${
+                allMode
+                  ? 'Projected total'
+                  : 'Column total'
+              }: ${currency(value)}`
+        }
+      >
+        {allMode
+        && value !== null
+        && value !== undefined
+          ? 'P '
+          : ''}
+
+        {compactCurrency(value)}
+      </small>
+    </span>
+  );
+}
+
+
 export default function ProjectBillingPivot({
   months,
   currentProjects,
@@ -1150,6 +1218,120 @@ export default function ProjectBillingPivot({
     );
 
 
+  const headerMetric =
+    headerMetricKey(
+      billingMetric
+    );
+
+
+  const monthTotals =
+    useMemo(
+      () =>
+        months.map(
+          (
+            month,
+            index,
+          ) => {
+            let hasValue =
+              headerMetric
+              === 'projected';
+
+            const value =
+              rows.reduce(
+                (
+                  sum,
+                  row,
+                ) => {
+                  const cellValue =
+                    row.cells[index]?.[
+                      headerMetric
+                    ];
+
+                  if (
+                    cellValue === null
+                    || cellValue === undefined
+                  ) {
+                    return sum;
+                  }
+
+                  hasValue = true;
+
+                  return (
+                    sum
+                    + toNumber(
+                        cellValue
+                      )
+                  );
+                },
+                0,
+              );
+
+            return {
+              month,
+
+              value:
+                hasValue
+                  ? value
+                  : null,
+            };
+          }
+        ),
+      [
+        months,
+        rows,
+        headerMetric,
+      ],
+    );
+
+
+  const grandTotal =
+    useMemo(
+      () => {
+        let hasValue =
+          headerMetric
+          === 'projected';
+
+        const value =
+          rows.reduce(
+            (
+              sum,
+              row,
+            ) => {
+              const totalValue =
+                row.total?.[
+                  headerMetric
+                ];
+
+              if (
+                totalValue === null
+                || totalValue === undefined
+              ) {
+                return sum;
+              }
+
+              hasValue = true;
+
+              return (
+                sum
+                + toNumber(
+                    totalValue
+                  )
+              );
+            },
+            0,
+          );
+
+        return hasValue
+          ? value
+          : null;
+      },
+      [
+        rows,
+        headerMetric,
+      ],
+    );
+
+
   return (
     <div
       className={
@@ -1196,6 +1378,48 @@ export default function ProjectBillingPivot({
                 </button>
               )
             )}
+          </div>
+
+          <div
+            className="project-pivot-month-scroll"
+            aria-label="Billing month navigation"
+          >
+            <span
+              className="project-pivot-month-scroll-label"
+            >
+              Months
+            </span>
+
+            <button
+              type="button"
+              className="project-pivot-month-scroll-button"
+              data-table-horizontal-scroll-step="-1"
+              aria-label="Scroll billing months left"
+              title="Previous month"
+            >
+              ‹
+            </button>
+
+            <input
+              className="project-pivot-month-scroll-range"
+              type="range"
+              min="0"
+              max="0"
+              defaultValue="0"
+              step="1"
+              data-table-horizontal-scroll
+              aria-label="Scroll billing months horizontally"
+            />
+
+            <button
+              type="button"
+              className="project-pivot-month-scroll-button"
+              data-table-horizontal-scroll-step="1"
+              aria-label="Scroll billing months right"
+              title="Next month"
+            >
+              ›
+            </button>
           </div>
         </div>
       )}
@@ -1272,10 +1496,24 @@ export default function ProjectBillingPivot({
               )}
 
               {months.map(
-                month => (
+                (
+                  month,
+                  index,
+                ) => (
                   <PivotSortHeader
                     key={month}
-                    label={monthLabel(month)}
+                    label={
+                      <HeaderTotal
+                        label={monthLabel(month)}
+                        value={
+                          monthTotals[
+                            index
+                          ]?.value
+                        }
+                        metric={billingMetric}
+                        currency={currency}
+                      />
+                    }
                     sortKey={`month:${month}`}
                     sortState={sortState}
                     onSort={toggleSort}
@@ -1287,7 +1525,14 @@ export default function ProjectBillingPivot({
               )}
 
               <PivotSortHeader
-                label="Total"
+                label={
+                  <HeaderTotal
+                    label="Total"
+                    value={grandTotal}
+                    metric={billingMetric}
+                    currency={currency}
+                  />
+                }
                 sortKey="total"
                 sortState={sortState}
                 onSort={toggleSort}

@@ -229,6 +229,9 @@ function friendlyError(detail) {
     invalid_session:
       'Your previous Bid Log session is no longer valid. Sign in again to continue.',
 
+    application_updated:
+      'Bid Log was updated since you signed in. Sign in again to start a fresh session on the current version.',
+
     microsoft_sign_in_failed:
       'Microsoft sign-in could not be completed. Try again, or contact Riggs IT if the problem continues.',
 
@@ -1427,9 +1430,13 @@ function SignInView({
     signedOutValue === 'timeout'
     || authError === 'session_inactive_timeout';
 
+  const isApplicationUpdated =
+    authError === 'application_updated';
+
   const hasError =
     Boolean(authError)
-    && !isTimeout;
+    && !isTimeout
+    && !isApplicationUpdated;
 
   let statusLabel = 'SIGN IN';
   let heading = 'Sign in to Bid Log';
@@ -1452,6 +1459,15 @@ function SignInView({
     message =
       friendlyError(
         'session_inactive_timeout'
+      );
+    actionLabel = 'Sign in again';
+    statusClass = 'notice';
+  } else if (isApplicationUpdated) {
+    statusLabel = 'APP UPDATED';
+    heading = 'Bid Log was updated';
+    message =
+      friendlyError(
+        'application_updated'
       );
     actionLabel = 'Sign in again';
     statusClass = 'notice';
@@ -2603,6 +2619,21 @@ export default function App() {
         if (
           response.status === 401
         ) {
+          let detail =
+            'authentication_required';
+
+          try {
+            const payload =
+              await response.json();
+
+            detail =
+              payload?.detail
+              || detail;
+
+          } catch {
+            // Keep default.
+          }
+
           stopped = true;
 
           clearUsageSessionId();
@@ -2611,9 +2642,17 @@ export default function App() {
             null;
 
 
-          window.location.replace(
-            '/?signed_out=timeout',
-          );
+          if (
+            detail === 'application_updated'
+          ) {
+            window.location.replace(
+              '/?auth_error=application_updated',
+            );
+          } else {
+            window.location.replace(
+              '/?signed_out=timeout',
+            );
+          }
         }
 
       } catch {
