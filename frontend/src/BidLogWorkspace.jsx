@@ -13,6 +13,7 @@ import {
 import BidLogEditDrawer from './BidLogEditDrawer.jsx';
 import BidLogOutcomeEditDrawer from './BidLogOutcomeEditDrawer.jsx';
 import BidLogCreateDrawer from './BidLogCreateDrawer.jsx';
+import ActionToast from './ActionToast.jsx';
 
 
 const ALL = '__ALL__';
@@ -899,6 +900,23 @@ export default function BidLogWorkspace({
     setCreateBidOpen,
   ] = useState(false);
 
+  const [
+    actionToast,
+    setActionToast,
+  ] = useState(null);
+
+
+  function showActionToast(
+    type,
+    message,
+  ) {
+    setActionToast({
+      id: `${Date.now()}-${Math.random()}`,
+      type,
+      message,
+    });
+  }
+
 
   const role = String(
     user?.appRole || '',
@@ -1537,6 +1555,70 @@ export default function BidLogWorkspace({
   }
 
 
+  async function refreshCurrentBidView() {
+    if (loading) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const nextPayload = await loadBidView(
+        bidView,
+        undefined,
+      );
+
+      writeBidLogCache(
+        bidView,
+        nextPayload,
+      );
+
+      setPayload(
+        nextPayload,
+      );
+
+      setNotesBidId(null);
+
+      setNotesByBidId(
+        current =>
+          Object.fromEntries(
+            Object.entries(current).filter(
+              ([key]) =>
+                !key.startsWith(`${bidView}:`),
+            ),
+          ),
+      );
+
+      setNotesErrorByBidId(
+        current =>
+          Object.fromEntries(
+            Object.entries(current).filter(
+              ([key]) =>
+                !key.startsWith(`${bidView}:`),
+            ),
+          ),
+      );
+
+      showActionToast(
+        'success',
+        `${currentView.title} refreshed.`,
+      );
+    } catch (refreshError) {
+      const message =
+        refreshError?.message
+        || `Unable to refresh ${currentView.title.toLowerCase()}.`;
+
+      showActionToast(
+        'error',
+        message,
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+
   function rowIdentity(row) {
     return activeView
       ? Number(row?.sharePointItemId)
@@ -1693,6 +1775,12 @@ export default function BidLogWorkspace({
         ).trim(),
       });
     }
+
+    showActionToast(
+      'success',
+      'Bid created.',
+    );
+
   }
 
 
@@ -1908,6 +1996,17 @@ export default function BidLogWorkspace({
                 New Bid
               </button>
             )}
+
+            <button
+              type="button"
+              className="secondary-button bid-log-refresh-button"
+              onClick={() => {
+                void refreshCurrentBidView();
+              }}
+              disabled={loading}
+            >
+              {loading ? 'Refreshing…' : 'Refresh'}
+            </button>
 
             <button
               type="button"
@@ -2335,6 +2434,13 @@ export default function BidLogWorkspace({
           )}
         </div>
       </section>
+
+      <ActionToast
+        key={actionToast?.id || 'bid-log-toast'}
+        message={actionToast?.message}
+        type={actionToast?.type}
+        onDismiss={() => setActionToast(null)}
+      />
 
       <BidLogCreateDrawer
         open={createBidOpen}

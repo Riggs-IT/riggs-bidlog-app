@@ -6,6 +6,7 @@ import {
 
 import BidLogGeneralContractorSelect from './BidLogGeneralContractorSelect.jsx';
 import FloatingEditorShell from './FloatingEditorShell.jsx';
+import ActionToast from './ActionToast.jsx';
 import {
   generalContractorNames,
 } from './GeneralContractors.jsx';
@@ -779,22 +780,28 @@ export default function BidLogEditDrawer({
                 </div>
               )}
 
-              {saveError && (
-                <div className="bid-edit-message error bid-edit-save-message">
-                  <span>{saveError}</span>
-                  {saveError.startsWith('This bid changed after') && (
-                    <button type="button" className="secondary-button" onClick={loadDetail}>
-                      Reload Latest
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {saveMessage && (
-                <div className="bid-edit-message success">
-                  {saveMessage}
-                </div>
-              )}
+              <ActionToast
+                message={saveError || saveMessage}
+                type={saveError ? 'error' : 'success'}
+                actionLabel={
+                  saveError?.startsWith(
+                    'This bid changed after',
+                  )
+                    ? 'Reload Latest'
+                    : null
+                }
+                onAction={
+                  saveError?.startsWith(
+                    'This bid changed after',
+                  )
+                    ? loadDetail
+                    : null
+                }
+                onDismiss={() => {
+                  setSaveError(null);
+                  setSaveMessage(null);
+                }}
+              />
 
               <section className="bid-edit-section">
                 <div className="bid-edit-section-heading">

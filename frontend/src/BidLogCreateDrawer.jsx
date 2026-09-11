@@ -6,6 +6,7 @@ import {
 
 import BidLogGeneralContractorSelect from './BidLogGeneralContractorSelect.jsx';
 import FloatingEditorShell from './FloatingEditorShell.jsx';
+import ActionToast from './ActionToast.jsx';
 
 
 const PROJECT_TYPES = [
@@ -331,11 +332,11 @@ export default function BidLogCreateDrawer({
         </footer>
       }
     >
-      {saveError && (
-        <div className="bid-edit-message error">
-          {saveError}
-        </div>
-      )}
+      <ActionToast
+        message={saveError}
+        type="error"
+        onDismiss={() => setSaveError(null)}
+      />
 
       <section className="bid-edit-section">
         <div className="bid-edit-section-heading">

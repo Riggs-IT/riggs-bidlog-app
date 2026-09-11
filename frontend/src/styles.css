@@ -12996,3 +12996,147 @@ td.pivot-project-column {
   height: 1px;
   pointer-events: none;
 }
+
+/* ========================================================================== */
+/* Floating action feedback                                                   */
+/* ========================================================================== */
+
+.action-toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 5000;
+
+  width: min(430px, calc(100vw - 32px));
+  min-height: 64px;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 12px 14px;
+
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+
+  background: var(--surface);
+  color: var(--text);
+
+  box-shadow:
+    0 16px 42px
+    rgba(0, 0, 0, 0.28);
+}
+
+.action-toast.success {
+  border-color: var(--positive);
+}
+
+.action-toast.error {
+  border-color: var(--negative);
+}
+
+.action-toast-icon {
+  flex: 0 0 30px;
+
+  width: 30px;
+  height: 30px;
+
+  display: inline-grid;
+  place-items: center;
+
+  border: 1px solid currentColor;
+  border-radius: 999px;
+
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.action-toast.success .action-toast-icon {
+  color: var(--positive);
+}
+
+.action-toast.error .action-toast-icon {
+  color: var(--negative);
+}
+
+.action-toast-content {
+  min-width: 0;
+  flex: 1 1 auto;
+
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.action-toast-content strong {
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.action-toast-content span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.action-toast-action {
+  flex: 0 0 auto;
+
+  min-height: 30px;
+  padding: 0 10px;
+
+  border: 1px solid var(--border);
+  border-radius: 7px;
+
+  background: var(--surface-2);
+  color: var(--text);
+
+  font-size: 10px;
+  font-weight: 800;
+
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.action-toast-action:hover,
+.action-toast-action:focus-visible {
+  border-color: var(--border-strong);
+  background: var(--surface-3);
+}
+
+.action-toast-close {
+  flex: 0 0 auto;
+
+  width: 28px;
+  height: 28px;
+
+  display: inline-grid;
+  place-items: center;
+
+  padding: 0;
+
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+
+  font-size: 20px;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+.action-toast-close:hover,
+.action-toast-close:focus-visible {
+  color: var(--text);
+}
+
+@media (max-width: 760px) {
+  .action-toast {
+    right: 16px;
+    bottom: 16px;
+    left: 16px;
+    width: auto;
+  }
+}

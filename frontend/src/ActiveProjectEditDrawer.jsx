@@ -8,6 +8,7 @@ import {
 import ActiveProjectCognitoSections from './ActiveProjectCognitoSections.jsx';
 import BidLogGeneralContractorSelect from './BidLogGeneralContractorSelect.jsx';
 import FloatingEditorShell from './FloatingEditorShell.jsx';
+import ActionToast from './ActionToast.jsx';
 
 
 function dateValue(value) {
@@ -563,17 +564,14 @@ export default function ActiveProjectEditDrawer({
                 </div>
               )}
 
-              {saveError && (
-                <div className="bid-edit-message error">
-                  <span>{saveError}</span>
-                </div>
-              )}
-
-              {saveMessage && (
-                <div className="bid-edit-message success">
-                  {saveMessage}
-                </div>
-              )}
+              <ActionToast
+                message={saveError || saveMessage}
+                type={saveError ? 'error' : 'success'}
+                onDismiss={() => {
+                  setSaveError(null);
+                  setSaveMessage(null);
+                }}
+              />
 
               <section className="bid-edit-section">
                 <div className="bid-edit-section-heading">
