@@ -31,9 +31,12 @@ const PURPOSES = [
 ];
 
 
+const DEFAULT_PM = 'No PM Assigned';
+
+
 const EMPTY_FORM = {
   bidName: '',
-  pm: '',
+  pm: DEFAULT_PM,
   dueDate: '',
   projectType: '',
   purpose: '',
@@ -153,7 +156,15 @@ export default function BidLogCreateDrawer({
 
       return Object.entries(form)
         .filter(([name]) => name !== 'generalContractors')
-        .some(([, value]) => String(value ?? '').trim());
+        .some(([name, value]) => {
+          const normalized = String(value ?? '').trim();
+
+          if (name === 'pm') {
+            return normalized !== DEFAULT_PM;
+          }
+
+          return Boolean(normalized);
+        });
     },
     [form],
   );
@@ -352,7 +363,7 @@ export default function BidLogCreateDrawer({
               value={form.pm}
               onChange={event => updateField('pm', event.target.value)}
             >
-              <option value="">No PM Assigned</option>
+              <option value={DEFAULT_PM}>No PM Assigned</option>
               {editorPmOptions.map(value => (
                 <option key={value} value={value}>{value}</option>
               ))}

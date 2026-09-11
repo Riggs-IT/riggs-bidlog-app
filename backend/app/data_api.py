@@ -145,6 +145,8 @@ def _request_headers(
     include_service_auth: bool,
     request_id: str | None = None,
     actor_eid: int | None = None,
+    user_bearer_token: str | None = None,
+    delegated_session_id: str | None = None,
 ) -> dict[str, str]:
 
     headers = {
@@ -160,6 +162,38 @@ def _request_headers(
         ] = str(
             actor_eid
         )
+
+    if user_bearer_token is not None:
+        bearer_token = (
+            user_bearer_token
+            .strip()
+        )
+
+        if not bearer_token:
+            raise DataAPIConfigurationError(
+                "Delegated Microsoft user token is empty."
+            )
+
+        headers[
+            "Authorization"
+        ] = (
+            f"Bearer {bearer_token}"
+        )
+
+    if delegated_session_id is not None:
+        session_id = (
+            delegated_session_id
+            .strip()
+        )
+
+        if not session_id:
+            raise DataAPIConfigurationError(
+                "Delegated Data API session ID is empty."
+            )
+
+        headers[
+            "X-Riggs-Delegated-Session"
+        ] = session_id
 
     cf_id = (
         settings.data_api_cf_access_client_id
@@ -555,6 +589,168 @@ def resolve_bid_log_user(
     )
 
 
+def create_bid_log_delegated_session(
+    *,
+    user_assertion: str,
+    actor_eid: int,
+    request_id: str,
+) -> dict:
+    operation = (
+        "Bid Log delegated session creation"
+    )
+
+    assertion = str(
+        user_assertion
+        or ""
+    ).strip()
+
+    if not assertion:
+        raise DataAPIConfigurationError(
+            "Microsoft Data API user token is missing."
+        )
+
+    try:
+        response = _get_http_client().post(
+            "/v1/bid-log/delegated/session",
+            headers=_request_headers(
+                include_service_auth=True,
+                request_id=request_id,
+                actor_eid=actor_eid,
+                user_bearer_token=assertion,
+            ),
+        )
+
+    except httpx.TimeoutException as exc:
+        raise DataAPIUnavailable(
+            "Riggs Data API delegated-session request "
+            "timed out."
+        ) from exc
+
+    except httpx.RequestError as exc:
+        raise DataAPIUnavailable(
+            "Unable to connect to the Riggs Data API "
+            "during delegated-session creation."
+        ) from exc
+
+    detail = _detail(
+        response
+    )
+
+    if response.status_code in {
+        401,
+        403,
+    } and detail in {
+        "delegated_identity_rejected",
+        "bid_log_delegated_identity_mismatch",
+        "missing_delegated_user_token",
+    }:
+        raise DataAPIRequestRejected(
+            response.status_code,
+            detail,
+        )
+
+    _raise_common_failure(
+        response,
+        operation=operation,
+    )
+
+    if response.status_code != 200:
+        raise DataAPIInvalidResponse(
+            "Unexpected Riggs Data API response "
+            "during delegated-session creation."
+        )
+
+    payload = _json_object(
+        response,
+        operation=operation,
+    )
+
+    session_id = str(
+        payload.get(
+            "sessionId"
+        )
+        or ""
+    ).strip()
+
+    if not session_id:
+        raise DataAPIInvalidResponse(
+            "Delegated-session response did not "
+            "contain a session ID."
+        )
+
+    return payload
+
+
+def delete_bid_log_delegated_session(
+    *,
+    delegated_session_id: str,
+    actor_eid: int,
+    request_id: str,
+) -> bool:
+    operation = (
+        "Bid Log delegated session deletion"
+    )
+
+    session_id = str(
+        delegated_session_id
+        or ""
+    ).strip()
+
+    if not session_id:
+        return False
+
+    try:
+        response = _get_http_client().delete(
+            "/v1/bid-log/delegated/session",
+            headers=_request_headers(
+                include_service_auth=True,
+                request_id=request_id,
+                actor_eid=actor_eid,
+                delegated_session_id=session_id,
+            ),
+        )
+
+    except (
+        httpx.TimeoutException,
+        httpx.RequestError,
+    ):
+        # Logout must still succeed if the bridge is unreachable.
+        return False
+
+    if response.status_code in {
+        401,
+        403,
+    }:
+        return False
+
+    try:
+        _raise_common_failure(
+            response,
+            operation=operation,
+        )
+
+    except DataAPIError:
+        return False
+
+    if response.status_code != 200:
+        return False
+
+    try:
+        payload = _json_object(
+            response,
+            operation=operation,
+        )
+
+    except DataAPIError:
+        return False
+
+    return bool(
+        payload.get(
+            "deleted"
+        )
+    )
+
+
 def get_bid_log_general_contractors() -> dict:
     operation = "Bid Log general contractor reference"
 
@@ -644,6 +840,7 @@ def create_active_bid(
     *,
     actor_eid: int,
     request_id: str,
+    delegated_session_id: str | None = None,
 ) -> dict:
     operation = "Create Active Bid Log bid"
 
@@ -655,6 +852,8 @@ def create_active_bid(
                 include_service_auth=True,
                 request_id=request_id,
                 actor_eid=actor_eid,
+                delegated_session_id=
+                    delegated_session_id,
             ),
         )
 
@@ -671,6 +870,7 @@ def create_active_bid(
         ) from exc
 
     if response.status_code in {
+        401,
         400,
         403,
         422,
@@ -721,6 +921,7 @@ def update_active_bid(
     *,
     actor_eid: int,
     request_id: str,
+    delegated_session_id: str | None = None,
 ) -> dict:
     operation = "Update Active Bid Log bid"
 
@@ -732,6 +933,8 @@ def update_active_bid(
                 include_service_auth=True,
                 request_id=request_id,
                 actor_eid=actor_eid,
+                delegated_session_id=
+                    delegated_session_id,
             ),
         )
 
@@ -748,6 +951,7 @@ def update_active_bid(
         ) from exc
 
     if response.status_code in {
+        401,
         400,
         403,
         404,
@@ -899,6 +1103,7 @@ def update_bid_log_outcome(
     *,
     actor_eid: int,
     request_id: str,
+    delegated_session_id: str | None = None,
 ) -> dict:
     operation = "Update decided Bid Log bid"
 
@@ -910,6 +1115,8 @@ def update_bid_log_outcome(
                 include_service_auth=True,
                 request_id=request_id,
                 actor_eid=actor_eid,
+                delegated_session_id=
+                    delegated_session_id,
             ),
         )
 
@@ -926,6 +1133,7 @@ def update_bid_log_outcome(
         ) from exc
 
     if response.status_code in {
+        401,
         400,
         403,
         404,

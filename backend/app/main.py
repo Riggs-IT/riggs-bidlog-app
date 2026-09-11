@@ -53,6 +53,8 @@ from .data_api import (
     get_active_project_detail,
     get_active_project_cognito_detail,
     get_bid_log_general_contractors,
+    create_bid_log_delegated_session,
+    delete_bid_log_delegated_session,
     save_active_bid_projected_billing_settings,
     update_active_bid,
     update_bid_log_outcome,
@@ -115,7 +117,7 @@ oauth.register(
     server_metadata_url=settings.entra_metadata_url,
     client_kwargs={
         "scope":
-            "openid profile email",
+            settings.entra_oauth_scope,
         "code_challenge_method":
             "S256",
     },
@@ -125,6 +127,11 @@ oauth.register(
 _AUTH_ERROR_CODES = {
     "microsoft_sign_in_failed",
     "microsoft_identity_missing",
+    "microsoft_data_api_token_missing",
+    "delegated_identity_rejected",
+    "bid_log_delegated_identity_mismatch",
+    "delegated_auth_unavailable",
+    "delegated_auth_configuration_unavailable",
     "bid_log_user_not_authorized",
     "bid_log_identity_conflict",
     "data_api_cloudflare_access_rejected",
@@ -504,6 +511,67 @@ def _role_scoped_bid_log_payload(
     return _redact_margin_fields(payload)
 
 
+def _bid_log_delegated_session_for_write(
+    request: Request,
+    current_user: CurrentUser,
+) -> str | None:
+    """
+    Return the opaque Data API delegated-session identifier
+    established during Microsoft login.
+
+    Local AUTH_MODE=dev has no real Microsoft delegated session,
+    so it returns None rather than inventing one.
+    """
+
+    if (
+        settings.auth_mode == "dev"
+        or not settings.bid_log_delegated_writes_enabled
+    ):
+        return None
+
+    session_id = str(
+        request.session.get(
+            "delegated_session_id"
+        )
+        or ""
+    ).strip()
+
+    raw_actor_eid = (
+        request.session.get(
+            "delegated_actor_eid"
+        )
+    )
+
+    try:
+        session_actor_eid = int(
+            raw_actor_eid
+        )
+
+    except (
+        TypeError,
+        ValueError,
+    ):
+        session_actor_eid = None
+
+    if not session_id:
+        raise HTTPException(
+            status_code=401,
+            detail="delegated_session_required",
+        )
+
+    if (
+        session_actor_eid is None
+        or session_actor_eid
+        != current_user.eid
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="delegated_session_actor_mismatch",
+        )
+
+    return session_id
+
+
 def _browser_request_id(
     request: Request,
 ) -> str:
@@ -665,8 +733,10 @@ async def auth_callback(
     }
 
     try:
-        resolve_entra_user(
-            identity
+        current_user = (
+            resolve_entra_user(
+                identity
+            )
         )
 
     except HTTPException as exc:
@@ -685,17 +755,132 @@ async def auth_callback(
             detail
         )
 
+    delegated_session_id = None
+
+    if settings.bid_log_delegated_auth_enabled:
+        microsoft_access_token = str(
+            token.get(
+                "access_token"
+            )
+            or ""
+        ).strip()
+
+        if not microsoft_access_token:
+            request.session.clear()
+
+            return _auth_error_redirect(
+                "microsoft_data_api_token_missing"
+            )
+
+        try:
+            delegated_session = (
+                create_bid_log_delegated_session(
+                    user_assertion=
+                        microsoft_access_token,
+
+                    actor_eid=
+                        current_user.eid,
+
+                    request_id=
+                        str(
+                            uuid4()
+                        ),
+                )
+            )
+
+        except DataAPIRequestRejected as exc:
+            request.session.clear()
+
+            return _auth_error_redirect(
+                exc.detail
+            )
+
+        except DataAPIEdgeRejected:
+            request.session.clear()
+
+            return _auth_error_redirect(
+                "data_api_cloudflare_access_rejected"
+            )
+
+        except DataAPIServiceAuthRejected:
+            request.session.clear()
+
+            return _auth_error_redirect(
+                "data_api_bid_log_service_auth_rejected"
+            )
+
+        except DataAPISQLCapacityUnavailable:
+            request.session.clear()
+
+            return _auth_error_redirect(
+                "sql_capacity_unavailable"
+            )
+
+        except DataAPISQLUnavailable:
+            request.session.clear()
+
+            return _auth_error_redirect(
+                "sql_unavailable"
+            )
+
+        except DataAPIConfigurationError:
+            request.session.clear()
+
+            return _auth_error_redirect(
+                "delegated_auth_configuration_unavailable"
+            )
+
+        except DataAPIInvalidResponse:
+            request.session.clear()
+
+            return _auth_error_redirect(
+                "invalid_data_api_response"
+            )
+
+        except DataAPIUnavailable:
+            request.session.clear()
+
+            return _auth_error_redirect(
+                "delegated_auth_unavailable"
+            )
+
+        delegated_session_id = str(
+            delegated_session.get(
+                "sessionId"
+            )
+            or ""
+        ).strip()
+
+        if not delegated_session_id:
+            request.session.clear()
+
+            return _auth_error_redirect(
+                "invalid_data_api_response"
+            )
+
     return_to = _safe_return_path(
         request.session.get(
             "auth_return_to"
         )
     )
 
+    # The Microsoft bearer token intentionally dies here.
+    # Only the opaque Data API delegated-session identifier
+    # survives into the browser's signed application session.
     request.session.clear()
 
     request.session[
         "entra_identity"
     ] = identity
+
+    if delegated_session_id:
+        request.session[
+            "delegated_session_id"
+        ] = delegated_session_id
+
+        request.session[
+            "delegated_actor_eid"
+        ] = current_user.eid
 
     return RedirectResponse(
         return_to,
@@ -705,14 +890,26 @@ async def auth_callback(
 
 @app.get("/api/auth/me")
 def auth_me(
+    request: Request,
+
     current_user: CurrentUser = Depends(
         get_current_user
     ),
 ):
-    return (
+    payload = (
         current_user
         .to_public_dict()
     )
+
+    payload[
+        "delegatedAccessReady"
+    ] = bool(
+        request.session.get(
+            "delegated_session_id"
+        )
+    )
+
+    return payload
 
 
 @app.post(
@@ -933,6 +1130,45 @@ async def bid_log_usage_end_proxy(
 def auth_logout(
     request: Request,
 ):
+    delegated_session_id = str(
+        request.session.get(
+            "delegated_session_id"
+        )
+        or ""
+    ).strip()
+
+    raw_actor_eid = request.session.get(
+        "delegated_actor_eid"
+    )
+
+    try:
+        actor_eid = int(
+            raw_actor_eid
+        )
+
+    except (
+        TypeError,
+        ValueError,
+    ):
+        actor_eid = None
+
+    if (
+        delegated_session_id
+        and actor_eid is not None
+    ):
+        delete_bid_log_delegated_session(
+            delegated_session_id=
+                delegated_session_id,
+
+            actor_eid=
+                actor_eid,
+
+            request_id=
+                str(
+                    uuid4()
+                ),
+        )
+
     request.session.clear()
 
     response = JSONResponse(
@@ -1376,12 +1612,21 @@ async def bid_log_active_create_proxy(
             detail="invalid_active_bid_create",
         )
 
+    delegated_session_id = (
+        _bid_log_delegated_session_for_write(
+            request,
+            current_user,
+        )
+    )
+
     try:
         return _role_scoped_bid_log_payload(
             create_active_bid(
                 payload,
                 actor_eid=current_user.eid,
                 request_id=_browser_request_id(request),
+                delegated_session_id=
+                    delegated_session_id,
             ),
             current_user,
         )
@@ -1444,15 +1689,25 @@ async def bid_log_active_update_proxy(
             detail="invalid_active_bid_update",
         )
 
+    delegated_session_id = (
+        _bid_log_delegated_session_for_write(
+            request,
+            current_user,
+        )
+    )
+
     try:
         # Browser-supplied actor identity is never trusted. The current
-        # authenticated session supplies the EID sent server-to-server.
+        # authenticated session supplies both the EID and opaque delegated
+        # session identifier sent server-to-server.
         return _role_scoped_bid_log_payload(
             update_active_bid(
                 sharepoint_item_id,
                 payload,
                 actor_eid=current_user.eid,
                 request_id=_browser_request_id(request),
+                delegated_session_id=
+                    delegated_session_id,
             ),
             current_user,
         )
@@ -1546,6 +1801,13 @@ async def bid_log_outcome_update_proxy(
             detail="invalid_bid_log_outcome_update",
         )
 
+    delegated_session_id = (
+        _bid_log_delegated_session_for_write(
+            request,
+            current_user,
+        )
+    )
+
     try:
         return _role_scoped_bid_log_payload(
             update_bid_log_outcome(
@@ -1553,6 +1815,8 @@ async def bid_log_outcome_update_proxy(
                 payload,
                 actor_eid=current_user.eid,
                 request_id=_browser_request_id(request),
+                delegated_session_id=
+                    delegated_session_id,
             ),
             current_user,
         )

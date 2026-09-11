@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     entra_client_id: str = ""
     entra_client_secret: str = ""
     entra_redirect_uri: str = ""
+    entra_data_api_scope: str = ""
+
+    bid_log_delegated_auth_enabled: bool = False
+    bid_log_delegated_writes_enabled: bool = False
 
     session_secret: str = ""
     session_cookie_secure: bool = True
@@ -58,23 +62,50 @@ class Settings(BaseSettings):
         )
 
     @property
-    def entra_configured(self) -> bool:
-        values = (
-            self.entra_tenant_id,
-            self.entra_client_id,
-            self.entra_client_secret,
-            self.entra_redirect_uri,
-            self.session_secret,
+    def entra_oauth_scope(self) -> str:
+        scopes = [
+            "openid",
+            "profile",
+            "email",
+        ]
+
+        if self.bid_log_delegated_auth_enabled:
+            delegated_scope = (
+                self.entra_data_api_scope
+                .strip()
+            )
+
+            if delegated_scope:
+                scopes.append(
+                    delegated_scope
+                )
+
+        return " ".join(
+            scopes
         )
 
-        return (
-            all(
-                value
-                and value != "CHANGE_ME"
-                for value in values
-            )
-            and len(self.session_secret) >= 32
+    @property
+    def entra_configured(self) -> bool:
+        base_configured = all(
+            [
+                self.entra_tenant_id,
+                self.entra_client_id,
+                self.entra_client_secret,
+                self.entra_redirect_uri,
+                self.session_secret,
+            ]
         )
+
+        if not base_configured:
+            return False
+
+        if self.bid_log_delegated_auth_enabled:
+            return bool(
+                self.entra_data_api_scope
+                .strip()
+            )
+
+        return True
 
     @property
     def data_api_base_configured(self) -> bool:

@@ -235,6 +235,21 @@ function friendlyError(detail) {
     microsoft_identity_missing:
       'Microsoft did not return the identity information Bid Log needs. Try signing in again.',
 
+    microsoft_data_api_token_missing:
+      'Microsoft sign-in completed, but Bid Log could not establish delegated access. Sign out and try again.',
+
+    delegated_identity_rejected:
+      'Microsoft delegated access could not be verified. Sign out and try again, or contact Riggs IT if the problem continues.',
+
+    bid_log_delegated_identity_mismatch:
+      'Your Microsoft account did not match the Riggs employee identity for this Bid Log session. Contact Riggs IT.',
+
+    delegated_auth_unavailable:
+      'Microsoft delegated access is temporarily unavailable. Try signing in again in a moment.',
+
+    delegated_auth_configuration_unavailable:
+      'Microsoft delegated access is temporarily unavailable for Bid Log. Contact Riggs IT if the problem continues.',
+
     bid_log_user_not_authorized:
       'Your Riggs Companies account is not currently authorized to use Bid Log.',
 
