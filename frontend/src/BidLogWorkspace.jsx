@@ -406,7 +406,7 @@ function dueState(row) {
     return null;
   }
 
-  if (days < 0) {
+  if (isOverdue(row)) {
     return {
       label: 'OVERDUE',
       tone: 'overdue',
@@ -481,9 +481,13 @@ function isDueWithin(row, days) {
 
 function isOverdue(row) {
   const difference = daysFromToday(row.dueDate);
+  const status = normalizedSearch(row.status);
 
   return (
-    difference !== null
+    status === 'assigned'
+    && !isUnassigned(row)
+    && row.snoozed !== true
+    && difference !== null
     && difference < 0
   );
 }
@@ -905,15 +909,24 @@ export default function BidLogWorkspace({
     setActionToast,
   ] = useState(null);
 
+  const startupPmFilterAppliedRef = useRef(false);
+  const overdueNoticeShownRef = useRef(false);
+
 
   function showActionToast(
     type,
     message,
+    {
+      actionLabel = null,
+      onAction = null,
+    } = {},
   ) {
     setActionToast({
       id: `${Date.now()}-${Math.random()}`,
       type,
       message,
+      actionLabel,
+      onAction,
     });
   }
 
@@ -975,6 +988,12 @@ export default function BidLogWorkspace({
       setError(null);
       setQuickFilter(null);
       setRealBidsOnly(false);
+      setDueFilter(
+        current =>
+          requestedViewKey !== 'active' && current === 'overdue'
+            ? ALL
+            : current,
+      );
       setNotesBidId(null);
       setEditSelection(null);
 
@@ -1102,23 +1121,84 @@ export default function BidLogWorkspace({
   );
 
 
-  const createPmOptions = useMemo(
+  const approvedPmOptions = useMemo(
     () => {
-      const values = new Set(pmOptions);
+      const values = new Map();
 
       for (const row of pmDirectory) {
         const name = String(row?.pm || '').trim();
+        const key = pmDirectoryKey(name);
+        const hasDirectoryIdentity = Boolean(
+          String(row?.pmInitials || '').trim()
+          || String(row?.pmHexColor || '').trim(),
+        );
 
-        if (name) {
-          values.add(name);
+        if (
+          !key
+          || key === 'no pm assigned'
+          || !hasDirectoryIdentity
+        ) {
+          continue;
+        }
+
+        if (!values.has(key)) {
+          values.set(key, name);
         }
       }
 
-      return Array.from(values).sort(
+      return Array.from(values.values()).sort(
         (a, b) => a.localeCompare(b),
       );
     },
-    [pmOptions, pmDirectory],
+    [pmDirectory],
+  );
+
+
+  const createPmOptions = approvedPmOptions;
+
+
+  const currentUserPm = useMemo(
+    () => {
+      const userName = String(user?.displayName || '').trim();
+      const userKey = pmDirectoryKey(userName);
+
+      if (!userKey) {
+        return null;
+      }
+
+      const approved = approvedPmOptions.find(
+        pm => pmDirectoryKey(pm) === userKey,
+      );
+
+      if (!approved) {
+        return null;
+      }
+
+      return pmOptions.some(
+        pm => pmDirectoryKey(pm) === userKey,
+      )
+        ? approved
+        : null;
+    },
+    [approvedPmOptions, pmOptions, user?.displayName],
+  );
+
+
+  const currentUserOverdueBids = useMemo(
+    () => {
+      if (!activeView || !currentUserPm) {
+        return [];
+      }
+
+      const userKey = pmDirectoryKey(currentUserPm);
+
+      return items.filter(
+        row =>
+          pmDirectoryKey(row?.pm) === userKey
+          && isOverdue(row),
+      );
+    },
+    [activeView, currentUserPm, items],
   );
 
 
@@ -1129,6 +1209,67 @@ export default function BidLogWorkspace({
         row => row.projectType,
       ),
     [items],
+  );
+
+
+  useEffect(
+    () => {
+      if (
+        !activeView
+        || loading
+        || startupPmFilterAppliedRef.current
+        || !currentUserPm
+      ) {
+        return;
+      }
+
+      startupPmFilterAppliedRef.current = true;
+      setPmFilter(currentUserPm);
+    },
+    [activeView, currentUserPm, loading],
+  );
+
+
+  useEffect(
+    () => {
+      if (
+        !activeView
+        || loading
+        || overdueNoticeShownRef.current
+        || !currentUserPm
+        || !currentUserOverdueBids.length
+      ) {
+        return;
+      }
+
+      overdueNoticeShownRef.current = true;
+
+      const count = currentUserOverdueBids.length;
+
+      showActionToast(
+        'info',
+        `You have ${count} overdue assigned bid${count === 1 ? '' : 's'}.`,
+        {
+          actionLabel: 'Show Overdue',
+          onAction: () => {
+            setSearch('');
+            setPmFilter(currentUserPm);
+            setTypeFilter(ALL);
+            setDueFilter('overdue');
+            setMinimumProbability('');
+            setRealBidsOnly(false);
+            setQuickFilter(null);
+            setVisibleRowCount(BID_LOG_INITIAL_RENDER_COUNT);
+          },
+        },
+      );
+    },
+    [
+      activeView,
+      currentUserOverdueBids,
+      currentUserPm,
+      loading,
+    ],
   );
 
 
@@ -2047,7 +2188,9 @@ export default function BidLogWorkspace({
               <option value={ALL}>All Due Dates</option>
               <option value="7">Due Within 7 Days</option>
               <option value="30">Due Within 30 Days</option>
-              <option value="overdue">Overdue</option>
+              {activeView && (
+                <option value="overdue">Overdue</option>
+              )}
             </select>
           </label>
 
@@ -2086,7 +2229,7 @@ export default function BidLogWorkspace({
           </label>
 
           <label className="filter-field bid-log-probability-field">
-            <span>Minimum Probability</span>
+            <span>Probability</span>
             <div className="bid-log-percent-input">
               <input
                 type="number"
@@ -2448,6 +2591,8 @@ export default function BidLogWorkspace({
         key={actionToast?.id || 'bid-log-toast'}
         message={actionToast?.message}
         type={actionToast?.type}
+        actionLabel={actionToast?.actionLabel}
+        onAction={actionToast?.onAction}
         onDismiss={() => setActionToast(null)}
       />
 
@@ -2467,7 +2612,7 @@ export default function BidLogWorkspace({
             editorSelection.bidName || ''
           }
           user={user}
-          pmOptions={pmOptions}
+          pmOptions={approvedPmOptions}
           onClose={() => setEditSelection(null)}
           onSaved={handleBidSaved}
         />
@@ -2482,7 +2627,7 @@ export default function BidLogWorkspace({
             editorSelection.bidName || ''
           }
           user={user}
-          pmOptions={pmOptions}
+          pmOptions={approvedPmOptions}
           onClose={() => setEditSelection(null)}
           onSaved={handleBidSaved}
         />

@@ -5,6 +5,9 @@ import {
 } from 'react';
 
 import BidLogGeneralContractorSelect from './BidLogGeneralContractorSelect.jsx';
+import BidLogStateSelect, {
+  normalizeBidLogState,
+} from './BidLogStateSelect.jsx';
 import FloatingEditorShell from './FloatingEditorShell.jsx';
 import ActionToast from './ActionToast.jsx';
 import {
@@ -82,7 +85,7 @@ function initialForm(detail) {
     developer: textValue(detail?.developer),
     streetAddress: textValue(detail?.streetAddress),
     city: textValue(detail?.city),
-    state: textValue(detail?.state),
+    state: normalizeBidLogState(detail?.state),
     estimatedPrice: numberValue(detail?.estimatedPrice),
     margin: numberValue(detail?.margin),
     probabilityPercent: percentValue(detail?.probability),
@@ -339,14 +342,24 @@ export default function BidLogOutcomeEditDrawer({
   const editorPmOptions = useMemo(
     () => Array.from(
       new Set(
-        [detail?.pm, ...pmOptions]
+        pmOptions
           .filter(Boolean)
           .map(value => String(value).trim())
-          .filter(Boolean),
+          .filter(
+            value =>
+              value
+              && value.toUpperCase() !== 'NO PM ASSIGNED',
+          ),
       ),
     ).sort((a, b) => a.localeCompare(b)),
-    [detail?.pm, pmOptions],
+    [pmOptions],
   );
+
+  const currentPmIsApproved = !String(detail?.pm || '').trim()
+    || String(detail?.pm || '').trim().toUpperCase() === 'NO PM ASSIGNED'
+    || editorPmOptions.some(
+      pm => pm.toUpperCase() === String(detail?.pm || '').trim().toUpperCase(),
+    );
 
   async function loadGcOptions({ force = false } = {}) {
     if (!canEdit) {
@@ -451,8 +464,12 @@ export default function BidLogOutcomeEditDrawer({
         continue;
       }
 
-      const next = optionalText(form[name]);
-      const original = optionalText(detail?.[name]);
+      const next = name === 'state'
+        ? optionalText(normalizeBidLogState(form[name]))
+        : optionalText(form[name]);
+      const original = name === 'state'
+        ? optionalText(normalizeBidLogState(detail?.[name]))
+        : optionalText(detail?.[name]);
 
       if (!valuesEqual(next, original)) {
         changes[name] = next;
@@ -791,26 +808,34 @@ export default function BidLogOutcomeEditDrawer({
 
               {showField('pm') && (
                 <Field label="PM">
-                  <input
-                    type="text"
-                    list="bid-log-outcome-pm-options"
-                    value={form.pm}
+                  <select
+                    value={form.pm || 'No PM Assigned'}
                     disabled={!canField('pm')}
                     onChange={event => updateField('pm', event.target.value)}
-                  />
-                  <datalist id="bid-log-outcome-pm-options">
-                    {editorPmOptions.map(pm => <option key={pm} value={pm} />)}
-                  </datalist>
+                  >
+                    <option value="No PM Assigned">No PM Assigned</option>
+                    {!currentPmIsApproved && String(form.pm || '').trim() && (
+                      <option value={form.pm} disabled>
+                        {form.pm} (current value — not approved)
+                      </option>
+                    )}
+                    {editorPmOptions.map(pm => (
+                      <option key={pm} value={pm}>{pm}</option>
+                    ))}
+                  </select>
                 </Field>
               )}
 
               {showField('dueDate') && (
-                <Field label="Due Date">
+                <Field
+                  label="Due Date"
+                  hint="Read-only. Change the Due Date on the Bid Log calendar invite; it will update here."
+                >
                   <input
                     type="date"
                     value={form.dueDate}
-                    disabled={!canField('dueDate')}
-                    onChange={event => updateField('dueDate', event.target.value)}
+                    readOnly
+                    className="bid-edit-readonly-input"
                   />
                 </Field>
               )}
@@ -902,13 +927,13 @@ export default function BidLogOutcomeEditDrawer({
 
                 {showField('city') && (
                   <Field label="City">
-                    <input type="text" value={form.city} disabled={!canField('city')} onChange={event => updateField('city', event.target.value)} />
+                    <input type="text" value={form.city} disabled={!canField('city')} autoComplete="address-level2" onChange={event => updateField('city', event.target.value)} />
                   </Field>
                 )}
 
                 {showField('state') && (
                   <Field label="State">
-                    <input type="text" value={form.state} disabled={!canField('state')} onChange={event => updateField('state', event.target.value)} />
+                    <BidLogStateSelect value={form.state} disabled={!canField('state')} onChange={value => updateField('state', value)} />
                   </Field>
                 )}
               </div>

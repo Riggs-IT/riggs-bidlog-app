@@ -56,6 +56,7 @@ from .data_api import (
     create_bid_log_delegated_session,
     delete_bid_log_delegated_session,
     save_active_bid_projected_billing_settings,
+    transition_active_bid_lifecycle,
     update_active_bid,
     update_bid_log_outcome,
     update_active_project,
@@ -1720,6 +1721,60 @@ async def bid_log_active_update_proxy(
         _raise_active_bid_proxy_error(exc)
 
 
+@app.post(
+    "/api/bid-log/active/{sharepoint_item_id}/lifecycle"
+)
+async def bid_log_active_lifecycle_proxy(
+    request: Request,
+    sharepoint_item_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    _require_management_workspace_admin(current_user)
+    _require_bid_log_editor(current_user)
+
+    try:
+        payload = await request.json()
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_json_body",
+        ) from exc
+
+    if not isinstance(payload, dict):
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_active_bid_lifecycle",
+        )
+
+    delegated_session_id = (
+        _bid_log_delegated_session_for_write(
+            request,
+            current_user,
+        )
+    )
+
+    try:
+        return _role_scoped_bid_log_payload(
+            transition_active_bid_lifecycle(
+                sharepoint_item_id,
+                payload,
+                actor_eid=current_user.eid,
+                request_id=_browser_request_id(request),
+                delegated_session_id=
+                    delegated_session_id,
+            ),
+            current_user,
+        )
+
+    except Exception as exc:
+        _raise_active_bid_proxy_error(exc)
+
+
 # ============================================================
 # DECIDED / OUTCOME BID LOG WORKSPACE
 # ============================================================
@@ -2805,6 +2860,34 @@ if assets_dir.exists():
         ),
         name="assets",
     )
+
+
+@app.get(
+    "/gong-favicon.png",
+    include_in_schema=False,
+)
+def gong_favicon():
+    favicon_file = (
+        FRONTEND_DIST
+        / "gong-favicon.png"
+    )
+
+    if not favicon_file.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="favicon_not_found",
+        )
+
+    response = FileResponse(
+        favicon_file,
+        media_type="image/png",
+    )
+
+    response.headers[
+        "Cache-Control"
+    ] = "public, max-age=86400"
+
+    return response
 
 
 @app.get(

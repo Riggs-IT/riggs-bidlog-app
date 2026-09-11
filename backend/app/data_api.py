@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import atexit
 from dataclasses import dataclass
 from uuid import UUID, uuid4
@@ -992,6 +993,101 @@ def update_active_bid(
     # Bid Log list and the projected-billings dashboard. Keep
     # detail reads uncached so a newly opened editor always
     # receives a fresh ETag.
+    _dashboard_cache_invalidate_prefix(
+        "active_bid_list:",
+    )
+    _dashboard_cache_invalidate_key(
+        "active_bid_dashboard",
+    )
+
+    return result
+
+
+
+def transition_active_bid_lifecycle(
+    sharepoint_item_id: int,
+    payload: dict,
+    *,
+    actor_eid: int,
+    request_id: str,
+    delegated_session_id: str | None = None,
+) -> dict:
+    operation = "Process Active Bid Log lifecycle action"
+
+    try:
+        response = _get_http_client().post(
+            f"/v1/bid-log/active/{sharepoint_item_id}/lifecycle",
+            json=payload,
+            headers=_request_headers(
+                include_service_auth=True,
+                request_id=request_id,
+                actor_eid=actor_eid,
+                delegated_session_id=
+                    delegated_session_id,
+            ),
+        )
+
+    except httpx.TimeoutException as exc:
+        raise DataAPIUnavailable(
+            "Riggs Data API request timed out "
+            f"during {operation}."
+        ) from exc
+
+    except httpx.RequestError as exc:
+        raise DataAPIUnavailable(
+            "Unable to connect to the Riggs Data API "
+            f"during {operation}."
+        ) from exc
+
+    if response.status_code in {
+        400,
+        401,
+        403,
+        404,
+        409,
+        422,
+        502,
+    }:
+        detail = None
+
+        try:
+            response_payload = response.json()
+        except ValueError:
+            response_payload = None
+
+        if isinstance(response_payload, dict):
+            raw_detail = response_payload.get("detail")
+
+            if isinstance(raw_detail, dict):
+                detail = json.dumps(
+                    raw_detail,
+                    separators=(",", ":"),
+                )
+            elif raw_detail is not None:
+                detail = str(raw_detail)
+
+        if detail is not None:
+            raise DataAPIRequestRejected(
+                response.status_code,
+                detail,
+            )
+
+    _raise_common_failure(
+        response,
+        operation=operation,
+    )
+
+    if response.status_code != 200:
+        raise DataAPIInvalidResponse(
+            "Unexpected Riggs Data API response "
+            f"during {operation}."
+        )
+
+    result = _json_object(
+        response,
+        operation=operation,
+    )
+
     _dashboard_cache_invalidate_prefix(
         "active_bid_list:",
     )

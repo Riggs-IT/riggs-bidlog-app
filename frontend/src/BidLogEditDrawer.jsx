@@ -5,8 +5,12 @@ import {
 } from 'react';
 
 import BidLogGeneralContractorSelect from './BidLogGeneralContractorSelect.jsx';
+import BidLogStateSelect, {
+  normalizeBidLogState,
+} from './BidLogStateSelect.jsx';
 import FloatingEditorShell from './FloatingEditorShell.jsx';
 import ActionToast from './ActionToast.jsx';
+import './BidLogLifecyclePolish.css';
 import {
   generalContractorNames,
 } from './GeneralContractors.jsx';
@@ -16,6 +20,47 @@ const ORDINARY_STATUSES = [
   'Potential',
   'Assigned',
 ];
+
+const LIFECYCLE_STATUSES = [
+  'Awarded',
+  'Lost',
+  'Dead',
+];
+
+
+function isLifecycleStatus(value) {
+  const normalized = String(value || '').trim().toUpperCase();
+
+  return LIFECYCLE_STATUSES.some(
+    status => status.toUpperCase() === normalized,
+  );
+}
+
+
+function hasAssignedPm(value) {
+  const normalized = String(value || '').trim();
+
+  return Boolean(
+    normalized
+    && normalized.toUpperCase() !== 'NO PM ASSIGNED'
+  );
+}
+
+
+function resolvedAssignmentStatus(pm, status) {
+  const normalized = String(status || '').trim();
+  const upper = normalized.toUpperCase();
+
+  if (!ORDINARY_STATUSES.some(
+    value => value.toUpperCase() === upper,
+  )) {
+    return normalized;
+  }
+
+  return hasAssignedPm(pm)
+    ? 'Assigned'
+    : 'Potential';
+}
 
 const PROJECT_TYPES = [
   'Tilt',
@@ -83,7 +128,10 @@ function initialForm(detail) {
     bidName: textValue(detail?.bidName),
     pm: textValue(detail?.pm),
     dueDate: dateValue(detail?.dueDate),
-    status: textValue(detail?.status),
+    status: resolvedAssignmentStatus(
+      detail?.pm,
+      detail?.status,
+    ),
     projectType: textValue(detail?.projectType),
     purpose: textValue(detail?.purpose),
     generalContractors: generalContractorNames(
@@ -92,12 +140,13 @@ function initialForm(detail) {
     developer: textValue(detail?.developer),
     streetAddress: textValue(detail?.streetAddress),
     city: textValue(detail?.city),
-    state: textValue(detail?.state),
+    state: normalizeBidLogState(detail?.state),
     estimatedPrice: numberValue(detail?.estimatedPrice),
     margin: numberValue(detail?.margin),
     probabilityPercent: percentValue(detail?.probability),
     retentionPercent: percentValue(detail?.retention),
     anticipatedStartDate: dateValue(detail?.anticipatedStartDate),
+    estimatedDurationMonths: '',
     lastContactDate: dateValue(detail?.lastContactDate),
     numberOfBuildings: numberValue(detail?.numberOfBuildings),
     numberOfPanels: numberValue(detail?.numberOfPanels),
@@ -189,7 +238,53 @@ function valuesEqual(left, right) {
 }
 
 
+function structuredLifecycleError(error) {
+  const detail = String(error?.message || '').trim();
+
+  if (!detail.startsWith('{')) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(detail);
+    return parsed && typeof parsed === 'object'
+      ? parsed
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+
 function errorMessage(error, fallback) {
+  const structured = structuredLifecycleError(error);
+
+  if (structured?.code === 'invalid_active_bid_lifecycle') {
+    return String(
+      structured.message
+      || 'The lifecycle action was rejected.',
+    );
+  }
+
+  if (structured?.code === 'bid_log_lifecycle_partial_failure') {
+    const expected = Number(structured.expectedCloneCount) || 0;
+    const created = Number(structured.createdCloneCount) || 0;
+    const failed = Array.isArray(structured.failedGeneralContractors)
+      ? structured.failedGeneralContractors.filter(Boolean)
+      : [];
+
+    return [
+      'The Award was applied, but not every GC Not Awarded copy was created.',
+      `${created} of ${expected} losing-GC copies were created.`,
+      failed.length
+        ? `Missing: ${failed.join(', ')}.`
+        : null,
+      'Do not Award the bid again.',
+    ]
+      .filter(Boolean)
+      .join(' ');
+  }
+
   const detail = String(error?.message || '').trim();
 
   if (detail === 'active_bid_changed') {
@@ -206,6 +301,48 @@ function errorMessage(error, fallback) {
 
   return detail || fallback;
 }
+
+
+const ARIZONA_CITY_SUGGESTIONS = [
+  'Apache Junction',
+  'Avondale',
+  'Buckeye',
+  'Casa Grande',
+  'Chandler',
+  'Coolidge',
+  'Cottonwood',
+  'El Mirage',
+  'Eloy',
+  'Flagstaff',
+  'Florence',
+  'Fountain Hills',
+  'Gilbert',
+  'Glendale',
+  'Goodyear',
+  'Kingman',
+  'Lake Havasu City',
+  'Litchfield Park',
+  'Marana',
+  'Maricopa',
+  'Mesa',
+  'Nogales',
+  'Paradise Valley',
+  'Payson',
+  'Peoria',
+  'Phoenix',
+  'Prescott',
+  'Prescott Valley',
+  'Queen Creek',
+  'Sahuarita',
+  'Scottsdale',
+  'Sedona',
+  'Sierra Vista',
+  'Surprise',
+  'Tempe',
+  'Tolleson',
+  'Tucson',
+  'Yuma',
+];
 
 
 async function requestJson(path, options = {}) {
@@ -290,9 +427,16 @@ function Field({
   children,
   wide = false,
   hint,
+  fieldKey = null,
+  invalid = false,
 }) {
   return (
-    <label className={`bid-edit-field${wide ? ' wide' : ''}`}>
+    <label
+      className={
+        `bid-edit-field${wide ? ' wide' : ''}${invalid ? ' required-attention' : ''}`
+      }
+      data-bid-field={fieldKey || undefined}
+    >
       <span>{label}</span>
       {children}
       {hint && <small>{hint}</small>}
@@ -346,6 +490,14 @@ export default function BidLogEditDrawer({
   );
   const [gcOptionsLoading, setGcOptionsLoading] = useState(false);
   const [gcOptionsError, setGcOptionsError] = useState(null);
+  const [forecastProject, setForecastProject] = useState(null);
+  const [forecastError, setForecastError] = useState(null);
+  const [dateAwarded, setDateAwarded] = useState('');
+  const [winningGeneralContractor, setWinningGeneralContractor] = useState('');
+  const [lifecycleReason, setLifecycleReason] = useState('');
+  const [lifecycleComplete, setLifecycleComplete] = useState(false);
+  const [requiredFields, setRequiredFields] = useState([]);
+  const [requiredAction, setRequiredAction] = useState(null);
 
   const role = String(user?.appRole || '').trim().toUpperCase();
   const canEdit = role === 'ADMIN' || role === 'OPERATIONS';
@@ -359,31 +511,172 @@ export default function BidLogEditDrawer({
     value => value.toUpperCase() === currentStatus.toUpperCase(),
   );
 
+  const pmAssigned = hasAssignedPm(form?.pm);
+  const selectedLifecycleAction = isLifecycleStatus(form?.status)
+    ? String(form.status).trim()
+    : null;
+
+  const assignmentStatus = pmAssigned
+    ? 'Assigned'
+    : 'Potential';
+
   const statusOptions = useMemo(
     () => {
-      if (!currentStatus || ordinaryStatus) {
-        return ORDINARY_STATUSES;
+      const allowed = pmAssigned
+        ? ['Assigned', 'Awarded', 'Lost', 'Dead']
+        : ['Potential', 'Lost', 'Dead'];
+
+      if (
+        currentStatus
+        && !allowed.some(
+          value => value.toUpperCase() === currentStatus.toUpperCase(),
+        )
+        && !ORDINARY_STATUSES.some(
+          value => value.toUpperCase() === currentStatus.toUpperCase(),
+        )
+      ) {
+        return [currentStatus, ...allowed];
       }
 
-      return [currentStatus, ...ORDINARY_STATUSES];
+      return allowed;
     },
-    [currentStatus, ordinaryStatus],
+    [currentStatus, pmAssigned],
   );
 
   const editorPmOptions = useMemo(
     () => Array.from(
       new Set(
-        [
-          detail?.pm,
-          ...pmOptions,
-        ]
+        pmOptions
           .filter(Boolean)
           .map(value => String(value).trim())
-          .filter(Boolean),
+          .filter(
+            value =>
+              value
+              && value.toUpperCase() !== 'NO PM ASSIGNED',
+          ),
       ),
     ).sort((a, b) => a.localeCompare(b)),
-    [detail?.pm, pmOptions],
+    [pmOptions],
   );
+
+  const currentPmIsApproved = !hasAssignedPm(form?.pm)
+    || editorPmOptions.some(
+      pm => pm.toUpperCase() === String(form?.pm || '').trim().toUpperCase(),
+    );
+
+  function clearRequiredField(fieldKey) {
+    if (!fieldKey) {
+      return;
+    }
+
+    setRequiredFields(
+      current => current.filter(key => key !== fieldKey),
+    );
+  }
+
+
+  function focusRequiredField(fieldKey) {
+    if (!fieldKey) {
+      return;
+    }
+
+    window.setTimeout(
+      () => {
+        const target = document.querySelector(
+          `[data-bid-field="${fieldKey}"]`,
+        );
+
+        if (!target) {
+          return;
+        }
+
+        target.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+
+        const control = target.querySelector(
+          'input:not([type="hidden"]), select, textarea, button',
+        );
+
+        window.setTimeout(
+          () => control?.focus({ preventScroll: true }),
+          260,
+        );
+      },
+      0,
+    );
+  }
+
+
+  function showRequiredFields(action, missing) {
+    const keys = missing.map(item => item.key);
+    const labels = missing.map(item => item.label);
+
+    setRequiredAction(action);
+    setRequiredFields(keys);
+    setSaveError(
+      `${action} cannot be completed yet. ${labels.length} required ${labels.length === 1 ? 'field needs' : 'fields need'} attention. First: ${labels[0]}.`,
+    );
+
+    focusRequiredField(keys[0]);
+  }
+
+
+  function awardMissingFields() {
+    const contractors = generalContractorNames(form?.generalContractors);
+    const estimatedPrice = optionalNumber(form?.estimatedPrice);
+    const margin = optionalNumber(form?.margin);
+    const retention = optionalPercentFraction(form?.retentionPercent);
+    const duration = optionalInteger(form?.estimatedDurationMonths);
+
+    return [
+      { key: 'bidName', label: 'Bid Name', missing: !optionalText(form?.bidName) },
+      { key: 'pm', label: 'PM', missing: !hasAssignedPm(form?.pm) },
+      { key: 'dueDate', label: 'Due Date', missing: !optionalText(form?.dueDate) },
+      { key: 'projectType', label: 'Project Type', missing: !optionalText(form?.projectType) },
+      { key: 'purpose', label: 'Purpose', missing: !optionalText(form?.purpose) },
+      { key: 'generalContractors', label: 'General Contractor', missing: !contractors.length },
+      {
+        key: 'estimatedPrice',
+        label: 'Estimated Price',
+        missing: !Number.isFinite(estimatedPrice) || estimatedPrice <= 0,
+      },
+      { key: 'margin', label: 'Margin', missing: margin === null || Number.isNaN(margin) },
+      {
+        key: 'retentionPercent',
+        label: 'Retention',
+        missing: retention === null || Number.isNaN(retention),
+      },
+      {
+        key: 'anticipatedStartDate',
+        label: 'Anticipated Start',
+        missing: !optionalText(form?.anticipatedStartDate),
+      },
+      {
+        key: 'estimatedDurationMonths',
+        label: 'Estimated Project Duration',
+        missing: !Number.isFinite(duration) || duration < 1 || duration > 120,
+      },
+      { key: 'streetAddress', label: 'Street Address', missing: !optionalText(form?.streetAddress) },
+      { key: 'city', label: 'City', missing: !optionalText(form?.city) },
+      { key: 'state', label: 'State', missing: !optionalText(form?.state) },
+      { key: 'dateAwarded', label: 'Date Awarded', missing: !optionalText(dateAwarded) },
+      {
+        key: 'winningGeneralContractor',
+        label: 'Winning General Contractor',
+        missing:
+          contractors.length > 1
+          && !optionalText(winningGeneralContractor),
+      },
+    ].filter(item => item.missing);
+  }
+
+
+  function sectionNeedsAttention(fieldKeys) {
+    return fieldKeys.some(key => requiredFields.includes(key));
+  }
+
 
   async function loadGcOptions({ force = false } = {}) {
     if (!canEdit) {
@@ -417,11 +710,24 @@ export default function BidLogEditDrawer({
     setLoadError(null);
     setSaveError(null);
     setSaveMessage(null);
+    setRequiredFields([]);
+    setRequiredAction(null);
 
     try {
-      const next = await requestJson(
-        `/api/bid-log/active/${sharePointItemId}`,
-      );
+      const [detailResult, forecastResult] = await Promise.allSettled([
+        requestJson(
+          `/api/bid-log/active/${sharePointItemId}`,
+        ),
+        requestJson(
+          `/api/projected-billings/active-bids/${sharePointItemId}/monthly`,
+        ),
+      ]);
+
+      if (detailResult.status === 'rejected') {
+        throw detailResult.reason;
+      }
+
+      const next = detailResult.value;
 
       /*
         The table already knows the bid name.
@@ -440,8 +746,30 @@ export default function BidLogEditDrawer({
             }
           : next;
 
+      const nextForecast = forecastResult.status === 'fulfilled'
+        ? forecastResult.value?.project || null
+        : null;
+
       setDetail(normalized);
-      setForm(initialForm(normalized));
+      setForecastProject(nextForecast);
+      setForecastError(
+        forecastResult.status === 'rejected'
+          ? errorMessage(
+              forecastResult.reason,
+              'Unable to load Estimated Project Duration.',
+            )
+          : null,
+      );
+      setForm({
+        ...initialForm(normalized),
+        estimatedDurationMonths: numberValue(
+          nextForecast?.estimatedDurationMonths,
+        ),
+      });
+      setDateAwarded('');
+      setWinningGeneralContractor('');
+      setLifecycleReason('');
+      setLifecycleComplete(false);
     } catch (error) {
       setLoadError(
         errorMessage(error, 'Unable to load this bid.'),
@@ -465,6 +793,50 @@ export default function BidLogEditDrawer({
     [canEdit],
   );
 
+  useEffect(
+    () => {
+      if (!selectedLifecycleAction) {
+        return undefined;
+      }
+
+      const timer = window.setTimeout(
+        () => {
+          const section = document.querySelector(
+            '[data-bid-lifecycle-section="true"]',
+          );
+
+          if (!section) {
+            return;
+          }
+
+          section.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+          });
+
+          const fieldKey = selectedLifecycleAction === 'Awarded'
+            ? 'dateAwarded'
+            : 'lifecycleReason';
+
+          const control = section.querySelector(
+            `[data-bid-field="${fieldKey}"] input, `
+            + `[data-bid-field="${fieldKey}"] textarea, `
+            + `[data-bid-field="${fieldKey}"] select`,
+          );
+
+          window.setTimeout(
+            () => control?.focus({ preventScroll: true }),
+            260,
+          );
+        },
+        0,
+      );
+
+      return () => window.clearTimeout(timer);
+    },
+    [selectedLifecycleAction],
+  );
+
   function updateField(name, value) {
     setForm(
       current => {
@@ -472,6 +844,16 @@ export default function BidLogEditDrawer({
           ...current,
           [name]: value,
         };
+
+        if (name === 'pm') {
+          const status = String(current.status || '').trim();
+
+          if (!isLifecycleStatus(status)) {
+            next.status = hasAssignedPm(value)
+              ? 'Assigned'
+              : 'Potential';
+          }
+        }
 
         if (
           (name === 'anticipatedStartDate' || name === 'probabilityPercent')
@@ -484,6 +866,13 @@ export default function BidLogEditDrawer({
       },
     );
 
+    clearRequiredField(name);
+
+    if (name === 'status') {
+      setRequiredFields([]);
+      setRequiredAction(null);
+    }
+
     setSaveError(null);
     setSaveMessage(null);
   }
@@ -493,8 +882,8 @@ export default function BidLogEditDrawer({
     const invalid = [];
 
     const textFields = [
+      'bidName',
       'pm',
-      'status',
       'projectType',
       'purpose',
       'developer',
@@ -505,12 +894,29 @@ export default function BidLogEditDrawer({
     ];
 
     for (const name of textFields) {
-      const next = optionalText(form[name]);
-      const original = optionalText(detail?.[name]);
+      const next = name === 'state'
+        ? optionalText(normalizeBidLogState(form[name]))
+        : optionalText(form[name]);
+      const original = name === 'state'
+        ? optionalText(normalizeBidLogState(detail?.[name]))
+        : optionalText(detail?.[name]);
 
       if (!valuesEqual(next, original)) {
         changes[name] = next;
       }
+    }
+
+    const nextStatus = optionalText(form.status);
+    const originalStatus = optionalText(detail?.status);
+
+    const ordinaryTargetStatus = isLifecycleStatus(nextStatus)
+      ? hasAssignedPm(form.pm)
+        ? 'Assigned'
+        : 'Potential'
+      : nextStatus;
+
+    if (!valuesEqual(ordinaryTargetStatus, originalStatus)) {
+      changes.status = ordinaryTargetStatus;
     }
 
 
@@ -626,6 +1032,76 @@ export default function BidLogEditDrawer({
     return { changes, invalid };
   }
 
+  function buildDurationChange() {
+    const next = optionalInteger(form?.estimatedDurationMonths);
+    const original = forecastProject?.estimatedDurationMonths === null
+      || forecastProject?.estimatedDurationMonths === undefined
+        ? null
+        : Number(forecastProject.estimatedDurationMonths);
+
+    if (
+      Number.isNaN(next)
+      || (next !== null && (next < 1 || next > 120))
+    ) {
+      return {
+        changed: false,
+        invalid: 'Estimated Project Duration must be between 1 and 120 months.',
+        value: next,
+      };
+    }
+
+    return {
+      changed: !valuesEqual(next, original),
+      invalid: null,
+      value: next,
+    };
+  }
+
+
+  async function saveDurationIfNeeded(durationChange) {
+    if (!durationChange.changed) {
+      return forecastProject;
+    }
+
+    if (!forecastProject) {
+      throw new Error(
+        forecastError
+        || 'Forecast settings are unavailable. Reload the bid before saving Duration.',
+      );
+    }
+
+    const saved = await requestJson(
+      `/api/projected-billings/active-bids/${sharePointItemId}/settings`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({
+          includeInForecast:
+            forecastProject.includeInForecast
+            ?? true,
+          startDateOverride:
+            forecastProject.startDateOverride
+            || null,
+          amountOverride:
+            forecastProject.amountOverride
+            ?? null,
+          estimatedDurationMonths:
+            durationChange.value,
+          projectionNotes:
+            forecastProject.projectionNotes
+            || null,
+          expectedRowVersion:
+            forecastProject.rowVersion
+            || null,
+        }),
+      },
+    );
+
+    const nextProject = saved?.project || forecastProject;
+    setForecastProject(nextProject);
+    return nextProject;
+  }
+
+
   function requestClose() {
     if (saving) {
       return;
@@ -634,7 +1110,14 @@ export default function BidLogEditDrawer({
     const pending = form && detail
       ? buildChanges().changes
       : {};
-    const hasUnsavedChanges = Object.keys(pending).length > 0;
+    const durationChange = form
+      ? buildDurationChange()
+      : { changed: false };
+    const hasUnsavedChanges = Boolean(
+      Object.keys(pending).length
+      || durationChange.changed
+      || (selectedLifecycleAction && !lifecycleComplete)
+    );
 
     if (
       hasUnsavedChanges
@@ -649,19 +1132,86 @@ export default function BidLogEditDrawer({
   }
 
   async function save() {
-    if (!canEdit || !detail?.etag || !form || saving) {
+    if (!canEdit || !detail?.etag || !form || saving || lifecycleComplete) {
       return;
     }
 
     const { changes, invalid } = buildChanges();
+    const durationChange = buildDurationChange();
 
     if (invalid.length) {
       setSaveError(invalid[0]);
       return;
     }
 
-    if (!Object.keys(changes).length) {
+    if (durationChange.invalid) {
+      setSaveError(durationChange.invalid);
+      return;
+    }
+
+    const lifecycleAction = selectedLifecycleAction;
+    const contractors = generalContractorNames(form.generalContractors);
+
+    if (lifecycleAction === 'Awarded') {
+      const missing = awardMissingFields();
+
+      if (missing.length) {
+        showRequiredFields('Award', missing);
+        return;
+      }
+
+      if (
+        contractors.length > 1
+        && !contractors.some(
+          contractor => contractor.toUpperCase()
+            === String(winningGeneralContractor).trim().toUpperCase(),
+        )
+      ) {
+        showRequiredFields(
+          'Award',
+          [{
+            key: 'winningGeneralContractor',
+            label: 'Winning General Contractor',
+          }],
+        );
+        return;
+      }
+    }
+
+    if (
+      (lifecycleAction === 'Lost' || lifecycleAction === 'Dead')
+      && !optionalText(lifecycleReason)
+    ) {
+      showRequiredFields(
+        lifecycleAction,
+        [{
+          key: 'lifecycleReason',
+          label: 'Reason',
+        }],
+      );
+      return;
+    }
+
+    setRequiredFields([]);
+    setRequiredAction(null);
+
+    if (
+      !Object.keys(changes).length
+      && !durationChange.changed
+      && !lifecycleAction
+    ) {
       setSaveMessage('No changes to save.');
+      return;
+    }
+
+    if (
+      lifecycleAction
+      && !window.confirm(
+        lifecycleAction === 'Awarded'
+          ? 'Award this bid? The winning GC will remain on the Awarded record and losing GCs will be created as GC Not Awarded records.'
+          : `Mark this bid ${lifecycleAction}? The existing Bid Log workflow will move it out of Active Bids.`,
+      )
+    ) {
       return;
     }
 
@@ -669,23 +1219,117 @@ export default function BidLogEditDrawer({
     setSaveError(null);
     setSaveMessage(null);
 
-    try {
-      const updated = await requestJson(
-        `/api/bid-log/active/${sharePointItemId}`,
-        {
-          method: 'PATCH',
-          body: JSON.stringify({
-            expectedEtag: detail.etag,
-            ...changes,
-          }),
-        },
-      );
+    let workingDetail = detail;
+    let workingForecast = forecastProject;
 
-      setDetail(updated);
-      setForm(initialForm(updated));
+    try {
+      if (Object.keys(changes).length) {
+        workingDetail = await requestJson(
+          `/api/bid-log/active/${sharePointItemId}`,
+          {
+            method: 'PATCH',
+            body: JSON.stringify({
+              expectedEtag: workingDetail.etag,
+              ...changes,
+            }),
+          },
+        );
+
+        setDetail(workingDetail);
+      }
+
+      if (durationChange.changed) {
+        workingForecast = await saveDurationIfNeeded(durationChange);
+      }
+
+      if (lifecycleAction) {
+        const lifecycleResult = await requestJson(
+          `/api/bid-log/active/${sharePointItemId}/lifecycle`,
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              expectedEtag: workingDetail.etag,
+              action: lifecycleAction,
+              dateAwarded:
+                lifecycleAction === 'Awarded'
+                  ? dateAwarded
+                  : null,
+              winningGeneralContractor:
+                lifecycleAction === 'Awarded'
+                && contractors.length > 1
+                  ? optionalText(winningGeneralContractor)
+                  : null,
+              reason:
+                lifecycleAction === 'Lost'
+                || lifecycleAction === 'Dead'
+                  ? optionalText(lifecycleReason)
+                  : null,
+            }),
+          },
+        );
+
+        const finalStatus = lifecycleResult?.finalStatus || lifecycleAction;
+        const completedDetail = {
+          ...workingDetail,
+          status: finalStatus,
+        };
+
+        setDetail(completedDetail);
+        setForm({
+          ...initialForm(completedDetail),
+          estimatedDurationMonths: numberValue(
+            workingForecast?.estimatedDurationMonths,
+          ),
+        });
+        setLifecycleComplete(true);
+
+        if (
+          finalStatus === 'Awarded'
+          && Number(lifecycleResult?.expectedCloneCount) > 0
+        ) {
+          setSaveMessage(
+            `Bid awarded. ${lifecycleResult.createdCloneCount} GC Not Awarded ${Number(lifecycleResult.createdCloneCount) === 1 ? 'record was' : 'records were'} created.`,
+          );
+        } else {
+          setSaveMessage(`Bid marked ${finalStatus}.`);
+        }
+
+        onSaved?.(completedDetail);
+        return;
+      }
+
+      setDetail(workingDetail);
+      setForm({
+        ...initialForm(workingDetail),
+        estimatedDurationMonths: numberValue(
+          workingForecast?.estimatedDurationMonths,
+        ),
+      });
       setSaveMessage('Bid saved.');
-      onSaved?.(updated);
+      onSaved?.(workingDetail);
     } catch (error) {
+      const structured = structuredLifecycleError(error);
+
+      if (
+        structured?.code === 'bid_log_lifecycle_partial_failure'
+        && structured.transitionApplied === true
+      ) {
+        const completedDetail = {
+          ...workingDetail,
+          status: structured.finalStatus || 'Awarded',
+        };
+
+        setDetail(completedDetail);
+        setForm({
+          ...initialForm(completedDetail),
+          estimatedDurationMonths: numberValue(
+            workingForecast?.estimatedDurationMonths,
+          ),
+        });
+        setLifecycleComplete(true);
+        onSaved?.(completedDetail);
+      }
+
       setSaveError(
         errorMessage(error, 'Unable to save this bid.'),
       );
@@ -694,11 +1338,21 @@ export default function BidLogEditDrawer({
     }
   }
 
+
+  const durationChange = form && forecastProject
+    ? buildDurationChange()
+    : { changed: false };
+
   const hasUnsavedChanges = Boolean(
     form
     && detail
-    && Object.keys(buildChanges().changes).length,
+    && (
+      Object.keys(buildChanges().changes).length
+      || durationChange.changed
+      || selectedLifecycleAction
+    )
   );
+
 
   if (!sharePointItemId) {
     return null;
@@ -719,7 +1373,11 @@ export default function BidLogEditDrawer({
           <footer className="bid-log-edit-footer floating-editor-footer">
             <div className="floating-editor-footer-status">
               <small>
-                Save updates the live SharePoint Bid Log item.
+                {lifecycleComplete
+                  ? 'Lifecycle action complete. Use Back to Bid Log when finished reviewing.'
+                  : selectedLifecycleAction
+                    ? 'Save will apply field updates first, then complete the selected lifecycle action.'
+                    : 'Save updates the live SharePoint Bid Log item.'}
               </small>
               {hasUnsavedChanges && (
                 <span className="floating-editor-dirty-indicator">
@@ -741,9 +1399,17 @@ export default function BidLogEditDrawer({
                   type="button"
                   className="primary-button bid-log-save-button"
                   onClick={save}
-                  disabled={saving || !detail.etag || !hasUnsavedChanges}
+                  disabled={saving || lifecycleComplete || !detail.etag || !hasUnsavedChanges}
                 >
-                  {saving ? 'Saving…' : 'Save Bid'}
+                  {saving
+                    ? 'Saving…'
+                    : selectedLifecycleAction === 'Awarded'
+                      ? 'Save & Award Bid'
+                      : selectedLifecycleAction === 'Lost'
+                        ? 'Save & Mark Lost'
+                        : selectedLifecycleAction === 'Dead'
+                          ? 'Save & Mark Dead'
+                          : 'Save Bid'}
                 </button>
               )}
             </div>
@@ -803,7 +1469,35 @@ export default function BidLogEditDrawer({
                 }}
               />
 
-              <section className="bid-edit-section">
+              {requiredFields.length > 0 && (
+                <div className="bid-lifecycle-required-banner" role="alert">
+                  <div>
+                    <strong>
+                      {requiredAction || selectedLifecycleAction || 'This action'} cannot be completed yet
+                    </strong>
+                    <span>
+                      {requiredFields.length} required {requiredFields.length === 1 ? 'field needs' : 'fields need'} attention.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => focusRequiredField(requiredFields[0])}
+                  >
+                    Go to first missing field
+                  </button>
+                </div>
+              )}
+
+              <section
+                className={`bid-edit-section${sectionNeedsAttention([
+                  'bidName',
+                  'pm',
+                  'dueDate',
+                  'projectType',
+                  'purpose',
+                ]) ? ' required-attention' : ''}`}
+              >
                 <div className="bid-edit-section-heading">
                   <div>
                     <span className="section-kicker">BID</span>
@@ -818,34 +1512,45 @@ export default function BidLogEditDrawer({
                   <Field
                     label="Bid Name"
                     wide
-                    hint="Read-only for now because the existing calendar invite is tied to this value."
+                    fieldKey="bidName"
+                    invalid={requiredFields.includes('bidName')}
                   >
                     <input
                       type="text"
                       value={form.bidName}
-                      readOnly
-                      className="bid-edit-readonly-input"
+                      disabled={!canEdit}
+                      onChange={event => updateField('bidName', event.target.value)}
                     />
                   </Field>
 
-                  <Field label="PM">
-                    <input
-                      type="text"
-                      list="bid-log-pm-options"
-                      value={form.pm}
+                  <Field
+                    label="PM"
+                    fieldKey="pm"
+                    invalid={requiredFields.includes('pm')}
+                    hint="Only approved Riggs PMs can be assigned. Selecting a PM automatically makes the bid Assigned."
+                  >
+                    <select
+                      value={form.pm || 'No PM Assigned'}
                       disabled={!canEdit}
                       onChange={event => updateField('pm', event.target.value)}
-                    />
-                    <datalist id="bid-log-pm-options">
+                    >
+                      <option value="No PM Assigned">No PM Assigned</option>
+                      {!currentPmIsApproved && hasAssignedPm(form.pm) && (
+                        <option value={form.pm} disabled>
+                          {form.pm} (current value — not approved)
+                        </option>
+                      )}
                       {editorPmOptions.map(pm => (
-                        <option key={pm} value={pm} />
+                        <option key={pm} value={pm}>{pm}</option>
                       ))}
-                    </datalist>
+                    </select>
                   </Field>
 
                   <Field
                     label="Due Date"
-                    hint="Read-only for now because the existing calendar invite is tied to this value."
+                    fieldKey="dueDate"
+                    invalid={requiredFields.includes('dueDate')}
+                    hint="Change the Due Date on the Bid Log calendar invite; it will update here."
                   >
                     <input
                       type="date"
@@ -857,7 +1562,11 @@ export default function BidLogEditDrawer({
 
                   <Field
                     label="Status"
-                    hint="Only user-assigned active statuses are shown here. Outcome statuses use dedicated lifecycle actions."
+                    hint={
+                      pmAssigned
+                        ? 'Assigned is the active status for a bid with a PM. Awarded, Lost, and Dead run the dedicated lifecycle workflow.'
+                        : 'Potential is used while no PM is assigned. Lost and Dead remain available; Awarded requires a PM.'
+                    }
                   >
                     <select
                       value={form.status}
@@ -869,7 +1578,14 @@ export default function BidLogEditDrawer({
                         <option
                           key={status}
                           value={status}
-                          disabled={!ORDINARY_STATUSES.includes(status)}
+                          disabled={
+                            (status === assignmentStatus && !selectedLifecycleAction)
+                            || (
+                              status === currentStatus
+                              && !ORDINARY_STATUSES.includes(status)
+                              && !LIFECYCLE_STATUSES.includes(status)
+                            )
+                          }
                         >
                           {status}
                         </option>
@@ -877,7 +1593,11 @@ export default function BidLogEditDrawer({
                     </select>
                   </Field>
 
-                  <Field label="Project Type">
+                  <Field
+                    label="Project Type"
+                    fieldKey="projectType"
+                    invalid={requiredFields.includes('projectType')}
+                  >
                     <select
                       value={form.projectType}
                       disabled={!canEdit}
@@ -890,7 +1610,11 @@ export default function BidLogEditDrawer({
                     </select>
                   </Field>
 
-                  <Field label="Purpose">
+                  <Field
+                    label="Purpose"
+                    fieldKey="purpose"
+                    invalid={requiredFields.includes('purpose')}
+                  >
                     <select
                       value={form.purpose}
                       disabled={!canEdit}
@@ -923,7 +1647,14 @@ export default function BidLogEditDrawer({
                 </div>
               </section>
 
-              <section className="bid-edit-section">
+              <section
+                className={`bid-edit-section${sectionNeedsAttention([
+                  'generalContractors',
+                  'streetAddress',
+                  'city',
+                  'state',
+                ]) ? ' required-attention' : ''}`}
+              >
                 <div className="bid-edit-section-heading">
                   <div>
                     <span className="section-kicker">PROJECT</span>
@@ -935,6 +1666,8 @@ export default function BidLogEditDrawer({
                   <Field
                     label="General Contractors"
                     wide
+                    fieldKey="generalContractors"
+                    invalid={requiredFields.includes('generalContractors')}
                     hint={
                       canEdit
                         ? `${gcOptions.length || '—'} Potential GCs available. Search by company, city, or email; multiple GCs may be selected.`
@@ -961,7 +1694,11 @@ export default function BidLogEditDrawer({
                     />
                   </Field>
 
-                  <Field label="Street Address">
+                  <Field
+                    label="Street Address"
+                    fieldKey="streetAddress"
+                    invalid={requiredFields.includes('streetAddress')}
+                  >
                     <input
                       type="text"
                       value={form.streetAddress}
@@ -970,27 +1707,50 @@ export default function BidLogEditDrawer({
                     />
                   </Field>
 
-                  <Field label="City">
+                  <Field
+                    label="City"
+                    fieldKey="city"
+                    invalid={requiredFields.includes('city')}
+                  >
                     <input
                       type="text"
                       value={form.city}
                       disabled={!canEdit}
+                      autoComplete="address-level2"
+                      list={form.state === 'AZ' ? 'bid-log-active-city-suggestions' : undefined}
+                      placeholder={form.state === 'AZ' ? 'Start typing an Arizona city…' : undefined}
                       onChange={event => updateField('city', event.target.value)}
                     />
+                    {form.state === 'AZ' && (
+                      <datalist id="bid-log-active-city-suggestions">
+                        {ARIZONA_CITY_SUGGESTIONS.map(city => (
+                          <option key={city} value={city} />
+                        ))}
+                      </datalist>
+                    )}
                   </Field>
 
-                  <Field label="State">
-                    <input
-                      type="text"
+                  <Field
+                    label="State"
+                    fieldKey="state"
+                    invalid={requiredFields.includes('state')}
+                  >
+                    <BidLogStateSelect
                       value={form.state}
                       disabled={!canEdit}
-                      onChange={event => updateField('state', event.target.value)}
+                      onChange={value => updateField('state', value)}
                     />
                   </Field>
                 </div>
               </section>
 
-              <section className="bid-edit-section">
+              <section
+                className={`bid-edit-section${sectionNeedsAttention([
+                  'estimatedPrice',
+                  'margin',
+                  'retentionPercent',
+                ]) ? ' required-attention' : ''}`}
+              >
                 <div className="bid-edit-section-heading">
                   <div>
                     <span className="section-kicker">ESTIMATE</span>
@@ -999,11 +1759,19 @@ export default function BidLogEditDrawer({
                 </div>
 
                 <div className="bid-edit-grid four-column">
-                  <Field label="Estimated Price">
+                  <Field
+                    label="Estimated Price"
+                    fieldKey="estimatedPrice"
+                    invalid={requiredFields.includes('estimatedPrice')}
+                  >
                     <input type="number" min="0" step="0.01" value={form.estimatedPrice} disabled={!canEdit} onChange={event => updateField('estimatedPrice', event.target.value)} />
                   </Field>
 
-                  <Field label="Margin">
+                  <Field
+                    label="Margin"
+                    fieldKey="margin"
+                    invalid={requiredFields.includes('margin')}
+                  >
                     <input type="number" step="0.0001" value={form.margin} disabled={!canEdit} onChange={event => updateField('margin', event.target.value)} />
                   </Field>
 
@@ -1011,7 +1779,11 @@ export default function BidLogEditDrawer({
                     <input type="number" min="0" max="100" step="0.1" value={form.probabilityPercent} disabled={!canEdit} onChange={event => updateField('probabilityPercent', event.target.value)} />
                   </Field>
 
-                  <Field label="Retention %">
+                  <Field
+                    label="Retention %"
+                    fieldKey="retentionPercent"
+                    invalid={requiredFields.includes('retentionPercent')}
+                  >
                     <input type="number" min="0" max="100" step="0.1" value={form.retentionPercent} disabled={!canEdit} onChange={event => updateField('retentionPercent', event.target.value)} />
                   </Field>
 
@@ -1049,7 +1821,12 @@ export default function BidLogEditDrawer({
                 </div>
               </section>
 
-              <section className="bid-edit-section">
+              <section
+                className={`bid-edit-section${sectionNeedsAttention([
+                  'anticipatedStartDate',
+                  'estimatedDurationMonths',
+                ]) ? ' required-attention' : ''}`}
+              >
                 <div className="bid-edit-section-heading">
                   <div>
                     <span className="section-kicker">DATES</span>
@@ -1057,18 +1834,45 @@ export default function BidLogEditDrawer({
                   </div>
                 </div>
 
-                <div className="bid-edit-grid three-column">
-                  <Field label="Anticipated Start">
+                <div className="bid-edit-grid four-column">
+                  <Field
+                    label="Anticipated Start"
+                    fieldKey="anticipatedStartDate"
+                    invalid={requiredFields.includes('anticipatedStartDate')}
+                  >
                     <input type="date" value={form.anticipatedStartDate} disabled={!canEdit} onChange={event => updateField('anticipatedStartDate', event.target.value)} />
+                  </Field>
+
+                  <Field
+                    label="Estimated Project Duration"
+                    fieldKey="estimatedDurationMonths"
+                    invalid={requiredFields.includes('estimatedDurationMonths')}
+                    hint={
+                      forecastError
+                        ? forecastError
+                        : 'Months. This is the same duration used by Projected Billings.'
+                    }
+                  >
+                    <input
+                      type="number"
+                      min="1"
+                      max="120"
+                      step="1"
+                      value={form.estimatedDurationMonths}
+                      disabled={!canEdit || Boolean(forecastError)}
+                      onChange={event => updateField('estimatedDurationMonths', event.target.value)}
+                    />
                   </Field>
 
                   <Field label="Last Contact">
                     <input type="date" value={form.lastContactDate} disabled={!canEdit} onChange={event => updateField('lastContactDate', event.target.value)} />
                   </Field>
 
-                  <Field label="Snoozed Until">
-                    <input type="date" value={form.snoozedUntil} disabled={!canEdit} onChange={event => updateField('snoozedUntil', event.target.value)} />
-                  </Field>
+                  {form.snoozed && (
+                    <Field label="Snoozed Until">
+                      <input type="date" value={form.snoozedUntil} disabled={!canEdit} onChange={event => updateField('snoozedUntil', event.target.value)} />
+                    </Field>
+                  )}
                 </div>
 
                 <div className="bid-edit-toggle-row">
@@ -1080,6 +1884,112 @@ export default function BidLogEditDrawer({
                   />
                 </div>
               </section>
+
+              {selectedLifecycleAction && (
+                <section
+                  data-bid-lifecycle-section="true"
+                  className={`bid-edit-section lifecycle-action-selected${sectionNeedsAttention([
+                    'dateAwarded',
+                    'winningGeneralContractor',
+                    'lifecycleReason',
+                  ]) ? ' required-attention' : ''}`}
+                >
+                  <div className="bid-edit-section-heading">
+                    <div>
+                      <span className="section-kicker">LIFECYCLE</span>
+                      <h3>Complete Bid</h3>
+                    </div>
+                    <small>{selectedLifecycleAction}</small>
+                  </div>
+
+                  {selectedLifecycleAction === 'Awarded' ? (
+                    <>
+                      <div className="bid-edit-grid two-column">
+                        <Field
+                          label="Date Awarded"
+                          fieldKey="dateAwarded"
+                          invalid={requiredFields.includes('dateAwarded')}
+                        >
+                          <input
+                            type="date"
+                            value={dateAwarded}
+                            disabled={!canEdit || lifecycleComplete}
+                            onChange={event => {
+                              setDateAwarded(event.target.value);
+                              clearRequiredField('dateAwarded');
+                              setSaveError(null);
+                            }}
+                          />
+                        </Field>
+
+                        <Field
+                          label="Winning General Contractor"
+                          fieldKey="winningGeneralContractor"
+                          invalid={requiredFields.includes('winningGeneralContractor')}
+                          hint={
+                            generalContractorNames(form.generalContractors).length > 1
+                              ? 'Required because this bid has multiple GCs.'
+                              : 'The only GC will automatically be used as the winner.'
+                          }
+                        >
+                          {generalContractorNames(form.generalContractors).length > 1 ? (
+                            <select
+                              value={winningGeneralContractor}
+                              disabled={!canEdit || lifecycleComplete}
+                              onChange={event => {
+                                setWinningGeneralContractor(event.target.value);
+                                clearRequiredField('winningGeneralContractor');
+                                setSaveError(null);
+                              }}
+                            >
+                              <option value="">Select winning GC…</option>
+                              {generalContractorNames(form.generalContractors).map(gc => (
+                                <option key={gc} value={gc}>{gc}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              type="text"
+                              value={generalContractorNames(form.generalContractors)[0] || ''}
+                              readOnly
+                              className="bid-edit-readonly-input"
+                            />
+                          )}
+                        </Field>
+                      </div>
+
+                      <div className="bid-edit-rule-note">
+                        Award requires a real PM, Due Date, Project Type, Purpose, GC, Estimated Price, Margin, Retention, Anticipated Start, Estimated Project Duration, Street Address, City, State, and Date Awarded. Losing GCs are automatically created as GC Not Awarded.
+                      </div>
+                    </>
+                  ) : (
+                    <Field
+                      label={`${selectedLifecycleAction} Reason`}
+                      wide
+                      fieldKey="lifecycleReason"
+                      invalid={requiredFields.includes('lifecycleReason')}
+                      hint="Required before this bid can leave Active Bids."
+                    >
+                      <textarea
+                        className="bid-edit-notes-textarea"
+                        rows="4"
+                        maxLength="2000"
+                        value={lifecycleReason}
+                        disabled={!canEdit || lifecycleComplete}
+                        onChange={event => {
+                          setLifecycleReason(event.target.value);
+                          clearRequiredField('lifecycleReason');
+                          setSaveError(null);
+                        }}
+                      />
+                    </Field>
+                  )}
+
+                  <div className="bid-edit-message warning">
+                    This is a final Bid Log lifecycle action. The existing Power Automate workflow will move the completed record to its outcome list after SharePoint sees the status change.
+                  </div>
+                </section>
+              )}
 
               <section className="bid-edit-section">
                 <div className="bid-edit-section-heading">

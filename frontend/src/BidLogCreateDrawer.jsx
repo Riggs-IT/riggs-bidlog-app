@@ -5,6 +5,9 @@ import {
 } from 'react';
 
 import BidLogGeneralContractorSelect from './BidLogGeneralContractorSelect.jsx';
+import BidLogStateSelect, {
+  normalizeBidLogState,
+} from './BidLogStateSelect.jsx';
 import FloatingEditorShell from './FloatingEditorShell.jsx';
 import ActionToast from './ActionToast.jsx';
 
@@ -262,7 +265,7 @@ export default function BidLogCreateDrawer({
         : null,
       streetAddress: optionalText(form.streetAddress),
       city: optionalText(form.city),
-      state: optionalText(form.state),
+      state: optionalText(normalizeBidLogState(form.state)),
       notes: optionalText(form.notes),
     };
 
@@ -447,15 +450,15 @@ export default function BidLogCreateDrawer({
             <input
               type="text"
               value={form.city}
+              autoComplete="address-level2"
               onChange={event => updateField('city', event.target.value)}
             />
           </Field>
 
           <Field label="State">
-            <input
-              type="text"
+            <BidLogStateSelect
               value={form.state}
-              onChange={event => updateField('state', event.target.value)}
+              onChange={value => updateField('state', value)}
             />
           </Field>
 

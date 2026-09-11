@@ -8859,8 +8859,13 @@ export default function App() {
         pmOptions={[
           ...new Set(
             activeBids
-              .map(row => row.pm)
-              .filter(Boolean),
+              .filter(
+                row =>
+                  row?.pm
+                  && (row?.pmInitials || row?.pmHexColor)
+                  && String(row.pm).trim().toUpperCase() !== 'NO PM ASSIGNED',
+              )
+              .map(row => row.pm),
           ),
         ]}
         onClose={() => setEditProjectedBidId(null)}

@@ -26,7 +26,9 @@ export default function ActionToast({
         },
         type === 'error'
           ? 7000
-          : 4000,
+          : type === 'info'
+            ? 10000
+            : 4000,
       );
 
       return () => {
@@ -44,10 +46,16 @@ export default function ActionToast({
   }
 
   const error = type === 'error';
+  const info = type === 'info';
+  const tone = error
+    ? 'error'
+    : info
+      ? 'info'
+      : 'success';
 
   return createPortal(
     <div
-      className={`action-toast ${error ? 'error' : 'success'}`}
+      className={`action-toast ${tone}`}
       role={error ? 'alert' : 'status'}
       aria-live={error ? 'assertive' : 'polite'}
     >
@@ -55,12 +63,12 @@ export default function ActionToast({
         className="action-toast-icon"
         aria-hidden="true"
       >
-        {error ? '!' : '✓'}
+        {error ? '!' : info ? '!' : '✓'}
       </span>
 
       <div className="action-toast-content">
         <strong>
-          {error ? 'Action failed' : 'Success'}
+          {error ? 'Action failed' : info ? 'Attention' : 'Success'}
         </strong>
 
         <span>
