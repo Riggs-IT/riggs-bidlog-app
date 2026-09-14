@@ -168,8 +168,30 @@ export default function useStickyTableHeader(
         floatingHeader
       );
 
-      floating.appendChild(
+
+      /*
+        Keep the floating header in a real horizontal scroll
+        viewport instead of translating the entire table and
+        counter-translating pinned cells.
+
+        That lets the cloned header use the exact same CSS
+        position: sticky offsets as the real table body, so the
+        pinned-column cutoff is identical in both places.
+      */
+      const floatingTableViewport =
+        document.createElement(
+          'div'
+        );
+
+      floatingTableViewport.className =
+        'floating-table-header-viewport';
+
+      floatingTableViewport.appendChild(
         floatingTable
+      );
+
+      floating.appendChild(
+        floatingTableViewport
       );
 
       document.body.appendChild(
@@ -180,6 +202,51 @@ export default function useStickyTableHeader(
       let frame =
         null;
 
+      let controlsIdleTimer =
+        null;
+
+      let horizontalControlActive =
+        false;
+
+      const clearControlsIdleTimer =
+        () => {
+          if (controlsIdleTimer === null) {
+            return;
+          }
+
+          window.clearTimeout(
+            controlsIdleTimer
+          );
+
+          controlsIdleTimer =
+            null;
+        };
+
+      const hideFloatingControls =
+        () => {
+          if (horizontalControlActive) {
+            return;
+          }
+
+          floating.classList.remove(
+            'controls-visible'
+          );
+
+          controlsIdleTimer =
+            null;
+        };
+
+      const scheduleFloatingControlsHide =
+        () => {
+          clearControlsIdleTimer();
+
+          controlsIdleTimer =
+            window.setTimeout(
+              hideFloatingControls,
+              1800,
+            );
+        };
+
       const showFloatingControls =
         () => {
           if (!floatingControls) {
@@ -189,6 +256,10 @@ export default function useStickyTableHeader(
           floating.classList.add(
             'controls-visible'
           );
+
+          if (!horizontalControlActive) {
+            scheduleFloatingControlsHide();
+          }
         };
 
 
@@ -221,8 +292,13 @@ export default function useStickyTableHeader(
                   return;
                 }
 
-                range.max =
+                const maxValue =
                   String(maxScroll);
+
+                if (range.max !== maxValue) {
+                  range.max =
+                    maxValue;
+                }
 
                 range.value =
                   String(
@@ -235,13 +311,25 @@ export default function useStickyTableHeader(
                     )
                   );
 
-                range.disabled =
+                const disabled =
                   maxScroll <= 0;
 
-                controlRoot.classList.toggle(
-                  'horizontal-scroll-disabled',
-                  maxScroll <= 0,
-                );
+                if (range.disabled !== disabled) {
+                  range.disabled =
+                    disabled;
+                }
+
+                if (
+                  controlRoot.classList.contains(
+                    'horizontal-scroll-disabled'
+                  )
+                  !== disabled
+                ) {
+                  controlRoot.classList.toggle(
+                    'horizontal-scroll-disabled',
+                    disabled,
+                  );
+                }
               }
             );
         };
@@ -278,7 +366,45 @@ export default function useStickyTableHeader(
           wrapper.scrollLeft =
             Number(range.value) || 0;
 
+          showFloatingControls();
           scheduleUpdate();
+        };
+
+
+      const handleHorizontalControlPointerDown =
+        event => {
+          const control =
+            event.target.closest(
+              '[data-table-horizontal-scroll], '
+              + '[data-table-horizontal-scroll-step]'
+            );
+
+          if (!control) {
+            return;
+          }
+
+          horizontalControlActive =
+            true;
+
+          clearControlsIdleTimer();
+
+          floating.classList.add(
+            'controls-visible'
+          );
+        };
+
+
+      const handleHorizontalControlPointerUp =
+        () => {
+          if (!horizontalControlActive) {
+            return;
+          }
+
+          horizontalControlActive =
+            false;
+
+          scheduleUpdate();
+          scheduleFloatingControlsHide();
         };
 
 
@@ -344,7 +470,10 @@ export default function useStickyTableHeader(
 
       const syncFloatingContent =
         () => {
-          if (!floatingContentDirty) {
+          if (
+            !floatingContentDirty
+            || horizontalControlActive
+          ) {
             return;
           }
 
@@ -492,6 +621,11 @@ export default function useStickyTableHeader(
               'controls-visible'
             );
 
+            horizontalControlActive =
+              false;
+
+            clearControlsIdleTimer();
+
             return;
           }
 
@@ -512,37 +646,19 @@ export default function useStickyTableHeader(
           floatingTable.style.width =
             `${table.scrollWidth}px`;
 
-          floatingTable.style.transform =
-            `translateX(${
-              -wrapper.scrollLeft
-            }px)`;
-
-
-          floatingHeader
-            .querySelectorAll(
-              '.pivot-source-column, '
-              + '.pivot-job-column, '
-              + '.pivot-project-column'
-            )
-            .forEach(
-              cell => {
-                cell.style.position =
-                  'relative';
-
-                cell.style.zIndex =
-                  '2';
-
-                cell.style.transform =
-                  `translateX(${
-                    wrapper.scrollLeft
-                  }px)`;
-              }
-            );
-
 
           floating.classList.add(
             'visible'
           );
+
+          /*
+            Mirror the real table's scroll position directly.
+            The cloned table's own sticky cells now pin
+            themselves naturally using the same source-aware
+            left offsets as the body table.
+          */
+          floatingTableViewport.scrollLeft =
+            wrapper.scrollLeft;
 
           showFloatingControls();
         };
@@ -754,6 +870,31 @@ export default function useStickyTableHeader(
         handleHorizontalControlInput,
       );
 
+      floatingControls?.addEventListener(
+        'pointerdown',
+        handleHorizontalControlPointerDown,
+      );
+
+      floatingControls?.addEventListener(
+        'pointerup',
+        handleHorizontalControlPointerUp,
+      );
+
+      floatingControls?.addEventListener(
+        'pointercancel',
+        handleHorizontalControlPointerUp,
+      );
+
+      window.addEventListener(
+        'pointerup',
+        handleHorizontalControlPointerUp,
+      );
+
+      window.addEventListener(
+        'pointercancel',
+        handleHorizontalControlPointerUp,
+      );
+
       floating.addEventListener(
         'click',
         forwardFloatingClick,
@@ -769,6 +910,8 @@ export default function useStickyTableHeader(
             frame
           );
         }
+
+        clearControlsIdleTimer();
 
         resizeObserver.disconnect();
         contentObserver.disconnect();
@@ -812,6 +955,31 @@ export default function useStickyTableHeader(
         floatingControls?.removeEventListener(
           'input',
           handleHorizontalControlInput,
+        );
+
+        floatingControls?.removeEventListener(
+          'pointerdown',
+          handleHorizontalControlPointerDown,
+        );
+
+        floatingControls?.removeEventListener(
+          'pointerup',
+          handleHorizontalControlPointerUp,
+        );
+
+        floatingControls?.removeEventListener(
+          'pointercancel',
+          handleHorizontalControlPointerUp,
+        );
+
+        window.removeEventListener(
+          'pointerup',
+          handleHorizontalControlPointerUp,
+        );
+
+        window.removeEventListener(
+          'pointercancel',
+          handleHorizontalControlPointerUp,
         );
 
         floating.removeEventListener(

@@ -804,6 +804,7 @@ function HeaderTotal({
   value,
   metric,
   currency,
+  activeProjectsBilled = null,
 }) {
   const allMode =
     metric === 'all';
@@ -835,6 +836,22 @@ function HeaderTotal({
 
         {compactCurrency(value)}
       </small>
+
+      {activeProjectsBilled !== null && (
+        <small
+          className="pivot-header-billed-count"
+          title={`${activeProjectsBilled} active ${
+            activeProjectsBilled === 1
+              ? 'project billed'
+              : 'projects billed'
+          } in this month`}
+        >
+          {activeProjectsBilled}{' '}
+          {activeProjectsBilled === 1
+            ? 'active project billed'
+            : 'active projects billed'}
+        </small>
+      )}
     </span>
   );
 }
@@ -1266,6 +1283,34 @@ export default function ProjectBillingPivot({
                 0,
               );
 
+            const activeProjectsBilled =
+              includeActiveProjects
+                ? rows.reduce(
+                    (
+                      count,
+                      row,
+                    ) => {
+                      if (row.source !== 'current') {
+                        return count;
+                      }
+
+                      const actual =
+                        row.cells[index]?.actual;
+
+                      if (
+                        actual === null
+                        || actual === undefined
+                        || toNumber(actual) === 0
+                      ) {
+                        return count;
+                      }
+
+                      return count + 1;
+                    },
+                    0,
+                  )
+                : null;
+
             return {
               month,
 
@@ -1273,6 +1318,8 @@ export default function ProjectBillingPivot({
                 hasValue
                   ? value
                   : null,
+
+              activeProjectsBilled,
             };
           }
         ),
@@ -1280,6 +1327,7 @@ export default function ProjectBillingPivot({
         months,
         rows,
         headerMetric,
+        includeActiveProjects,
       ],
     );
 
@@ -1512,6 +1560,11 @@ export default function ProjectBillingPivot({
                         }
                         metric={billingMetric}
                         currency={currency}
+                        activeProjectsBilled={
+                          monthTotals[
+                            index
+                          ]?.activeProjectsBilled
+                        }
                       />
                     }
                     sortKey={`month:${month}`}

@@ -325,7 +325,7 @@ button:disabled {
 .section-kicker {
   color: var(--muted);
 
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 750;
 
   letter-spacing: 0.12em;
@@ -6607,17 +6607,29 @@ td.pivot-project-column {
 }
 
 
+.floating-table-header-viewport {
+  width: 100%;
+
+  overflow-x: hidden;
+  overflow-y: hidden;
+
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+
+.floating-table-header-viewport::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+
 .floating-table-header-table {
   margin: 0;
-
-  transform-origin: left top;
 }
 
 
 .floating-table-header-table th {
-  position: static !important;
-  top: auto !important;
-
   box-sizing: border-box;
 
   background:
@@ -6632,9 +6644,7 @@ th.pivot-source-column,
 th.pivot-job-column,
 .floating-table-header-table
 th.pivot-project-column {
-  position: relative !important;
-
-  z-index: 2;
+  z-index: 12;
 }
 
 
@@ -7233,9 +7243,9 @@ th.pivot-project-column {
 .pivot-month-column,
 .project-pivot-table.pivot-metric-all
 .pivot-total-column {
-  width: 154px;
-  min-width: 154px;
-  max-width: 154px;
+  width: 212px;
+  min-width: 212px;
+  max-width: 212px;
 }
 
 
@@ -7243,9 +7253,9 @@ th.pivot-project-column {
 .pivot-month-column,
 .project-pivot-table:not(.pivot-metric-all)
 .pivot-total-column {
-  width: 108px;
-  min-width: 108px;
-  max-width: 108px;
+  width: 188px;
+  min-width: 188px;
+  max-width: 188px;
 }
 
 
@@ -7253,9 +7263,9 @@ th.pivot-project-column {
 .pivot-month-column,
 .project-pivot-table.pivot-metric-variance
 .pivot-total-column {
-  width: 116px;
-  min-width: 116px;
-  max-width: 116px;
+  width: 196px;
+  min-width: 196px;
+  max-width: 196px;
 }
 
 
@@ -7343,9 +7353,9 @@ tbody td {
   .pivot-month-column,
   .project-pivot-table:not(.pivot-metric-all)
   .pivot-total-column {
-    width: 102px;
-    min-width: 102px;
-    max-width: 102px;
+    width: 120px;
+    min-width: 120px;
+    max-width: 120px;
   }
 }
 
@@ -12894,7 +12904,7 @@ td.pivot-project-column {
   color: var(--text);
   box-shadow: inset 0 1px 0 color-mix(in srgb, white 5%, transparent);
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 850;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -13358,7 +13368,13 @@ td.pivot-project-column {
 
 
 .pivot-header-total-label {
-  line-height: 1.05;
+  color:
+    var(--text);
+
+  font-size: 13px;
+  font-weight: 850;
+
+  line-height: 1.1;
 
   white-space: nowrap;
 }
@@ -13368,11 +13384,26 @@ td.pivot-project-column {
   color:
     var(--accent);
 
-  font-size: 9px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 850;
 
   letter-spacing: 0;
-  line-height: 1;
+  line-height: 1.05;
+
+  text-transform: none;
+  white-space: nowrap;
+}
+
+
+.pivot-header-billed-count {
+  color:
+    var(--muted);
+
+  font-size: 10px;
+  font-weight: 750;
+
+  letter-spacing: 0;
+  line-height: 1.1;
 
   text-transform: none;
   white-space: nowrap;
