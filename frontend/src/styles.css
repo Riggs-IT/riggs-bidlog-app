@@ -13395,6 +13395,23 @@ td.pivot-project-column {
 }
 
 
+.pivot-header-total-values {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 7px;
+
+  white-space: nowrap;
+}
+
+
+.pivot-header-total-value-actual {
+  color:
+    var(--text);
+}
+
+
 .pivot-header-billed-count {
   color:
     var(--muted);

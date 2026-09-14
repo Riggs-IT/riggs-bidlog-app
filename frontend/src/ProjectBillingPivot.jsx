@@ -802,6 +802,8 @@ function headerMetricKey(metric) {
 function HeaderTotal({
   label,
   value,
+  projectedValue = null,
+  actualValue = null,
   metric,
   currency,
   activeProjectsBilled = null,
@@ -809,47 +811,95 @@ function HeaderTotal({
   const allMode =
     metric === 'all';
 
+  const actualMode =
+    metric === 'actual';
+
+  const projectedMode =
+    metric === 'projected';
+
+  const varianceMode =
+    metric === 'variance';
+
+  const marginMode =
+    metric === 'marginCollected';
+
+  const billedProjectLabel =
+    actualMode
+      ? (
+          activeProjectsBilled === 1
+            ? 'active project billed'
+            : 'active projects billed'
+        )
+      : (
+          activeProjectsBilled === 1
+            ? 'active project with actual billing'
+            : 'active projects with actual billing'
+        );
+
   return (
     <span className="pivot-header-total">
       <span className="pivot-header-total-label">
         {label}
       </span>
 
-      <small
-        className="pivot-header-total-value"
-        title={
-          value === null
-          || value === undefined
-            ? 'No value for the selected metric.'
-            : `${
-                allMode
-                  ? 'Projected total'
-                  : 'Column total'
-              }: ${currency(value)}`
-        }
-      >
-        {allMode
-        && value !== null
-        && value !== undefined
-          ? 'P '
-          : ''}
+      {allMode ? (
+        <span
+          className="pivot-header-total-values"
+          title={`Projected: ${currency(projectedValue ?? 0)} · Actual: ${currency(actualValue ?? 0)}`}
+        >
+          <small className="pivot-header-total-value">
+            P {compactCurrency(projectedValue)}
+          </small>
 
-        {compactCurrency(value)}
-      </small>
+          <small className="pivot-header-total-value pivot-header-total-value-actual">
+            A {compactCurrency(actualValue)}
+          </small>
+        </span>
+      ) : (
+        <small
+          className="pivot-header-total-value"
+          title={
+            value === null
+            || value === undefined
+              ? 'No value for the selected metric.'
+              : `Column total: ${currency(value)}`
+          }
+        >
+          {projectedMode
+          && value !== null
+          && value !== undefined
+            ? 'P '
+            : ''}
+
+          {actualMode
+          && value !== null
+          && value !== undefined
+            ? 'A '
+            : ''}
+
+          {varianceMode
+          && value !== null
+          && value !== undefined
+            ? 'V '
+            : ''}
+
+          {marginMode
+          && value !== null
+          && value !== undefined
+            ? 'M '
+            : ''}
+
+          {compactCurrency(value)}
+        </small>
+      )}
 
       {activeProjectsBilled !== null && (
         <small
           className="pivot-header-billed-count"
-          title={`${activeProjectsBilled} active ${
-            activeProjectsBilled === 1
-              ? 'project billed'
-              : 'projects billed'
-          } in this month`}
+          title={`${activeProjectsBilled} ${billedProjectLabel} in this month`}
         >
           {activeProjectsBilled}{' '}
-          {activeProjectsBilled === 1
-            ? 'active project billed'
-            : 'active projects billed'}
+          {billedProjectLabel}
         </small>
       )}
     </span>
@@ -1253,34 +1303,54 @@ export default function ProjectBillingPivot({
               headerMetric
               === 'projected';
 
-            const value =
+            let hasActualValue = false;
+
+            const totals =
               rows.reduce(
                 (
-                  sum,
+                  current,
                   row,
                 ) => {
+                  const cell =
+                    row.cells[index];
+
                   const cellValue =
-                    row.cells[index]?.[
+                    cell?.[
                       headerMetric
                     ];
 
                   if (
-                    cellValue === null
-                    || cellValue === undefined
+                    cellValue !== null
+                    && cellValue !== undefined
                   ) {
-                    return sum;
+                    hasValue = true;
+                    current.value +=
+                      toNumber(cellValue);
                   }
 
-                  hasValue = true;
+                  current.projectedValue +=
+                    toNumber(
+                      cell?.projected
+                    );
 
-                  return (
-                    sum
-                    + toNumber(
-                        cellValue
-                      )
-                  );
+                  if (
+                    cell?.actual !== null
+                    && cell?.actual !== undefined
+                  ) {
+                    hasActualValue = true;
+                    current.actualValue +=
+                      toNumber(
+                        cell.actual
+                      );
+                  }
+
+                  return current;
                 },
-                0,
+                {
+                  value: 0,
+                  projectedValue: 0,
+                  actualValue: 0,
+                },
               );
 
             const activeProjectsBilled =
@@ -1316,7 +1386,15 @@ export default function ProjectBillingPivot({
 
               value:
                 hasValue
-                  ? value
+                  ? totals.value
+                  : null,
+
+              projectedValue:
+                totals.projectedValue,
+
+              actualValue:
+                hasActualValue
+                  ? totals.actualValue
                   : null,
 
               activeProjectsBilled,
@@ -1332,17 +1410,19 @@ export default function ProjectBillingPivot({
     );
 
 
-  const grandTotal =
+  const grandTotals =
     useMemo(
       () => {
         let hasValue =
           headerMetric
           === 'projected';
 
-        const value =
+        let hasActualValue = false;
+
+        const totals =
           rows.reduce(
             (
-              sum,
+              current,
               row,
             ) => {
               const totalValue =
@@ -1351,27 +1431,55 @@ export default function ProjectBillingPivot({
                 ];
 
               if (
-                totalValue === null
-                || totalValue === undefined
+                totalValue !== null
+                && totalValue !== undefined
               ) {
-                return sum;
+                hasValue = true;
+                current.value +=
+                  toNumber(
+                    totalValue
+                  );
               }
 
-              hasValue = true;
+              current.projectedValue +=
+                toNumber(
+                  row.total?.projected
+                );
 
-              return (
-                sum
-                + toNumber(
-                    totalValue
-                  )
-              );
+              if (
+                row.total?.actual !== null
+                && row.total?.actual !== undefined
+              ) {
+                hasActualValue = true;
+                current.actualValue +=
+                  toNumber(
+                    row.total.actual
+                  );
+              }
+
+              return current;
             },
-            0,
+            {
+              value: 0,
+              projectedValue: 0,
+              actualValue: 0,
+            },
           );
 
-        return hasValue
-          ? value
-          : null;
+        return {
+          value:
+            hasValue
+              ? totals.value
+              : null,
+
+          projectedValue:
+            totals.projectedValue,
+
+          actualValue:
+            hasActualValue
+              ? totals.actualValue
+              : null,
+        };
       },
       [
         rows,
@@ -1558,6 +1666,16 @@ export default function ProjectBillingPivot({
                             index
                           ]?.value
                         }
+                        projectedValue={
+                          monthTotals[
+                            index
+                          ]?.projectedValue
+                        }
+                        actualValue={
+                          monthTotals[
+                            index
+                          ]?.actualValue
+                        }
                         metric={billingMetric}
                         currency={currency}
                         activeProjectsBilled={
@@ -1581,7 +1699,13 @@ export default function ProjectBillingPivot({
                 label={
                   <HeaderTotal
                     label="Total"
-                    value={grandTotal}
+                    value={grandTotals.value}
+                    projectedValue={
+                      grandTotals.projectedValue
+                    }
+                    actualValue={
+                      grandTotals.actualValue
+                    }
                     metric={billingMetric}
                     currency={currency}
                   />
