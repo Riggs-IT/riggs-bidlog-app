@@ -461,41 +461,212 @@ def _raise_active_project_proxy_error(
 
     raise exc
 
-def _can_edit_bid_log(
+def _normalized_app_role(
     current_user: CurrentUser,
-) -> bool:
+) -> str:
     return (
         str(current_user.app_role or "")
         .strip()
         .upper()
-        in {"ADMIN", "OPERATIONS"}
+    )
+
+
+def _normalized_employee_trade(
+    current_user: CurrentUser,
+) -> str:
+    return (
+        str(current_user.employee_trade or "")
+        .strip()
+        .upper()
+    )
+
+
+def _workspace_profile(
+    current_user: CurrentUser,
+) -> str:
+    role = _normalized_app_role(
+        current_user
+    )
+
+    if role == "ADMIN":
+        return "ADMIN"
+
+    if role == "VIEWER":
+        return "VIEWER"
+
+    if role == "OPERATIONS":
+        if (
+            _normalized_employee_trade(
+                current_user
+            )
+            == "PM"
+        ):
+            return "PM"
+
+        return "BID_LOG_ONLY"
+
+    return "NONE"
+
+
+def _workspace_capabilities(
+    current_user: CurrentUser,
+) -> dict[str, bool]:
+    profile = _workspace_profile(
+        current_user
+    )
+
+    return {
+        "canViewProjectedBillings":
+            profile
+            in {
+                "ADMIN",
+                "PM",
+                "VIEWER",
+            },
+
+        "canViewBidLog":
+            profile
+            in {
+                "ADMIN",
+                "PM",
+                "BID_LOG_ONLY",
+                "VIEWER",
+            },
+
+        "canViewProjects":
+            profile
+            in {
+                "ADMIN",
+                "VIEWER",
+            },
+
+        "canViewCompletedBillings":
+            profile
+            in {
+                "ADMIN",
+                "VIEWER",
+            },
+    }
+
+
+def _can_edit_bid_log(
+    current_user: CurrentUser,
+) -> bool:
+    return (
+        _normalized_app_role(
+            current_user
+        )
+        in {
+            "ADMIN",
+            "OPERATIONS",
+        }
+    )
+
+
+def _can_edit_current_project_projection(
+    current_user: CurrentUser,
+) -> bool:
+    return (
+        _workspace_profile(
+            current_user
+        )
+        in {
+            "ADMIN",
+            "PM",
+        }
     )
 
 
 def _require_bid_log_editor(
     current_user: CurrentUser,
 ) -> None:
-    if not _can_edit_bid_log(current_user):
+    if not _can_edit_bid_log(
+        current_user
+    ):
         raise HTTPException(
             status_code=403,
             detail="bid_log_user_not_authorized",
         )
 
 
-def _require_management_workspace_admin(
+def _require_projected_workspace_access(
     current_user: CurrentUser,
 ) -> None:
-    """Temporary controlled rollout for Bid Log / Projects workspaces."""
-    role = (
-        str(current_user.app_role or "")
-        .strip()
-        .upper()
-    )
+    if not _workspace_capabilities(
+        current_user
+    )["canViewProjectedBillings"]:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "projected_billings_user_not_authorized"
+            ),
+        )
 
-    if role != "ADMIN":
+
+def _require_bid_log_workspace_access(
+    current_user: CurrentUser,
+) -> None:
+    if not _workspace_capabilities(
+        current_user
+    )["canViewBidLog"]:
+        raise HTTPException(
+            status_code=403,
+            detail="bid_log_user_not_authorized",
+        )
+
+
+def _require_projects_workspace_access(
+    current_user: CurrentUser,
+) -> None:
+    if not _workspace_capabilities(
+        current_user
+    )["canViewProjects"]:
+        raise HTTPException(
+            status_code=403,
+            detail="projects_user_not_authorized",
+        )
+
+
+def _require_completed_workspace_access(
+    current_user: CurrentUser,
+) -> None:
+    if not _workspace_capabilities(
+        current_user
+    )["canViewCompletedBillings"]:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "completed_billings_user_not_authorized"
+            ),
+        )
+
+
+def _require_project_editor(
+    current_user: CurrentUser,
+) -> None:
+    if (
+        _normalized_app_role(
+            current_user
+        )
+        != "ADMIN"
+    ):
         raise HTTPException(
             status_code=403,
             detail="bid_log_admin_required",
+        )
+
+
+def _require_current_project_projection_editor(
+    current_user: CurrentUser,
+) -> None:
+    if not _can_edit_current_project_projection(
+        current_user
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "bid_log_pm_forecast_user_not_authorized"
+            ),
         )
 
 
@@ -904,6 +1075,18 @@ def auth_me(
     payload = (
         current_user
         .to_public_dict()
+    )
+
+    payload[
+        "workspaceProfile"
+    ] = _workspace_profile(
+        current_user
+    )
+
+    payload[
+        "capabilities"
+    ] = _workspace_capabilities(
+        current_user
     )
 
     payload[
@@ -1316,6 +1499,8 @@ def projected_billings_current_projects(
         get_current_user
     ),
 ):
+    _require_projected_workspace_access(current_user)
+
     try:
         return _role_scoped_financial_payload(
             get_current_projected_billings(),
@@ -1336,6 +1521,8 @@ def projected_billings_current_projects_monthly_bulk(
         get_current_user
     ),
 ):
+    _require_projected_workspace_access(current_user)
+
     try:
         return _role_scoped_financial_payload(
             get_current_projects_monthly_bulk(),
@@ -1364,6 +1551,8 @@ def projected_billings_current_project_monthly(
         get_current_user
     ),
 ):
+    _require_projected_workspace_access(current_user)
+
     try:
         return _role_scoped_financial_payload(
             get_current_project_monthly(
@@ -1391,7 +1580,7 @@ def active_projects_list_proxy(
         get_current_user
     ),
 ):
-    _require_management_workspace_admin(current_user)
+    _require_projects_workspace_access(current_user)
 
     try:
         return _role_scoped_financial_payload(
@@ -1411,7 +1600,7 @@ def completed_project_directory_proxy(
         get_current_user
     ),
 ):
-    _require_management_workspace_admin(current_user)
+    _require_projects_workspace_access(current_user)
 
     """Return completed projects as project-directory metadata only.
 
@@ -1462,11 +1651,14 @@ def active_project_detail_proxy(
         get_current_user
     ),
 ):
-    _require_management_workspace_admin(current_user)
+    _require_projects_workspace_access(current_user)
 
     try:
-        return get_active_project_detail(
-            job_list_id
+        return _role_scoped_financial_payload(
+            get_active_project_detail(
+                job_list_id
+            ),
+            current_user,
         )
 
     except Exception as exc:
@@ -1485,11 +1677,14 @@ def active_project_cognito_detail_proxy(
         get_current_user
     ),
 ):
-    _require_management_workspace_admin(current_user)
+    _require_projects_workspace_access(current_user)
 
     try:
-        return get_active_project_cognito_detail(
-            job_list_id
+        return _role_scoped_financial_payload(
+            get_active_project_cognito_detail(
+                job_list_id
+            ),
+            current_user,
         )
 
     except Exception as exc:
@@ -1509,8 +1704,8 @@ async def active_project_update_proxy(
         get_current_user
     ),
 ):
-    _require_management_workspace_admin(current_user)
-    _require_bid_log_editor(current_user)
+    _require_projects_workspace_access(current_user)
+    _require_project_editor(current_user)
 
     try:
         payload = await request.json()
@@ -1551,7 +1746,7 @@ def bid_log_general_contractors_proxy(
         get_current_user
     ),
 ):
-    _require_management_workspace_admin(current_user)
+    _require_bid_log_workspace_access(current_user)
     _require_bid_log_editor(current_user)
 
     try:
@@ -1573,7 +1768,7 @@ def bid_log_active_list_proxy(
         get_current_user
     ),
 ):
-    _require_management_workspace_admin(current_user)
+    _require_bid_log_workspace_access(current_user)
 
     try:
         return _role_scoped_bid_log_payload(
@@ -1600,7 +1795,7 @@ async def bid_log_active_create_proxy(
         get_current_user
     ),
 ):
-    _require_management_workspace_admin(current_user)
+    _require_bid_log_workspace_access(current_user)
     _require_bid_log_editor(current_user)
 
     try:
@@ -1652,7 +1847,7 @@ def bid_log_active_detail_proxy(
         get_current_user
     ),
 ):
-    _require_management_workspace_admin(current_user)
+    _require_bid_log_workspace_access(current_user)
 
     try:
         return _role_scoped_bid_log_payload(
@@ -1677,7 +1872,7 @@ async def bid_log_active_update_proxy(
         get_current_user
     ),
 ):
-    _require_management_workspace_admin(current_user)
+    _require_bid_log_workspace_access(current_user)
     _require_bid_log_editor(current_user)
 
     try:
@@ -1734,7 +1929,7 @@ async def bid_log_active_lifecycle_proxy(
         get_current_user
     ),
 ):
-    _require_management_workspace_admin(current_user)
+    _require_bid_log_workspace_access(current_user)
     _require_bid_log_editor(current_user)
 
     try:
@@ -1788,7 +1983,7 @@ def bid_log_outcome_list_proxy(
         get_current_user
     ),
 ):
-    _require_management_workspace_admin(current_user)
+    _require_bid_log_workspace_access(current_user)
 
     try:
         return _role_scoped_bid_log_payload(
@@ -1815,7 +2010,7 @@ def bid_log_outcome_detail_proxy(
         get_current_user
     ),
 ):
-    _require_management_workspace_admin(current_user)
+    _require_bid_log_workspace_access(current_user)
 
     try:
         return _role_scoped_bid_log_payload(
@@ -1843,7 +2038,7 @@ async def bid_log_outcome_update_proxy(
         get_current_user
     ),
 ):
-    _require_management_workspace_admin(current_user)
+    _require_bid_log_workspace_access(current_user)
     _require_bid_log_editor(current_user)
 
     try:
@@ -1892,6 +2087,8 @@ def projected_billings_active_bids(
         get_current_user
     ),
 ):
+    _require_projected_workspace_access(current_user)
+
     try:
         return _role_scoped_financial_payload(
             get_active_bid_projected_billings(),
@@ -1912,6 +2109,8 @@ def projected_billings_active_bid_dashboard(
         get_current_user
     ),
 ):
+    _require_projected_workspace_access(current_user)
+
     try:
         return _role_scoped_financial_payload(
             get_active_bid_dashboard(),
@@ -1940,6 +2139,8 @@ def projected_billings_active_bid_monthly(
         get_current_user
     ),
 ):
+    _require_bid_log_workspace_access(current_user)
+
     try:
         return _role_scoped_financial_payload(
             get_active_bid_monthly(
@@ -1971,6 +2172,9 @@ async def update_projected_billings_active_bid_settings(
         get_current_user
     ),
 ):
+    _require_bid_log_workspace_access(current_user)
+    _require_bid_log_editor(current_user)
+
     try:
         payload = await request.json()
 
@@ -2024,10 +2228,12 @@ async def update_projected_billings_active_bid_settings(
     "/api/pm-forecast/policy"
 )
 def pm_forecast_policy(
-    _current_user: CurrentUser = Depends(
+    current_user: CurrentUser = Depends(
         get_current_user
     ),
 ):
+    _require_projected_workspace_access(current_user)
+
     try:
         return get_pm_forecast_policy()
 
@@ -2124,6 +2330,8 @@ def pm_forecast_attention(
         get_current_user
     ),
 ):
+    _require_projected_workspace_access(current_user)
+
     try:
         return get_pm_forecast_attention(
             current_user.eid
@@ -2146,10 +2354,12 @@ def current_project_pm_forecast_policy(
         ...,
         ge=1,
     ),
-    _current_user: CurrentUser = Depends(
+    current_user: CurrentUser = Depends(
         get_current_user
     ),
 ):
+    _require_projected_workspace_access(current_user)
+
     try:
         return get_current_project_pm_forecast_policy(
             job_list_id
@@ -2256,10 +2466,12 @@ def current_project_pm_forecast(
         ...,
         ge=1,
     ),
-    _current_user: CurrentUser = Depends(
+    current_user: CurrentUser = Depends(
         get_current_user
     ),
 ):
+    _require_projected_workspace_access(current_user)
+
     try:
         return get_current_project_pm_forecast(
             job_list_id
@@ -2282,10 +2494,12 @@ def current_project_pm_forecast_history(
         ...,
         ge=1,
     ),
-    _current_user: CurrentUser = Depends(
+    current_user: CurrentUser = Depends(
         get_current_user
     ),
 ):
+    _require_projected_workspace_access(current_user)
+
     try:
         return (
             get_current_project_pm_forecast_history(
@@ -2315,10 +2529,12 @@ def current_project_pm_forecast_version(
         ...,
         ge=1,
     ),
-    _current_user: CurrentUser = Depends(
+    current_user: CurrentUser = Depends(
         get_current_user
     ),
 ):
+    _require_projected_workspace_access(current_user)
+
     try:
         return (
             get_current_project_pm_forecast_version(
@@ -2366,20 +2582,9 @@ async def save_current_project_pm_forecast_proxy(
         )
 
 
-    role = (
-        current_user.app_role
-        .strip()
-        .upper()
+    _require_current_project_projection_editor(
+        current_user
     )
-
-    if role not in {
-        "ADMIN",
-        "OPERATIONS",
-    }:
-        raise HTTPException(
-            status_code=403,
-            detail="bid_log_pm_forecast_user_not_authorized",
-        )
 
 
     try:
@@ -2529,16 +2734,9 @@ async def save_current_project_pm_forecast_admin_correction_proxy(
 def _require_bid_link_editor(
     current_user: CurrentUser,
 ) -> None:
-    role = (
-        current_user.app_role
-        .strip()
-        .upper()
-    )
-
-    if role not in {
-        "ADMIN",
-        "OPERATIONS",
-    }:
+    if not _can_edit_current_project_projection(
+        current_user
+    ):
         raise HTTPException(
             status_code=403,
             detail=(
@@ -2558,10 +2756,12 @@ def current_project_originating_bid_proxy(
         ...,
         ge=1,
     ),
-    _current_user: CurrentUser = Depends(
+    current_user: CurrentUser = Depends(
         get_current_user
     ),
 ):
+    _require_projected_workspace_access(current_user)
+
     try:
         return (
             get_current_project_originating_bid(
@@ -2586,10 +2786,12 @@ def current_project_change_orders_proxy(
         ...,
         ge=1,
     ),
-    _current_user: CurrentUser = Depends(
+    current_user: CurrentUser = Depends(
         get_current_user
     ),
 ):
+    _require_projected_workspace_access(current_user)
+
     try:
         return (
             get_current_project_change_orders(
@@ -2780,6 +2982,8 @@ def completed_projects(
         get_current_user
     ),
 ):
+    _require_completed_workspace_access(current_user)
+
     try:
         return _role_scoped_financial_payload(
             get_completed_projects(),
@@ -2807,6 +3011,8 @@ def completed_project_monthly(
         get_current_user
     ),
 ):
+    _require_completed_workspace_access(current_user)
+
     try:
         return _role_scoped_financial_payload(
             get_completed_project_monthly(
@@ -2829,6 +3035,8 @@ def project_accountability(
         get_current_user
     ),
 ):
+    _require_completed_workspace_access(current_user)
+
     try:
         return _role_scoped_financial_payload(
             get_project_close_accountability(),

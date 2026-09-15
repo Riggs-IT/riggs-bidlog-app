@@ -2139,8 +2139,59 @@ export default function App() {
   }, []);
 
 
+  const isAdmin =
+    String(
+      user?.appRole
+      || ''
+    )
+      .trim()
+      .toUpperCase()
+    === 'ADMIN';
+
+
+  const workspaceProfile =
+    String(
+      user?.workspaceProfile
+      || ''
+    )
+      .trim()
+      .toUpperCase();
+
+
+  const capabilities =
+    user?.capabilities
+    || {};
+
+
+  const canViewProjectedBillings =
+    capabilities
+      .canViewProjectedBillings
+    === true;
+
+
+  const canViewBidLog =
+    capabilities
+      .canViewBidLog
+    === true;
+
+
+  const canViewProjects =
+    capabilities
+      .canViewProjects
+    === true;
+
+
+  const canViewCompletedBillings =
+    capabilities
+      .canViewCompletedBillings
+    === true;
+
+
   async function loadForecastAttention() {
-    if (!user) {
+    if (
+      !user
+      || !canViewProjectedBillings
+    ) {
       setForecastAttention([]);
       return [];
     }
@@ -2201,7 +2252,10 @@ export default function App() {
 
 
   useEffect(() => {
-    if (!user) {
+    if (
+      !user
+      || !canViewProjectedBillings
+    ) {
       setForecastAttention([]);
       setAttentionOpen(false);
       return undefined;
@@ -2238,6 +2292,7 @@ export default function App() {
     };
 
   }, [
+    canViewProjectedBillings,
     user?.eid,
   ]);
 
@@ -2783,7 +2838,33 @@ export default function App() {
 
 
   useEffect(() => {
-    if (!user) {
+    if (
+      !user
+      || !canViewProjectedBillings
+    ) {
+      backgroundPrefetchStartedRef.current =
+        false;
+
+      setProjectedInitialLoadComplete(false);
+      setDataLoading(false);
+      setDataError(null);
+
+      setCurrentProjects([]);
+      setActiveBids([]);
+
+      setCurrentMonthly(
+        new Map()
+      );
+
+      setBidMonthly(
+        new Map()
+      );
+
+      setMonthlyProgress({
+        loaded: 0,
+        total: 0,
+      });
+
       return undefined;
     }
 
@@ -2939,7 +3020,10 @@ export default function App() {
       cancelled = true;
     };
 
-  }, [user]);
+  }, [
+    canViewProjectedBillings,
+    user,
+  ]);
 
 
   async function signOut() {
@@ -3013,55 +3097,62 @@ export default function App() {
   }
 
 
-  const isAdmin =
-    String(
-      user?.appRole
-      || ''
-    ).toUpperCase()
-    === 'ADMIN';
-
-
-  /*
-    Temporary controlled rollout.
-
-    Bid Log and Projects remain ADMIN-only while management
-    validates the new master-record workflows.
-
-    Keep this capability separate from the underlying Data API
-    authorization so reopening to Operations is a small,
-    deliberate application rollout change later.
-  */
-  const canViewManagementWorkspaces =
-    isAdmin;
-
-
-  // Completed Billings remains ADMIN-only for now.
-  const canViewCompletedProjects =
-    isAdmin;
-
-
   useEffect(
     () => {
+      if (!user) {
+        return;
+      }
+
+      const allowedPages = {
+        projected:
+          canViewProjectedBillings,
+
+        'bid-log':
+          canViewBidLog,
+
+        'active-projects':
+          canViewProjects,
+
+        accountability:
+          canViewCompletedBillings,
+      };
+
       if (
-        (
-          !canViewManagementWorkspaces
-          && (
-            activePage === 'bid-log'
-            || activePage === 'active-projects'
-          )
-        )
-        || (
-          !canViewCompletedProjects
-          && activePage === 'accountability'
-        )
+        allowedPages[
+          activePage
+        ]
       ) {
-        setActivePage('projected');
+        return;
+      }
+
+      const fallbackPage =
+        canViewProjectedBillings
+          ? 'projected'
+          : canViewBidLog
+            ? 'bid-log'
+            : canViewProjects
+              ? 'active-projects'
+              : canViewCompletedBillings
+                ? 'accountability'
+                : null;
+
+      if (
+        fallbackPage
+        && fallbackPage
+          !== activePage
+      ) {
+        setActivePage(
+          fallbackPage
+        );
       }
     },
     [
       activePage,
-      canViewCompletedProjects,
-      canViewManagementWorkspaces,
+      canViewBidLog,
+      canViewCompletedBillings,
+      canViewProjectedBillings,
+      canViewProjects,
+      user,
     ],
   );
 
@@ -3070,8 +3161,10 @@ export default function App() {
     () => {
       if (
         !user
-        || !projectedInitialLoadComplete
-        || !canViewManagementWorkspaces
+        || (
+          canViewProjectedBillings
+          && !projectedInitialLoadComplete
+        )
         || backgroundPrefetchStartedRef.current
       ) {
         return undefined;
@@ -3092,61 +3185,66 @@ export default function App() {
         };
 
 
-        // Highest-value workspaces first.
-        await runStage(
-          () =>
-            prefetchBidLogWorkspace(
-              ['active']
-            ),
-        );
+        if (canViewBidLog) {
+          await runStage(
+            () =>
+              prefetchBidLogWorkspace(
+                ['active']
+              ),
+          );
+        }
 
 
-        await runStage(
-          () =>
-            prefetchProjectsWorkspace({
-              includeActive: true,
-              includeCompleted: false,
-            }),
-        );
+        if (canViewProjects) {
+          await runStage(
+            () =>
+              prefetchProjectsWorkspace({
+                includeActive: true,
+                includeCompleted: false,
+              }),
+          );
+        }
 
 
-        // Smaller historical outcome lists next.
-        await runStage(
-          () =>
-            prefetchBidLogWorkspace(
-              [
-                'awarded',
-                'lost',
-              ]
-            ),
-        );
+        if (canViewBidLog) {
+          await runStage(
+            () =>
+              prefetchBidLogWorkspace(
+                [
+                  'awarded',
+                  'lost',
+                ]
+              ),
+          );
+        }
 
 
-        // Completed Billings is currently ADMIN-only.
-        if (canViewCompletedProjects) {
+        if (canViewCompletedBillings) {
           await runStage(
             prefetchCompletedBillings,
           );
         }
 
 
-        // Warm the Projects -> Completed toggle.
-        await runStage(
-          () =>
-            prefetchProjectsWorkspace({
-              includeActive: false,
-              includeCompleted: true,
-            }),
-        );
+        if (canViewProjects) {
+          await runStage(
+            () =>
+              prefetchProjectsWorkspace({
+                includeActive: false,
+                includeCompleted: true,
+              }),
+          );
+        }
 
 
-        // Largest lifecycle list goes last.
-        await runStage(
-          () =>
-            prefetchBidLogWorkspace(
-              ['unpursued']
-            ),
-        );
+        if (canViewBidLog) {
+          await runStage(
+            () =>
+              prefetchBidLogWorkspace(
+                ['unpursued']
+              ),
+          );
+        }
       };
 
 
@@ -3161,7 +3259,7 @@ export default function App() {
 
       if (
         typeof window.requestIdleCallback
-        === 'function'
+          === 'function'
       ) {
         idleId =
           window.requestIdleCallback(
@@ -3170,7 +3268,6 @@ export default function App() {
               timeout: 1500,
             },
           );
-
       } else {
         timeoutId =
           window.setTimeout(
@@ -3193,7 +3290,9 @@ export default function App() {
           );
         }
 
-        if (timeoutId !== null) {
+        if (
+          timeoutId !== null
+        ) {
           window.clearTimeout(
             timeoutId
           );
@@ -3201,8 +3300,10 @@ export default function App() {
       };
     },
     [
-      canViewCompletedProjects,
-      canViewManagementWorkspaces,
+      canViewBidLog,
+      canViewCompletedBillings,
+      canViewProjectedBillings,
+      canViewProjects,
       projectedInitialLoadComplete,
       user?.eid,
     ],
@@ -6135,19 +6236,21 @@ export default function App() {
           </div>
 
           <nav className="app-nav">
-            <button
-              type="button"
-              className={
-                activePage === 'projected'
-                  ? 'active'
-                  : ''
-              }
-              onClick={() => setActivePage('projected')}
-            >
-              Projected Billings
-            </button>
+            {canViewProjectedBillings && (
+              <button
+                type="button"
+                className={
+                  activePage === 'projected'
+                    ? 'active'
+                    : ''
+                }
+                onClick={() => setActivePage('projected')}
+              >
+                Projected Billings
+              </button>
+            )}
 
-            {canViewManagementWorkspaces && (
+            {canViewBidLog && (
               <button
                 type="button"
                 className={
@@ -6161,7 +6264,7 @@ export default function App() {
               </button>
             )}
 
-            {canViewManagementWorkspaces && (
+            {canViewProjects && (
               <button
                 type="button"
                 className={
@@ -6175,7 +6278,7 @@ export default function App() {
               </button>
             )}
 
-            {canViewCompletedProjects && (
+            {canViewCompletedBillings && (
               <button
                 type="button"
                 className={
@@ -6192,7 +6295,10 @@ export default function App() {
         </div>
 
         <div className="topbar-actions">
-          <div className="notification-center">
+          <div
+            className="notification-center"
+            hidden={!canViewProjectedBillings}
+          >
             <button
               type="button"
               className={
@@ -6413,7 +6519,10 @@ export default function App() {
       </header>
 
 
-      {activePage === 'projected' ? (
+      {(
+        activePage === 'projected'
+        && canViewProjectedBillings
+      ) ? (
       <main className="page-shell">
         <div className="page-heading">
           <div>
@@ -8764,7 +8873,10 @@ export default function App() {
           </div>
         </section>
       </main>
-      ) : activePage === 'bid-log' ? (
+      ) : (
+        activePage === 'bid-log'
+        && canViewBidLog
+      ) ? (
         <BidLogWorkspace
           user={user}
           pmDirectory={[
@@ -8772,11 +8884,17 @@ export default function App() {
             ...activeBids,
           ]}
         />
-      ) : activePage === 'active-projects' ? (
+      ) : (
+        activePage === 'active-projects'
+        && canViewProjects
+      ) ? (
         <ActiveProjectsWorkspace
           user={user}
         />
       ) : (
+        activePage === 'accountability'
+        && canViewCompletedBillings
+      ) ? (
         <ProjectAccountability
           user={user}
           pmDirectory={[
@@ -8784,7 +8902,7 @@ export default function App() {
             ...activeBids,
           ]}
         />
-      )}
+      ) : null}
 
       <CurrentProjectBillingDrawer
         project={selectedCurrentProject}

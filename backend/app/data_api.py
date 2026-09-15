@@ -80,6 +80,7 @@ class BidLogAccessUser:
     microsoft_username: str | None
     entra_object_id: str
     app_role: str
+    employee_trade: str | None
 
 
 def _build_http_client() -> httpx.Client:
@@ -551,6 +552,20 @@ def resolve_bid_log_user(
             else None
         )
 
+        employee_trade_value = (
+            payload.get(
+                "employeeTrade"
+            )
+        )
+
+        employee_trade = (
+            str(employee_trade_value)
+            .strip()
+            .upper()
+            if employee_trade_value
+            else None
+        )
+
     except (
         KeyError,
         TypeError,
@@ -587,6 +602,7 @@ def resolve_bid_log_user(
         microsoft_username=microsoft_username,
         entra_object_id=returned_oid,
         app_role=app_role,
+        employee_trade=employee_trade,
     )
 
 

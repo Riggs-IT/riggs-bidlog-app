@@ -660,15 +660,10 @@ export default function ActiveBidBillingDrawer({
   }
 
 
-  // Temporary management rollout: master-record editing
-  // remains ADMIN-only until Operations rollout is approved.
+  // Bid Log editing follows the same ADMIN / OPERATIONS
+  // authorization used by the Bid Log workspace itself.
   const canOpenEditor =
-    String(
-      user?.appRole || '',
-    )
-      .trim()
-      .toUpperCase()
-    === 'ADMIN';
+    canEdit;
 
 
   return (

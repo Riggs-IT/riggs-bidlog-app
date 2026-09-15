@@ -37,6 +37,7 @@ class CurrentUser:
     it_user_id: int
     display_name: str
     app_role: str
+    employee_trade: str | None
     microsoft_username: str | None
     entra_object_id: str
     tenant_id: str
@@ -47,6 +48,7 @@ class CurrentUser:
             "itUserId": self.it_user_id,
             "displayName": self.display_name,
             "appRole": self.app_role,
+            "employeeTrade": self.employee_trade,
             "microsoftUsername":
                 self.microsoft_username,
             "authMode":
@@ -66,6 +68,7 @@ def _from_access_user(
         it_user_id=access.it_user_id,
         display_name=access.display_name,
         app_role=access.app_role,
+        employee_trade=access.employee_trade,
         microsoft_username=(
             microsoft_username
             or access.microsoft_username
