@@ -10,6 +10,7 @@ import BidLogStateSelect, {
 } from './BidLogStateSelect.jsx';
 import FloatingEditorShell from './FloatingEditorShell.jsx';
 import ActionToast from './ActionToast.jsx';
+import BidLogConfirmDialog from './BidLogConfirmDialog.jsx';
 
 
 const PROJECT_TYPES = [
@@ -139,6 +140,7 @@ export default function BidLogCreateDrawer({
   const [gcOptions, setGcOptions] = useState([]);
   const [gcOptionsLoading, setGcOptionsLoading] = useState(false);
   const [gcOptionsError, setGcOptionsError] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   const editorPmOptions = useMemo(
     () => Array.from(
@@ -186,10 +188,11 @@ export default function BidLogCreateDrawer({
       return;
     }
 
-    if (
-      hasInput
-      && !window.confirm('Discard this new bid?')
-    ) {
+    if (hasInput) {
+      setConfirmDialog({
+        title: 'Discard this new bid?',
+        message: 'The information entered for this new bid will be lost.',
+      });
       return;
     }
 
@@ -281,6 +284,10 @@ export default function BidLogCreateDrawer({
         },
       );
 
+      setForm({
+        ...EMPTY_FORM,
+        generalContractors: [],
+      });
       onCreated?.(created);
     } catch (error) {
       setSaveError(
@@ -339,6 +346,19 @@ export default function BidLogCreateDrawer({
         message={saveError}
         type="error"
         onDismiss={() => setSaveError(null)}
+      />
+
+      <BidLogConfirmDialog
+        open={Boolean(confirmDialog)}
+        title={confirmDialog?.title}
+        message={confirmDialog?.message}
+        confirmLabel="Discard Bid"
+        danger
+        onCancel={() => setConfirmDialog(null)}
+        onConfirm={() => {
+          setConfirmDialog(null);
+          onClose();
+        }}
       />
 
       <section className="bid-edit-section">

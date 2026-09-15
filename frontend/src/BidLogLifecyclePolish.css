@@ -126,3 +126,211 @@
     justify-content: center;
   }
 }
+
+/* Centered Bid Log confirmation / information dialogs. */
+.bid-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2400;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(5, 9, 15, 0.72);
+  backdrop-filter: blur(7px);
+}
+
+.bid-confirm-dialog {
+  width: min(480px, calc(100vw - 32px));
+  padding: 22px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--surface-2);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.48);
+}
+
+.bid-confirm-dialog h2 {
+  margin: 5px 0 8px;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.bid-confirm-dialog p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.bid-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+
+
+.bid-confirm-button {
+  appearance: none;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-3);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: none;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+.bid-confirm-button:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--text) 24%,
+    var(--border-strong)
+  );
+  background: var(--surface-2);
+}
+
+.bid-confirm-button:focus-visible {
+  outline: 2px solid color-mix(
+    in srgb,
+    var(--accent) 60%,
+    transparent
+  );
+  outline-offset: 2px;
+}
+
+.bid-confirm-cancel {
+  background: transparent;
+  color: var(--text);
+}
+
+.bid-confirm-primary {
+  border-color: color-mix(
+    in srgb,
+    var(--accent) 55%,
+    var(--border-strong)
+  );
+  background: color-mix(
+    in srgb,
+    var(--accent) 15%,
+    var(--surface-3)
+  );
+  color: var(--text);
+}
+
+.bid-confirm-primary:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--accent) 75%,
+    var(--border-strong)
+  );
+  background: color-mix(
+    in srgb,
+    var(--accent) 23%,
+    var(--surface-3)
+  );
+}
+
+.bid-confirm-danger {
+  border-color: color-mix(
+    in srgb,
+    var(--negative) 55%,
+    var(--border-strong)
+  );
+  background: color-mix(
+    in srgb,
+    var(--negative) 13%,
+    var(--surface-3)
+  );
+  color: var(--text);
+}
+
+.bid-confirm-danger:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--negative) 75%,
+    var(--border-strong)
+  );
+  background: color-mix(
+    in srgb,
+    var(--negative) 21%,
+    var(--surface-3)
+  );
+}
+
+.bid-confirm-danger:focus-visible {
+  outline-color: color-mix(
+    in srgb,
+    var(--negative) 65%,
+    transparent
+  );
+}
+
+.bid-pm-readonly-control {
+  width: 100%;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-3);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.bid-pm-readonly-control:hover:not(:disabled),
+.bid-pm-readonly-control:focus-visible {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+}
+
+.bid-pm-readonly-control small {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.bid-gc-chevron-button {
+  width: 28px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.bid-gc-chevron-button:hover,
+.bid-gc-chevron-button:focus-visible {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+@media (max-width: 620px) {
+  .bid-confirm-actions {
+    flex-direction: column-reverse;
+  }
+
+  .bid-confirm-actions > button {
+    width: 100%;
+    justify-content: center;
+  }
+}

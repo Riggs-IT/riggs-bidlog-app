@@ -206,7 +206,7 @@ export default function BidLogGeneralContractorSelect({
               setOpen(true);
             }}
             onKeyDown={event => {
-              if (event.key === 'Escape') {
+              if (event.key === 'Escape' || event.key === 'Tab') {
                 setOpen(false);
               }
             }}
@@ -223,7 +223,17 @@ export default function BidLogGeneralContractorSelect({
               Clear
             </button>
           )}
-          <span className="bid-gc-chevron" aria-hidden="true">⌄</span>
+          <button
+            type="button"
+            className="bid-gc-chevron bid-gc-chevron-button"
+            aria-label={open ? 'Close contractor picker' : 'Open contractor picker'}
+            onClick={event => {
+              event.stopPropagation();
+              setOpen(current => !current);
+            }}
+          >
+            {open ? '⌃' : '⌄'}
+          </button>
         </div>
       </div>
 

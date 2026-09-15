@@ -1847,6 +1847,56 @@ export default function BidLogWorkspace({
     const updatedIdentity = activeView
       ? Number(updated?.sharePointItemId)
       : Number(updated?.originalBidLogId);
+    const finalStatus = String(updated?.status || '').trim();
+    const destinationView = activeView
+      ? {
+          Awarded: 'awarded',
+          Lost: 'lost',
+          Dead: 'unpursued',
+        }[finalStatus]
+      : null;
+
+    if (destinationView) {
+      setPayload(
+        current => {
+          const currentItems = Array.isArray(current?.items)
+            ? current.items
+            : [];
+          const nextItems = currentItems.filter(
+            row => rowIdentity(row) !== updatedIdentity,
+          );
+          const next = {
+            ...current,
+            items: nextItems,
+            total: Math.max(0, Number(current?.total || currentItems.length) - 1),
+          };
+
+          writeBidLogCache('active', next);
+          return next;
+        },
+      );
+
+      bidLogListCache = {
+        ...bidLogListCache,
+        [destinationView]: {
+          ...bidLogListCache[destinationView],
+          loadedAt: 0,
+        },
+      };
+
+      setEditSelection(null);
+      setNotesBidId(null);
+      showActionToast(
+        'success',
+        `Bid marked ${finalStatus}. Opening ${BID_VIEWS[destinationView].title}.`,
+      );
+
+      window.setTimeout(
+        () => setBidView(destinationView),
+        500,
+      );
+      return;
+    }
 
     setPayload(
       current => {

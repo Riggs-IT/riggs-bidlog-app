@@ -10,6 +10,7 @@ import BidLogStateSelect, {
 } from './BidLogStateSelect.jsx';
 import FloatingEditorShell from './FloatingEditorShell.jsx';
 import ActionToast from './ActionToast.jsx';
+import BidLogConfirmDialog from './BidLogConfirmDialog.jsx';
 import {
   generalContractorNames,
 } from './GeneralContractors.jsx';
@@ -327,6 +328,7 @@ export default function BidLogOutcomeEditDrawer({
   const [gcOptions, setGcOptions] = useState(cachedGeneralContractorOptions || []);
   const [gcOptionsLoading, setGcOptionsLoading] = useState(false);
   const [gcOptionsError, setGcOptionsError] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   const role = String(user?.appRole || '').trim().toUpperCase();
   const canEdit = role === 'ADMIN' || role === 'OPERATIONS';
@@ -380,10 +382,20 @@ export default function BidLogOutcomeEditDrawer({
     }
   }
 
-  async function loadDetail() {
+  async function loadDetail({ preserveDraft = false } = {}) {
     if (!originalBidLogId || !outcomeStatus) {
       return;
     }
+
+    const draft = preserveDraft && form && detail
+      ? {
+          form: {
+            ...form,
+            generalContractors: [...generalContractorNames(form.generalContractors)],
+          },
+          baseline: initialForm(detail),
+        }
+      : null;
 
     setLoading(true);
     setLoadError(null);
@@ -406,8 +418,26 @@ export default function BidLogOutcomeEditDrawer({
             }
           : next;
 
+      const nextForm = initialForm(normalized);
+
+      if (draft) {
+        for (const [name, value] of Object.entries(draft.form)) {
+          const baselineValue = draft.baseline[name];
+          const changed = name === 'generalContractors'
+            ? !arraysEqual(
+                generalContractorNames(value),
+                generalContractorNames(baselineValue),
+              )
+            : !valuesEqual(value, baselineValue);
+
+          if (changed) {
+            nextForm[name] = value;
+          }
+        }
+      }
+
       setDetail(normalized);
-      setForm(initialForm(normalized));
+      setForm(nextForm);
     } catch (error) {
       setLoadError(errorMessage(error, 'Unable to load this bid.'));
     } finally {
@@ -595,10 +625,14 @@ export default function BidLogOutcomeEditDrawer({
       ? buildChanges().changes
       : {};
 
-    if (
-      Object.keys(pending).length > 0
-      && !window.confirm('Discard unsaved bid changes and return to the Bid Log?')
-    ) {
+    if (Object.keys(pending).length > 0) {
+      setConfirmDialog({
+        kind: 'discard',
+        title: 'Discard unsaved changes?',
+        message: 'Your unsaved Bid Log changes will be lost.',
+        confirmLabel: 'Discard Changes',
+        danger: true,
+      });
       return;
     }
 
@@ -776,12 +810,30 @@ export default function BidLogOutcomeEditDrawer({
               saveError?.startsWith(
                 'This bid changed after',
               )
-                ? loadDetail
+                ? () => loadDetail({ preserveDraft: true })
                 : null
             }
             onDismiss={() => {
               setSaveError(null);
               setSaveMessage(null);
+            }}
+          />
+
+          <BidLogConfirmDialog
+            open={Boolean(confirmDialog)}
+            title={confirmDialog?.title}
+            message={confirmDialog?.message}
+            confirmLabel={confirmDialog?.confirmLabel}
+            showCancel={confirmDialog?.showCancel !== false}
+            danger={confirmDialog?.danger === true}
+            onCancel={() => setConfirmDialog(null)}
+            onConfirm={() => {
+              const kind = confirmDialog?.kind;
+              setConfirmDialog(null);
+
+              if (kind === 'discard') {
+                onClose();
+              }
             }}
           />
 
@@ -808,21 +860,21 @@ export default function BidLogOutcomeEditDrawer({
 
               {showField('pm') && (
                 <Field label="PM">
-                  <select
-                    value={form.pm || 'No PM Assigned'}
+                  <button
+                    type="button"
+                    className="bid-pm-readonly-control"
                     disabled={!canField('pm')}
-                    onChange={event => updateField('pm', event.target.value)}
+                    onClick={() => setConfirmDialog({
+                      kind: 'pm-info',
+                      title: 'PM is controlled by the calendar',
+                      message: 'Update the Bid Log calendar invite to change the PM. The app will pick up the updated assignment from there.',
+                      confirmLabel: 'Got it',
+                      showCancel: false,
+                    })}
                   >
-                    <option value="No PM Assigned">No PM Assigned</option>
-                    {!currentPmIsApproved && String(form.pm || '').trim() && (
-                      <option value={form.pm} disabled>
-                        {form.pm} (current value — not approved)
-                      </option>
-                    )}
-                    {editorPmOptions.map(pm => (
-                      <option key={pm} value={pm}>{pm}</option>
-                    ))}
-                  </select>
+                    <span>{form.pm || 'No PM Assigned'}</span>
+                    <small>Calendar controlled</small>
+                  </button>
                 </Field>
               )}
 

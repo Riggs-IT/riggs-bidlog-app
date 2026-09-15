@@ -10,6 +10,7 @@ import BidLogStateSelect, {
 } from './BidLogStateSelect.jsx';
 import FloatingEditorShell from './FloatingEditorShell.jsx';
 import ActionToast from './ActionToast.jsx';
+import BidLogConfirmDialog from './BidLogConfirmDialog.jsx';
 import './BidLogLifecyclePolish.css';
 import {
   generalContractorNames,
@@ -128,10 +129,7 @@ function initialForm(detail) {
     bidName: textValue(detail?.bidName),
     pm: textValue(detail?.pm),
     dueDate: dateValue(detail?.dueDate),
-    status: resolvedAssignmentStatus(
-      detail?.pm,
-      detail?.status,
-    ),
+    status: textValue(detail?.status),
     projectType: textValue(detail?.projectType),
     purpose: textValue(detail?.purpose),
     generalContractors: generalContractorNames(
@@ -498,6 +496,7 @@ export default function BidLogEditDrawer({
   const [lifecycleComplete, setLifecycleComplete] = useState(false);
   const [requiredFields, setRequiredFields] = useState([]);
   const [requiredAction, setRequiredAction] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   const role = String(user?.appRole || '').trim().toUpperCase();
   const canEdit = role === 'ADMIN' || role === 'OPERATIONS';
@@ -701,10 +700,28 @@ export default function BidLogEditDrawer({
     }
   }
 
-  async function loadDetail() {
+  async function loadDetail({ preserveDraft = false } = {}) {
     if (!sharePointItemId) {
       return;
     }
+
+    const draft = preserveDraft && form && detail
+      ? {
+          form: {
+            ...form,
+            generalContractors: [...generalContractorNames(form.generalContractors)],
+          },
+          baseline: {
+            ...initialForm(detail),
+            estimatedDurationMonths: numberValue(
+              forecastProject?.estimatedDurationMonths,
+            ),
+          },
+          dateAwarded,
+          winningGeneralContractor,
+          lifecycleReason,
+        }
+      : null;
 
     setLoading(true);
     setLoadError(null);
@@ -760,15 +777,33 @@ export default function BidLogEditDrawer({
             )
           : null,
       );
-      setForm({
+      const nextForm = {
         ...initialForm(normalized),
         estimatedDurationMonths: numberValue(
           nextForecast?.estimatedDurationMonths,
         ),
-      });
-      setDateAwarded('');
-      setWinningGeneralContractor('');
-      setLifecycleReason('');
+      };
+
+      if (draft) {
+        for (const [name, value] of Object.entries(draft.form)) {
+          const baselineValue = draft.baseline[name];
+          const changed = name === 'generalContractors'
+            ? !arraysEqual(
+                generalContractorNames(value),
+                generalContractorNames(baselineValue),
+              )
+            : !valuesEqual(value, baselineValue);
+
+          if (changed) {
+            nextForm[name] = value;
+          }
+        }
+      }
+
+      setForm(nextForm);
+      setDateAwarded(draft?.dateAwarded || '');
+      setWinningGeneralContractor(draft?.winningGeneralContractor || '');
+      setLifecycleReason(draft?.lifecycleReason || '');
       setLifecycleComplete(false);
     } catch (error) {
       setLoadError(
@@ -1107,6 +1142,11 @@ export default function BidLogEditDrawer({
       return;
     }
 
+    if (lifecycleComplete) {
+      onClose();
+      return;
+    }
+
     const pending = form && detail
       ? buildChanges().changes
       : {};
@@ -1116,22 +1156,24 @@ export default function BidLogEditDrawer({
     const hasUnsavedChanges = Boolean(
       Object.keys(pending).length
       || durationChange.changed
-      || (selectedLifecycleAction && !lifecycleComplete)
+      || selectedLifecycleAction
     );
 
-    if (
-      hasUnsavedChanges
-      && !window.confirm(
-        'Discard unsaved bid changes and return to the Bid Log?',
-      )
-    ) {
+    if (hasUnsavedChanges) {
+      setConfirmDialog({
+        kind: 'discard',
+        title: 'Discard unsaved changes?',
+        message: 'Your unsaved Bid Log changes will be lost.',
+        confirmLabel: 'Discard Changes',
+        danger: true,
+      });
       return;
     }
 
     onClose();
   }
 
-  async function save() {
+  async function save(skipLifecycleConfirm = false) {
     if (!canEdit || !detail?.etag || !form || saving || lifecycleComplete) {
       return;
     }
@@ -1204,14 +1246,19 @@ export default function BidLogEditDrawer({
       return;
     }
 
-    if (
-      lifecycleAction
-      && !window.confirm(
-        lifecycleAction === 'Awarded'
-          ? 'Award this bid? The winning GC will remain on the Awarded record and losing GCs will be created as GC Not Awarded records.'
-          : `Mark this bid ${lifecycleAction}? The existing Bid Log workflow will move it out of Active Bids.`,
-      )
-    ) {
+    if (lifecycleAction && !skipLifecycleConfirm) {
+      setConfirmDialog({
+        kind: 'lifecycle',
+        title: lifecycleAction === 'Awarded'
+          ? 'Award this bid?'
+          : `Mark this bid ${lifecycleAction}?`,
+        message: lifecycleAction === 'Awarded'
+          ? 'The winning GC will remain on the Awarded record. Any losing GCs will be created as GC Not Awarded records.'
+          : `This will move the bid out of Active Bids and into the ${lifecycleAction === 'Dead' ? 'Unpursued' : lifecycleAction} view.`,
+        confirmLabel: lifecycleAction === 'Awarded'
+          ? 'Award Bid'
+          : `Mark ${lifecycleAction}`,
+      });
       return;
     }
 
@@ -1344,7 +1391,8 @@ export default function BidLogEditDrawer({
     : { changed: false };
 
   const hasUnsavedChanges = Boolean(
-    form
+    !lifecycleComplete
+    && form
     && detail
     && (
       Object.keys(buildChanges().changes).length
@@ -1460,12 +1508,35 @@ export default function BidLogEditDrawer({
                   saveError?.startsWith(
                     'This bid changed after',
                   )
-                    ? loadDetail
+                    ? () => loadDetail({ preserveDraft: true })
                     : null
                 }
                 onDismiss={() => {
                   setSaveError(null);
                   setSaveMessage(null);
+                }}
+              />
+
+              <BidLogConfirmDialog
+                open={Boolean(confirmDialog)}
+                title={confirmDialog?.title}
+                message={confirmDialog?.message}
+                confirmLabel={confirmDialog?.confirmLabel}
+                showCancel={confirmDialog?.showCancel !== false}
+                danger={confirmDialog?.danger === true}
+                onCancel={() => setConfirmDialog(null)}
+                onConfirm={() => {
+                  const kind = confirmDialog?.kind;
+                  setConfirmDialog(null);
+
+                  if (kind === 'discard') {
+                    onClose();
+                    return;
+                  }
+
+                  if (kind === 'lifecycle') {
+                    void save(true);
+                  }
                 }}
               />
 
@@ -1529,21 +1600,21 @@ export default function BidLogEditDrawer({
                     invalid={requiredFields.includes('pm')}
                     hint="Only approved Riggs PMs can be assigned. Selecting a PM automatically makes the bid Assigned."
                   >
-                    <select
-                      value={form.pm || 'No PM Assigned'}
+                    <button
+                      type="button"
+                      className="bid-pm-readonly-control"
                       disabled={!canEdit}
-                      onChange={event => updateField('pm', event.target.value)}
+                      onClick={() => setConfirmDialog({
+                        kind: 'pm-info',
+                        title: 'PM is controlled by the calendar',
+                        message: 'Update the Bid Log calendar invite to change the PM. The app will pick up the updated assignment from there.',
+                        confirmLabel: 'Got it',
+                        showCancel: false,
+                      })}
                     >
-                      <option value="No PM Assigned">No PM Assigned</option>
-                      {!currentPmIsApproved && hasAssignedPm(form.pm) && (
-                        <option value={form.pm} disabled>
-                          {form.pm} (current value — not approved)
-                        </option>
-                      )}
-                      {editorPmOptions.map(pm => (
-                        <option key={pm} value={pm}>{pm}</option>
-                      ))}
-                    </select>
+                      <span>{form.pm || 'No PM Assigned'}</span>
+                      <small>Calendar controlled</small>
+                    </button>
                   </Field>
 
                   <Field
