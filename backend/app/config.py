@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     entra_client_id: str = ""
     entra_client_secret: str = ""
     entra_redirect_uri: str = ""
+    entra_post_logout_redirect_uri: str = ""
     entra_data_api_scope: str = ""
 
     bid_log_delegated_auth_enabled: bool = False

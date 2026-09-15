@@ -3074,16 +3074,47 @@ export default function App() {
 
 
     try {
-      await window.fetch(
-        '/api/auth/logout',
-        {
-          method: 'POST',
-          credentials:
-            'same-origin',
-        },
+      const response =
+        await window.fetch(
+          '/api/auth/logout',
+          {
+            method: 'POST',
+            credentials:
+              'same-origin',
+          },
+        );
+
+
+      let logoutUrl =
+        '/?signed_out=1';
+
+
+      if (response.ok) {
+        const payload =
+          await response.json();
+
+        if (
+          typeof payload?.logoutUrl ===
+            'string'
+          && payload.logoutUrl.trim()
+        ) {
+          logoutUrl =
+            payload.logoutUrl;
+        }
+      }
+
+
+      clearUsageSessionId();
+
+      usageSessionIdRef.current =
+        null;
+
+
+      window.location.assign(
+        logoutUrl,
       );
 
-    } finally {
+    } catch {
       clearUsageSessionId();
 
       usageSessionIdRef.current =

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from urllib.parse import urlencode, urlparse
 from uuid import UUID, uuid4
 
 from authlib.integrations.starlette_client import (
@@ -158,6 +159,121 @@ def _auth_error_redirect(
     return RedirectResponse(
         url=f"/?auth_error={safe_detail}",
         status_code=303,
+    )
+
+
+def _clear_bid_log_auth_session(
+    request: Request,
+) -> tuple[str, int | None]:
+    delegated_session_id = str(
+        request.session.get(
+            "delegated_session_id"
+        )
+        or ""
+    ).strip()
+
+    raw_actor_eid = request.session.get(
+        "delegated_actor_eid"
+    )
+
+    try:
+        actor_eid = int(
+            raw_actor_eid
+        )
+    except (TypeError, ValueError):
+        actor_eid = None
+
+    request.session.clear()
+
+    return (
+        delegated_session_id,
+        actor_eid,
+    )
+
+
+def _delete_delegated_session_best_effort(
+    delegated_session_id: str,
+    actor_eid: int | None,
+) -> None:
+    if (
+        not delegated_session_id
+        or actor_eid is None
+    ):
+        return
+
+    try:
+        delete_bid_log_delegated_session(
+            delegated_session_id=
+                delegated_session_id,
+            actor_eid=actor_eid,
+            request_id=str(uuid4()),
+        )
+    except Exception:
+        # A bridge restart clears the process-local delegated
+        # vault. Stale remote state must never prevent local
+        # Bid Log sign-out.
+        pass
+
+
+def _expire_session_cookie(
+    response,
+) -> None:
+    response.delete_cookie(
+        SESSION_COOKIE_NAME,
+        path="/",
+        secure=settings.session_cookie_secure,
+        httponly=True,
+        samesite="lax",
+    )
+
+
+async def _entra_end_session_url() -> str | None:
+    if settings.auth_mode != "entra":
+        return None
+
+    post_logout_redirect_uri = (
+        settings
+        .entra_post_logout_redirect_uri
+        .strip()
+    )
+
+    if not post_logout_redirect_uri:
+        return None
+
+    try:
+        metadata = await (
+            oauth.entra.load_server_metadata()
+        )
+    except Exception:
+        return None
+
+    end_session_endpoint = str(
+        metadata.get(
+            "end_session_endpoint"
+        )
+        or ""
+    ).strip()
+
+    parsed_endpoint = urlparse(
+        end_session_endpoint
+    )
+
+    if (
+        parsed_endpoint.scheme != "https"
+        or parsed_endpoint.netloc.lower()
+        != "login.microsoftonline.com"
+    ):
+        return None
+
+    return (
+        end_session_endpoint
+        + "?"
+        + urlencode(
+            {
+                "post_logout_redirect_uri":
+                    post_logout_redirect_uri,
+            }
+        )
     )
 
 
@@ -844,6 +960,7 @@ async def auth_login(
         oauth.entra.authorize_redirect(
             request,
             settings.entra_redirect_uri,
+            prompt="select_account",
         )
     )
 
@@ -1315,66 +1432,57 @@ async def bid_log_usage_end_proxy(
 
 
 @app.post("/api/auth/logout")
-def auth_logout(
+async def auth_logout(
     request: Request,
 ):
-    delegated_session_id = str(
-        request.session.get(
-            "delegated_session_id"
-        )
-        or ""
-    ).strip()
-
-    raw_actor_eid = request.session.get(
-        "delegated_actor_eid"
+    (
+        delegated_session_id,
+        actor_eid,
+    ) = _clear_bid_log_auth_session(
+        request
     )
 
-    try:
-        actor_eid = int(
-            raw_actor_eid
-        )
+    _delete_delegated_session_best_effort(
+        delegated_session_id,
+        actor_eid,
+    )
 
-    except (
-        TypeError,
-        ValueError,
-    ):
-        actor_eid = None
-
-    if (
-        delegated_session_id
-        and actor_eid is not None
-    ):
-        delete_bid_log_delegated_session(
-            delegated_session_id=
-                delegated_session_id,
-
-            actor_eid=
-                actor_eid,
-
-            request_id=
-                str(
-                    uuid4()
-                ),
-        )
-
-    request.session.clear()
+    microsoft_logout_url = (
+        await _entra_end_session_url()
+    )
 
     response = JSONResponse(
         content={
             "status": "signed_out",
             "authMode":
                 settings.auth_mode,
+            "logoutUrl": (
+                microsoft_logout_url
+                or "/?signed_out=1"
+            ),
         }
     )
 
-    # Explicitly expire the browser session cookie.
-    response.delete_cookie(
-        SESSION_COOKIE_NAME,
-        path="/",
-        secure=settings.session_cookie_secure,
-        httponly=True,
-        samesite="lax",
+    _expire_session_cookie(response)
+
+    return response
+
+
+@app.get(
+    "/api/auth/signed-out",
+    include_in_schema=False,
+)
+def auth_signed_out(
+    request: Request,
+):
+    request.session.clear()
+
+    response = RedirectResponse(
+        url="/?signed_out=1",
+        status_code=303,
     )
+
+    _expire_session_cookie(response)
 
     return response
 
