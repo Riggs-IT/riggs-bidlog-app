@@ -117,9 +117,14 @@ function Field({
   children,
   wide = false,
   hint = null,
+  invalid = false,
 }) {
   return (
-    <label className={`bid-edit-field${wide ? ' wide' : ''}`}>
+    <label
+      className={
+        `bid-edit-field${wide ? ' wide' : ''}${invalid ? ' required-attention' : ''}`
+      }
+    >
       <span>{label}</span>
       {children}
       {hint && <small>{hint}</small>}
@@ -137,6 +142,7 @@ export default function BidLogCreateDrawer({
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [requiredFields, setRequiredFields] = useState([]);
   const [gcOptions, setGcOptions] = useState([]);
   const [gcOptionsLoading, setGcOptionsLoading] = useState(false);
   const [gcOptionsError, setGcOptionsError] = useState(null);
@@ -180,6 +186,16 @@ export default function BidLogCreateDrawer({
       ...current,
       [name]: value,
     }));
+
+    if (String(value ?? '').trim()) {
+      setRequiredFields(
+        current =>
+          current.filter(
+            field => field !== name,
+          ),
+      );
+    }
+
     setSaveError(null);
   }
 
@@ -238,6 +254,7 @@ export default function BidLogCreateDrawer({
         generalContractors: [],
       });
       setSaveError(null);
+      setRequiredFields([]);
       setSaving(false);
       loadGcOptions();
     },
@@ -250,16 +267,27 @@ export default function BidLogCreateDrawer({
     }
 
     const bidName = optionalText(form.bidName);
+    const dueDate = optionalText(form.dueDate);
 
-    if (!bidName) {
-      setSaveError('Bid Name is required.');
+    const missingRequiredFields = [
+      !bidName ? 'bidName' : null,
+      !dueDate ? 'dueDate' : null,
+    ].filter(Boolean);
+
+    if (missingRequiredFields.length) {
+      setRequiredFields(missingRequiredFields);
+      setSaveError(
+        'Fill in the highlighted required fields.',
+      );
       return;
     }
+
+    setRequiredFields([]);
 
     const payload = {
       bidName,
       pm: optionalText(form.pm),
-      dueDate: optionalText(form.dueDate),
+      dueDate,
       projectType: optionalText(form.projectType),
       purpose: optionalText(form.purpose),
       developer: optionalText(form.developer),
@@ -334,7 +362,16 @@ export default function BidLogCreateDrawer({
               type="button"
               className="primary-button bid-log-save-button"
               onClick={createBid}
-              disabled={saving || !optionalText(form.bidName)}
+              disabled={
+                saving
+                || (
+                  requiredFields.length > 0
+                  && (
+                    !optionalText(form.bidName)
+                    || !optionalText(form.dueDate)
+                  )
+                )
+              }
             >
               {saving ? 'Creating…' : 'Create Bid'}
             </button>
@@ -347,6 +384,27 @@ export default function BidLogCreateDrawer({
         type="error"
         onDismiss={() => setSaveError(null)}
       />
+
+      {requiredFields.length > 0 && (
+        <div
+          className="bid-lifecycle-required-banner"
+          role="alert"
+        >
+          <div>
+            <strong>Required information missing</strong>
+            <span>
+              {[
+                requiredFields.includes('bidName')
+                  ? 'Bid Name'
+                  : null,
+                requiredFields.includes('dueDate')
+                  ? 'Due Date'
+                  : null,
+              ].filter(Boolean).join(' · ')}
+            </span>
+          </div>
+        </div>
+      )}
 
       <BidLogConfirmDialog
         open={Boolean(confirmDialog)}
@@ -373,11 +431,16 @@ export default function BidLogCreateDrawer({
         </div>
 
         <div className="bid-edit-grid three-column">
-          <Field label="Bid Name" wide>
+          <Field
+            label="Bid Name *"
+            wide
+            invalid={requiredFields.includes('bidName')}
+          >
             <input
               type="text"
               value={form.bidName}
               autoFocus
+              aria-invalid={requiredFields.includes('bidName')}
               onChange={event => updateField('bidName', event.target.value)}
             />
           </Field>
@@ -394,10 +457,14 @@ export default function BidLogCreateDrawer({
             </select>
           </Field>
 
-          <Field label="Due Date">
+          <Field
+            label="Due Date *"
+            invalid={requiredFields.includes('dueDate')}
+          >
             <input
               type="date"
               value={form.dueDate}
+              aria-invalid={requiredFields.includes('dueDate')}
               onChange={event => updateField('dueDate', event.target.value)}
             />
           </Field>

@@ -334,3 +334,54 @@
     justify-content: center;
   }
 }
+
+/* ==========================================================
+   BID LOG - REQUIRED FIELD ATTENTION
+   Shared by New Bid and lifecycle/edit validation.
+   ========================================================== */
+
+.bid-lifecycle-required-banner {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--negative) 70%,
+      var(--border-strong)
+    ) !important;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--negative) 10%,
+      var(--surface-2)
+    ) !important;
+}
+
+.bid-lifecycle-required-banner strong {
+  color: var(--negative);
+}
+
+.bid-edit-field.required-attention > span,
+.bid-lifecycle-field.required-attention > span,
+.bid-lifecycle-field.invalid > span {
+  color: var(--negative) !important;
+}
+
+.bid-edit-field.required-attention input,
+.bid-edit-field.required-attention select,
+.bid-edit-field.required-attention textarea,
+.bid-lifecycle-field.required-attention input,
+.bid-lifecycle-field.required-attention select,
+.bid-lifecycle-field.required-attention textarea,
+.bid-lifecycle-field.invalid input,
+.bid-lifecycle-field.invalid select,
+.bid-lifecycle-field.invalid textarea,
+.bid-log-edit-drawer [aria-invalid="true"] {
+  border-color: var(--negative) !important;
+  box-shadow:
+    0 0 0 2px
+    color-mix(
+      in srgb,
+      var(--negative) 20%,
+      transparent
+    ) !important;
+}

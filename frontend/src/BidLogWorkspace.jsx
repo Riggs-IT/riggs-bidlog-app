@@ -1847,8 +1847,11 @@ export default function BidLogWorkspace({
     const updatedIdentity = activeView
       ? Number(updated?.sharePointItemId)
       : Number(updated?.originalBidLogId);
-    const finalStatus = String(updated?.status || '').trim();
-    const destinationView = activeView
+
+    const finalStatus =
+      String(updated?.status || '').trim();
+
+    const terminalDestination = activeView
       ? {
           Awarded: 'awarded',
           Lost: 'lost',
@@ -1856,45 +1859,99 @@ export default function BidLogWorkspace({
         }[finalStatus]
       : null;
 
-    if (destinationView) {
+    if (terminalDestination) {
       setPayload(
         current => {
-          const currentItems = Array.isArray(current?.items)
-            ? current.items
-            : [];
-          const nextItems = currentItems.filter(
-            row => rowIdentity(row) !== updatedIdentity,
-          );
+          const currentItems =
+            Array.isArray(current?.items)
+              ? current.items
+              : [];
+
+          const itemWasPresent =
+            currentItems.some(
+              row =>
+                rowIdentity(row)
+                === updatedIdentity,
+            );
+
+          const nextItems =
+            currentItems.filter(
+              row =>
+                rowIdentity(row)
+                !== updatedIdentity,
+            );
+
           const next = {
             ...current,
             items: nextItems,
-            total: Math.max(0, Number(current?.total || currentItems.length) - 1),
+            total: Math.max(
+              0,
+              Number(
+                current?.total
+                ?? currentItems.length
+              )
+              - (itemWasPresent ? 1 : 0),
+            ),
           };
 
-          writeBidLogCache('active', next);
+          writeBidLogCache(
+            'active',
+            next,
+          );
+
           return next;
         },
       );
 
+      /*
+        The destination list changed, so force a fresh read
+        next time the user opens it. Do not route them there.
+      */
       bidLogListCache = {
         ...bidLogListCache,
-        [destinationView]: {
-          ...bidLogListCache[destinationView],
+        [terminalDestination]: {
+          ...bidLogListCache[
+            terminalDestination
+          ],
           loadedAt: 0,
         },
       };
 
       setEditSelection(null);
       setNotesBidId(null);
+
       showActionToast(
         'success',
-        `Bid marked ${finalStatus}. Opening ${BID_VIEWS[destinationView].title}.`,
+        `Bid marked ${finalStatus}.`,
       );
 
+      /*
+        Re-read Active shortly after the SharePoint lifecycle
+        operation completes. Keep the user on the current
+        Active screen and update only the cache; the row was
+        already removed optimistically above.
+      */
       window.setTimeout(
-        () => setBidView(destinationView),
-        500,
+        async () => {
+          try {
+            const nextPayload =
+              await loadBidView(
+                'active',
+                undefined,
+              );
+
+            writeBidLogCache(
+              'active',
+              nextPayload,
+            );
+          } catch {
+            // Optimistic removal remains valid. Normal Refresh
+            // can retry if the background read is unavailable.
+          }
+        },
+        700,
       );
+
       return;
     }
 
@@ -1902,17 +1959,27 @@ export default function BidLogWorkspace({
       current => {
         const next = {
           ...current,
-          items: Array.isArray(current?.items)
+          items: Array.isArray(
+            current?.items
+          )
             ? current.items.map(
                 row =>
-                  rowIdentity(row) === updatedIdentity
-                    ? { ...row, ...updated }
+                  rowIdentity(row)
+                  === updatedIdentity
+                    ? {
+                        ...row,
+                        ...updated,
+                      }
                     : row,
               )
             : [],
         };
 
-        writeBidLogCache(bidView, next);
+        writeBidLogCache(
+          bidView,
+          next,
+        );
+
         return next;
       },
     );
@@ -1920,11 +1987,11 @@ export default function BidLogWorkspace({
     setNotesByBidId(
       current => ({
         ...current,
-        [`${bidView}:${updatedIdentity}`]: updated,
+        [`${bidView}:${updatedIdentity}`]:
+          updated,
       }),
     );
   }
-
 
   function handleBidCreated(created) {
     const createdId = Number(created?.sharePointItemId);
