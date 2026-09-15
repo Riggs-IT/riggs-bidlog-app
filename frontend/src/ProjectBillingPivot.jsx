@@ -594,6 +594,7 @@ function BillingLine({
 function AllBillingValues({
   cell,
   currency,
+  source,
 }) {
   if (!cell.hasActivity) {
     return (
@@ -606,7 +607,7 @@ function AllBillingValues({
   return (
     <div className="pivot-billing-cell">
       <BillingLine
-        label="Projected"
+        label={source === 'bid' ? 'Bids' : 'Projected'}
         metric="projected"
         value={cell.projected}
         currency={currency}
@@ -752,12 +753,14 @@ function BillingValue({
   cell,
   metric,
   currency,
+  source,
 }) {
   if (metric === 'all') {
     return (
       <AllBillingValues
         cell={cell}
         currency={currency}
+        source={source}
       />
     );
   }
@@ -803,10 +806,14 @@ function HeaderTotal({
   label,
   value,
   projectedValue = null,
+  bidProjectedValue = null,
   actualValue = null,
   metric,
   currency,
   activeProjectsBilled = null,
+  potentialBidsProjected = null,
+  includeProjectProjection = true,
+  includeBidProjection = true,
 }) {
   const allMode =
     metric === 'all';
@@ -823,18 +830,34 @@ function HeaderTotal({
   const marginMode =
     metric === 'marginCollected';
 
-  const billedProjectLabel =
-    actualMode
-      ? (
+  const hasBidProjection =
+    includeBidProjection
+    && bidProjectedValue !== null
+    && bidProjectedValue !== undefined;
+
+  const projectBilledText =
+    activeProjectsBilled !== null
+    && activeProjectsBilled > 0
+      ? `${activeProjectsBilled} ${
           activeProjectsBilled === 1
-            ? 'active project billed'
-            : 'active projects billed'
-        )
-      : (
-          activeProjectsBilled === 1
-            ? 'active project with actual billing'
-            : 'active projects with actual billing'
-        );
+            ? 'project billed'
+            : 'projects billed'
+        }`
+      : null;
+
+  const bidsProjectedText =
+    potentialBidsProjected !== null
+    && potentialBidsProjected > 0
+      ? `${potentialBidsProjected} ${
+          potentialBidsProjected === 1
+            ? 'bid projected'
+            : 'bids projected'
+        }`
+      : null;
+
+  const showSplitProjection =
+    allMode
+    || projectedMode;
 
   return (
     <span className="pivot-header-total">
@@ -842,18 +865,42 @@ function HeaderTotal({
         {label}
       </span>
 
-      {allMode ? (
+      {showSplitProjection ? (
         <span
           className="pivot-header-total-values"
-          title={`Projected: ${currency(projectedValue ?? 0)} · Actual: ${currency(actualValue ?? 0)}`}
+          title={
+            [
+              includeProjectProjection
+                ? `Project projection: ${currency(projectedValue ?? 0)}`
+                : null,
+              hasBidProjection
+                ? `Bid projection: ${currency(bidProjectedValue ?? 0)}`
+                : null,
+              allMode
+                ? `Actual: ${currency(actualValue ?? 0)}`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')
+          }
         >
-          <small className="pivot-header-total-value">
-            P {compactCurrency(projectedValue)}
-          </small>
+          {includeProjectProjection && (
+            <small className="pivot-header-total-value">
+              P {compactCurrency(projectedValue)}
+            </small>
+          )}
 
-          <small className="pivot-header-total-value pivot-header-total-value-actual">
-            A {compactCurrency(actualValue)}
-          </small>
+          {hasBidProjection && (
+            <small className="pivot-header-total-value pivot-header-total-value-bid">
+              B {compactCurrency(bidProjectedValue)}
+            </small>
+          )}
+
+          {allMode && (
+            <small className="pivot-header-total-value pivot-header-total-value-actual">
+              A {compactCurrency(actualValue)}
+            </small>
+          )}
         </span>
       ) : (
         <small
@@ -865,12 +912,6 @@ function HeaderTotal({
               : `Column total: ${currency(value)}`
           }
         >
-          {projectedMode
-          && value !== null
-          && value !== undefined
-            ? 'P '
-            : ''}
-
           {actualMode
           && value !== null
           && value !== undefined
@@ -893,14 +934,35 @@ function HeaderTotal({
         </small>
       )}
 
-      {activeProjectsBilled !== null && (
-        <small
-          className="pivot-header-billed-count"
-          title={`${activeProjectsBilled} ${billedProjectLabel} in this month`}
-        >
-          {activeProjectsBilled}{' '}
-          {billedProjectLabel}
-        </small>
+      {(projectBilledText || bidsProjectedText) && (
+        <span className="pivot-header-activity-counts">
+          {projectBilledText && (
+            <small
+              className="pivot-header-billed-count"
+              title={`${projectBilledText} in this month`}
+            >
+              {projectBilledText}
+            </small>
+          )}
+
+          {projectBilledText && bidsProjectedText && (
+            <span
+              className="pivot-header-activity-separator"
+              aria-hidden="true"
+            >
+              ·
+            </span>
+          )}
+
+          {bidsProjectedText && (
+            <small
+              className="pivot-header-billed-count pivot-header-bid-count"
+              title={`${bidsProjectedText} in this month`}
+            >
+              {bidsProjectedText}
+            </small>
+          )}
+        </span>
       )}
     </span>
   );
@@ -1328,10 +1390,24 @@ export default function ProjectBillingPivot({
                       toNumber(cellValue);
                   }
 
-                  current.projectedValue +=
-                    toNumber(
-                      cell?.projected
-                    );
+                  if (row.source === 'bid') {
+                    current.bidProjectedValue +=
+                      toNumber(
+                        cell?.projected
+                      );
+
+                    if (
+                      cell?.hasActivity
+                      && toNumber(cell?.projected) !== 0
+                    ) {
+                      current.potentialBidsProjected += 1;
+                    }
+                  } else {
+                    current.projectedValue +=
+                      toNumber(
+                        cell?.projected
+                      );
+                  }
 
                   if (
                     cell?.actual !== null
@@ -1349,7 +1425,9 @@ export default function ProjectBillingPivot({
                 {
                   value: 0,
                   projectedValue: 0,
+                  bidProjectedValue: 0,
                   actualValue: 0,
+                  potentialBidsProjected: 0,
                 },
               );
 
@@ -1392,12 +1470,23 @@ export default function ProjectBillingPivot({
               projectedValue:
                 totals.projectedValue,
 
+              bidProjectedValue:
+                includeBids
+                && totals.potentialBidsProjected > 0
+                  ? totals.bidProjectedValue
+                  : null,
+
               actualValue:
                 hasActualValue
                   ? totals.actualValue
                   : null,
 
               activeProjectsBilled,
+
+              potentialBidsProjected:
+                includeBids
+                  ? totals.potentialBidsProjected
+                  : null,
             };
           }
         ),
@@ -1406,6 +1495,7 @@ export default function ProjectBillingPivot({
         rows,
         headerMetric,
         includeActiveProjects,
+        includeBids,
       ],
     );
 
@@ -1441,10 +1531,17 @@ export default function ProjectBillingPivot({
                   );
               }
 
-              current.projectedValue +=
-                toNumber(
-                  row.total?.projected
-                );
+              if (row.source === 'bid') {
+                current.bidProjectedValue +=
+                  toNumber(
+                    row.total?.projected
+                  );
+              } else {
+                current.projectedValue +=
+                  toNumber(
+                    row.total?.projected
+                  );
+              }
 
               if (
                 row.total?.actual !== null
@@ -1462,8 +1559,17 @@ export default function ProjectBillingPivot({
             {
               value: 0,
               projectedValue: 0,
+              bidProjectedValue: 0,
               actualValue: 0,
             },
+          );
+
+        const hasBidProjectedValue =
+          includeBids
+          && rows.some(
+            row =>
+              row.source === 'bid'
+              && toNumber(row.total?.projected) !== 0
           );
 
         return {
@@ -1475,6 +1581,11 @@ export default function ProjectBillingPivot({
           projectedValue:
             totals.projectedValue,
 
+          bidProjectedValue:
+            hasBidProjectedValue
+              ? totals.bidProjectedValue
+              : null,
+
           actualValue:
             hasActualValue
               ? totals.actualValue
@@ -1484,6 +1595,7 @@ export default function ProjectBillingPivot({
       [
         rows,
         headerMetric,
+        includeBids,
       ],
     );
 
@@ -1671,6 +1783,11 @@ export default function ProjectBillingPivot({
                             index
                           ]?.projectedValue
                         }
+                        bidProjectedValue={
+                          monthTotals[
+                            index
+                          ]?.bidProjectedValue
+                        }
                         actualValue={
                           monthTotals[
                             index
@@ -1683,6 +1800,13 @@ export default function ProjectBillingPivot({
                             index
                           ]?.activeProjectsBilled
                         }
+                        potentialBidsProjected={
+                          monthTotals[
+                            index
+                          ]?.potentialBidsProjected
+                        }
+                        includeProjectProjection={includeActiveProjects}
+                        includeBidProjection={includeBids}
                       />
                     }
                     sortKey={`month:${month}`}
@@ -1703,11 +1827,16 @@ export default function ProjectBillingPivot({
                     projectedValue={
                       grandTotals.projectedValue
                     }
+                    bidProjectedValue={
+                      grandTotals.bidProjectedValue
+                    }
                     actualValue={
                       grandTotals.actualValue
                     }
                     metric={billingMetric}
                     currency={currency}
+                    includeProjectProjection={includeActiveProjects}
+                    includeBidProjection={includeBids}
                   />
                 }
                 sortKey="total"
@@ -1854,6 +1983,7 @@ export default function ProjectBillingPivot({
                             cell={cell}
                             metric={billingMetric}
                             currency={currency}
+                            source={row.source}
                           />
                         </td>
                       )
@@ -1864,6 +1994,7 @@ export default function ProjectBillingPivot({
                         cell={totalCell}
                         metric={billingMetric}
                         currency={currency}
+                        source={row.source}
                       />
                     </td>
                   </tr>

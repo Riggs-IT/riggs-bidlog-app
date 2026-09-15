@@ -325,8 +325,8 @@ button:disabled {
 .section-kicker {
   color: var(--muted);
 
-  font-size: 11px;
-  font-weight: 750;
+  font-size: 12px;
+  font-weight: 600;
 
   letter-spacing: 0.12em;
 }
@@ -380,8 +380,8 @@ h2 {
 
   color: var(--muted);
 
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 
@@ -390,8 +390,8 @@ h2 {
 .text-button {
   border-radius: 5px;
 
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 
@@ -458,8 +458,8 @@ h2 {
 
   color: var(--muted);
 
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 
@@ -551,8 +551,8 @@ h2 {
 .filter-group-title {
   color: var(--muted);
 
-  font-size: 9px;
-  font-weight: 750;
+  font-size: 10px;
+  font-weight: 600;
 
   letter-spacing: 0.06em;
 
@@ -739,8 +739,8 @@ h2 {
 
   color: var(--muted);
 
-  font-size: 9px;
-  font-weight: 750;
+  font-size: 10px;
+  font-weight: 600;
 
   letter-spacing: 0.06em;
 
@@ -863,8 +863,8 @@ h2 {
 
   color: var(--muted);
 
-  font-size: 9px;
-  font-weight: 750;
+  font-size: 10px;
+  font-weight: 600;
 
   letter-spacing: 0.04em;
 
@@ -938,8 +938,8 @@ h2 {
 
   border-radius: 4px;
 
-  font-size: 9px;
-  font-weight: 750;
+  font-size: 10px;
+  font-weight: 600;
 
   white-space: nowrap;
 }
@@ -1161,7 +1161,7 @@ h2 {
   color: #ffffff;
 
   font-size: 19px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.03em;
 }
 
@@ -1177,8 +1177,8 @@ h2 {
 .auth-company-copy strong {
   color: #f7f9fa;
 
-  font-size: 14px;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 600;
   letter-spacing: 0.08em;
 }
 
@@ -1233,8 +1233,8 @@ h2 {
 
   color: #86b4d0;
 
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 600;
   letter-spacing: 0.15em;
 }
 
@@ -1247,7 +1247,7 @@ h2 {
   font-size:
     clamp(54px, 6vw, 88px);
 
-  font-weight: 750;
+  font-weight: 600;
   letter-spacing: -0.045em;
   line-height: 0.95;
 }
@@ -1317,8 +1317,8 @@ h2 {
 
   color: #8ec1df;
 
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 
@@ -1361,8 +1361,8 @@ h2 {
 
   color: #aeb8c0;
 
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 600;
   letter-spacing: 0.12em;
 }
 
@@ -1849,8 +1849,8 @@ h2 {
   background: var(--surface-2);
   color: var(--accent);
 
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .accountability-explainer strong {
@@ -1990,8 +1990,8 @@ h2 {
   background: var(--surface-3);
   color: var(--muted);
 
-  font-size: 8px;
-  font-weight: 800;
+  font-size: 9px;
+  font-weight: 600;
   line-height: 1.15;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -2168,8 +2168,8 @@ body {
 .signout-button {
   padding: 0 14px;
 
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .theme-toggle:hover,
@@ -2287,8 +2287,8 @@ h2 {
 .source-selector-copy > span {
   color: var(--text);
 
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 600;
   letter-spacing: 0.09em;
 }
 
@@ -2946,8 +2946,8 @@ h2 {
 
   border-radius: 999px;
 
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 
@@ -3112,8 +3112,8 @@ h2 {
       #9da9b7
     );
 
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
 
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -3352,8 +3352,8 @@ h2 {
   color: inherit;
 
   font: inherit;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
 
   cursor: pointer;
 }
@@ -3570,8 +3570,8 @@ h2 {
   color:
     var(--muted);
 
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
 
   line-height: 1.2;
 }
@@ -3875,8 +3875,8 @@ h2 {
   color:
     var(--muted);
 
-  font-size: 10px;
-  font-weight: 750;
+  font-size: 11px;
+  font-weight: 600;
 
   letter-spacing:
     0.055em;
@@ -4070,8 +4070,8 @@ h2 {
   color:
     var(--muted);
 
-  font-size: 10px;
-  font-weight: 750;
+  font-size: 11px;
+  font-weight: 600;
 
   letter-spacing:
     0.045em;
@@ -4208,8 +4208,8 @@ h2 {
   color:
     var(--muted);
 
-  font-size: 10px;
-  font-weight: 750;
+  font-size: 11px;
+  font-weight: 600;
 
   letter-spacing: 0.035em;
 }
@@ -4406,10 +4406,10 @@ h2 {
     var(--accent);
 
   font-size:
-    10px;
+    11px;
 
   font-weight:
-    750;
+    600;
 
   letter-spacing:
     0.04em;
@@ -4496,10 +4496,10 @@ h2 {
     var(--accent);
 
   font-size:
-    10px;
+    11px;
 
   font-weight:
-    750;
+    600;
 
   letter-spacing:
     0.04em;
@@ -4644,8 +4644,8 @@ h2 {
 
   color: var(--muted);
 
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
 
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -4787,8 +4787,8 @@ h2 {
   text-align: right;
 
   font: inherit;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 
@@ -4917,8 +4917,8 @@ h2 {
 
   color: var(--muted);
 
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
 
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -4990,8 +4990,8 @@ h2 {
   color:
     var(--surface);
 
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 
@@ -5349,8 +5349,8 @@ h2 {
   color:
     var(--muted);
 
-  font-size: 9px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 600;
 
   letter-spacing: 0.06em;
 }
@@ -5503,8 +5503,8 @@ h2 {
 
   border-radius: 7px;
 
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0.025em;
 
   box-shadow:
@@ -5640,7 +5640,7 @@ tfoot td {
   background:
     var(--surface-2);
 
-  font-weight: 800;
+  font-weight: 600;
 }
 
 
@@ -5674,16 +5674,16 @@ tfoot th {
 
 .monthly-margin-value {
   color: var(--text);
-  font-size: 13px;
-  font-weight: 850;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 
 .monthly-margin-percent {
   margin-top: 3px;
   color: var(--muted);
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
   line-height: 1.2;
 }
 
@@ -5710,8 +5710,8 @@ tfoot th {
 
   color: var(--warning);
 
-  font-size: 9px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 600;
   letter-spacing: 0.02em;
 
   white-space: nowrap;
@@ -5792,8 +5792,8 @@ tfoot th {
       #9da9b7
     );
 
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
 
   letter-spacing: 0.06em;
 
@@ -5924,8 +5924,8 @@ tfoot th {
   color:
     var(--muted);
 
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
 
   letter-spacing: 0.06em;
 
@@ -5949,8 +5949,8 @@ tfoot th {
   background:
     var(--surface-2);
 
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 
@@ -6197,8 +6197,8 @@ tfoot th {
   color:
     var(--accent);
 
-  font-size: 10px;
-  font-weight: 750;
+  font-size: 11px;
+  font-weight: 600;
 
   letter-spacing: 0.025em;
 }
@@ -6367,8 +6367,8 @@ tfoot th {
     var(--muted);
 
   font: inherit;
-  font-size: 10px;
-  font-weight: 750;
+  font-size: 11px;
+  font-weight: 600;
 
   cursor: pointer;
 }
@@ -6549,8 +6549,8 @@ td.pivot-project-column {
   color:
     var(--text);
 
-  font-size: 10px;
-  font-weight: 750;
+  font-size: 11px;
+  font-weight: 600;
 
   white-space: nowrap;
 }
@@ -6698,8 +6698,8 @@ th.pivot-project-column {
   color:
     var(--muted);
 
-  font-size: 10px;
-  font-weight: 750;
+  font-size: 11px;
+  font-weight: 600;
 
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -6741,8 +6741,8 @@ th.pivot-project-column {
     var(--muted);
 
   font: inherit;
-  font-size: 10px;
-  font-weight: 750;
+  font-size: 11px;
+  font-weight: 600;
 
   cursor: pointer;
 }
@@ -6803,8 +6803,8 @@ th.pivot-project-column {
   color:
     var(--text);
 
-  font-size: 10px;
-  font-weight: 750;
+  font-size: 11px;
+  font-weight: 600;
 
   white-space: nowrap;
 }
@@ -6862,7 +6862,7 @@ th.pivot-project-column {
   color:
     var(--text-soft);
 
-  font-weight: 800;
+  font-weight: 600;
 
   letter-spacing: 0.025em;
 }
@@ -6922,8 +6922,8 @@ th.pivot-project-column {
   color:
     var(--muted);
 
-  font-size: 9px;
-  font-weight: 750;
+  font-size: 10px;
+  font-weight: 600;
 
   letter-spacing: 0.055em;
 
@@ -6966,8 +6966,8 @@ th.pivot-project-column {
     var(--muted);
 
   font: inherit;
-  font-size: 9px;
-  font-weight: 750;
+  font-size: 10px;
+  font-weight: 600;
 
   cursor: pointer;
 }
@@ -7015,8 +7015,8 @@ th.pivot-project-column {
   color:
     var(--text);
 
-  font-size: 11px;
-  font-weight: 750;
+  font-size: 12px;
+  font-weight: 600;
 
   line-height: 1.3;
 
@@ -7073,8 +7073,8 @@ th.pivot-project-column {
   color:
     var(--text);
 
-  font-size: 9px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 600;
 
   letter-spacing: 0.045em;
 
@@ -7086,8 +7086,8 @@ th.pivot-project-column {
   color:
     var(--muted);
 
-  font-size: 8px;
-  font-weight: 750;
+  font-size: 9px;
+  font-weight: 600;
 
   letter-spacing: 0.045em;
 
@@ -7107,8 +7107,8 @@ th.pivot-project-column {
   color:
     var(--text-soft);
 
-  font-size: 8px;
-  font-weight: 700;
+  font-size: 9px;
+  font-weight: 600;
 
   line-height: 1.25;
 }
@@ -7194,8 +7194,8 @@ th.pivot-project-column {
   color:
     var(--muted);
 
-  font-size: 7px;
-  font-weight: 700;
+  font-size: 8px;
+  font-weight: 600;
 
   letter-spacing: 0.025em;
 
@@ -7207,8 +7207,8 @@ th.pivot-project-column {
   color:
     var(--text);
 
-  font-size: 9px;
-  font-weight: 750;
+  font-size: 10px;
+  font-weight: 600;
 
   white-space: nowrap;
 }
@@ -7220,8 +7220,8 @@ th.pivot-project-column {
   color:
     var(--text);
 
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 600;
 
   white-space: nowrap;
 }
@@ -7472,8 +7472,8 @@ tbody td {
     var(--text);
 
   font: inherit;
-  font-size: 9px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 600;
 
   line-height: 1;
 
@@ -7591,8 +7591,8 @@ tbody td {
     var(--muted);
 
   font: inherit;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
 
   line-height: 1;
 
@@ -7625,8 +7625,8 @@ tbody td {
   color:
     var(--accent);
 
-  font-size: 8px;
-  font-weight: 700;
+  font-size: 9px;
+  font-weight: 600;
 }
 
 
@@ -7705,8 +7705,8 @@ tbody td {
   color:
     var(--muted);
 
-  font-size: 8px;
-  font-weight: 700;
+  font-size: 9px;
+  font-weight: 600;
 
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -7717,8 +7717,8 @@ tbody td {
   color:
     var(--text);
 
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 
@@ -7770,8 +7770,8 @@ tbody td {
   color:
     var(--muted);
 
-  font-size: 7px;
-  font-weight: 700;
+  font-size: 8px;
+  font-weight: 600;
 
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -7787,8 +7787,8 @@ tbody td {
   color:
     var(--text);
 
-  font-size: 9px;
-  font-weight: 750;
+  font-size: 10px;
+  font-weight: 600;
 
   line-height: 1.25;
 
@@ -7857,8 +7857,8 @@ tbody td {
   color:
     var(--text);
 
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 
@@ -7935,8 +7935,8 @@ tbody td {
   border-radius: 7px;
 
   font: inherit;
-  font-size: 9px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 600;
 
   cursor: pointer;
 }
@@ -8080,8 +8080,8 @@ tbody td {
   color:
     var(--text-soft);
 
-  font-size: 9px;
-  font-weight: 750;
+  font-size: 10px;
+  font-weight: 600;
 }
 
 
@@ -8161,8 +8161,8 @@ tbody td {
   color:
     var(--text);
 
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 
@@ -8188,8 +8188,8 @@ tbody td {
   color:
     var(--text-soft);
 
-  font-size: 8px;
-  font-weight: 800;
+  font-size: 9px;
+  font-weight: 600;
 
   white-space: nowrap;
 }
@@ -8288,8 +8288,8 @@ tbody td {
   color:
     #d8a43c;
 
-  font-size: 9px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 600;
 }
 
 
@@ -8339,8 +8339,8 @@ tbody td {
   color:
     var(--text);
 
-  font-size: 9px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 600;
 }
 
 
@@ -8562,10 +8562,10 @@ tbody td {
     var(--muted);
 
   font-size:
-    8px;
+    9px;
 
   font-weight:
-    700;
+    600;
 
   letter-spacing:
     0.04em;
@@ -8580,10 +8580,10 @@ tbody td {
     var(--text);
 
   font-size:
-    13px;
+    14px;
 
   font-weight:
-    800;
+    600;
 }
 
 
@@ -8641,10 +8641,10 @@ tbody td {
     var(--muted);
 
   font-size:
-    7px;
+    8px;
 
   font-weight:
-    700;
+    600;
 
   letter-spacing:
     0.04em;
@@ -8659,10 +8659,10 @@ tbody td {
     var(--text);
 
   font-size:
-    13px;
+    14px;
 
   font-weight:
-    800;
+    600;
 }
 
 
@@ -8754,19 +8754,19 @@ tbody td {
     var(--text);
 
   font-size:
-    10px;
+    11px;
 
   font-weight:
-    800;
+    600;
 }
 
 
 .change-orders-item-main > span {
   font-size:
-    10px;
+    11px;
 
   font-weight:
-    800;
+    600;
 
   font-variant-numeric:
     tabular-nums;
@@ -8938,8 +8938,8 @@ tbody td {
 .project-team-role {
   color: var(--muted);
 
-  font-size: 8px;
-  font-weight: 800;
+  font-size: 9px;
+  font-weight: 600;
 
   letter-spacing: 0.045em;
 
@@ -8954,8 +8954,8 @@ tbody td {
 
   color: var(--text-soft);
 
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
 
   line-height: 1.25;
 
@@ -9053,8 +9053,8 @@ tbody td {
 
   color: var(--muted);
 
-  font-size: 10px;
-  font-weight: 750;
+  font-size: 11px;
+  font-weight: 600;
 
   letter-spacing: 0.055em;
   text-transform: uppercase;
@@ -9073,7 +9073,7 @@ tbody td {
   color: var(--text);
 
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 700;
 
   line-height: 1.25;
 }
@@ -9243,8 +9243,8 @@ tbody td {
     var(--text);
 
   font: inherit;
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 600;
 
   letter-spacing: 0.08em;
 
@@ -9428,8 +9428,8 @@ tbody td {
   color:
     var(--muted);
 
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 600;
 
   letter-spacing: 0.08em;
 
@@ -9627,7 +9627,7 @@ tbody td {
 .completed-job-number {
   color: var(--text);
 
-  font-weight: 800;
+  font-weight: 600;
 
   white-space: nowrap;
 }
@@ -9650,8 +9650,8 @@ tbody td {
 .completed-lifecycle-cell strong {
   display: block;
 
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 600;
 
   line-height: 1.25;
 
@@ -9903,8 +9903,8 @@ tbody td {
   color:
     var(--muted);
 
-  font-size: 8px;
-  font-weight: 800;
+  font-size: 9px;
+  font-weight: 600;
 
   letter-spacing: 0.05em;
 }
@@ -10027,8 +10027,8 @@ tbody td {
   color:
     #fff;
 
-  font-size: 9px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 600;
 }
 
 .notification-panel {
@@ -10110,8 +10110,8 @@ tbody td {
   color:
     var(--muted);
 
-  font-size: 8px;
-  font-weight: 800;
+  font-size: 9px;
+  font-weight: 600;
 
   letter-spacing: 0.07em;
 }
@@ -10163,8 +10163,8 @@ tbody td {
   color:
     var(--muted);
 
-  font-size: 9px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 600;
 }
 
 .notification-item-heading > div > strong {
@@ -10182,8 +10182,8 @@ tbody td {
     0
     auto;
 
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .notification-item p {
@@ -10386,8 +10386,8 @@ tbody td {
 .probability-input > span {
   color: var(--muted);
 
-  font-size: 9px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 600;
   letter-spacing: 0.06em;
   line-height: 1.15;
   text-transform: uppercase;
@@ -10443,8 +10443,8 @@ tbody td {
 .probability-input-control > span {
   color: var(--muted);
 
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 
@@ -10481,8 +10481,8 @@ tbody td {
   background: var(--surface-2);
   color: var(--text-soft);
 
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
   line-height: 1.2;
 
   text-overflow: ellipsis;
@@ -10558,8 +10558,8 @@ tbody td {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface-2);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .active-bid-drawer-message.error {
@@ -10609,8 +10609,8 @@ tbody td {
   display: block;
   margin-bottom: 4px;
   color: var(--muted);
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -10685,8 +10685,8 @@ tbody td {
 .active-bid-settings-grid > label > span,
 .active-bid-notes-field > span {
   color: var(--muted);
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -10741,8 +10741,8 @@ tbody td {
 .active-bid-duration-input > span {
   padding-right: 11px;
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .active-bid-settings-actions {
@@ -10770,8 +10770,8 @@ tbody td {
 .active-bid-monthly-totals small {
   margin-bottom: 3px;
   color: var(--muted);
-  font-size: 9px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -10915,8 +10915,8 @@ td.pivot-project-column {
 }
 
 .bid-log-workspace-count span {
-  font-size: 8px;
-  font-weight: 800;
+  font-size: 9px;
+  font-weight: 600;
   letter-spacing: 0.1em;
 }
 
@@ -11009,8 +11009,8 @@ td.pivot-project-column {
 }
 
 .bid-log-summary-card > .bid-log-summary-label {
-  font-size: 10px;
-  font-weight: 750;
+  font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0.02em;
 }
 
@@ -11087,8 +11087,8 @@ td.pivot-project-column {
   background: var(--surface-2);
   color: var(--muted);
   font: inherit;
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0.045em;
   text-transform: uppercase;
   cursor: pointer;
@@ -11161,8 +11161,8 @@ td.pivot-project-column {
   border-bottom: 1px solid var(--border-strong);
   background: var(--surface-2);
   color: var(--muted);
-  font-size: 9px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 600;
   letter-spacing: 0.055em;
   text-align: left;
   text-transform: uppercase;
@@ -11204,8 +11204,8 @@ td.pivot-project-column {
 .bid-log-due-state {
   display: block;
   margin-top: 3px;
-  font-size: 8px;
-  font-weight: 800;
+  font-size: 9px;
+  font-weight: 600;
   letter-spacing: 0.05em;
 }
 
@@ -11295,8 +11295,8 @@ td.pivot-project-column {
 .bid-log-notes-heading span {
   margin-bottom: 2px;
   color: var(--muted);
-  font-size: 8px;
-  font-weight: 850;
+  font-size: 9px;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -11311,8 +11311,8 @@ td.pivot-project-column {
   background: transparent;
   color: var(--muted);
   font: inherit;
-  font-size: 9px;
-  font-weight: 750;
+  font-size: 10px;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -11347,18 +11347,11 @@ td.pivot-project-column {
   border-radius: 999px;
   background: var(--surface-3);
   color: var(--muted);
-  font-size: 8px;
-  font-weight: 800;
+  font-size: 9px;
+  font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
-}
-
-@media (max-width: 1600px) {
-  .bid-log-table-wrap {
-    overflow-x: auto;
-    overflow-y: visible;
-  }
 }
 
 @media (max-width: 1280px) {
@@ -11528,8 +11521,8 @@ td.pivot-project-column {
 
 .bid-edit-field > span {
   color: var(--muted);
-  font-size: 9px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 600;
   letter-spacing: 0.055em;
   text-transform: uppercase;
 }
@@ -11811,8 +11804,8 @@ td.pivot-project-column {
   border-radius: 6px;
   background: color-mix(in srgb, var(--accent-soft) 58%, var(--surface-2));
   color: var(--text);
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .bid-gc-selected-chip.current-only {
@@ -11885,8 +11878,8 @@ td.pivot-project-column {
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  font-size: 9px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -11918,8 +11911,8 @@ td.pivot-project-column {
   border-bottom: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--muted);
-  font-size: 9px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 600;
 }
 
 .bid-gc-option-list {
@@ -11960,8 +11953,8 @@ td.pivot-project-column {
   border: 1px solid var(--border-strong);
   border-radius: 4px;
   color: var(--accent);
-  font-size: 11px;
-  font-weight: 900;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .bid-gc-option.selected .bid-gc-option-check {
@@ -12147,8 +12140,8 @@ td.pivot-project-column {
 .active-project-schedule-callout span {
   margin-bottom: 2px;
   color: var(--muted);
-  font-size: 9px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 600;
   letter-spacing: 0.055em;
   text-transform: uppercase;
 }
@@ -12186,8 +12179,8 @@ td.pivot-project-column {
 .active-project-reference-grid dt {
   margin-bottom: 4px;
   color: var(--muted);
-  font-size: 8px;
-  font-weight: 800;
+  font-size: 9px;
+  font-weight: 600;
   letter-spacing: 0.055em;
   text-transform: uppercase;
 }
@@ -12203,8 +12196,8 @@ td.pivot-project-column {
   display: inline-flex;
   margin-top: 12px;
   color: var(--accent);
-  font-size: 10px;
-  font-weight: 750;
+  font-size: 11px;
+  font-weight: 600;
   text-decoration: none;
 }
 
@@ -12316,8 +12309,8 @@ td.pivot-project-column {
   background: transparent;
   color: var(--muted);
   font: inherit;
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0.045em;
   text-transform: uppercase;
   cursor: pointer;
@@ -12385,8 +12378,8 @@ td.pivot-project-column {
   border-radius: 999px;
   background: color-mix(in srgb, var(--warning) 10%, transparent);
   color: var(--text);
-  font-size: 9px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 600;
   letter-spacing: 0.045em;
   text-transform: uppercase;
 }
@@ -12500,8 +12493,8 @@ td.pivot-project-column {
 
 .active-project-edit-drawer .section-kicker {
   color: color-mix(in srgb, var(--accent) 72%, white);
-  font-size: 9px;
-  font-weight: 900;
+  font-size: 10px;
+  font-weight: 600;
   letter-spacing: 0.085em;
 }
 
@@ -12519,8 +12512,8 @@ td.pivot-project-column {
   padding-bottom: 7px;
   border-bottom: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
   color: color-mix(in srgb, var(--text) 92%, var(--muted));
-  font-size: 10px;
-  font-weight: 850;
+  font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0.055em;
   text-transform: uppercase;
 }
@@ -12542,8 +12535,8 @@ td.pivot-project-column {
 
 .cognito-read-field > span {
   color: var(--muted, #96a0ad);
-  font-size: 9px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 600;
   letter-spacing: 0.055em;
   text-transform: uppercase;
 }
@@ -12589,8 +12582,8 @@ td.pivot-project-column {
   border-radius: 4px;
   background: var(--surface);
   color: var(--surface);
-  font-size: 12px;
-  font-weight: 900;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .cognito-checkbox-box.checked {
@@ -12601,8 +12594,8 @@ td.pivot-project-column {
 
 .cognito-checkbox-value strong {
   color: var(--text);
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .cognito-checkbox-grid {
@@ -12644,8 +12637,8 @@ td.pivot-project-column {
 .cognito-supplier-row.header {
   background: color-mix(in srgb, var(--surface-3) 86%, var(--surface-2));
   color: var(--muted);
-  font-size: 9px;
-  font-weight: 850;
+  font-size: 10px;
+  font-weight: 600;
   letter-spacing: 0.055em;
   text-transform: uppercase;
 }
@@ -12799,8 +12792,8 @@ td.pivot-project-column {
   background: var(--surface-2);
   color: var(--muted);
   font: inherit;
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0.045em;
   text-transform: uppercase;
   cursor: pointer;
@@ -12853,8 +12846,8 @@ td.pivot-project-column {
   border-radius: 999px;
   color: var(--muted);
   background: var(--surface-2);
-  font-size: 7px;
-  font-weight: 800;
+  font-size: 8px;
+  font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -12904,8 +12897,8 @@ td.pivot-project-column {
   color: var(--text);
   box-shadow: inset 0 1px 0 color-mix(in srgb, white 5%, transparent);
   font: inherit;
-  font-size: 12px;
-  font-weight: 850;
+  font-size: 13px;
+  font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -12938,7 +12931,7 @@ td.pivot-project-column {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
   color: var(--accent);
   font-size: 17px;
-  font-weight: 750;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -12986,8 +12979,8 @@ td.pivot-project-column {
   background: transparent;
   color: var(--muted);
   font: inherit;
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0.045em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -13102,8 +13095,8 @@ td.pivot-project-column {
   border: 1px solid currentColor;
   border-radius: 999px;
 
-  font-size: 14px;
-  font-weight: 900;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .action-toast.success .action-toast-icon {
@@ -13124,8 +13117,8 @@ td.pivot-project-column {
 }
 
 .action-toast-content strong {
-  font-size: 11px;
-  font-weight: 850;
+  font-size: 12px;
+  font-weight: 600;
   letter-spacing: 0.045em;
   text-transform: uppercase;
 }
@@ -13148,8 +13141,8 @@ td.pivot-project-column {
   background: var(--surface-2);
   color: var(--text);
 
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 600;
 
   cursor: pointer;
   white-space: nowrap;
@@ -13235,8 +13228,8 @@ td.pivot-project-column {
   color:
     var(--muted);
 
-  font-size: 9px;
-  font-weight: 750;
+  font-size: 10px;
+  font-weight: 600;
 
   letter-spacing: 0.055em;
 
@@ -13267,7 +13260,7 @@ td.pivot-project-column {
 
   font: inherit;
   font-size: 17px;
-  font-weight: 800;
+  font-weight: 700;
 
   line-height: 1;
 
@@ -13371,8 +13364,8 @@ td.pivot-project-column {
   color:
     var(--text);
 
-  font-size: 13px;
-  font-weight: 850;
+  font-size: 14px;
+  font-weight: 600;
 
   line-height: 1.1;
 
@@ -13384,8 +13377,8 @@ td.pivot-project-column {
   color:
     var(--accent);
 
-  font-size: 11px;
-  font-weight: 850;
+  font-size: 12px;
+  font-weight: 600;
 
   letter-spacing: 0;
   line-height: 1.05;
@@ -13399,10 +13392,32 @@ td.pivot-project-column {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  flex-wrap: wrap;
 
-  gap: 7px;
+  gap: 2px 7px;
 
+  white-space: normal;
+}
+
+
+.pivot-header-activity-counts {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+
+  gap: 2px 7px;
+}
+
+
+.pivot-header-activity-counts
+.pivot-header-billed-count {
   white-space: nowrap;
+}
+
+
+.pivot-header-activity-separator {
+  color: var(--muted);
 }
 
 
@@ -13416,8 +13431,8 @@ td.pivot-project-column {
   color:
     var(--muted);
 
-  font-size: 10px;
-  font-weight: 750;
+  font-size: 11px;
+  font-weight: 600;
 
   letter-spacing: 0;
   line-height: 1.1;
