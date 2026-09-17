@@ -632,13 +632,17 @@ def _workspace_capabilities(
     )
 
     return {
-        "canViewProjectedBillings":
-            profile
+        "canViewProjectedBillings": (
+            bool(
+                current_user.can_edit_billing
+            )
+            or profile
             in {
                 "ADMIN",
                 "PM",
                 "VIEWER",
-            },
+            }
+        ),
 
         "canViewBidLog":
             profile
@@ -775,9 +779,7 @@ def _require_project_editor(
 def _require_current_project_projection_editor(
     current_user: CurrentUser,
 ) -> None:
-    if not _can_edit_current_project_projection(
-        current_user
-    ):
+    if not current_user.can_edit_billing:
         raise HTTPException(
             status_code=403,
             detail=(

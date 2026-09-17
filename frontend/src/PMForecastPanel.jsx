@@ -631,10 +631,8 @@ export default function PMForecastPanel({
     ).toUpperCase();
 
   const canSubmit =
-    [
-      'ADMIN',
-      'OPERATIONS',
-    ].includes(role);
+    user?.canEditBilling
+    === true;
 
 
 

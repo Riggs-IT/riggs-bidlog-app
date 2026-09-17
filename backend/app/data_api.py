@@ -81,6 +81,8 @@ class BidLogAccessUser:
     entra_object_id: str
     app_role: str
     employee_trade: str | None
+    can_edit_billing: bool
+    billing_access_source: str | None
 
 
 def _build_http_client() -> httpx.Client:
@@ -566,6 +568,38 @@ def resolve_bid_log_user(
             else None
         )
 
+        can_edit_billing_value = (
+            payload["canEditBilling"]
+        )
+
+        if not isinstance(
+            can_edit_billing_value,
+            bool,
+        ):
+            raise TypeError(
+                "canEditBilling must be boolean"
+            )
+
+        can_edit_billing = (
+            can_edit_billing_value
+        )
+
+        billing_access_source_value = (
+            payload.get(
+                "billingAccessSource"
+            )
+        )
+
+        billing_access_source = (
+            str(
+                billing_access_source_value
+            )
+            .strip()
+            .upper()
+            if billing_access_source_value
+            else None
+        )
+
     except (
         KeyError,
         TypeError,
@@ -603,6 +637,10 @@ def resolve_bid_log_user(
         entra_object_id=returned_oid,
         app_role=app_role,
         employee_trade=employee_trade,
+        can_edit_billing=can_edit_billing,
+        billing_access_source=(
+            billing_access_source
+        ),
     )
 
 
