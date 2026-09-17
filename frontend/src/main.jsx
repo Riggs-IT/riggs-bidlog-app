@@ -5,6 +5,7 @@ import '@fontsource-variable/public-sans';
 
 import App from './App.jsx';
 import './styles.css';
+import './theme.css';
 
 createRoot(
   document.getElementById('root'),

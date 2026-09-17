@@ -1,0 +1,591 @@
+/* ========================================================================== */
+/* RIGGS BID LOG THEME                                                        */
+/*                                                                            */
+/* EDIT MAP                                                                   */
+/*                                                                            */
+/* 1. PALETTE TOKENS                                                         */
+/*    Change these first. They control the application theme globally.        */
+/*                                                                            */
+/*    --bg / --surface*      page + card surface stack                        */
+/*    --text* / --muted     text hierarchy                                   */
+/*    --border*             dividers + control outlines                      */
+/*    --accent*             selected/interactive blue                        */
+/*    --positive/negative   financial/status meaning                         */
+/*    --topbar*             application header                               */
+/*                                                                            */
+/* 2. DARK COMPONENT TOKENS                                                   */
+/*    Fine-tune dark tables, inputs, hover states, login, and scrollbars.     */
+/*                                                                            */
+/* 3. DARK READABILITY RULES                                                  */
+/*    Selector-level adjustments for typography and hierarchy. Normally do    */
+/*    not edit these just to change a color; change a token above instead.    */
+/*                                                                            */
+/* Layout, widths, spacing, sticky behavior, and component geometry remain in */
+/* styles.css. Lifecycle-specific component polish remains in                 */
+/* BidLogLifecyclePolish.css.                                                 */
+/* ========================================================================== */
+
+/* ========================================================================== */
+/* 1. LIGHT THEME / GLOBAL TOKENS                                             */
+/* ========================================================================== */
+
+:root {
+  font-family:
+    "Public Sans",
+    "Segoe UI",
+    system-ui,
+    sans-serif;
+
+  /* Surface stack */
+  --bg: #f2f3f5;
+  --surface: #ffffff;
+  --surface-2: #f8f9fa;
+  --surface-3: #eef1f3;
+
+  /* Text hierarchy */
+  --text: #1f252c;
+  --text-strong: #1f252c;
+  --text-soft: #4f5964;
+  --muted: #68717c;
+
+  /* Structure */
+  --border: #d9dee3;
+  --border-strong: #c5ccd2;
+  --row-divider: #e3e7ea;
+
+  /* Interaction + meaning */
+  --accent: #2d607f;
+  --accent-soft: #e5eef3;
+  --positive: #2c785c;
+  --negative: #a34f4f;
+
+  /* Accountability/status colors */
+  --review: #6f628f;
+  --review-soft: #f0ecf7;
+  --warning: #9a691f;
+  --warning-soft: #faf0df;
+  --critical: #9a4141;
+  --critical-soft: #f8e8e8;
+  --success-soft: #e5f2ec;
+
+  /* Header */
+  --topbar: #1b2229;
+  --topbar-border: #323b44;
+  --topbar-text: #f5f7f8;
+  --topbar-muted: #9da6af;
+
+  --shadow:
+    0 10px 28px
+    rgba(18, 27, 36, 0.07);
+}
+
+/* ========================================================================== */
+/* 2. DARK THEME TOKENS                                                       */
+/* ========================================================================== */
+
+:root[data-theme="dark"] {
+  /* Surface stack: charcoal instead of near-black. */
+  --bg: #181d22;
+  --surface: #20262c;
+  --surface-2: #252c33;
+  --surface-3: #2b333b;
+
+  /* Softer default text; strong text is reserved for hierarchy. */
+  --text: #cbd2d8;
+  --text-strong: #e1e6ea;
+  --text-soft: #b5bec6;
+  --muted: #929da7;
+
+  /* Quieter separators reduce the outlined-everything effect. */
+  --border: #2d343b;
+  --border-strong: #3a434c;
+  --row-divider: #2a3138;
+
+  /* Interaction + meaning */
+  --accent: #72a3c0;
+  --accent-soft: #243844;
+  --positive: #78ad97;
+  --negative: #d08484;
+
+  /* Accountability/status colors */
+  --review: #aa9acb;
+  --review-soft: #302c39;
+  --warning: #d3a75f;
+  --warning-soft: #383123;
+  --critical: #d98989;
+  --critical-soft: #3a2929;
+  --success-soft: #26372f;
+
+  /* Header */
+  --topbar: #151a1f;
+  --topbar-border: #2a3138;
+  --topbar-text: #d9dfe3;
+  --topbar-muted: #8f9aa4;
+
+  /* Dark component tuning. These are intentionally semantic so most future
+     dark-mode changes can be made here without touching selectors below. */
+  --dark-control-bg: #1d2329;
+  --dark-control-hover-bg: #232a31;
+  --dark-placeholder: #7f8a94;
+  --dark-table-head-bg: #242b32;
+  --dark-table-head-text: #9ba6b0;
+  --dark-row-hover: #252d34;
+  --dark-status-pill-bg: #2a3239;
+  --dark-scroll-thumb: #46515b;
+  --dark-auth-bg: #151a1f;
+  --dark-auth-mark-bg: #1d242a;
+  --dark-auth-copy: #a5b0b9;
+  --dark-auth-product: #c0c8cf;
+  --dark-auth-trust: #bcc5cc;
+
+  --shadow:
+    0 8px 24px
+    rgba(0, 0, 0, 0.15);
+}
+
+/* ========================================================================== */
+/* 3. DARK READABILITY RULES                                                  */
+/* ========================================================================== */
+
+:root[data-theme="dark"] body {
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Strong text is deliberate rather than making every glyph near-white. */
+:root[data-theme="dark"] :is(
+  h1,
+  h2,
+  h3,
+  .section-heading strong,
+  .project-cell strong,
+  .bid-log-name-cell strong,
+  .active-project-name-cell strong,
+  .floating-editor-title-row h2,
+  .pivot-header-total-label,
+  .bid-log-summary-card strong
+) {
+  color: var(--text-strong);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Header                                                                     */
+/* -------------------------------------------------------------------------- */
+
+:root[data-theme="dark"] .brand-mark {
+  border-color: var(--border-strong);
+  color: var(--topbar-text);
+}
+
+:root[data-theme="dark"] .app-nav button {
+  color: var(--topbar-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+:root[data-theme="dark"] .app-nav button.active {
+  border-bottom-color: var(--accent);
+  color: var(--topbar-text);
+}
+
+:root[data-theme="dark"] :is(.theme-toggle, .top-button) {
+  border-color: var(--border-strong);
+  background: var(--dark-control-bg);
+  color: var(--topbar-text);
+}
+
+:root[data-theme="dark"] :is(.theme-toggle, .top-button):hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border-strong));
+  background: var(--dark-control-hover-bg);
+}
+
+:root[data-theme="dark"] .current-user strong {
+  color: var(--topbar-text);
+  font-size: 12px;
+}
+
+:root[data-theme="dark"] .current-user span {
+  color: var(--topbar-muted);
+  font-size: 10.5px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Surfaces                                                                   */
+/* -------------------------------------------------------------------------- */
+
+:root[data-theme="dark"] :is(
+  .filter-panel,
+  .content-card,
+  .loading-panel,
+  .stat-card,
+  .page-alert,
+  .accountability-card,
+  .completed-project-card,
+  .curve-assumption-card,
+  .completed-benchmark-card,
+  .pm-history-card,
+  .notification-panel,
+  .bid-log-summary-card,
+  .bid-log-list-card,
+  .active-bid-readiness-card,
+  .action-toast
+) {
+  border-color: var(--border);
+  box-shadow: var(--shadow);
+}
+
+:root[data-theme="dark"] :is(
+  .bid-log-summary-card:hover,
+  .bid-log-summary-card:focus-visible,
+  .content-card:hover
+) {
+  border-color: var(--border-strong);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Inputs + labels                                                            */
+/* -------------------------------------------------------------------------- */
+
+:root[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] textarea {
+  border-color: var(--border);
+  background: var(--surface-2);
+  color: var(--text-strong);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+:root[data-theme="dark"] input::placeholder,
+:root[data-theme="dark"] textarea::placeholder {
+  color: var(--dark-placeholder);
+  opacity: 1;
+}
+
+:root[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+:root[data-theme="dark"] select:focus,
+:root[data-theme="dark"] textarea:focus {
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--border-strong));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent);
+  outline: none;
+}
+
+:root[data-theme="dark"] :is(
+  .filter-field > span,
+  .filter-group-title,
+  .toggle-label small,
+  .compact-sort-field > span,
+  .project-pivot-toolbar-label,
+  .billing-detail-label,
+  .bid-edit-field > span,
+  .active-bid-notes-field > span,
+  .cognito-read-field > span,
+  .section-note
+) {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.035em;
+}
+
+:root[data-theme="dark"] :is(.eyebrow, .section-kicker) {
+  color: var(--muted);
+  letter-spacing: 0.075em;
+}
+
+:root[data-theme="dark"] small {
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Data tables                                                                */
+/* -------------------------------------------------------------------------- */
+
+:root[data-theme="dark"] table {
+  color: var(--text);
+  font-size: 12px;
+}
+
+:root[data-theme="dark"] table th {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.035em;
+}
+
+:root[data-theme="dark"] table td {
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+:root[data-theme="dark"] :is(
+  .monthly-table th,
+  .monthly-table td,
+  .detail-table th,
+  .detail-table td,
+  .billing-monthly-table th,
+  .billing-monthly-table td,
+  .monthly-project-table th,
+  .monthly-project-table td,
+  .completed-project-table th,
+  .completed-project-table td,
+  .completed-monthly-table th,
+  .completed-monthly-table td,
+  .project-pivot-table th,
+  .project-pivot-table td,
+  .floating-table-header-table th,
+  .bid-log-table th,
+  .bid-log-table td,
+  .active-bid-monthly-table th,
+  .active-bid-monthly-table td,
+  .active-project-table th,
+  .active-project-table td
+) {
+  border-bottom-color: var(--row-divider);
+}
+
+:root[data-theme="dark"] :is(
+  .monthly-table th,
+  .detail-table th,
+  .billing-monthly-table th,
+  .monthly-project-table th,
+  .completed-project-table th,
+  .completed-monthly-table th,
+  .project-pivot-table th,
+  .floating-table-header-table th,
+  .bid-log-table thead th,
+  .active-bid-monthly-table th,
+  .active-project-table thead th
+) {
+  background: var(--dark-table-head-bg);
+  color: var(--dark-table-head-text);
+}
+
+:root[data-theme="dark"] :is(
+  .monthly-table tbody tr:hover,
+  .detail-table tbody tr:hover,
+  .monthly-comparison-row:hover,
+  .month-current-project-row:hover,
+  .completed-project-row:hover,
+  .bid-log-table tbody tr:hover,
+  .active-project-data-row:hover
+) {
+  background: var(--dark-row-hover);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Bid Log workspace                                                          */
+/* -------------------------------------------------------------------------- */
+
+:root[data-theme="dark"] .bid-log-summary-card {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--surface) 97%, var(--accent)),
+      var(--surface)
+    );
+}
+
+:root[data-theme="dark"] .bid-log-summary-card.active {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent-soft) 52%, var(--surface)),
+      var(--surface)
+    );
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 10%, transparent),
+    var(--shadow);
+}
+
+:root[data-theme="dark"] .bid-log-summary-icon {
+  border-color: var(--border);
+  background: var(--surface-3);
+  color: var(--text-soft);
+}
+
+:root[data-theme="dark"] :is(
+  .bid-log-workspace-count span,
+  .bid-log-workspace-count small,
+  .bid-log-summary-card small,
+  .bid-log-due-state,
+  .bid-log-name-cell span,
+  .bid-log-type-stack span,
+  .bid-log-notes-heading span,
+  .bid-log-status-pill,
+  .bid-edit-section-heading > small,
+  .bid-edit-field > small,
+  .bid-edit-toggle small,
+  .bid-log-edit-footer small,
+  .bid-gc-option-copy small,
+  .bid-gc-picker-tip,
+  .active-project-name-cell span,
+  .active-project-schedule-callout small,
+  .active-project-reference-grid dt,
+  .cognito-read-field small,
+  .cognito-file-row small
+) {
+  font-size: 10.5px;
+  line-height: 1.35;
+}
+
+:root[data-theme="dark"] .bid-log-notes-content {
+  font-size: 11.5px;
+  line-height: 1.65;
+}
+
+:root[data-theme="dark"] .bid-log-status-pill {
+  min-height: 25px;
+  border-color: color-mix(in srgb, var(--border-strong) 70%, var(--border));
+  background: var(--dark-status-pill-bg);
+  color: var(--text-soft);
+}
+
+:root[data-theme="dark"] .bid-log-notes-panel {
+  border-color: var(--border);
+  background: var(--surface-2);
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--accent) 48%, transparent);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Projected Billings / pivot microcopy                                       */
+/* -------------------------------------------------------------------------- */
+
+:root[data-theme="dark"] :is(
+  .pivot-project-meta,
+  .pivot-project-role-label,
+  .pivot-project-context-line,
+  .pivot-project-gc,
+  .originating-bid-inline-success,
+  .originating-bid-help-title span,
+  .originating-bid-help-title small,
+  .originating-bid-help-facts span,
+  .originating-bid-help-address,
+  .originating-bid-finder-head small,
+  .originating-bid-results-summary small,
+  .originating-bid-candidate-head small,
+  .originating-bid-confidence,
+  .originating-bid-match-reasons > span,
+  .originating-bid-link-warning span,
+  .originating-bid-confirmation p,
+  .change-orders-popover-head span,
+  .change-orders-popover-head small,
+  .change-orders-summary-grid span,
+  .change-orders-context,
+  .change-orders-message,
+  .change-orders-empty,
+  .project-team-role,
+  .side-filter-source-toggles small,
+  .pm-history-admin-badge,
+  .notification-panel-header span,
+  .active-bid-settings-toggle small
+) {
+  font-size: 10.5px;
+  line-height: 1.35;
+}
+
+:root[data-theme="dark"] :is(
+  .pivot-billing-cell small,
+  .pivot-billing-line small
+) {
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Buttons / chips                                                            */
+/* -------------------------------------------------------------------------- */
+
+:root[data-theme="dark"] :is(
+  .mode-tabs button,
+  .role-chip,
+  .secondary-button,
+  .source-chip,
+  .bid-log-real-bids-toggle,
+  .bid-log-lifecycle-tab,
+  .bid-log-outcome-source-label,
+  .action-toast-action
+) {
+  font-weight: 600;
+}
+
+:root[data-theme="dark"] .mode-tabs button.active,
+:root[data-theme="dark"] .bid-log-real-bids-toggle.active,
+:root[data-theme="dark"] .bid-log-lifecycle-tab.active {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 48%, var(--surface-2));
+  color: var(--text-strong);
+  box-shadow: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Scrollbars                                                                 */
+/* -------------------------------------------------------------------------- */
+
+:root[data-theme="dark"] * {
+  scrollbar-color: var(--dark-scroll-thumb) transparent;
+}
+
+:root[data-theme="dark"] *::-webkit-scrollbar-thumb {
+  background: var(--dark-scroll-thumb);
+}
+
+:root[data-theme="dark"] *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Login                                                                      */
+/* -------------------------------------------------------------------------- */
+
+:root[data-theme="dark"] .auth-page {
+  background:
+    radial-gradient(
+      circle at 18% 22%,
+      color-mix(in srgb, var(--accent) 7%, transparent),
+      transparent 32%
+    ),
+    var(--dark-auth-bg);
+  color: var(--text-strong);
+}
+
+:root[data-theme="dark"] .auth-header {
+  border-bottom-color: var(--border);
+}
+
+:root[data-theme="dark"] .auth-riggs-mark {
+  border-color: var(--border-strong);
+  background: var(--dark-auth-mark-bg);
+  color: var(--text-strong);
+}
+
+:root[data-theme="dark"] :is(.auth-company-copy strong, .auth-intro h1) {
+  color: var(--text-strong);
+}
+
+:root[data-theme="dark"] :is(
+  .auth-company-copy span,
+  .auth-header-note,
+  .auth-intro-copy
+) {
+  color: var(--dark-auth-copy);
+}
+
+:root[data-theme="dark"] .auth-product-title {
+  color: var(--dark-auth-product);
+}
+
+:root[data-theme="dark"] .auth-trust-list {
+  color: var(--dark-auth-trust);
+}
+
+/* Preserve meaning for focus and keyboard users. */
+:root[data-theme="dark"] :is(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
