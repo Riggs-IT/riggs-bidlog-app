@@ -924,6 +924,7 @@ function bidMatchesSearch(
 
 async function fetchJson(
   path,
+  options = {},
 ) {
   const response =
     await window.fetch(
@@ -931,6 +932,7 @@ async function fetchJson(
       {
         credentials:
           'same-origin',
+        ...options,
       },
     );
 
@@ -2382,6 +2384,7 @@ export default function App() {
     try {
       const dashboard = await fetchJson(
         '/api/projected-billings/active-bids/dashboard',
+        { cache: 'no-store' },
       );
       const projectPayload = dashboard?.projects || {};
 
@@ -8914,6 +8917,9 @@ export default function App() {
             ...currentProjects,
             ...activeBids,
           ]}
+          onBidDataChanged={() => {
+            void refreshProjectedBidData();
+          }}
         />
       ) : (
         activePage === 'active-projects'

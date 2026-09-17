@@ -563,6 +563,7 @@ async function loadBidView(viewKey, signal) {
     path,
     {
       credentials: 'same-origin',
+      cache: 'no-store',
       signal,
     },
   );
@@ -785,6 +786,7 @@ function compareSortValues(
 export default function BidLogWorkspace({
   user,
   pmDirectory = [],
+  onBidDataChanged,
 }) {
   const [
     bidView,
@@ -804,6 +806,14 @@ export default function BidLogWorkspace({
   );
 
   const loadSequenceRef = useRef(0);
+  const bidViewRef = useRef('active');
+
+  useEffect(
+    () => {
+      bidViewRef.current = bidView;
+    },
+    [bidView],
+  );
 
   const [
     payloadViewKey,
@@ -1696,6 +1706,34 @@ export default function BidLogWorkspace({
   }
 
 
+  async function refreshBidViewAfterMutation(viewKey) {
+    try {
+      const nextPayload = await loadBidView(
+        viewKey,
+        undefined,
+      );
+
+      writeBidLogCache(
+        viewKey,
+        nextPayload,
+      );
+
+      if (bidViewRef.current === viewKey) {
+        setPayload(nextPayload);
+        setPayloadViewKey(viewKey);
+      }
+    } catch {
+      bidLogListCache = {
+        ...bidLogListCache,
+        [viewKey]: {
+          ...bidLogListCache[viewKey],
+          loadedAt: 0,
+        },
+      };
+    }
+  }
+
+
   async function refreshCurrentBidView() {
     if (loading) {
       return;
@@ -1932,26 +1970,13 @@ export default function BidLogWorkspace({
         already removed optimistically above.
       */
       window.setTimeout(
-        async () => {
-          try {
-            const nextPayload =
-              await loadBidView(
-                'active',
-                undefined,
-              );
-
-            writeBidLogCache(
-              'active',
-              nextPayload,
-            );
-          } catch {
-            // Optimistic removal remains valid. Normal Refresh
-            // can retry if the background read is unavailable.
-          }
+        () => {
+          void refreshBidViewAfterMutation('active');
         },
         700,
       );
 
+      onBidDataChanged?.();
       return;
     }
 
@@ -1991,6 +2016,12 @@ export default function BidLogWorkspace({
           updated,
       }),
     );
+
+    void refreshBidViewAfterMutation(bidView);
+
+    if (activeView) {
+      onBidDataChanged?.();
+    }
   }
 
   function handleBidCreated(created) {
@@ -2033,6 +2064,9 @@ export default function BidLogWorkspace({
         ).trim(),
       });
     }
+
+    void refreshBidViewAfterMutation('active');
+    onBidDataChanged?.();
 
     showActionToast(
       'success',

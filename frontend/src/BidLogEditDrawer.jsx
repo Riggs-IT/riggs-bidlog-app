@@ -344,10 +344,15 @@ const ARIZONA_CITY_SUGGESTIONS = [
 
 
 async function requestJson(path, options = {}) {
+  const method = String(options.method || 'GET').toUpperCase();
+
   const response = await window.fetch(
     path,
     {
       credentials: 'same-origin',
+      ...(method === 'GET'
+        ? { cache: 'no-store' }
+        : {}),
       ...options,
       headers: {
         ...(options.body

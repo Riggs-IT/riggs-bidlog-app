@@ -1626,6 +1626,13 @@ def save_active_bid_projected_billing_settings(
             "missing project detail."
         )
 
+    # Duration and forecast-setting edits change the projected
+    # billing dashboard even when the Bid Log row itself did not
+    # change. Force the next dashboard read to be authoritative.
+    _dashboard_cache_invalidate_key(
+        "active_bid_dashboard",
+    )
+
     return result
 
 def get_project_close_accountability() -> list[dict]:
