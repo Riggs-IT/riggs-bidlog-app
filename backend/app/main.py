@@ -32,6 +32,7 @@ from .auth import (
     resolve_entra_user,
 )
 from .config import get_settings
+from .cognito_general import general_request
 from .data_api import (
     DataAPIConfigurationError,
     DataAPIEdgeRejected,
@@ -1843,6 +1844,38 @@ async def active_project_update_proxy(
 
     except Exception as exc:
         _raise_active_project_proxy_error(exc)
+
+@app.get("/api/active-projects/{job_list_id}/cognito-general")
+def active_project_general_read(
+    job_list_id: int = FastAPIPath(..., ge=1),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    _require_projects_workspace_access(current_user)
+    try:
+        return JSONResponse(general_request(job_list_id), headers={"Cache-Control": "no-store"})
+    except Exception as exc:
+        _raise_active_project_proxy_error(exc)
+
+
+@app.patch("/api/active-projects/{job_list_id}/cognito-general")
+def active_project_general_update(
+    request: Request,
+    payload: dict,
+    job_list_id: int = FastAPIPath(..., ge=1),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    _require_projects_workspace_access(current_user)
+    _require_project_editor(current_user)
+    # No browser-supplied EID or arbitrary top-level request envelope.
+    if set(payload) != {"expectedVersion", "changes"}:
+        raise HTTPException(422, "invalid_cognito_general_update")
+    try:
+        result = general_request(job_list_id, payload=payload,
+            actor_eid=current_user.eid, request_id=_browser_request_id(request))
+        return JSONResponse(result, headers={"Cache-Control": "no-store"})
+    except Exception as exc:
+        _raise_active_project_proxy_error(exc)
+
 
 # ============================================================
 # ACTIVE BID LOG WORKSPACE

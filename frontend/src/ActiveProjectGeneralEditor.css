@@ -1,0 +1,10 @@
+.cognito-general-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.cognito-general-note { color: var(--muted, inherit); font-size: .9rem; line-height: 1.5; margin: .5rem 0 1rem; }
+.cognito-general-row-heading, .cognito-general-actions { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.cognito-general-buildings { margin-top: 1rem; }
+.cognito-general-building { display: flex; align-items: flex-end; gap: .75rem; margin-top: .75rem; }
+.cognito-general-building .bid-edit-field { flex: 1; min-width: 0; }
+.cognito-general-building > button { margin-bottom: .1rem; }
+.cognito-general-actions { margin-top: 1.25rem; }
+.cognito-general-actions small { line-height: 1.5; }
+@media (max-width: 640px) { .cognito-general-actions > button { width: 100%; } }

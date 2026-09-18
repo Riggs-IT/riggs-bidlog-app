@@ -226,6 +226,7 @@ export default function ActiveProjectEditDrawer({
   const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [generalState, setGeneralState] = useState({ dirty: false, busy: false });
   const [loadError, setLoadError] = useState(null);
   const [saveError, setSaveError] = useState(null);
   const [saveMessage, setSaveMessage] = useState(null);
@@ -239,9 +240,7 @@ export default function ActiveProjectEditDrawer({
     user?.appRole || '',
   ).toUpperCase();
 
-  const canEdit =
-    role === 'ADMIN'
-    || role === 'OPERATIONS';
+  const canEdit = role === 'ADMIN';
 
   const loadGcOptions = useCallback(
     async ({ force = false } = {}) => {
@@ -380,12 +379,12 @@ export default function ActiveProjectEditDrawer({
   );
 
   function requestClose() {
-    if (saving) {
+    if (saving || generalState.busy) {
       return;
     }
 
     if (
-      hasUnsavedChanges
+      (hasUnsavedChanges || generalState.dirty)
       && !window.confirm(
         'Discard unsaved project changes and return to Active Projects?',
       )
@@ -397,7 +396,7 @@ export default function ActiveProjectEditDrawer({
   }
 
   async function save() {
-    if (!form || !canEdit || saving) {
+    if (!form || !canEdit || saving || generalState.busy || generalState.dirty) {
       return;
     }
 
@@ -497,7 +496,7 @@ export default function ActiveProjectEditDrawer({
       subtitle={job.jobName || 'Loading project…'}
       backLabel="Back to Projects"
       onClose={requestClose}
-      saving={saving}
+      saving={saving || generalState.busy}
       className="bid-log-edit-drawer active-project-edit-drawer"
       bodyClassName="bid-log-edit-body"
       footer={
@@ -505,9 +504,11 @@ export default function ActiveProjectEditDrawer({
           <footer className="bid-log-edit-footer floating-editor-footer">
             <div className="floating-editor-footer-status">
               <small>
-                Existing project fields use the current Riggs update workflow. Cognito-backed sections will use the direct Cognito path as they are added.
+                {generalState.dirty
+                  ? 'Save General Information in its section before saving other project changes.'
+                  : 'Save Project updates the SQL-backed fields. General Information has its own section save.'}
               </small>
-              {hasUnsavedChanges && (
+              {(hasUnsavedChanges || generalState.dirty) && (
                 <span className="floating-editor-dirty-indicator">
                   Unsaved changes
                 </span>
@@ -528,7 +529,7 @@ export default function ActiveProjectEditDrawer({
                 type="button"
                 className="bid-log-save-button"
                 onClick={save}
-                disabled={!canEdit || saving || !hasUnsavedChanges}
+                disabled={!canEdit || saving || generalState.busy || generalState.dirty || !hasUnsavedChanges}
               >
                 {saving ? 'Saving…' : 'Save Project'}
               </button>
@@ -560,7 +561,7 @@ export default function ActiveProjectEditDrawer({
             <>
               {!canEdit && (
                 <div className="bid-edit-message">
-                  Your role can view project details, but only Administrators and Operations can edit them.
+                  Your role can view project details, but only Administrators can edit them.
                 </div>
               )}
 
@@ -598,7 +599,7 @@ export default function ActiveProjectEditDrawer({
                     <input
                       type="text"
                       value={form.jobName}
-                      disabled={!canEdit}
+                      disabled={!canEdit || saving || generalState.busy}
                       onChange={event => updateField('jobName', event.target.value)}
                     />
                   </Field>
@@ -608,7 +609,7 @@ export default function ActiveProjectEditDrawer({
                       type="text"
                       list="active-project-type-options"
                       value={form.jobType}
-                      disabled={!canEdit}
+                      disabled={!canEdit || saving || generalState.busy}
                       onChange={event => updateField('jobType', event.target.value)}
                     />
                     <datalist id="active-project-type-options">
@@ -623,7 +624,7 @@ export default function ActiveProjectEditDrawer({
                       type="text"
                       list="active-project-purpose-options"
                       value={form.purpose}
-                      disabled={!canEdit}
+                      disabled={!canEdit || saving || generalState.busy}
                       onChange={event => updateField('purpose', event.target.value)}
                     />
                     <datalist id="active-project-purpose-options">
@@ -637,7 +638,7 @@ export default function ActiveProjectEditDrawer({
                     <input
                       type="text"
                       value={form.retention}
-                      disabled={!canEdit}
+                      disabled={!canEdit || saving || generalState.busy}
                       onChange={event => updateField('retention', event.target.value)}
                     />
                   </Field>
@@ -646,7 +647,7 @@ export default function ActiveProjectEditDrawer({
                     <input
                       type="date"
                       value={form.anticipatedStartDate}
-                      disabled={!canEdit}
+                      disabled={!canEdit || saving || generalState.busy}
                       onChange={event => updateField('anticipatedStartDate', event.target.value)}
                     />
                   </Field>
@@ -671,7 +672,7 @@ export default function ActiveProjectEditDrawer({
                       options={gcOptions}
                       loading={gcOptionsLoading}
                       error={gcOptionsError}
-                      disabled={!canEdit}
+                      disabled={!canEdit || saving || generalState.busy}
                       multiple={false}
                       onChange={values => updateField(
                         'gc',
@@ -685,7 +686,7 @@ export default function ActiveProjectEditDrawer({
                     <input
                       type="text"
                       value={form.gcpm}
-                      disabled={!canEdit}
+                      disabled={!canEdit || saving || generalState.busy}
                       onChange={event => updateField('gcpm', event.target.value)}
                     />
                   </Field>
@@ -694,7 +695,7 @@ export default function ActiveProjectEditDrawer({
                     <input
                       type="text"
                       value={form.streetAddress}
-                      disabled={!canEdit}
+                      disabled={!canEdit || saving || generalState.busy}
                       onChange={event => updateField('streetAddress', event.target.value)}
                     />
                   </Field>
@@ -703,7 +704,7 @@ export default function ActiveProjectEditDrawer({
                     <input
                       type="text"
                       value={form.cityStateZip}
-                      disabled={!canEdit}
+                      disabled={!canEdit || saving || generalState.busy}
                       onChange={event => updateField('cityStateZip', event.target.value)}
                     />
                   </Field>
@@ -723,7 +724,7 @@ export default function ActiveProjectEditDrawer({
                   <Field label="Project Manager">
                     <select
                       value={form.pmITUserId}
-                      disabled={!canEdit}
+                      disabled={!canEdit || saving || generalState.busy}
                       onChange={event => updateField('pmITUserId', event.target.value)}
                     >
                       <option value="">Unassigned</option>
@@ -741,7 +742,7 @@ export default function ActiveProjectEditDrawer({
                   <Field label="Assistant PM">
                     <select
                       value={form.apmITUserId}
-                      disabled={!canEdit}
+                      disabled={!canEdit || saving || generalState.busy}
                       onChange={event => updateField('apmITUserId', event.target.value)}
                     >
                       <option value="">Unassigned</option>
@@ -759,7 +760,7 @@ export default function ActiveProjectEditDrawer({
                   <Field label="Project Engineer">
                     <select
                       value={form.peITUserId}
-                      disabled={!canEdit}
+                      disabled={!canEdit || saving || generalState.busy}
                       onChange={event => updateField('peITUserId', event.target.value)}
                     >
                       <option value="">Unassigned</option>
@@ -813,7 +814,7 @@ export default function ActiveProjectEditDrawer({
                     <input
                       type="date"
                       value={form.plannedStartDate}
-                      disabled={!canEdit}
+                      disabled={!canEdit || saving || generalState.busy}
                       onChange={event => updateField('plannedStartDate', event.target.value)}
                     />
                   </Field>
@@ -822,7 +823,7 @@ export default function ActiveProjectEditDrawer({
                     <input
                       type="date"
                       value={form.plannedEndDate}
-                      disabled={!canEdit}
+                      disabled={!canEdit || saving || generalState.busy}
                       onChange={event => updateField('plannedEndDate', event.target.value)}
                     />
                   </Field>
@@ -831,7 +832,7 @@ export default function ActiveProjectEditDrawer({
                     <textarea
                       rows="5"
                       value={form.scheduleNotes}
-                      disabled={!canEdit}
+                      disabled={!canEdit || saving || generalState.busy}
                       onChange={event => updateField('scheduleNotes', event.target.value)}
                     />
                   </Field>
@@ -843,6 +844,10 @@ export default function ActiveProjectEditDrawer({
                 loading={cognitoLoading}
                 error={cognitoError}
                 onRetry={loadCognitoDetail}
+                jobListId={jobListId}
+                canEdit={canEdit}
+                blocked={saving}
+                onGeneralStateChange={setGeneralState}
               />
 
               <section className="bid-edit-section active-project-reference-section">
