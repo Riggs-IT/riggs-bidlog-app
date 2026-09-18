@@ -13,6 +13,7 @@ export default function ActionToast({
   actionLabel = null,
   onAction = null,
   onDismiss = null,
+  style = undefined,
 }) {
   useEffect(
     () => {
@@ -56,6 +57,7 @@ export default function ActionToast({
   return createPortal(
     <div
       className={`action-toast ${tone}`}
+      style={style}
       role={error ? 'alert' : 'status'}
       aria-live={error ? 'assertive' : 'polite'}
     >

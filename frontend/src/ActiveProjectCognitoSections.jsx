@@ -1,4 +1,3 @@
-import ActiveProjectGeneralEditor from './ActiveProjectGeneralEditor.jsx';
 
 function textValue(value) {
   if (value === null || value === undefined || value === '') {
@@ -178,9 +177,6 @@ export default function ActiveProjectCognitoSections({
   error,
   onRetry,
   jobListId,
-  canEdit,
-  blocked,
-  onGeneralStateChange,
 }) {
   if (loading) {
     return (
@@ -249,15 +245,7 @@ export default function ActiveProjectCognitoSections({
 
   return (
     <>
-      {Number(jobListId) === 24 ? (
-      <ActiveProjectGeneralEditor
-        key={jobListId}
-        jobListId={jobListId}
-        canEdit={canEdit}
-        blocked={blocked}
-        onStateChange={onGeneralStateChange}
-      />
-      ) : (
+      {Number(jobListId) !== 24 && (
       <section className="bid-edit-section information-sheet-section">
         <SectionHeading
           kicker="GENERAL INFORMATION"

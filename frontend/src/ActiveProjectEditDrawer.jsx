@@ -1,7 +1,9 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -9,38 +11,9 @@ import ActiveProjectCognitoSections from './ActiveProjectCognitoSections.jsx';
 import BidLogGeneralContractorSelect from './BidLogGeneralContractorSelect.jsx';
 import FloatingEditorShell from './FloatingEditorShell.jsx';
 import ActionToast from './ActionToast.jsx';
-
-
-function dateValue(value) {
-  if (!value) {
-    return '';
-  }
-
-  return String(value).slice(0, 10);
-}
-
-
-function initialForm(payload) {
-  const job = payload?.job || {};
-
-  return {
-    jobName: job.jobName || '',
-    jobType: job.jobType || '',
-    purpose: job.purpose || '',
-    retention: job.retention || '',
-    streetAddress: job.streetAddress || '',
-    cityStateZip: job.cityStateZip || '',
-    gc: job.gc || '',
-    gcpm: job.gcpm || '',
-    pmITUserId: job.pmITUserId ?? '',
-    apmITUserId: job.apmITUserId ?? '',
-    peITUserId: job.peITUserId ?? '',
-    anticipatedStartDate: dateValue(job.anticipatedStartDate),
-    plannedStartDate: dateValue(job.plannedStartDate),
-    plannedEndDate: dateValue(job.plannedEndDate),
-    scheduleNotes: job.scheduleNotes || '',
-  };
-}
+import ActiveProjectGeneralEditor from './ActiveProjectGeneralEditor.jsx';
+import ActiveProjectSaveReview from './ActiveProjectSaveReview.jsx';
+import useActiveProjectEditor from './useActiveProjectEditor.js';
 
 
 function requestErrorMessage(detail, fallback) {
@@ -219,28 +192,41 @@ export default function ActiveProjectEditDrawer({
   onClose,
   onSaved,
 }) {
-  const [payload, setPayload] = useState(null);
+  const role = String(user?.appRole || '').toUpperCase();
+  const canEdit = role === 'ADMIN';
+  const { editor, state, dirty: hasUnsavedChanges, needsReview } = useActiveProjectEditor(jobListId, canEdit);
+  const payload = state.project.snapshot;
+  const form = state.project.draft;
+  const loading = state.project.loading && !payload;
+  const loadError = !payload ? state.project.error : null;
+  const saving = state.saving;
   const [cognitoPayload, setCognitoPayload] = useState(null);
   const [cognitoLoading, setCognitoLoading] = useState(true);
   const [cognitoError, setCognitoError] = useState(null);
-  const [form, setForm] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [generalState, setGeneralState] = useState({ dirty: false, busy: false });
-  const [loadError, setLoadError] = useState(null);
-  const [saveError, setSaveError] = useState(null);
-  const [saveMessage, setSaveMessage] = useState(null);
+  const [referenceRefreshing, setReferenceRefreshing] = useState(false);
+  const referenceRequest = useRef(null);
+  const referenceEpoch = useRef(0);
+  const notifiedRevision = useRef(0);
+  const footerRef = useRef(null);
+  const [toastBottom, setToastBottom] = useState(140);
+  const onSavedRef = useRef(onSaved);
+  onSavedRef.current = onSaved;
   const [gcOptions, setGcOptions] = useState(
     cachedActiveProjectGcOptions || [],
   );
   const [gcOptionsLoading, setGcOptionsLoading] = useState(false);
   const [gcOptionsError, setGcOptionsError] = useState(null);
 
-  const role = String(
-    user?.appRole || '',
-  ).toUpperCase();
-
-  const canEdit = role === 'ADMIN';
+  useLayoutEffect(() => {
+    const footer = footerRef.current;
+    if (!footer) return undefined;
+    const positionToast = () => setToastBottom(Math.max(16, window.innerHeight - footer.getBoundingClientRect().top + 12));
+    positionToast();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(positionToast);
+    observer?.observe(footer);
+    window.addEventListener('resize', positionToast);
+    return () => { observer?.disconnect(); window.removeEventListener('resize', positionToast); };
+  }, [Boolean(payload), jobListId]);
 
   const loadGcOptions = useCallback(
     async ({ force = false } = {}) => {
@@ -266,76 +252,64 @@ export default function ActiveProjectEditDrawer({
     [canEdit],
   );
 
-  const loadDetail = useCallback(
-    async () => {
-      if (!jobListId) {
-        return;
+  const loadCognitoDetail = useCallback(async ({ quiet = false } = {}) => {
+    if (!jobListId) return;
+    referenceRequest.current?.abort();
+    const controller = new AbortController();
+    referenceRequest.current = controller;
+    const generation = referenceEpoch.current;
+    if (!quiet) { setCognitoLoading(true); setCognitoError(null); }
+    else setReferenceRefreshing(true);
+    let timedOut = false;
+    const timeout = window.setTimeout(() => { timedOut = true; controller.abort(); }, 25000);
+    try {
+      const result = await requestJson(`/api/active-projects/${jobListId}/cognito-detail`, {
+        cache: 'no-store', signal: controller.signal,
+      });
+      if (controller.signal.aborted || generation !== referenceEpoch.current) return;
+      if (Number(result?.jobListId) !== Number(jobListId)) throw new Error('Project information returned the wrong identity.');
+      setCognitoPayload(result); setCognitoError(null);
+    } catch (error) {
+      if (generation === referenceEpoch.current && (!controller.signal.aborted || timedOut) && !quiet) {
+        setCognitoError(timedOut ? 'Additional project information took too long to load.' : error.message || 'Unable to load additional project information.');
       }
-
-      setLoading(true);
-      setLoadError(null);
-      setSaveError(null);
-      setSaveMessage(null);
-
-      try {
-        const nextPayload = await requestJson(
-          `/api/active-projects/${jobListId}`,
-        );
-
-        setPayload(nextPayload);
-        setForm(initialForm(nextPayload));
-      } catch (error) {
-        setLoadError(
-          error?.message
-          || 'Unable to load this active project.',
-        );
-      } finally {
-        setLoading(false);
+    } finally {
+      window.clearTimeout(timeout);
+      if (generation === referenceEpoch.current && referenceRequest.current === controller) {
+        setCognitoLoading(false); setReferenceRefreshing(false);
       }
-    },
-    [jobListId],
-  );
+    }
+  }, [jobListId]);
 
-  useEffect(
-    () => {
-      loadDetail();
-    },
-    [loadDetail],
-  );
+  useEffect(() => {
+    referenceEpoch.current += 1;
+    notifiedRevision.current = 0;
+    setCognitoPayload(null); setCognitoError(null);
+    void loadCognitoDetail();
+    return () => { referenceEpoch.current += 1; referenceRequest.current?.abort(); };
+  }, [loadCognitoDetail]);
 
-  const loadCognitoDetail = useCallback(
-    async () => {
-      if (!jobListId) {
-        return;
+  useEffect(() => {
+    if (!state.refreshKey || state.saving) return undefined;
+    if (notifiedRevision.current !== state.refreshKey) {
+      notifiedRevision.current = state.refreshKey;
+      // Refresh the directory independently: its failure must not replay a successful write.
+      Promise.resolve().then(() => onSavedRef.current?.()).catch(() => {});
+    }
+    let cancelled = false;
+    const timers = [];
+    const delays = state.queued.length ? [0, 3000, 6000] : [0];
+    async function run(index) {
+      if (cancelled) return;
+      await loadCognitoDetail({ quiet: true });
+      if (!cancelled && index + 1 < delays.length) {
+        timers.push(window.setTimeout(() => { void run(index + 1); }, delays[index + 1]));
       }
-
-      setCognitoLoading(true);
-      setCognitoError(null);
-
-      try {
-        const nextPayload = await requestJson(
-          `/api/active-projects/${jobListId}/cognito-detail`,
-        );
-
-        setCognitoPayload(nextPayload);
-      } catch (error) {
-        setCognitoError(
-          error?.message
-          || 'Unable to load the Cognito Job Information Sheet.',
-        );
-      } finally {
-        setCognitoLoading(false);
-      }
-    },
-    [jobListId],
-  );
-
-  useEffect(
-    () => {
-      loadCognitoDetail();
-    },
-    [loadCognitoDetail],
-  );
+    }
+    // Bounded reads of read-only reference sections only. Editable drafts are never overwritten.
+    timers.push(window.setTimeout(() => { void run(0); }, 0));
+    return () => { cancelled = true; timers.forEach(window.clearTimeout); referenceRequest.current?.abort(); };
+  }, [state.refreshKey, state.saving, loadCognitoDetail]);
 
   useEffect(
     () => {
@@ -344,16 +318,8 @@ export default function ActiveProjectEditDrawer({
     [loadGcOptions],
   );
 
-  function updateField(name, value) {
-    setForm(
-      current => ({
-        ...current,
-        [name]: value,
-      }),
-    );
-    setSaveError(null);
-    setSaveMessage(null);
-  }
+  function updateField(name, value) { editor.edit('project', name, value); }
+  const loadDetail = () => editor.load('project');
 
   const duration = useMemo(
     () => (
@@ -367,106 +333,16 @@ export default function ActiveProjectEditDrawer({
     [form],
   );
 
-  const hasUnsavedChanges = useMemo(
-    () => {
-      if (!form || !payload) {
-        return false;
-      }
-
-      return JSON.stringify(form) !== JSON.stringify(initialForm(payload));
-    },
-    [form, payload],
-  );
-
   function requestClose() {
-    if (saving || generalState.busy) {
-      return;
-    }
-
-    if (
-      (hasUnsavedChanges || generalState.dirty)
-      && !window.confirm(
-        'Discard unsaved project changes and return to Active Projects?',
-      )
-    ) {
-      return;
-    }
-
+    if (saving) return;
+    if ((hasUnsavedChanges || needsReview) && !window.confirm('Leave this project and discard unsaved edits? Saved changes are not undone.')) return;
     onClose();
   }
 
-  async function save() {
-    if (!form || !canEdit || saving || generalState.busy || generalState.dirty) {
-      return;
-    }
-
-    if (
-      form.plannedStartDate
-      && form.plannedEndDate
-      && form.plannedEndDate < form.plannedStartDate
-    ) {
-      setSaveError(
-        'Planned end date cannot be before planned start date.',
-      );
-      return;
-    }
-
-    const body = {
-      jobName: form.jobName,
-      jobType: form.jobType,
-      purpose: form.purpose,
-      retention: form.retention,
-      streetAddress: form.streetAddress,
-      cityStateZip: form.cityStateZip,
-      gc: form.gc,
-      gcpm: form.gcpm,
-      pmITUserId:
-        form.pmITUserId === ''
-          ? null
-          : Number(form.pmITUserId),
-      apmITUserId:
-        form.apmITUserId === ''
-          ? null
-          : Number(form.apmITUserId),
-      peITUserId:
-        form.peITUserId === ''
-          ? null
-          : Number(form.peITUserId),
-      anticipatedStartDate:
-        form.anticipatedStartDate || null,
-      plannedStartDate:
-        form.plannedStartDate || null,
-      plannedEndDate:
-        form.plannedEndDate || null,
-      scheduleNotes: form.scheduleNotes,
-    };
-
-    setSaving(true);
-    setSaveError(null);
-    setSaveMessage(null);
-
-    try {
-      await requestJson(
-        `/api/active-projects/${jobListId}`,
-        {
-          method: 'PUT',
-          body: JSON.stringify(body),
-        },
-      );
-
-      await loadDetail();
-      setSaveMessage(
-        'Project saved. SharePoint and Cognito sync queued.',
-      );
-      await onSaved?.();
-    } catch (error) {
-      setSaveError(
-        error?.message
-        || 'Unable to save this project.',
-      );
-    } finally {
-      setSaving(false);
-    }
+  function discardChanges() {
+    if (saving) return;
+    if (!window.confirm('Discard all unsaved edits? Changes that already saved will stay saved.')) return;
+    editor.discard();
   }
 
   if (!jobListId) {
@@ -496,19 +372,18 @@ export default function ActiveProjectEditDrawer({
       subtitle={job.jobName || 'Loading project…'}
       backLabel="Back to Projects"
       onClose={requestClose}
-      saving={saving || generalState.busy}
+      saving={saving}
       className="bid-log-edit-drawer active-project-edit-drawer"
       bodyClassName="bid-log-edit-body"
       footer={
         !loading && !loadError && payload && form ? (
-          <footer className="bid-log-edit-footer floating-editor-footer">
+          <footer ref={footerRef} className="bid-log-edit-footer floating-editor-footer">
             <div className="floating-editor-footer-status">
               <small>
-                {generalState.dirty
-                  ? 'Save General Information in its section before saving other project changes.'
-                  : 'Save Project updates the SQL-backed fields. General Information has its own section save.'}
+                {saving ? state.phase : needsReview ? 'Review the highlighted changes before saving.'
+                  : hasUnsavedChanges ? 'Your project edits will be saved together.' : 'No unsaved changes.'}
               </small>
-              {(hasUnsavedChanges || generalState.dirty) && (
+              {hasUnsavedChanges && (
                 <span className="floating-editor-dirty-indicator">
                   Unsaved changes
                 </span>
@@ -516,22 +391,13 @@ export default function ActiveProjectEditDrawer({
             </div>
 
             <div className="bid-log-edit-footer-actions">
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={requestClose}
-                disabled={saving}
-              >
-                Back to Projects
+              <button type="button" className="secondary-button" onClick={discardChanges}
+                disabled={saving || (!hasUnsavedChanges && !state.conflicts.length)}>
+                Discard Changes
               </button>
-
-              <button
-                type="button"
-                className="bid-log-save-button"
-                onClick={save}
-                disabled={!canEdit || saving || generalState.busy || generalState.dirty || !hasUnsavedChanges}
-              >
-                {saving ? 'Saving…' : 'Save Project'}
+              <button type="button" className="bid-log-save-button" onClick={() => editor.save()}
+                disabled={!canEdit || saving || needsReview || !hasUnsavedChanges || state.project.loading || state.general.loading}>
+                {saving ? 'Saving…' : 'Save Changes'}
               </button>
             </div>
           </footer>
@@ -565,14 +431,9 @@ export default function ActiveProjectEditDrawer({
                 </div>
               )}
 
-              <ActionToast
-                message={saveError || saveMessage}
-                type={saveError ? 'error' : 'success'}
-                onDismiss={() => {
-                  setSaveError(null);
-                  setSaveMessage(null);
-                }}
-              />
+              <ActionToast message={state.notice?.message} type={state.notice?.type || 'success'} style={{ bottom: toastBottom }}
+                onDismiss={editor.dismissNotice} />
+              <ActiveProjectSaveReview state={state} editor={editor} />
 
               <section className="bid-edit-section">
                 <div className="bid-edit-section-heading">
@@ -599,7 +460,7 @@ export default function ActiveProjectEditDrawer({
                     <input
                       type="text"
                       value={form.jobName}
-                      disabled={!canEdit || saving || generalState.busy}
+                      disabled={!canEdit || saving}
                       onChange={event => updateField('jobName', event.target.value)}
                     />
                   </Field>
@@ -609,7 +470,7 @@ export default function ActiveProjectEditDrawer({
                       type="text"
                       list="active-project-type-options"
                       value={form.jobType}
-                      disabled={!canEdit || saving || generalState.busy}
+                      disabled={!canEdit || saving}
                       onChange={event => updateField('jobType', event.target.value)}
                     />
                     <datalist id="active-project-type-options">
@@ -624,7 +485,7 @@ export default function ActiveProjectEditDrawer({
                       type="text"
                       list="active-project-purpose-options"
                       value={form.purpose}
-                      disabled={!canEdit || saving || generalState.busy}
+                      disabled={!canEdit || saving}
                       onChange={event => updateField('purpose', event.target.value)}
                     />
                     <datalist id="active-project-purpose-options">
@@ -638,7 +499,7 @@ export default function ActiveProjectEditDrawer({
                     <input
                       type="text"
                       value={form.retention}
-                      disabled={!canEdit || saving || generalState.busy}
+                      disabled={!canEdit || saving}
                       onChange={event => updateField('retention', event.target.value)}
                     />
                   </Field>
@@ -647,7 +508,7 @@ export default function ActiveProjectEditDrawer({
                     <input
                       type="date"
                       value={form.anticipatedStartDate}
-                      disabled={!canEdit || saving || generalState.busy}
+                      disabled={!canEdit || saving}
                       onChange={event => updateField('anticipatedStartDate', event.target.value)}
                     />
                   </Field>
@@ -672,7 +533,7 @@ export default function ActiveProjectEditDrawer({
                       options={gcOptions}
                       loading={gcOptionsLoading}
                       error={gcOptionsError}
-                      disabled={!canEdit || saving || generalState.busy}
+                      disabled={!canEdit || saving}
                       multiple={false}
                       onChange={values => updateField(
                         'gc',
@@ -686,7 +547,7 @@ export default function ActiveProjectEditDrawer({
                     <input
                       type="text"
                       value={form.gcpm}
-                      disabled={!canEdit || saving || generalState.busy}
+                      disabled={!canEdit || saving}
                       onChange={event => updateField('gcpm', event.target.value)}
                     />
                   </Field>
@@ -695,7 +556,7 @@ export default function ActiveProjectEditDrawer({
                     <input
                       type="text"
                       value={form.streetAddress}
-                      disabled={!canEdit || saving || generalState.busy}
+                      disabled={!canEdit || saving}
                       onChange={event => updateField('streetAddress', event.target.value)}
                     />
                   </Field>
@@ -704,7 +565,7 @@ export default function ActiveProjectEditDrawer({
                     <input
                       type="text"
                       value={form.cityStateZip}
-                      disabled={!canEdit || saving || generalState.busy}
+                      disabled={!canEdit || saving}
                       onChange={event => updateField('cityStateZip', event.target.value)}
                     />
                   </Field>
@@ -724,7 +585,7 @@ export default function ActiveProjectEditDrawer({
                   <Field label="Project Manager">
                     <select
                       value={form.pmITUserId}
-                      disabled={!canEdit || saving || generalState.busy}
+                      disabled={!canEdit || saving}
                       onChange={event => updateField('pmITUserId', event.target.value)}
                     >
                       <option value="">Unassigned</option>
@@ -742,7 +603,7 @@ export default function ActiveProjectEditDrawer({
                   <Field label="Assistant PM">
                     <select
                       value={form.apmITUserId}
-                      disabled={!canEdit || saving || generalState.busy}
+                      disabled={!canEdit || saving}
                       onChange={event => updateField('apmITUserId', event.target.value)}
                     >
                       <option value="">Unassigned</option>
@@ -760,7 +621,7 @@ export default function ActiveProjectEditDrawer({
                   <Field label="Project Engineer">
                     <select
                       value={form.peITUserId}
-                      disabled={!canEdit || saving || generalState.busy}
+                      disabled={!canEdit || saving}
                       onChange={event => updateField('peITUserId', event.target.value)}
                     >
                       <option value="">Unassigned</option>
@@ -814,7 +675,7 @@ export default function ActiveProjectEditDrawer({
                     <input
                       type="date"
                       value={form.plannedStartDate}
-                      disabled={!canEdit || saving || generalState.busy}
+                      disabled={!canEdit || saving}
                       onChange={event => updateField('plannedStartDate', event.target.value)}
                     />
                   </Field>
@@ -823,7 +684,7 @@ export default function ActiveProjectEditDrawer({
                     <input
                       type="date"
                       value={form.plannedEndDate}
-                      disabled={!canEdit || saving || generalState.busy}
+                      disabled={!canEdit || saving}
                       onChange={event => updateField('plannedEndDate', event.target.value)}
                     />
                   </Field>
@@ -832,22 +693,24 @@ export default function ActiveProjectEditDrawer({
                     <textarea
                       rows="5"
                       value={form.scheduleNotes}
-                      disabled={!canEdit || saving || generalState.busy}
+                      disabled={!canEdit || saving}
                       onChange={event => updateField('scheduleNotes', event.target.value)}
                     />
                   </Field>
                 </div>
               </section>
 
+              {Number(jobListId) === 24 && <ActiveProjectGeneralEditor
+                section={state.general} canEdit={canEdit} blocked={saving}
+                onEdit={(field, value) => editor.edit('general', field, value)}
+                onRetry={() => editor.load('general')} />}
+              {referenceRefreshing && <p className="project-reference-refresh-note" role="status">Updating reference information…</p>}
               <ActiveProjectCognitoSections
                 payload={cognitoPayload}
                 loading={cognitoLoading}
                 error={cognitoError}
-                onRetry={loadCognitoDetail}
+                onRetry={() => loadCognitoDetail()}
                 jobListId={jobListId}
-                canEdit={canEdit}
-                blocked={saving}
-                onGeneralStateChange={setGeneralState}
               />
 
               <section className="bid-edit-section active-project-reference-section">

@@ -1,0 +1,13 @@
+.project-save-review { scroll-margin-top: 1rem; }
+.project-save-review > p { color: var(--muted); line-height: 1.5; }
+.project-save-conflict { border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin-top: .75rem; }
+.project-save-comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: .75rem; }
+.project-save-comparison span { color: var(--muted); font-size: .85rem; }
+.project-save-comparison pre { font: inherit; font-size: .9rem; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 12rem; overflow: auto; margin: .4rem 0; }
+.project-save-conflict-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
+.active-project-edit-drawer .floating-editor-footer-status small { line-height: 1.5; }
+.project-reference-refresh-note { color: var(--muted); font-size: .85rem; margin: 0 0 .75rem; }
+@media (max-width: 640px) {
+  .project-save-comparison { grid-template-columns: 1fr; }
+  .active-project-edit-drawer .bid-log-edit-footer-actions { flex-wrap: wrap; }
+}
