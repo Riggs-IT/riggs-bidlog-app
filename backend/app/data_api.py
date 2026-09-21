@@ -1355,6 +1355,23 @@ def get_active_project_cognito_detail(
     )
 
 
+def get_active_project_resource_schedule(
+    job_list_id: int,
+) -> dict:
+    operation = "Active Project resource schedule"
+
+    response = _get_service_response(
+        f"/v1/jobs/{job_list_id}/resource-schedule",
+        operation=operation,
+        resource_not_found=True,
+    )
+
+    return _json_object(
+        response,
+        operation=operation,
+    )
+
+
 def update_active_project(
     job_list_id: int,
     payload: dict,

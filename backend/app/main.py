@@ -54,6 +54,7 @@ from .data_api import (
     get_bid_log_outcome_detail,
     get_active_project_detail,
     get_active_project_cognito_detail,
+    get_active_project_resource_schedule,
     get_bid_log_general_contractors,
     create_bid_log_delegated_session,
     delete_bid_log_delegated_session,
@@ -1796,6 +1797,29 @@ def active_project_cognito_detail_proxy(
                 job_list_id
             ),
             current_user,
+        )
+
+    except Exception as exc:
+        _raise_active_project_proxy_error(exc)
+
+
+@app.get(
+    "/api/active-projects/{job_list_id}/resource-schedule"
+)
+def active_project_resource_schedule_proxy(
+    job_list_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    _require_projects_workspace_access(current_user)
+
+    try:
+        return get_active_project_resource_schedule(
+            job_list_id
         )
 
     except Exception as exc:

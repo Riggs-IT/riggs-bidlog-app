@@ -13376,3 +13376,30 @@ td.pivot-project-column {
   color:
     var(--text);
 }
+
+
+/* Active Project Field Staffing / Organizer read model */
+.staffing-organizer-note { margin-top: 0; }
+.staffing-role-group + .staffing-role-group { margin-top: 24px; }
+.staffing-role-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.staffing-role-heading small { color: var(--muted); font-size: 9px; font-weight: 500; letter-spacing: normal; text-transform: none; }
+.staffing-current-block { margin-bottom: 10px; padding: 12px; border: 1px solid color-mix(in srgb, var(--border) 85%, transparent); border-radius: 9px; background: color-mix(in srgb, var(--surface-3) 72%, var(--surface-2)); }
+.staffing-current-label { display: block; margin-bottom: 8px; color: var(--muted); font-size: 9px; font-weight: 600; letter-spacing: .055em; text-transform: uppercase; }
+.staffing-assignment-row, .staffing-schedule-main { display: grid; grid-template-columns: minmax(180px, 1.25fr) minmax(180px, 1fr) auto; gap: 14px; align-items: center; }
+.staffing-assignment-row + .staffing-assignment-row { margin-top: 8px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent); }
+.staffing-assignment-row strong, .staffing-assignment-row small, .staffing-schedule-main strong, .staffing-schedule-main small { display: block; }
+.staffing-assignment-row small, .staffing-schedule-main small, .staffing-schedule-details small { color: var(--muted); font-size: 10px; line-height: 1.4; }
+.staffing-assignment-meta { text-align: right; }
+.staffing-projection-badge { display: inline-flex; align-items: center; width: fit-content; padding: 3px 7px; border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--border)); border-radius: 999px; background: color-mix(in srgb, var(--accent) 12%, var(--surface)); color: color-mix(in srgb, var(--accent) 78%, white); font-size: 9px; font-weight: 600; line-height: 1.2; }
+.staffing-organizer-list { display: grid; gap: 10px; }
+.staffing-schedule-row { padding: 12px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-3); }
+.staffing-date-range { min-width: 0; }
+.staffing-row-flags { display: flex; justify-content: flex-end; align-items: center; gap: 7px; flex-wrap: wrap; }
+.staffing-row-flags > span:not(.staffing-projection-badge) { color: var(--muted); font-size: 9px; font-weight: 600; text-transform: uppercase; }
+.staffing-schedule-details { display: flex; gap: 12px 18px; flex-wrap: wrap; margin-top: 9px; padding-top: 9px; border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent); }
+.staffing-schedule-details p { flex-basis: 100%; margin: 0; color: var(--text); font-size: 11px; line-height: 1.5; white-space: pre-wrap; }
+.staffing-empty-note { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+@media (max-width: 760px) {
+  .staffing-assignment-row, .staffing-schedule-main { grid-template-columns: 1fr; }
+  .staffing-assignment-meta, .staffing-row-flags { justify-content: flex-start; text-align: left; }
+}

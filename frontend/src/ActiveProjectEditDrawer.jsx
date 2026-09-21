@@ -13,6 +13,7 @@ import FloatingEditorShell from './FloatingEditorShell.jsx';
 import ActionToast from './ActionToast.jsx';
 import ActiveProjectGeneralEditor from './ActiveProjectGeneralEditor.jsx';
 import ActiveProjectSaveReview from './ActiveProjectSaveReview.jsx';
+import ActiveProjectStaffingOrganizer from './ActiveProjectStaffingOrganizer.jsx';
 import useActiveProjectEditor from './useActiveProjectEditor.js';
 
 
@@ -203,8 +204,12 @@ export default function ActiveProjectEditDrawer({
   const [cognitoPayload, setCognitoPayload] = useState(null);
   const [cognitoLoading, setCognitoLoading] = useState(true);
   const [cognitoError, setCognitoError] = useState(null);
+  const [staffingPayload, setStaffingPayload] = useState(null);
+  const [staffingLoading, setStaffingLoading] = useState(true);
+  const [staffingError, setStaffingError] = useState(null);
   const [referenceRefreshing, setReferenceRefreshing] = useState(false);
   const referenceRequest = useRef(null);
+  const staffingRequest = useRef(null);
   const referenceEpoch = useRef(0);
   const notifiedRevision = useRef(0);
   const footerRef = useRef(null);
@@ -288,6 +293,41 @@ export default function ActiveProjectEditDrawer({
     void loadCognitoDetail();
     return () => { referenceEpoch.current += 1; referenceRequest.current?.abort(); };
   }, [loadCognitoDetail]);
+
+  const loadStaffing = useCallback(async () => {
+    if (!jobListId) return;
+    staffingRequest.current?.abort();
+    const controller = new AbortController();
+    staffingRequest.current = controller;
+    setStaffingLoading(true);
+    setStaffingError(null);
+    try {
+      const result = await requestJson(`/api/active-projects/${jobListId}/resource-schedule`, {
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+      if (controller.signal.aborted) return;
+      if (Number(result?.job?.jobListId) !== Number(jobListId)) {
+        throw new Error('Field staffing returned the wrong project identity.');
+      }
+      setStaffingPayload(result);
+    } catch (error) {
+      if (!controller.signal.aborted) {
+        setStaffingError(error?.message || 'Unable to load field staffing.');
+      }
+    } finally {
+      if (!controller.signal.aborted && staffingRequest.current === controller) {
+        setStaffingLoading(false);
+      }
+    }
+  }, [jobListId]);
+
+  useEffect(() => {
+    setStaffingPayload(null);
+    setStaffingError(null);
+    void loadStaffing();
+    return () => staffingRequest.current?.abort();
+  }, [loadStaffing]);
 
   useEffect(() => {
     if (!state.refreshKey || state.saving) return undefined;
@@ -647,6 +687,13 @@ export default function ActiveProjectEditDrawer({
                   </Field>
                 </div>
               </section>
+
+              <ActiveProjectStaffingOrganizer
+                payload={staffingPayload}
+                loading={staffingLoading}
+                error={staffingError}
+                onRetry={loadStaffing}
+              />
 
               <section className="bid-edit-section">
                 <div className="bid-edit-section-heading">
