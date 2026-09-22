@@ -358,6 +358,41 @@ export default function ActiveProjectEditDrawer({
     }
   }, [jobListId]);
 
+  const writeStaffing = useCallback(
+    async ({
+      method,
+      path,
+      payload: writePayload,
+    }) => {
+      if (!jobListId) {
+        throw new Error(
+          'Active Project identity is missing.',
+        );
+      }
+
+      const result = await requestJson(
+        `/api/active-projects/${jobListId}${path}`,
+        {
+          method,
+          ...(writePayload === undefined
+            ? {}
+            : {
+                body: JSON.stringify(writePayload),
+              }),
+        },
+      );
+
+      await loadStaffing();
+
+      Promise.resolve()
+        .then(() => onSavedRef.current?.())
+        .catch(() => {});
+
+      return result;
+    },
+    [jobListId, loadStaffing],
+  );
+
   useEffect(() => {
     setStaffingPayload(null);
     setStaffingError(null);
@@ -710,10 +745,11 @@ export default function ActiveProjectEditDrawer({
                   loading={staffingLoading}
                   error={staffingError}
                   onRetry={loadStaffing}
+                  onWrite={writeStaffing}
                   people={people}
                   canEdit={canEdit}
                   blocked={saving}
-                  previewMode
+                  writeEnabled={Number(jobListId) === 24}
                 />
               </section>
 
