@@ -55,6 +55,11 @@ from .data_api import (
     get_active_project_detail,
     get_active_project_cognito_detail,
     get_active_project_resource_schedule,
+    assign_active_project_staffing,
+    unassign_active_project_staffing,
+    create_active_project_resource_schedule,
+    update_active_project_resource_schedule,
+    cancel_active_project_resource_schedule,
     get_bid_log_general_contractors,
     create_bid_log_delegated_session,
     delete_bid_log_delegated_session,
@@ -1820,6 +1825,240 @@ def active_project_resource_schedule_proxy(
     try:
         return get_active_project_resource_schedule(
             job_list_id
+        )
+
+    except Exception as exc:
+        _raise_active_project_proxy_error(exc)
+
+
+@app.post(
+    "/api/active-projects/{job_list_id}/staffing/assign"
+)
+async def active_project_staffing_assign_proxy(
+    request: Request,
+    job_list_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    _require_projects_workspace_access(current_user)
+    _require_project_editor(current_user)
+
+    try:
+        payload = await request.json()
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_json_body",
+        ) from exc
+
+    if (
+        not isinstance(payload, dict)
+        or set(payload) != {"employeeEid", "role"}
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail="invalid_staffing_assignment",
+        )
+
+    try:
+        return assign_active_project_staffing(
+            job_list_id,
+            payload,
+            actor_eid=current_user.eid,
+            request_id=_browser_request_id(request),
+        )
+
+    except Exception as exc:
+        _raise_active_project_proxy_error(exc)
+
+
+@app.post(
+    "/api/active-projects/{job_list_id}/staffing/unassign"
+)
+async def active_project_staffing_unassign_proxy(
+    request: Request,
+    job_list_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    _require_projects_workspace_access(current_user)
+    _require_project_editor(current_user)
+
+    try:
+        payload = await request.json()
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_json_body",
+        ) from exc
+
+    if (
+        not isinstance(payload, dict)
+        or set(payload) != {"employeeEid", "role"}
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail="invalid_staffing_unassignment",
+        )
+
+    try:
+        return unassign_active_project_staffing(
+            job_list_id,
+            payload,
+            actor_eid=current_user.eid,
+            request_id=_browser_request_id(request),
+        )
+
+    except Exception as exc:
+        _raise_active_project_proxy_error(exc)
+
+
+@app.post(
+    "/api/active-projects/{job_list_id}/resource-schedule"
+)
+async def active_project_resource_schedule_create_proxy(
+    request: Request,
+    job_list_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    _require_projects_workspace_access(current_user)
+    _require_project_editor(current_user)
+
+    try:
+        payload = await request.json()
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_json_body",
+        ) from exc
+
+    allowed = {
+        "employeeEid",
+        "resourceRole",
+        "startDateOverride",
+        "endDateOverride",
+        "status",
+        "notes",
+    }
+
+    if (
+        not isinstance(payload, dict)
+        or not set(payload).issubset(allowed)
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail="invalid_resource_schedule_create",
+        )
+
+    try:
+        return create_active_project_resource_schedule(
+            job_list_id,
+            payload,
+            actor_eid=current_user.eid,
+            request_id=_browser_request_id(request),
+        )
+
+    except Exception as exc:
+        _raise_active_project_proxy_error(exc)
+
+
+@app.put(
+    "/api/active-projects/{job_list_id}/resource-schedule/{schedule_id}"
+)
+async def active_project_resource_schedule_update_proxy(
+    request: Request,
+    job_list_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    schedule_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    _require_projects_workspace_access(current_user)
+    _require_project_editor(current_user)
+
+    try:
+        payload = await request.json()
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="invalid_json_body",
+        ) from exc
+
+    allowed = {
+        "employeeEid",
+        "startDateOverride",
+        "endDateOverride",
+        "status",
+        "notes",
+    }
+
+    if (
+        not isinstance(payload, dict)
+        or not set(payload).issubset(allowed)
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail="invalid_resource_schedule_update",
+        )
+
+    try:
+        return update_active_project_resource_schedule(
+            job_list_id,
+            schedule_id,
+            payload,
+            actor_eid=current_user.eid,
+            request_id=_browser_request_id(request),
+        )
+
+    except Exception as exc:
+        _raise_active_project_proxy_error(exc)
+
+
+@app.delete(
+    "/api/active-projects/{job_list_id}/resource-schedule/{schedule_id}"
+)
+def active_project_resource_schedule_cancel_proxy(
+    request: Request,
+    job_list_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    schedule_id: int = FastAPIPath(
+        ...,
+        ge=1,
+    ),
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    _require_projects_workspace_access(current_user)
+    _require_project_editor(current_user)
+
+    try:
+        return cancel_active_project_resource_schedule(
+            job_list_id,
+            schedule_id,
+            actor_eid=current_user.eid,
+            request_id=_browser_request_id(request),
         )
 
     except Exception as exc:

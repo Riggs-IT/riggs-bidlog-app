@@ -1372,6 +1372,168 @@ def get_active_project_resource_schedule(
     )
 
 
+def _active_project_write_request(
+    method: str,
+    path: str,
+    *,
+    operation: str,
+    actor_eid: int,
+    request_id: str,
+    payload: dict | None = None,
+) -> dict:
+    try:
+        response = _get_http_client().request(
+            method,
+            path,
+            json=payload,
+            headers=_request_headers(
+                include_service_auth=True,
+                request_id=request_id,
+                actor_eid=actor_eid,
+            ),
+        )
+
+    except httpx.TimeoutException as exc:
+        raise DataAPIUnavailable(
+            "Riggs Data API request timed out "
+            f"during {operation}."
+        ) from exc
+
+    except httpx.RequestError as exc:
+        raise DataAPIUnavailable(
+            "Riggs Data API request failed "
+            f"during {operation}."
+        ) from exc
+
+    if response.status_code in {
+        400,
+        403,
+        404,
+        409,
+        422,
+    }:
+        detail = _detail(response)
+
+        if detail is None:
+            detail = "active_project_staffing_write_rejected"
+
+        raise DataAPIRequestRejected(
+            response.status_code,
+            detail,
+        )
+
+    _raise_common_failure(
+        response,
+        operation=operation,
+    )
+
+    return _json_object(
+        response,
+        operation=operation,
+    )
+
+
+def assign_active_project_staffing(
+    job_list_id: int,
+    payload: dict,
+    *,
+    actor_eid: int,
+    request_id: str,
+) -> dict:
+    body = {
+        "jobListId": job_list_id,
+        **payload,
+    }
+
+    return _active_project_write_request(
+        "POST",
+        "/v1/staffing/assignments",
+        operation="Assign Active Project staffing",
+        actor_eid=actor_eid,
+        request_id=request_id,
+        payload=body,
+    )
+
+
+def unassign_active_project_staffing(
+    job_list_id: int,
+    payload: dict,
+    *,
+    actor_eid: int,
+    request_id: str,
+) -> dict:
+    body = {
+        "jobListId": job_list_id,
+        **payload,
+    }
+
+    return _active_project_write_request(
+        "POST",
+        "/v1/staffing/unassignments",
+        operation="Unassign Active Project staffing",
+        actor_eid=actor_eid,
+        request_id=request_id,
+        payload=body,
+    )
+
+
+def create_active_project_resource_schedule(
+    job_list_id: int,
+    payload: dict,
+    *,
+    actor_eid: int,
+    request_id: str,
+) -> dict:
+    return _active_project_write_request(
+        "POST",
+        f"/v1/jobs/{job_list_id}/resource-schedule",
+        operation="Create Active Project resource schedule",
+        actor_eid=actor_eid,
+        request_id=request_id,
+        payload=payload,
+    )
+
+
+def update_active_project_resource_schedule(
+    job_list_id: int,
+    schedule_id: int,
+    payload: dict,
+    *,
+    actor_eid: int,
+    request_id: str,
+) -> dict:
+    return _active_project_write_request(
+        "PUT",
+        (
+            f"/v1/jobs/{job_list_id}"
+            f"/resource-schedule/{schedule_id}"
+        ),
+        operation="Update Active Project resource schedule",
+        actor_eid=actor_eid,
+        request_id=request_id,
+        payload=payload,
+    )
+
+
+def cancel_active_project_resource_schedule(
+    job_list_id: int,
+    schedule_id: int,
+    *,
+    actor_eid: int,
+    request_id: str,
+) -> dict:
+    return _active_project_write_request(
+        "DELETE",
+        (
+            f"/v1/jobs/{job_list_id}"
+            f"/resource-schedule/{schedule_id}"
+        ),
+        operation="Cancel Active Project resource schedule",
+        actor_eid=actor_eid,
+        request_id=request_id,
+    )
+
+
 def update_active_project(
     job_list_id: int,
     payload: dict,
