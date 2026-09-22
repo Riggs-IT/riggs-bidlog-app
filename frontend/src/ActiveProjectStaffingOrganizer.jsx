@@ -357,7 +357,12 @@ export default function ActiveProjectStaffingOrganizer({
   const foremen = assignments.filter(row => row.resourceRole === 'FOREMAN');
   const superSchedules = schedules.filter(row => row.resourceRole === 'SUPER');
   const foremanSchedules = schedules.filter(row => row.resourceRole === 'FOREMAN');
-  const disabled = !canEdit || blocked;
+  const localPreview =
+    previewMode &&
+    typeof window !== "undefined" &&
+    ["localhost", "127.0.0.1"].includes(window.location.hostname);
+
+  const disabled = !localPreview || !canEdit || blocked;
 
   return (
     <div className="project-team-staffing-shell">
@@ -367,7 +372,7 @@ export default function ActiveProjectStaffingOrganizer({
           <h4>Superintendent & Foremen</h4>
         </div>
         <div className="project-team-staffing-heading-meta">
-          {previewMode && <span className="staffing-preview-badge">Local write preview</span>}
+          {localPreview && <span className="staffing-preview-badge">Local write preview</span>}
           <small>Operations staffing authority</small>
         </div>
       </div>
@@ -376,7 +381,7 @@ export default function ActiveProjectStaffingOrganizer({
         Current assignments are shown in the Organizer timeline using their Operations assignment start date. The first active Foreman and current Superintendent remain the people projected to Cognito.
       </p>
 
-      {previewMode && (
+      {localPreview && (
         <div className="staffing-preview-note">
           Editing is enabled here so the layout can be reviewed locally. These preview controls do not save staffing changes yet.
         </div>
