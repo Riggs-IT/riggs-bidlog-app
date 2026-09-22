@@ -145,6 +145,42 @@ function Field({
 }
 
 
+function ProjectRoleOptions({
+  people,
+  role,
+  currentValue,
+}) {
+  const normalizedCurrent = String(currentValue || '');
+  const eligible = people.filter(
+    person => String(person?.projectRole || '').toUpperCase() === role,
+  );
+  const current = people.find(
+    person => String(person?.sharePointId || '') === normalizedCurrent,
+  );
+  const currentIsEligible = eligible.some(
+    person => String(person?.sharePointId || '') === normalizedCurrent,
+  );
+
+  return (
+    <>
+      {current && !currentIsEligible && normalizedCurrent && (
+        <option value={normalizedCurrent} disabled>
+          {current.displayName} (current)
+        </option>
+      )}
+      {eligible.map(person => (
+        <option
+          key={person.sharePointId}
+          value={person.sharePointId}
+        >
+          {person.displayName}
+        </option>
+      ))}
+    </>
+  );
+}
+
+
 function money(value) {
   const number = Number(value);
 
@@ -621,7 +657,7 @@ export default function ActiveProjectEditDrawer({
                   <small>Active Cognito IT Users</small>
                 </div>
 
-                <div className="bid-edit-grid three-column">
+                <div className="bid-edit-grid three-column project-team-office-grid">
                   <Field label="Project Manager">
                     <select
                       value={form.pmITUserId}
@@ -629,14 +665,11 @@ export default function ActiveProjectEditDrawer({
                       onChange={event => updateField('pmITUserId', event.target.value)}
                     >
                       <option value="">Unassigned</option>
-                      {people.map(person => (
-                        <option
-                          key={person.sharePointId}
-                          value={person.sharePointId}
-                        >
-                          {person.displayName}
-                        </option>
-                      ))}
+                      <ProjectRoleOptions
+                        people={people}
+                        role="PM"
+                        currentValue={form.pmITUserId}
+                      />
                     </select>
                   </Field>
 
@@ -647,14 +680,11 @@ export default function ActiveProjectEditDrawer({
                       onChange={event => updateField('apmITUserId', event.target.value)}
                     >
                       <option value="">Unassigned</option>
-                      {people.map(person => (
-                        <option
-                          key={person.sharePointId}
-                          value={person.sharePointId}
-                        >
-                          {person.displayName}
-                        </option>
-                      ))}
+                      <ProjectRoleOptions
+                        people={people}
+                        role="APM"
+                        currentValue={form.apmITUserId}
+                      />
                     </select>
                   </Field>
 
@@ -665,35 +695,27 @@ export default function ActiveProjectEditDrawer({
                       onChange={event => updateField('peITUserId', event.target.value)}
                     >
                       <option value="">Unassigned</option>
-                      {people.map(person => (
-                        <option
-                          key={person.sharePointId}
-                          value={person.sharePointId}
-                        >
-                          {person.displayName}
-                        </option>
-                      ))}
+                      <ProjectRoleOptions
+                        people={people}
+                        role="PE"
+                        currentValue={form.peITUserId}
+                      />
                     </select>
                   </Field>
 
-                  <Field
-                    label="Superintendent"
-                    wide
-                    hint="Superintendent staffing stays managed through the Operations staffing workflow."
-                  >
-                    <div className="active-project-readonly-value">
-                      {projectSummary?.superintendent || 'Unassigned'}
-                    </div>
-                  </Field>
                 </div>
-              </section>
 
-              <ActiveProjectStaffingOrganizer
-                payload={staffingPayload}
-                loading={staffingLoading}
-                error={staffingError}
-                onRetry={loadStaffing}
-              />
+                <ActiveProjectStaffingOrganizer
+                  payload={staffingPayload}
+                  loading={staffingLoading}
+                  error={staffingError}
+                  onRetry={loadStaffing}
+                  people={people}
+                  canEdit={canEdit}
+                  blocked={saving}
+                  previewMode
+                />
+              </section>
 
               <section className="bid-edit-section">
                 <div className="bid-edit-section-heading">

@@ -13403,3 +13403,78 @@ td.pivot-project-column {
   .staffing-assignment-row, .staffing-schedule-main { grid-template-columns: 1fr; }
   .staffing-assignment-meta, .staffing-row-flags { justify-content: flex-start; text-align: left; }
 }
+
+/* Stage 20C local preview: unified Project Team staffing editor */
+.project-team-office-grid { margin-bottom: 18px; }
+.project-team-staffing-shell { margin-top: 4px; padding-top: 18px; border-top: 1px solid var(--border); }
+.project-team-staffing-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 10px; }
+.project-team-staffing-heading h4 { margin: 3px 0 0; color: var(--text); font-size: 15px; line-height: 1.25; }
+.project-team-staffing-heading-meta { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; color: var(--muted); }
+.staffing-preview-badge { display: inline-flex; align-items: center; padding: 3px 7px; border: 1px solid color-mix(in srgb, var(--warning, #d8a44c) 55%, var(--border)); border-radius: 999px; color: color-mix(in srgb, var(--warning, #d8a44c) 82%, white); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.staffing-preview-note { margin: 10px 0 16px; padding: 9px 11px; border: 1px dashed color-mix(in srgb, var(--border) 82%, transparent); border-radius: 8px; background: color-mix(in srgb, var(--surface-3) 72%, transparent); color: var(--muted); font-size: 10px; line-height: 1.45; }
+.project-team-role-editor + .project-team-role-editor { margin-top: 26px; }
+.project-team-current-editor, .project-team-foreman-row { display: grid; grid-template-columns: minmax(260px, 1fr) auto; gap: 14px; align-items: end; }
+.project-team-foremen-editor { display: grid; gap: 9px; }
+.project-team-staffing-list { display: grid; gap: 9px; }
+.project-team-staffing-field { display: grid; gap: 6px; min-width: 0; }
+.project-team-staffing-field > span { color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: .045em; text-transform: uppercase; }
+.project-team-staffing-field > small, .project-team-staffing-help { color: var(--muted); font-size: 9px; line-height: 1.4; }
+.project-team-staffing-field select, .project-team-staffing-field input, .project-team-staffing-field textarea { width: 100%; }
+.project-team-person-select {
+  min-height: 40px;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-3);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  outline: none;
+}
+.project-team-person-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.project-team-person-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.project-team-staffing-state { min-height: 36px; display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.project-team-staffing-state small { color: var(--muted); font-size: 9px; }
+.staffing-inline-action { border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 10px; cursor: pointer; }
+.staffing-inline-action:hover:not(:disabled) { color: var(--text); }
+.staffing-inline-action.danger:hover:not(:disabled) { color: var(--danger, #e17676); }
+.staffing-inline-action:disabled { cursor: default; opacity: .5; }
+.staffing-add-button { width: fit-content; min-height: 30px; padding: 5px 10px; font-size: 10px; }
+.project-team-organizer-editor { margin-top: 13px; padding: 12px; border: 1px solid color-mix(in srgb, var(--border) 86%, transparent); border-radius: 9px; background: color-mix(in srgb, var(--surface-3) 60%, var(--surface-2)); }
+.project-team-organizer-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 10px; }
+.project-team-organizer-heading strong, .project-team-organizer-heading small { display: block; }
+.project-team-organizer-heading strong { font-size: 11px; }
+.project-team-organizer-heading small { margin-top: 2px; color: var(--muted); font-size: 9px; line-height: 1.4; }
+.project-team-organizer-list { display: grid; gap: 10px; }
+.project-team-organizer-row { padding: 11px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-3); }
+.project-team-organizer-grid { display: grid; grid-template-columns: minmax(190px, 1.25fr) repeat(2, minmax(135px, .8fr)) minmax(120px, .65fr); gap: 10px; align-items: end; }
+.organizer-notes-field { margin-top: 10px; }
+.project-team-organizer-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 9px; }
+.project-team-organizer-effective { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--muted); }
+.project-team-organizer-effective small { font-size: 9px; }
+.project-team-organizer-effective > span:not(.staffing-projection-badge) { font-size: 9px; font-weight: 700; text-transform: uppercase; }
+@media (max-width: 980px) {
+  .project-team-organizer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .project-team-staffing-heading, .project-team-organizer-heading, .project-team-organizer-footer { align-items: stretch; flex-direction: column; }
+  .project-team-current-editor, .project-team-foreman-row, .project-team-organizer-grid { grid-template-columns: 1fr; }
+  .project-team-staffing-state { justify-content: flex-start; }
+}
+
+/* Stage 20C.2 preview refinement: current assignments live inside the Organizer timeline */
+.staffing-current-assignment-row { border-color: color-mix(in srgb, var(--accent) 28%, var(--border)); background: color-mix(in srgb, var(--accent) 5%, var(--surface-3)); }
+.staffing-current-readout { display: grid; gap: 5px; min-width: 0; padding: 0 2px 2px; }
+.staffing-current-readout > span { color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: .045em; text-transform: uppercase; }
+.staffing-current-readout > strong { color: var(--text); font-size: 12px; font-weight: 600; line-height: 1.25; }
+.staffing-current-readout > small { color: var(--muted); font-size: 9px; line-height: 1.35; }
+.staffing-current-status { width: fit-content; padding: 3px 7px; border: 1px solid color-mix(in srgb, var(--success, #58b58c) 46%, var(--border)); border-radius: 999px; background: color-mix(in srgb, var(--success, #58b58c) 10%, transparent); color: color-mix(in srgb, var(--success, #58b58c) 78%, white); font-size: 9px !important; font-weight: 700 !important; text-transform: uppercase; letter-spacing: .04em; }
+.staffing-plan-empty-state { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; padding: 12px; border: 1px dashed color-mix(in srgb, var(--border) 88%, transparent); border-radius: 8px; color: var(--muted); }
+.staffing-plan-empty-state strong { color: var(--text); font-size: 11px; }
+.staffing-plan-empty-state span { font-size: 10px; line-height: 1.4; }
