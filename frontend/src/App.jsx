@@ -835,6 +835,37 @@ function pmLabel(
 }
 
 
+function exactJobNumberSearch(
+  search,
+) {
+  const text =
+    String(
+      search || '',
+    ).trim();
+
+  if (!text) {
+    return null;
+  }
+
+  const tokens =
+    text
+      .split(/[\s,;]+/)
+      .map(token => token.trim())
+      .filter(Boolean);
+
+  if (
+    tokens.length < 2
+    || !tokens.every(
+      token => /^\d+$/.test(token)
+    )
+  ) {
+    return null;
+  }
+
+  return new Set(tokens);
+}
+
+
 function containsText(
   value,
   search,
@@ -863,12 +894,24 @@ function containsText(
 }
 
 
+
 function currentMatchesSearch(
   row,
   search,
 ) {
   if (!search) {
     return true;
+  }
+
+  const exactJobNumbers =
+    exactJobNumberSearch(search);
+
+  if (exactJobNumbers) {
+    return exactJobNumbers.has(
+      String(
+        row.jobNumber ?? '',
+      ).trim()
+    );
   }
 
   return [
@@ -899,6 +942,10 @@ function bidMatchesSearch(
 ) {
   if (!search) {
     return true;
+  }
+
+  if (exactJobNumberSearch(search)) {
+    return false;
   }
 
   return [
@@ -1368,35 +1415,6 @@ function ProbabilityInput({
   );
 }
 
-
-function StatCard({
-  label,
-  value,
-  detail,
-  emphasis = false,
-}) {
-  return (
-    <article
-      className={
-        emphasis
-          ? 'stat-card emphasis'
-          : 'stat-card'
-      }
-    >
-      <span>
-        {label}
-      </span>
-
-      <strong>
-        {value}
-      </strong>
-
-      <small>
-        {detail}
-      </small>
-    </article>
-  );
-}
 
 
 function MicrosoftMark() {
@@ -3511,6 +3529,7 @@ export default function App() {
     + 1
     + (includeActiveProjects ? 1 : 0)
     + 1
+    + 2
     + (showPotentialOnly ? 1 : 0)
     + (includeActiveProjects ? 1 : 0)
     + 1
@@ -4154,6 +4173,16 @@ export default function App() {
             }
           )
           .filter(
+            row => (
+              !row.projectCompleted
+              || Math.abs(
+                   toNumber(
+                     row.selectedActual
+                   )
+                 ) > 0.000001
+            )
+          )
+          .filter(
             row => {
               if (
                 varianceFilter
@@ -4370,58 +4399,6 @@ export default function App() {
       ],
     );
 
-
-  const currentProjectedTotal =
-    currentDetails.reduce(
-      (
-        total,
-        row,
-      ) =>
-        total
-        + row.selectedProjected,
-      0,
-    );
-
-  const currentActualTotal =
-    currentDetails.reduce(
-      (
-        total,
-        row,
-      ) =>
-        total
-        + row.selectedActual,
-      0,
-    );
-
-  const weightedBidTotal =
-    bidDetails.reduce(
-      (
-        total,
-        row,
-      ) =>
-        total
-        + row.selectedWeightedForecast,
-      0,
-    );
-
-  const rawBidTotal =
-    bidDetails.reduce(
-      (
-        total,
-        row,
-      ) =>
-        total
-        + row.selectedBidForecast,
-      0,
-    );
-
-  const combinedExpected =
-    currentProjectedTotal
-    + weightedBidTotal;
-
-  const currentVarianceTotal =
-    currentActualTotal
-    - currentProjectedTotal;
 
 
   const monthlyComparison =
@@ -5130,6 +5107,12 @@ export default function App() {
               probability:
                 'probability',
 
+              squareFootage:
+                'squareFootage',
+
+              cubicYards:
+                'cubicYards',
+
               variance:
                 'variance',
             };
@@ -5196,6 +5179,12 @@ export default function App() {
                 projectValue:
                   row.effectiveAmount,
 
+                squareFootage:
+                  row.squareFootage,
+
+                cubicYards:
+                  row.cubicYards,
+
                 projectMonth:
                   monthPosition.label,
 
@@ -5260,8 +5249,14 @@ export default function App() {
                 row.pmHexColor,
 
               projectValue:
-                row.effectiveAmount
-                ?? row.estimatedPrice,
+                row.estimatedPrice
+                ?? row.effectiveAmount,
+
+              squareFootage:
+                row.squareFootage,
+
+              cubicYards:
+                row.cubicYards,
 
               projectMonth:
                 '—',
@@ -5555,6 +5550,7 @@ export default function App() {
       'Probability',
 
       'Square Footage',
+      'Cubic Yards',
       'Number of Buildings',
 
       'Retention',
@@ -5862,12 +5858,13 @@ export default function App() {
 
 
             'Square Footage':
-              isBid
-                ? (
-                    raw.squareFootage
-                    ?? ''
-                  )
-                : '',
+              raw.squareFootage
+              ?? '',
+
+
+            'Cubic Yards':
+              raw.cubicYards
+              ?? '',
 
 
             'Number of Buildings':
@@ -6569,7 +6566,8 @@ export default function App() {
             </h1>
 
             <p>
-              Review active projects and high-probability potential projects.
+              Review active projects, completed projects with Foundation billing
+              activity in the selected range, and high-probability potential projects.
               Projected billings update to the selected sources and month range,
               while Foundation actual billings remain separate.
             </p>
@@ -6632,7 +6630,7 @@ export default function App() {
               onClick={toggleActiveProjects}
             >
               <span className="toggle-label">
-                <strong>Active Projects</strong>
+                <strong>Projects</strong>
                 <small>{currentProjects.length} projects</small>
               </span>
             </button>
@@ -6665,7 +6663,7 @@ export default function App() {
               label="Search"
               value={search}
               onChange={setSearch}
-              placeholder="Project, bid, job #, GC, city…"
+              placeholder="Project, bid, job #s, GC, city…"
             />
 
             <SelectField
@@ -7195,7 +7193,7 @@ export default function App() {
                       }
                     >
                       <strong>
-                        Active Projects
+                        Projects
                       </strong>
 
                       <small>
@@ -7216,7 +7214,7 @@ export default function App() {
                       label="Search"
                       value={search}
                       onChange={setSearch}
-                      placeholder="Project, bid, job #, GC, city…"
+                      placeholder="Project, bid, job #s, GC, city…"
                     />
 
                     <SelectField
@@ -7668,159 +7666,6 @@ export default function App() {
           </section>
         )}
 
-
-        <section
-          className={
-            showPotentialOnly
-              ? 'stats-grid stats-grid-potential-only'
-              : 'stats-grid'
-          }
-        >
-          {showPotentialOnly && (
-            <>
-              <StatCard
-                label="Potential Projects"
-                value={
-                  dataLoading
-                    ? 'Loading…'
-                    : String(bidDetails.length)
-                }
-                detail={`${potentialProbabilityThreshold}%+ minimum probability`}
-              />
-
-              <StatCard
-                label="Potential Project Value"
-                value={
-                  dataLoading
-                    ? 'Loading…'
-                    : currency(rawBidTotal)
-                }
-                detail="Estimated bid value before probability weighting"
-              />
-
-              <StatCard
-                label="Probability-Weighted Projection"
-                value={
-                  dataLoading
-                    ? 'Loading…'
-                    : currency(weightedBidTotal)
-                }
-                detail={
-                  rangeValid
-                    ? `${monthLabel(fromMonth)} through ${monthLabel(throughMonth)}`
-                    : 'Select a valid projected billing month range'
-                }
-                emphasis
-              />
-            </>
-          )}
-
-          {showActiveOnly && (
-            <>
-              <StatCard
-                label="Active Projects"
-                value={
-                  dataLoading
-                    ? 'Loading…'
-                    : String(currentDetails.length)
-                }
-                detail="Projects in the current filtered view"
-              />
-
-              <StatCard
-                label="Projected Billings"
-                value={
-                  dataLoading
-                    ? 'Loading…'
-                    : currency(currentProjectedTotal)
-                }
-                detail={
-                  rangeValid
-                    ? `${monthLabel(fromMonth)} through ${monthLabel(throughMonth)}`
-                    : 'Select a valid projected billing month range'
-                }
-                emphasis
-              />
-
-              <StatCard
-                label="Actual Billings"
-                value={
-                  dataLoading
-                    ? 'Loading…'
-                    : currency(currentActualTotal)
-                }
-                detail="Foundation actual billings"
-              />
-
-              <StatCard
-                label="Actual vs Projected"
-                value={
-                  dataLoading
-                    ? 'Loading…'
-                    : currency(Math.abs(currentVarianceTotal))
-                }
-                detail={
-                  dataLoading
-                    ? 'Comparing actual and projected billings'
-                    : currentVarianceTotal > 0
-                      ? 'Above projected billings'
-                      : currentVarianceTotal < 0
-                        ? 'Below projected billings'
-                        : 'Actual billings match projection'
-                }
-              />
-            </>
-          )}
-
-          {showCombinedSources && (
-            <>
-              <StatCard
-                label="Projected Billings · Active Projects"
-                value={
-                  dataLoading
-                    ? 'Loading…'
-                    : currency(currentProjectedTotal)
-                }
-                detail={`${currentDetails.length} selected projects`}
-              />
-
-              <StatCard
-                label="Projected Billings · Potential Projects"
-                value={
-                  dataLoading
-                    ? 'Loading…'
-                    : currency(weightedBidTotal)
-                }
-                detail={`${bidDetails.length} potential projects · ${currency(rawBidTotal)} project value`}
-              />
-
-              <StatCard
-                label="Total Projected Billings"
-                value={
-                  dataLoading
-                    ? 'Loading…'
-                    : currency(combinedExpected)
-                }
-                detail={
-                  rangeValid
-                    ? `${monthLabel(fromMonth)} through ${monthLabel(throughMonth)}`
-                    : 'Select a valid projected billing month range'
-                }
-                emphasis
-              />
-
-              <StatCard
-                label="Actual Billings"
-                value={
-                  dataLoading
-                    ? 'Loading…'
-                    : currency(currentActualTotal)
-                }
-                detail="Foundation actual billings"
-              />
-            </>
-          )}
-        </section>
 
 
         <section
@@ -8305,12 +8150,20 @@ export default function App() {
                                                       detail.source
                                                         === 'Active Bid'
                                                         ? 'source-chip bid'
-                                                        : 'source-chip current'
+                                                        : (
+                                                            detail.raw?.projectCompleted
+                                                              ? 'source-chip completed'
+                                                              : 'source-chip current'
+                                                          )
                                                     }
                                                   >
                                                     {detail.source
                                                       === 'Current Project'
-                                                      ? 'Active'
+                                                      ? (
+                                                          detail.raw?.projectCompleted
+                                                            ? 'Completed'
+                                                            : 'Active'
+                                                        )
                                                       : 'Bid'}
                                                   </span>
                                                 </td>
@@ -8324,11 +8177,19 @@ export default function App() {
                                               )}
 
                                               <td className="project-cell">
-                                                <strong>
-                                                  {displayValue(
-                                                    detail.name
+                                                <div className="project-name-status-line">
+                                                  <strong>
+                                                    {displayValue(
+                                                      detail.name
+                                                    )}
+                                                  </strong>
+
+                                                  {detail.raw?.projectCompleted && (
+                                                    <span className="project-completed-pill">
+                                                      Completed
+                                                    </span>
                                                   )}
-                                                </strong>
+                                                </div>
 
                                                 <span>
                                                   {detail.location
@@ -8643,6 +8504,24 @@ export default function App() {
                     numeric
                   />
 
+                  <SortHeader
+                    label="SF"
+                    sortKey="squareFootage"
+                    currentSort={detailSort}
+                    onSort={toggleDetailSort}
+                    firstDirection="desc"
+                    numeric
+                  />
+
+                  <SortHeader
+                    label="CY"
+                    sortKey="cubicYards"
+                    currentSort={detailSort}
+                    onSort={toggleDetailSort}
+                    firstDirection="desc"
+                    numeric
+                  />
+
                   {showPotentialOnly && (
                     <SortHeader
                       label="Probability"
@@ -8752,12 +8631,20 @@ export default function App() {
                               row.source
                               === 'Active Bid'
                                 ? 'source-chip bid'
-                                : 'source-chip current'
+                                : (
+                                    row.raw?.projectCompleted
+                                      ? 'source-chip completed'
+                                      : 'source-chip current'
+                                  )
                             }
                           >
                             {row.source
                               === 'Current Project'
-                              ? 'Active'
+                              ? (
+                                  row.raw?.projectCompleted
+                                    ? 'Completed'
+                                    : 'Active'
+                                )
                               : 'Bid'}
                           </span>
                         </td>
@@ -8770,11 +8657,19 @@ export default function App() {
                       )}
 
                       <td className="project-cell">
-                        <strong>
-                          {displayValue(
-                            row.name
+                        <div className="project-name-status-line">
+                          <strong>
+                            {displayValue(
+                              row.name
+                            )}
+                          </strong>
+
+                          {row.raw?.projectCompleted && (
+                            <span className="project-completed-pill">
+                              Completed
+                            </span>
                           )}
-                        </strong>
+                        </div>
 
                         <span className="project-location-line">
                           {row.location || '—'}
@@ -8829,6 +8724,28 @@ export default function App() {
                           : currency(
                               row.projectValue
                             )}
+                      </td>
+
+                      <td className="numeric">
+                        {row.squareFootage
+                          === null
+                          || row.squareFootage
+                            === undefined
+                          ? '—'
+                          : Math.round(
+                              Number(row.squareFootage)
+                            ).toLocaleString('en-US')}
+                      </td>
+
+                      <td className="numeric">
+                        {row.cubicYards
+                          === null
+                          || row.cubicYards
+                            === undefined
+                          ? '—'
+                          : Math.round(
+                              Number(row.cubicYards)
+                            ).toLocaleString('en-US')}
                       </td>
 
                       {showPotentialOnly && (

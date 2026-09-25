@@ -11976,7 +11976,7 @@ td.pivot-project-column {
 }
 
 .active-project-table {
-  min-width: 1500px;
+  min-width: 1660px;
 }
 
 .active-project-table thead th {
@@ -12019,7 +12019,8 @@ td.pivot-project-column {
 }
 
 .active-project-date-cell,
-.active-project-contract-cell {
+.active-project-contract-cell,
+.active-project-quantity-cell {
   white-space: nowrap;
 }
 
@@ -13478,3 +13479,67 @@ td.pivot-project-column {
 .staffing-plan-empty-state { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; padding: 12px; border: 1px dashed color-mix(in srgb, var(--border) 88%, transparent); border-radius: 8px; color: var(--muted); }
 .staffing-plan-empty-state strong { color: var(--text); font-size: 11px; }
 .staffing-plan-empty-state span { font-size: 10px; line-height: 1.4; }
+
+
+/* BRIAN REVIEW - PROJECT VALUES + COMPLETED BILLING VISIBILITY */
+.project-pivot-table .pivot-project-values-column {
+  width: 154px;
+  min-width: 154px;
+  max-width: 154px;
+}
+
+.pivot-project-values {
+  display: grid;
+  gap: 4px;
+}
+
+.pivot-project-value-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.pivot-project-value-line small {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.pivot-project-value-line strong {
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pivot-project-name-line,
+.project-name-status-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.project-completed-pill,
+.source-chip.completed {
+  border: 1px solid color-mix(in srgb, #d7a842 62%, var(--border));
+  background: color-mix(in srgb, #d7a842 16%, var(--surface-2));
+  color: #e3bd66;
+}
+
+.project-completed-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.055em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+}

@@ -143,6 +143,48 @@ function squareFootageLabel(value) {
 }
 
 
+function cubicYardsLabel(value) {
+  const number =
+    Number(value);
+
+  if (
+    !Number.isFinite(number)
+    || number <= 0
+  ) {
+    return null;
+  }
+
+  return (
+    `${Math.round(number).toLocaleString('en-US')} CY`
+  );
+}
+
+
+function wholeCurrencyLabel(value) {
+  if (
+    value === null
+    || value === undefined
+  ) {
+    return null;
+  }
+
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return null;
+  }
+
+  return new Intl.NumberFormat(
+    'en-US',
+    {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0,
+    },
+  ).format(number);
+}
+
+
 function buildingCountLabel(value) {
   const number =
     Number(value);
@@ -251,7 +293,9 @@ function currentProjectPivotRow(
       'current',
 
     sourceLabel:
-      'Active',
+      project.projectCompleted
+        ? 'Completed'
+        : 'Active',
 
     number:
       project.jobNumber || '—',
@@ -270,6 +314,33 @@ function currentProjectPivotRow(
 
     pmHexColor:
       project.pmHexColor,
+
+    contextItems: [],
+
+    projectValues: [
+      {
+        label: 'Contract',
+        value:
+          wholeCurrencyLabel(
+            project.originalContractAmount
+            ?? project.effectiveAmount
+          ) || '—',
+      },
+      {
+        label: 'SF',
+        value:
+          squareFootageLabel(
+            project.squareFootage
+          ) || '—',
+      },
+      {
+        label: 'CY',
+        value:
+          cubicYardsLabel(
+            project.cubicYards
+          ) || '—',
+      },
+    ],
 
     gc:
       generalContractorDisplayText(
@@ -393,23 +464,6 @@ function bidPivotRow(
       bid.pmHexColor,
 
     contextItems: [
-      squareFootageLabel(
-        bid.squareFootage
-      )
-        ? {
-            value:
-              squareFootageLabel(
-                bid.squareFootage
-              ),
-            title:
-              `Square Footage: ${
-                squareFootageLabel(
-                  bid.squareFootage
-                )
-              }`,
-          }
-        : null,
-
       buildingCountLabel(
         bid.numberOfBuildings
       )
@@ -429,6 +483,31 @@ function bidPivotRow(
           }
         : null,
     ].filter(Boolean),
+
+    projectValues: [
+      {
+        label: 'Est.',
+        value:
+          wholeCurrencyLabel(
+            bid.estimatedPrice
+            ?? bid.effectiveAmount
+          ) || '—',
+      },
+      {
+        label: 'SF',
+        value:
+          squareFootageLabel(
+            bid.squareFootage
+          ) || '—',
+      },
+      {
+        label: 'CY',
+        value:
+          cubicYardsLabel(
+            bid.cubicYards
+          ) || '—',
+      },
+    ],
 
     gc:
       generalContractorDisplayText(
@@ -466,9 +545,17 @@ function ProjectMeta({
 }) {
   return (
     <div className="pivot-project-info">
-      <strong className="pivot-project-name">
-        {row.name}
-      </strong>
+      <div className="pivot-project-name-line">
+        <strong className="pivot-project-name">
+          {row.name}
+        </strong>
+
+        {row.raw?.projectCompleted && (
+          <span className="project-completed-pill">
+            Completed
+          </span>
+        )}
+      </div>
 
       <div
         className="pivot-project-pm-line"
@@ -494,8 +581,7 @@ function ProjectMeta({
         </span>
       </div>
 
-      {row.source === 'bid'
-        && !!row.contextItems?.length && (
+      {!!row.contextItems?.length && (
         <div className="pivot-project-context-line">
           {row.contextItems.map(
             (
@@ -537,6 +623,27 @@ function ProjectMeta({
         </div>
       )}
 
+    </div>
+  );
+}
+
+
+function ProjectValuesCell({
+  row,
+}) {
+  return (
+    <div className="pivot-project-values">
+      {(row.projectValues || []).map(
+        item => (
+          <span
+            className="pivot-project-value-line"
+            key={item.label}
+          >
+            <small>{item.label}</small>
+            <strong>{item.value}</strong>
+          </span>
+        )
+      )}
     </div>
   );
 }
@@ -775,7 +882,7 @@ function BillingValue({
 }
 
 
-function compactCurrency(value) {
+function headerCurrency(value) {
   if (
     value === null
     || value === undefined
@@ -788,8 +895,7 @@ function compactCurrency(value) {
     {
       style: 'currency',
       currency: 'USD',
-      notation: 'compact',
-      maximumFractionDigits: 1,
+      maximumFractionDigits: 0,
     },
   ).format(value);
 }
@@ -886,19 +992,19 @@ function HeaderTotal({
         >
           {includeProjectProjection && (
             <small className="pivot-header-total-value">
-              P {compactCurrency(projectedValue)}
+              P {headerCurrency(projectedValue)}
             </small>
           )}
 
           {hasBidProjection && (
             <small className="pivot-header-total-value pivot-header-total-value-bid">
-              B {compactCurrency(bidProjectedValue)}
+              B {headerCurrency(bidProjectedValue)}
             </small>
           )}
 
           {allMode && (
             <small className="pivot-header-total-value pivot-header-total-value-actual">
-              A {compactCurrency(actualValue)}
+              A {headerCurrency(actualValue)}
             </small>
           )}
         </span>
@@ -930,7 +1036,7 @@ function HeaderTotal({
             ? 'M '
             : ''}
 
-          {compactCurrency(value)}
+          {headerCurrency(value)}
         </small>
       )}
 
@@ -1733,6 +1839,10 @@ export default function ProjectBillingPivot({
                 className="pivot-project-column"
               />
 
+              <th className="pivot-project-values-column">
+                Project Values
+              </th>
+
               <PivotSortHeader
                 label="GC"
                 sortKey="gc"
@@ -1911,7 +2021,11 @@ export default function ProjectBillingPivot({
                         <span
                           className={
                             row.source === 'current'
-                              ? 'source-chip current'
+                              ? (
+                                  row.raw?.projectCompleted
+                                    ? 'source-chip completed'
+                                    : 'source-chip current'
+                                )
                               : 'source-chip bid'
                           }
                         >
@@ -1930,6 +2044,10 @@ export default function ProjectBillingPivot({
                       <ProjectMeta
                         row={row}
                       />
+                    </td>
+
+                    <td className="pivot-project-values-column">
+                      <ProjectValuesCell row={row} />
                     </td>
 
                     <td className="pivot-gc-column">

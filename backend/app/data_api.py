@@ -1622,7 +1622,7 @@ def get_current_projected_billings() -> list[dict]:
     operation = "Current Project projected billings"
 
     response = _get_service_response(
-        "/v1/bid-log/current-projects",
+        "/v1/bid-log/current-projects?includeCompletedBilling=true",
         operation=operation,
     )
 
@@ -1644,6 +1644,7 @@ def get_current_project_monthly(
         (
             "/v1/bid-log/current-projects/"
             f"{job_list_id}/monthly"
+            "?includeCompletedBilling=true"
         ),
         operation=operation,
         resource_not_found=True,
@@ -2939,7 +2940,7 @@ def get_current_projects_monthly_bulk() -> dict:
     )
 
     response = _get_service_response(
-        "/v1/bid-log/current-projects/monthly",
+        "/v1/bid-log/current-projects/monthly?includeCompletedBilling=true",
         operation=operation,
     )
 

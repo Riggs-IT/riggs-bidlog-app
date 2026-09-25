@@ -1743,6 +1743,8 @@ def completed_project_directory_proxy(
                 "effectiveStartDate": row.get("resolvedStartDate"),
                 "projectedCompletionDate": row.get("resolvedEndDate"),
                 "originalContractAmount": row.get("contractAmount"),
+                "squareFootage": row.get("squareFootage"),
+                "cubicYards": row.get("cubicYards"),
                 "projectCompleted": True,
                 "dateCompleted": (
                     row.get("operationsCompletionDate")

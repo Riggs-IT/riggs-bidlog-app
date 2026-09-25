@@ -162,6 +162,17 @@ function dateLabel(value) {
 }
 
 
+function quantityLabel(value) {
+  const number = Number(value);
+
+  if (!Number.isFinite(number) || number <= 0) {
+    return '—';
+  }
+
+  return Math.round(number).toLocaleString('en-US');
+}
+
+
 function sortedUnique(items, selector) {
   return [
     ...new Set(
@@ -183,13 +194,27 @@ function sortedUnique(items, selector) {
 }
 
 
+
 function matchesSearch(project, search) {
-  const term = String(search || '')
-    .trim()
-    .toLowerCase();
+  const raw = String(search || '').trim();
+  const term = raw.toLowerCase();
 
   if (!term) {
     return true;
+  }
+
+  const jobTokens = raw
+    .split(/[\s,;]+/)
+    .map(token => token.trim())
+    .filter(Boolean);
+
+  if (
+    jobTokens.length >= 2
+    && jobTokens.every(token => /^\d+$/.test(token))
+  ) {
+    return jobTokens.includes(
+      String(project.jobNumber || '').trim()
+    );
   }
 
   return [
@@ -789,6 +814,14 @@ export default function ActiveProjectsWorkspace({
             aValue = a.originalContractAmount;
             bValue = b.originalContractAmount;
             break;
+          case 'squareFootage':
+            aValue = a.squareFootage;
+            bValue = b.squareFootage;
+            break;
+          case 'cubicYards':
+            aValue = a.cubicYards;
+            bValue = b.cubicYards;
+            break;
           case 'job':
           default:
             aValue = a.jobNumber;
@@ -1035,7 +1068,7 @@ export default function ActiveProjectsWorkspace({
             <input
               type="search"
               value={search}
-              placeholder="Job #, project, GC, team, location…"
+              placeholder="Job #s, project, GC, team, location…"
               onChange={event => setSearch(event.target.value)}
             />
           </label>
@@ -1223,6 +1256,22 @@ export default function ActiveProjectsWorkspace({
                   onSort={changeSort}
                   className="numeric"
                 />
+                <SortHeader
+                  label="SF"
+                  sortKey="squareFootage"
+                  type="number"
+                  sortState={sortState}
+                  onSort={changeSort}
+                  className="numeric"
+                />
+                <SortHeader
+                  label="CY"
+                  sortKey="cubicYards"
+                  type="number"
+                  sortState={sortState}
+                  onSort={changeSort}
+                  className="numeric"
+                />
               </tr>
             </thead>
 
@@ -1299,12 +1348,20 @@ export default function ActiveProjectsWorkspace({
                   <td className="numeric active-project-contract-cell">
                     <MoneyValue value={project.originalContractAmount} />
                   </td>
+
+                  <td className="numeric active-project-quantity-cell">
+                    {quantityLabel(project.squareFootage)}
+                  </td>
+
+                  <td className="numeric active-project-quantity-cell">
+                    {quantityLabel(project.cubicYards)}
+                  </td>
                 </tr>
               ))}
 
               {!loading && !filteredItems.length && (
                 <tr>
-                  <td colSpan="10" className="empty-cell">
+                  <td colSpan="12" className="empty-cell">
                     No projects match the current filters.
                   </td>
                 </tr>
@@ -1312,7 +1369,7 @@ export default function ActiveProjectsWorkspace({
 
               {loading && (
                 <tr>
-                  <td colSpan="10" className="empty-cell">
+                  <td colSpan="12" className="empty-cell">
                     Loading projects…
                   </td>
                 </tr>
