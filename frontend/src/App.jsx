@@ -1223,6 +1223,80 @@ function sortedUnique(
 }
 
 
+function projectStaffOptions(
+  rows,
+  field,
+) {
+  return sortedUnique(
+    rows.map(
+      row =>
+        row[field]
+    )
+  );
+}
+
+
+function historicalLastOptions(
+  options,
+  historicalValues,
+) {
+  return [
+    ...options.filter(
+      value =>
+        !historicalValues.has(value)
+    ),
+    ...options.filter(
+      value =>
+        historicalValues.has(value)
+    ),
+  ];
+}
+
+
+function historicalProjectStaffOptions(
+  rows,
+  field,
+  separatedField,
+) {
+  const currentValues =
+    new Set();
+
+  const historicalValues =
+    new Set();
+
+  const separatedValues =
+    new Set();
+
+  for (const row of rows) {
+    const value = row[field];
+
+    if (!value) {
+      continue;
+    }
+
+    if (row[separatedField] === true) {
+      separatedValues.add(value);
+      historicalValues.add(value);
+      continue;
+    }
+
+    if (row.projectCompleted) {
+      historicalValues.add(value);
+    } else {
+      currentValues.add(value);
+    }
+  }
+
+  for (const value of currentValues) {
+    if (!separatedValues.has(value)) {
+      historicalValues.delete(value);
+    }
+  }
+
+  return historicalValues;
+}
+
+
 function booleanFilterMatch(
   value,
   filter,
@@ -3652,6 +3726,52 @@ export default function App() {
   }
 
 
+  const staffContextCurrentProjects =
+    useMemo(
+      () => {
+        if (
+          !includeActiveProjects
+          || !rangeValid
+        ) {
+          return [];
+        }
+
+        return currentProjects.filter(
+          row => {
+            if (!row.projectCompleted) {
+              return true;
+            }
+
+            const monthly =
+              aggregateCurrentMonthly(
+                currentMonthly.get(
+                  row.jobListId
+                ),
+                fromMonth,
+                throughMonth,
+              );
+
+            return (
+              Math.abs(
+                toNumber(
+                  monthly.actual
+                )
+              ) > 0.000001
+            );
+          }
+        );
+      },
+      [
+        includeActiveProjects,
+        rangeValid,
+        currentProjects,
+        currentMonthly,
+        fromMonth,
+        throughMonth,
+      ],
+    );
+
+
   const pmOptions =
     useMemo(
       () => {
@@ -3661,7 +3781,7 @@ export default function App() {
           includeActiveProjects
         ) {
           values.push(
-            ...currentProjects.map(
+            ...staffContextCurrentProjects.map(
               row =>
                 pmKey(
                   row.pm
@@ -3691,7 +3811,80 @@ export default function App() {
       [
         includeActiveProjects,
         includeBids,
-        currentProjects,
+        staffContextCurrentProjects,
+        selectedBidSourceRows,
+      ],
+    );
+
+
+  const historicalPmOptions =
+    useMemo(
+      () => {
+        const currentValues =
+          new Set();
+
+        const historicalValues =
+          new Set();
+
+        const separatedValues =
+          new Set();
+
+        for (
+          const row
+          of staffContextCurrentProjects
+        ) {
+          const value =
+            pmKey(row.pm);
+
+          if (value === UNASSIGNED) {
+            continue;
+          }
+
+          if (row.pmSeparated === true) {
+            separatedValues.add(value);
+            historicalValues.add(value);
+            continue;
+          }
+
+          if (row.projectCompleted) {
+            historicalValues.add(value);
+          } else {
+            currentValues.add(value);
+          }
+        }
+
+        if (includeBids) {
+          for (
+            const row
+            of selectedBidSourceRows
+          ) {
+            const value =
+              pmKey(row.pm);
+
+            if (value === UNASSIGNED) {
+              continue;
+            }
+
+            if (row.pmSeparated === true) {
+              separatedValues.add(value);
+              historicalValues.add(value);
+            } else {
+              currentValues.add(value);
+            }
+          }
+        }
+
+        for (const value of currentValues) {
+          if (!separatedValues.has(value)) {
+            historicalValues.delete(value);
+          }
+        }
+
+        return historicalValues;
+      },
+      [
+        staffContextCurrentProjects,
+        includeBids,
         selectedBidSourceRows,
       ],
     );
@@ -3785,40 +3978,133 @@ export default function App() {
   const peOptions =
     useMemo(
       () =>
-        sortedUnique(
-          currentProjects.map(
-            row =>
-              row.pe
-          )
+        projectStaffOptions(
+          staffContextCurrentProjects,
+          'pe'
         ),
-      [currentProjects],
+      [staffContextCurrentProjects],
+    );
+
+
+  const historicalPeOptions =
+    useMemo(
+      () =>
+        historicalProjectStaffOptions(
+          staffContextCurrentProjects,
+          'pe',
+          'peSeparated',
+        ),
+      [staffContextCurrentProjects],
     );
 
 
   const superintendentOptions =
     useMemo(
       () =>
-        sortedUnique(
-          currentProjects.map(
-            row =>
-              row.superintendent
-          )
+        projectStaffOptions(
+          staffContextCurrentProjects,
+          'superintendent'
         ),
-      [currentProjects],
+      [staffContextCurrentProjects],
+    );
+
+
+  const historicalSuperintendentOptions =
+    useMemo(
+      () =>
+        historicalProjectStaffOptions(
+          staffContextCurrentProjects,
+          'superintendent',
+          'superintendentSeparated',
+        ),
+      [staffContextCurrentProjects],
     );
 
 
   const apmOptions =
     useMemo(
       () =>
-        sortedUnique(
-          currentProjects.map(
-            row =>
-              row.apm
-          )
+        projectStaffOptions(
+          staffContextCurrentProjects,
+          'apm'
         ),
-      [currentProjects],
+      [staffContextCurrentProjects],
     );
+
+
+  const historicalApmOptions =
+    useMemo(
+      () =>
+        historicalProjectStaffOptions(
+          staffContextCurrentProjects,
+          'apm',
+          'apmSeparated',
+        ),
+      [staffContextCurrentProjects],
+    );
+
+
+  useEffect(
+    () => {
+      if (
+        pmFilter !== ALL
+        && !pmOptions.includes(
+          pmFilter
+        )
+      ) {
+        setPmFilter(ALL);
+      }
+    },
+    [pmFilter, pmOptions],
+  );
+
+
+  useEffect(
+    () => {
+      if (
+        peFilter !== ALL
+        && !peOptions.includes(
+          peFilter
+        )
+      ) {
+        setPeFilter(ALL);
+      }
+    },
+    [peFilter, peOptions],
+  );
+
+
+  useEffect(
+    () => {
+      if (
+        superintendentFilter !== ALL
+        && !superintendentOptions.includes(
+          superintendentFilter
+        )
+      ) {
+        setSuperintendentFilter(ALL);
+      }
+    },
+    [
+      superintendentFilter,
+      superintendentOptions,
+    ],
+  );
+
+
+  useEffect(
+    () => {
+      if (
+        apmFilter !== ALL
+        && !apmOptions.includes(
+          apmFilter
+        )
+      ) {
+        setApmFilter(ALL);
+      }
+    },
+    [apmFilter, apmOptions],
+  );
 
 
   const bidStatusOptions =
@@ -6675,15 +6961,31 @@ export default function App() {
                 All PMs
               </option>
 
-              {pmOptions.map(
-                value => (
-                  <option
-                    key={value}
-                    value={value}
-                  >
-                    {pmLabel(value)}
-                  </option>
-                )
+              {historicalLastOptions(
+                pmOptions,
+                historicalPmOptions,
+              ).map(
+                value => {
+                  const historical =
+                    historicalPmOptions.has(value);
+
+                  return (
+                    <option
+                      key={value}
+                      value={value}
+                      style={
+                        historical
+                          ? { color: 'var(--warning)' }
+                          : undefined
+                      }
+                    >
+                      {pmLabel(value)}
+                      {historical
+                        ? ' · Historical'
+                        : ''}
+                    </option>
+                  );
+                }
               )}
             </SelectField>
 
@@ -6856,15 +7158,31 @@ export default function App() {
                         All PEs
                       </option>
 
-                      {peOptions.map(
-                        value => (
-                          <option
-                            key={value}
-                            value={value}
-                          >
-                            {value}
-                          </option>
-                        )
+                      {historicalLastOptions(
+                        peOptions,
+                        historicalPeOptions,
+                      ).map(
+                        value => {
+                          const historical =
+                            historicalPeOptions.has(value);
+
+                          return (
+                            <option
+                              key={value}
+                              value={value}
+                              style={
+                                historical
+                                  ? { color: 'var(--warning)' }
+                                  : undefined
+                              }
+                            >
+                              {value}
+                              {historical
+                                ? ' · Historical'
+                                : ''}
+                            </option>
+                          );
+                        }
                       )}
                     </SelectField>
 
@@ -6877,15 +7195,31 @@ export default function App() {
                         All Superintendents
                       </option>
 
-                      {superintendentOptions.map(
-                        value => (
-                          <option
-                            key={value}
-                            value={value}
-                          >
-                            {value}
-                          </option>
-                        )
+                      {historicalLastOptions(
+                        superintendentOptions,
+                        historicalSuperintendentOptions,
+                      ).map(
+                        value => {
+                          const historical =
+                            historicalSuperintendentOptions.has(value);
+
+                          return (
+                            <option
+                              key={value}
+                              value={value}
+                              style={
+                                historical
+                                  ? { color: 'var(--warning)' }
+                                  : undefined
+                              }
+                            >
+                              {value}
+                              {historical
+                                ? ' · Historical'
+                                : ''}
+                            </option>
+                          );
+                        }
                       )}
                     </SelectField>
 
@@ -6898,15 +7232,31 @@ export default function App() {
                         All APMs
                       </option>
 
-                      {apmOptions.map(
-                        value => (
-                          <option
-                            key={value}
-                            value={value}
-                          >
-                            {value}
-                          </option>
-                        )
+                      {historicalLastOptions(
+                        apmOptions,
+                        historicalApmOptions,
+                      ).map(
+                        value => {
+                          const historical =
+                            historicalApmOptions.has(value);
+
+                          return (
+                            <option
+                              key={value}
+                              value={value}
+                              style={
+                                historical
+                                  ? { color: 'var(--warning)' }
+                                  : undefined
+                              }
+                            >
+                              {value}
+                              {historical
+                                ? ' · Historical'
+                                : ''}
+                            </option>
+                          );
+                        }
                       )}
                     </SelectField>
 
@@ -7226,15 +7576,31 @@ export default function App() {
                         All PMs
                       </option>
 
-                      {pmOptions.map(
-                        value => (
-                          <option
-                            key={value}
-                            value={value}
-                          >
-                            {pmLabel(value)}
-                          </option>
-                        )
+                      {historicalLastOptions(
+                        pmOptions,
+                        historicalPmOptions,
+                      ).map(
+                        value => {
+                          const historical =
+                            historicalPmOptions.has(value);
+
+                          return (
+                            <option
+                              key={value}
+                              value={value}
+                              style={
+                                historical
+                                  ? { color: 'var(--warning)' }
+                                  : undefined
+                              }
+                            >
+                              {pmLabel(value)}
+                              {historical
+                                ? ' · Historical'
+                                : ''}
+                            </option>
+                          );
+                        }
                       )}
                     </SelectField>
 
@@ -7378,15 +7744,31 @@ export default function App() {
                           All PEs
                         </option>
 
-                        {peOptions.map(
-                          value => (
-                            <option
-                              key={value}
-                              value={value}
-                            >
-                              {value}
-                            </option>
-                          )
+                        {historicalLastOptions(
+                          peOptions,
+                          historicalPeOptions,
+                        ).map(
+                          value => {
+                            const historical =
+                              historicalPeOptions.has(value);
+
+                            return (
+                              <option
+                                key={value}
+                                value={value}
+                                style={
+                                  historical
+                                    ? { color: 'var(--warning)' }
+                                    : undefined
+                                }
+                              >
+                                {value}
+                                {historical
+                                  ? ' · Historical'
+                                  : ''}
+                              </option>
+                            );
+                          }
                         )}
                       </SelectField>
 
@@ -7399,15 +7781,31 @@ export default function App() {
                           All Superintendents
                         </option>
 
-                        {superintendentOptions.map(
-                          value => (
-                            <option
-                              key={value}
-                              value={value}
-                            >
-                              {value}
-                            </option>
-                          )
+                        {historicalLastOptions(
+                          superintendentOptions,
+                          historicalSuperintendentOptions,
+                        ).map(
+                          value => {
+                            const historical =
+                              historicalSuperintendentOptions.has(value);
+
+                            return (
+                              <option
+                                key={value}
+                                value={value}
+                                style={
+                                  historical
+                                    ? { color: 'var(--warning)' }
+                                    : undefined
+                                }
+                              >
+                                {value}
+                                {historical
+                                  ? ' · Historical'
+                                  : ''}
+                              </option>
+                            );
+                          }
                         )}
                       </SelectField>
 
@@ -7420,15 +7818,31 @@ export default function App() {
                           All APMs
                         </option>
 
-                        {apmOptions.map(
-                          value => (
-                            <option
-                              key={value}
-                              value={value}
-                            >
-                              {value}
-                            </option>
-                          )
+                        {historicalLastOptions(
+                          apmOptions,
+                          historicalApmOptions,
+                        ).map(
+                          value => {
+                            const historical =
+                              historicalApmOptions.has(value);
+
+                            return (
+                              <option
+                                key={value}
+                                value={value}
+                                style={
+                                  historical
+                                    ? { color: 'var(--warning)' }
+                                    : undefined
+                                }
+                              >
+                                {value}
+                                {historical
+                                  ? ' · Historical'
+                                  : ''}
+                              </option>
+                            );
+                          }
                         )}
                       </SelectField>
 
