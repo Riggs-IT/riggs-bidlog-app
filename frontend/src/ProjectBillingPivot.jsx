@@ -5,7 +5,7 @@ import {
 } from 'react';
 
 import useStickyTableHeader from './useStickyTableHeader.js';
-import { ProjectTeamCell } from './BillingDisplay.jsx';
+import { ProjectTeamBadges } from './BillingDisplay.jsx';
 import {
   GeneralContractorDisplay,
   generalContractorDisplayText,
@@ -546,7 +546,10 @@ function ProjectMeta({
   return (
     <div className="pivot-project-info">
       <div className="pivot-project-name-line">
-        <strong className="pivot-project-name">
+        <strong
+          className="pivot-project-name"
+          title={row.name}
+        >
           {row.name}
         </strong>
 
@@ -557,29 +560,33 @@ function ProjectMeta({
         )}
       </div>
 
-      <div
-        className="pivot-project-pm-line"
-        title={`PM: ${row.pmName}`}
-      >
-        <span
-          className="pivot-pm-color-dot"
-          style={{
-            backgroundColor:
-              normalizedPmColor(
-                row.pmHexColor
-              ),
-          }}
-          aria-hidden="true"
-        />
-
-        <span className="pivot-project-role-label">
-          PM
-        </span>
-
-        <span className="pivot-pm-initials">
-          {row.pmInitials}
-        </span>
-      </div>
+      <ProjectTeamBadges
+        compact
+        pm={row.pmName}
+        pmInitials={row.pmInitials}
+        pmHexColor={row.pmHexColor}
+        pe={
+          row.source === 'current'
+            ? row.raw?.pe
+            : null
+        }
+        peInitials={row.raw?.peInitials}
+        peHexColor={row.raw?.peHexColor}
+        apm={
+          row.source === 'current'
+            ? row.raw?.apm
+            : null
+        }
+        apmInitials={row.raw?.apmInitials}
+        apmHexColor={row.raw?.apmHexColor}
+        superintendent={
+          row.source === 'current'
+            ? row.raw?.superintendent
+            : null
+        }
+        superintendentInitials={row.raw?.superintendentInitials}
+        superintendentHexColor={row.raw?.superintendentHexColor}
+      />
 
       {!!row.contextItems?.length && (
         <div className="pivot-project-context-line">
@@ -1103,6 +1110,9 @@ export default function ProjectBillingPivot({
   const showPotentialOnly =
     includeBids
     && !includeActiveProjects;
+
+  const showProbabilityColumn =
+    includeBids;
 
   const sourceModeClass =
     showCombinedSources
@@ -1839,6 +1849,18 @@ export default function ProjectBillingPivot({
                 className="pivot-project-column"
               />
 
+              {showProbabilityColumn && (
+                <PivotSortHeader
+                  label="Probability"
+                  sortKey="probability"
+                  sortState={sortState}
+                  onSort={toggleSort}
+                  firstDirection="desc"
+                  className="pivot-probability-column"
+                  numeric
+                />
+              )}
+
               <th className="pivot-project-values-column">
                 Project Values
               </th>
@@ -1851,27 +1873,6 @@ export default function ProjectBillingPivot({
                 className="pivot-gc-column"
               />
 
-              {showPotentialOnly && (
-                <PivotSortHeader
-                  label="Probability"
-                  sortKey="probability"
-                  sortState={sortState}
-                  onSort={toggleSort}
-                  firstDirection="desc"
-                  className="pivot-probability-column"
-                  numeric
-                />
-              )}
-
-              {includeActiveProjects && (
-                <PivotSortHeader
-                  label="Team"
-                  sortKey="team"
-                  sortState={sortState}
-                  onSort={toggleSort}
-                  className="pivot-team-column"
-                />
-              )}
 
               {months.map(
                 (
@@ -2046,6 +2047,15 @@ export default function ProjectBillingPivot({
                       />
                     </td>
 
+                    {showProbabilityColumn && (
+                      <td className="numeric pivot-probability-column">
+                        {row.raw?.probability === null
+                          || row.raw?.probability === undefined
+                            ? '—'
+                            : `${Math.round(Number(row.raw.probability) * 100)}%`}
+                      </td>
+                    )}
+
                     <td className="pivot-project-values-column">
                       <ProjectValuesCell row={row} />
                     </td>
@@ -2060,36 +2070,6 @@ export default function ProjectBillingPivot({
                       />
                     </td>
 
-                    {showPotentialOnly && (
-                      <td className="numeric pivot-probability-column">
-                        {row.raw?.probability === null
-                          || row.raw?.probability === undefined
-                            ? '—'
-                            : `${Math.round(Number(row.raw.probability) * 100)}%`}
-                      </td>
-                    )}
-
-                    {includeActiveProjects && (
-                      <td className="pivot-team-column">
-                        <ProjectTeamCell
-                          pe={
-                            row.source === 'current'
-                              ? row.raw?.pe
-                              : null
-                          }
-                          superintendent={
-                            row.source === 'current'
-                              ? row.raw?.superintendent
-                              : null
-                          }
-                          apm={
-                            row.source === 'current'
-                              ? row.raw?.apm
-                              : null
-                          }
-                        />
-                      </td>
-                    )}
 
                     {row.cells.map(
                       cell => (
@@ -2127,10 +2107,10 @@ export default function ProjectBillingPivot({
                   className="empty-cell"
                   colSpan={
                     months.length
-                    + 3
+                    + 4
                     + (showCombinedSources ? 1 : 0)
-                    + (includeActiveProjects ? 2 : 0)
-                    + (showPotentialOnly ? 1 : 0)
+                    + (includeActiveProjects ? 1 : 0)
+                    + (showProbabilityColumn ? 1 : 0)
                   }
                 >
                   No projects match the selected filters.

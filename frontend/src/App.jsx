@@ -23,7 +23,7 @@ import ActiveBidBillingDrawer from './ActiveBidBillingDrawer.jsx';
 import ProjectBillingPivot from './ProjectBillingPivot.jsx';
 import useStickyTableHeader from './useStickyTableHeader.js';
 import {
-  ProjectTeamCell,
+  ProjectTeamBadges,
   retentionLabel,
 } from './BillingDisplay.jsx';
 import {
@@ -1895,7 +1895,7 @@ export default function App() {
   const [
     monthlyComparisonView,
     setMonthlyComparisonView,
-  ] = useState('month');
+  ] = useState('project');
 
   const monthlySummaryTableRef =
     useStickyTableHeader(
@@ -1946,7 +1946,10 @@ export default function App() {
     fromMonth,
     setFromMonth,
   ] = useState(
-    todayMonth
+    addMonths(
+      todayMonth,
+      -1,
+    )
   );
 
   const [
@@ -1955,7 +1958,7 @@ export default function App() {
   ] = useState(
     addMonths(
       todayMonth,
-      11,
+      10,
     )
   );
 
@@ -3569,6 +3572,9 @@ export default function App() {
     includeBids
     && !includeActiveProjects;
 
+  const showProbabilityColumn =
+    includeBids;
+
   const showActiveOnly =
     includeActiveProjects
     && !includeBids;
@@ -3589,7 +3595,7 @@ export default function App() {
     + 1
     + 1
     + (includeActiveProjects ? 1 : 0)
-    + (showPotentialOnly ? 1 : 0)
+    + (showProbabilityColumn ? 1 : 0)
     + 1
     + (includeActiveProjects ? 1 : 0)
     + (includeActiveProjects && isAdmin ? 1 : 0)
@@ -3604,7 +3610,7 @@ export default function App() {
     + (includeActiveProjects ? 1 : 0)
     + 1
     + 2
-    + (showPotentialOnly ? 1 : 0)
+    + (showProbabilityColumn ? 1 : 0)
     + (includeActiveProjects ? 1 : 0)
     + 1
     + (includeActiveProjects ? 1 : 0)
@@ -5352,27 +5358,35 @@ export default function App() {
             }
 
             if (key === 'team') {
-              const aTeam =
+              const aTeam = [
+                a.pm,
                 a.source === 'Current Project'
-                  ? [
-                      a.raw?.pe,
-                      a.raw?.superintendent,
-                      a.raw?.apm,
-                    ]
-                      .filter(Boolean)
-                      .join(' ')
-                  : '';
+                  ? a.raw?.pe
+                  : null,
+                a.source === 'Current Project'
+                  ? a.raw?.apm
+                  : null,
+                a.source === 'Current Project'
+                  ? a.raw?.superintendent
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(' ');
 
-              const bTeam =
+              const bTeam = [
+                b.pm,
                 b.source === 'Current Project'
-                  ? [
-                      b.raw?.pe,
-                      b.raw?.superintendent,
-                      b.raw?.apm,
-                    ]
-                      .filter(Boolean)
-                      .join(' ')
-                  : '';
+                  ? b.raw?.pe
+                  : null,
+                b.source === 'Current Project'
+                  ? b.raw?.apm
+                  : null,
+                b.source === 'Current Project'
+                  ? b.raw?.superintendent
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(' ');
 
               return textCompare(
                 aTeam,
@@ -5728,6 +5742,45 @@ export default function App() {
                 compareText(
                   a.pmInitials,
                   b.pmInitials,
+                );
+
+            } else if (
+              sortKey === 'team'
+            ) {
+              const aTeam = [
+                a.pm,
+                a.source === 'Current Project'
+                  ? a.raw?.pe
+                  : null,
+                a.source === 'Current Project'
+                  ? a.raw?.apm
+                  : null,
+                a.source === 'Current Project'
+                  ? a.raw?.superintendent
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(' ');
+
+              const bTeam = [
+                b.pm,
+                b.source === 'Current Project'
+                  ? b.raw?.pe
+                  : null,
+                b.source === 'Current Project'
+                  ? b.raw?.apm
+                  : null,
+                b.source === 'Current Project'
+                  ? b.raw?.superintendent
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(' ');
+
+              result =
+                compareText(
+                  aTeam,
+                  bTeam,
                 );
 
             } else if (
@@ -6479,6 +6532,18 @@ export default function App() {
     setStateFilter(ALL);
     setIsNewBidFilter(ALL);
     setSnoozedFilter(ALL);
+    setFromMonth(
+      addMonths(
+        todayMonth,
+        -1,
+      )
+    );
+    setThroughMonth(
+      addMonths(
+        todayMonth,
+        10,
+      )
+    );
   }
 
 
@@ -6841,28 +6906,54 @@ export default function App() {
         && canViewProjectedBillings
       ) ? (
       <main className="page-shell">
-        <div className="page-heading">
-          <div>
-            <div className="eyebrow">
-              PROJECTED BILLINGS
+        <div className="page-heading projected-page-heading">
+          <h1>
+            Projected Billings
+          </h1>
+
+          <div className="projected-heading-controls">
+            <div
+              className="source-toggles projected-heading-source-toggles"
+              aria-label="Projected billing sources"
+            >
+              <button
+                type="button"
+                aria-pressed={bidScope === 'potential'}
+                className={
+                  bidScope === 'potential'
+                    ? 'active'
+                    : ''
+                }
+                onClick={() => toggleBidScope('potential')}
+              >
+                <span className="toggle-label">
+                  <strong>Potential Projects</strong>
+                  <small>
+                    {Math.round(potentialProbabilityPercent)}%+ · {potentialBidCount}
+                  </small>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                aria-pressed={includeActiveProjects}
+                className={
+                  includeActiveProjects
+                    ? 'active'
+                    : ''
+                }
+                onClick={toggleActiveProjects}
+              >
+                <span className="toggle-label">
+                  <strong>Projects</strong>
+                  <small>{currentProjects.length} projects</small>
+                </span>
+              </button>
             </div>
 
-            <h1>
-              Projected Billings
-            </h1>
-
-            <p>
-              Review active projects, completed projects with Foundation billing
-              activity in the selected range, and high-probability potential projects.
-              Projected billings update to the selected sources and month range,
-              while Foundation actual billings remain separate.
-            </p>
-          </div>
-
-          <div className="heading-actions">
             <button
               type="button"
-              className="secondary-button"
+              className="secondary-button projected-export-button"
               onClick={exportCurrentView}
               disabled={
                 dataLoading
@@ -6874,54 +6965,6 @@ export default function App() {
             </button>
           </div>
         </div>
-
-
-        <section className="source-selector" aria-label="Projected billing sources">
-          <div className="source-selector-copy">
-            <span>SHOW IN PROJECTED BILLINGS</span>
-            <small>
-              Controls the entire page — totals, By Month, By Project,
-              and the breakdown below.
-            </small>
-          </div>
-
-          <div className="source-toggles">
-            <button
-              type="button"
-              aria-pressed={bidScope === 'potential'}
-              className={
-                bidScope === 'potential'
-                  ? 'active'
-                  : ''
-              }
-              onClick={() => toggleBidScope('potential')}
-            >
-              <span className="toggle-label">
-                <strong>Potential Projects</strong>
-                <small>
-                  {Math.round(potentialProbabilityPercent)}%+ · {potentialBidCount} projects
-                </small>
-              </span>
-            </button>
-
-
-            <button
-              type="button"
-              aria-pressed={includeActiveProjects}
-              className={
-                includeActiveProjects
-                  ? 'active'
-                  : ''
-              }
-              onClick={toggleActiveProjects}
-            >
-              <span className="toggle-label">
-                <strong>Projects</strong>
-                <small>{currentProjects.length} projects</small>
-              </span>
-            </button>
-          </div>
-        </section>
 
 
         {dataError && (
@@ -6941,7 +6984,7 @@ export default function App() {
 
 
         <section
-          className="filter-panel"
+          className="filter-panel projected-filter-panel"
           ref={mainFiltersRef}
         >
           <div className="filter-grid primary-filters">
@@ -8454,30 +8497,7 @@ export default function App() {
                                           onSort={toggleMonthDetailSort}
                                         />
 
-                                        <SortHeader
-                                          label="GC"
-                                          sortKey="gc"
-                                          currentSort={monthDetailSort}
-                                          onSort={toggleMonthDetailSort}
-                                        />
-
-                                        <SortHeader
-                                          label="PM"
-                                          sortKey="pm"
-                                          currentSort={monthDetailSort}
-                                          onSort={toggleMonthDetailSort}
-                                        />
-
-                                        {includeActiveProjects && (
-                                          <SortHeader
-                                            label="Team"
-                                            sortKey="team"
-                                            currentSort={monthDetailSort}
-                                            onSort={toggleMonthDetailSort}
-                                          />
-                                        )}
-
-                                        {showPotentialOnly && (
+                                        {showProbabilityColumn && (
                                           <SortHeader
                                             label="Probability"
                                             sortKey="probability"
@@ -8487,6 +8507,20 @@ export default function App() {
                                             numeric
                                           />
                                         )}
+
+                                        <SortHeader
+                                          label="GC"
+                                          sortKey="gc"
+                                          currentSort={monthDetailSort}
+                                          onSort={toggleMonthDetailSort}
+                                        />
+
+                                        <SortHeader
+                                          label="Team"
+                                          sortKey="team"
+                                          currentSort={monthDetailSort}
+                                          onSort={toggleMonthDetailSort}
+                                        />
 
                                         <SortHeader
                                           label="Projected"
@@ -8592,7 +8626,10 @@ export default function App() {
 
                                               <td className="project-cell">
                                                 <div className="project-name-status-line">
-                                                  <strong>
+                                                  <strong
+                                                    className="project-title-ellipsis"
+                                                    title={displayValue(detail.name)}
+                                                  >
                                                     {displayValue(
                                                       detail.name
                                                     )}
@@ -8611,46 +8648,7 @@ export default function App() {
                                                 </span>
                                               </td>
 
-                                          <td className="gc-table-cell">
-                                            <GeneralContractorDisplay
-                                              value={
-                                                detail.raw?.generalContractors
-                                                || detail.raw?.gc
-                                              }
-                                              compact
-                                            />
-                                          </td>
-
-                                              <td>
-                                                <PMInitialsBadge
-                                                  initials={detail.pmInitials}
-                                                  hexColor={detail.pmHexColor}
-                                                />
-                                              </td>
-
-                                              {includeActiveProjects && (
-                                                <td className="project-team-column">
-                                                  <ProjectTeamCell
-                                                    pe={
-                                                      detail.source === 'Current Project'
-                                                        ? detail.raw?.pe
-                                                        : null
-                                                    }
-                                                    superintendent={
-                                                      detail.source === 'Current Project'
-                                                        ? detail.raw?.superintendent
-                                                        : null
-                                                    }
-                                                    apm={
-                                                      detail.source === 'Current Project'
-                                                        ? detail.raw?.apm
-                                                        : null
-                                                    }
-                                                  />
-                                                </td>
-                                              )}
-
-                                              {showPotentialOnly && (
+                                              {showProbabilityColumn && (
                                                 <td className="numeric">
                                                   {detail.probability === null
                                                     || detail.probability === undefined
@@ -8658,6 +8656,45 @@ export default function App() {
                                                       : `${Math.round(Number(detail.probability) * 100)}%`}
                                                 </td>
                                               )}
+
+                                              <td className="gc-table-cell">
+                                                <GeneralContractorDisplay
+                                                  value={
+                                                    detail.raw?.generalContractors
+                                                    || detail.raw?.gc
+                                                  }
+                                                  compact
+                                                />
+                                              </td>
+
+                                              <td className="project-team-badge-column">
+                                                <ProjectTeamBadges
+                                                  pm={detail.pm}
+                                                  pmInitials={detail.pmInitials}
+                                                  pmHexColor={detail.pmHexColor}
+                                                  pe={
+                                                    detail.source === 'Current Project'
+                                                      ? detail.raw?.pe
+                                                      : null
+                                                  }
+                                                  peInitials={detail.raw?.peInitials}
+                                                  peHexColor={detail.raw?.peHexColor}
+                                                  apm={
+                                                    detail.source === 'Current Project'
+                                                      ? detail.raw?.apm
+                                                      : null
+                                                  }
+                                                  apmInitials={detail.raw?.apmInitials}
+                                                  apmHexColor={detail.raw?.apmHexColor}
+                                                  superintendent={
+                                                    detail.source === 'Current Project'
+                                                      ? detail.raw?.superintendent
+                                                      : null
+                                                  }
+                                                  superintendentInitials={detail.raw?.superintendentInitials}
+                                                  superintendentHexColor={detail.raw?.superintendentHexColor}
+                                                />
+                                              </td>
 
                                               <td className="numeric strong-cell">
                                                 {currency(
@@ -8889,6 +8926,17 @@ export default function App() {
                     onSort={toggleDetailSort}
                   />
 
+                  {showProbabilityColumn && (
+                    <SortHeader
+                      label="Probability"
+                      sortKey="probability"
+                      currentSort={detailSort}
+                      onSort={toggleDetailSort}
+                      firstDirection="desc"
+                      numeric
+                    />
+                  )}
+
                   <SortHeader
                     label="GC"
                     sortKey="gc"
@@ -8897,17 +8945,11 @@ export default function App() {
                   />
 
                   <SortHeader
-                    label="PM"
-                    sortKey="pm"
+                    label="Team"
+                    sortKey="team"
                     currentSort={detailSort}
                     onSort={toggleDetailSort}
                   />
-
-                  {includeActiveProjects && (
-                    <th className="project-team-column">
-                      Team
-                    </th>
-                  )}
 
                   <SortHeader
                     label="Project Value"
@@ -8935,17 +8977,6 @@ export default function App() {
                     firstDirection="desc"
                     numeric
                   />
-
-                  {showPotentialOnly && (
-                    <SortHeader
-                      label="Probability"
-                      sortKey="probability"
-                      currentSort={detailSort}
-                      onSort={toggleDetailSort}
-                      firstDirection="desc"
-                      numeric
-                    />
-                  )}
 
                   {includeActiveProjects && (
                     <SortHeader
@@ -9072,7 +9103,10 @@ export default function App() {
 
                       <td className="project-cell">
                         <div className="project-name-status-line">
-                          <strong>
+                          <strong
+                            className="project-title-ellipsis"
+                            title={displayValue(row.name)}
+                          >
                             {displayValue(
                               row.name
                             )}
@@ -9090,6 +9124,15 @@ export default function App() {
                         </span>
                       </td>
 
+                      {showProbabilityColumn && (
+                        <td className="numeric">
+                          {row.probability === null
+                            || row.probability === undefined
+                              ? '—'
+                              : `${Math.round(Number(row.probability) * 100)}%`}
+                        </td>
+                      )}
+
                       <td className="gc-table-cell">
                         <GeneralContractorDisplay
                           value={
@@ -9100,34 +9143,34 @@ export default function App() {
                         />
                       </td>
 
-                      <td className="pm-badge-cell">
-                        <PMInitialsBadge
-                          initials={row.pmInitials}
-                          hexColor={row.pmHexColor}
+                      <td className="project-team-badge-column">
+                        <ProjectTeamBadges
+                          pm={row.pm}
+                          pmInitials={row.pmInitials}
+                          pmHexColor={row.pmHexColor}
+                          pe={
+                            row.source === 'Current Project'
+                              ? row.raw?.pe
+                              : null
+                          }
+                          peInitials={row.raw?.peInitials}
+                          peHexColor={row.raw?.peHexColor}
+                          apm={
+                            row.source === 'Current Project'
+                              ? row.raw?.apm
+                              : null
+                          }
+                          apmInitials={row.raw?.apmInitials}
+                          apmHexColor={row.raw?.apmHexColor}
+                          superintendent={
+                            row.source === 'Current Project'
+                              ? row.raw?.superintendent
+                              : null
+                          }
+                          superintendentInitials={row.raw?.superintendentInitials}
+                          superintendentHexColor={row.raw?.superintendentHexColor}
                         />
                       </td>
-
-                      {includeActiveProjects && (
-                        <td className="project-team-column">
-                          <ProjectTeamCell
-                            pe={
-                              row.source === 'Current Project'
-                                ? row.raw?.pe
-                                : null
-                            }
-                            superintendent={
-                              row.source === 'Current Project'
-                                ? row.raw?.superintendent
-                                : null
-                            }
-                            apm={
-                              row.source === 'Current Project'
-                                ? row.raw?.apm
-                                : null
-                            }
-                          />
-                        </td>
-                      )}
 
                       <td className="numeric">
                         {row.projectValue
@@ -9161,15 +9204,6 @@ export default function App() {
                               Number(row.cubicYards)
                             ).toLocaleString('en-US')}
                       </td>
-
-                      {showPotentialOnly && (
-                        <td className="numeric">
-                          {row.probability === null
-                            || row.probability === undefined
-                              ? '—'
-                              : `${Math.round(Number(row.probability) * 100)}%`}
-                        </td>
-                      )}
 
                       {includeActiveProjects && (
                         <td className="project-month-cell">

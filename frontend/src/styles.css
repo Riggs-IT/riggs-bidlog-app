@@ -13543,3 +13543,333 @@ td.pivot-project-column {
   text-transform: uppercase;
   white-space: nowrap;
 }
+
+
+/* ============================================================
+   BRIAN REVIEW - COMPACT BILLING HEADER + TEAM BADGES
+   ============================================================ */
+
+.projected-page-heading {
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.projected-page-heading h1 {
+  margin: 0;
+  font-size: clamp(28px, 2vw, 36px);
+}
+
+.projected-heading-controls {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.projected-heading-source-toggles {
+  flex: 0 1 auto;
+  justify-content: flex-end;
+}
+
+.projected-heading-source-toggles button {
+  min-width: 152px;
+  min-height: 40px;
+  padding: 6px 11px;
+}
+
+.projected-heading-source-toggles .toggle-label strong {
+  font-size: 12px;
+}
+
+.projected-heading-source-toggles .toggle-label small {
+  font-size: 9px;
+}
+
+.projected-export-button {
+  min-height: 40px;
+  white-space: nowrap;
+}
+
+.projected-filter-panel {
+  margin-bottom: 10px;
+  padding: 11px 12px;
+}
+
+.projected-filter-panel .filter-field {
+  gap: 4px;
+}
+
+.projected-filter-panel .filter-field input,
+.projected-filter-panel .filter-field select {
+  min-height: 36px;
+}
+
+.projected-filter-panel .filter-actions button {
+  min-height: 36px;
+}
+
+.project-team-badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 5px;
+  min-width: 0;
+}
+
+.project-team-badge {
+  min-width: 34px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 7px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.project-team-badge strong {
+  color: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.035em;
+}
+
+.project-team-badges.compact {
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.project-team-badges.compact .project-team-badge {
+  min-width: 30px;
+  height: 25px;
+  padding: 0 6px;
+  border-radius: 5px;
+}
+
+.project-team-badges.compact .project-team-badge strong {
+  font-size: 9px;
+}
+
+.project-team-badge-column {
+  width: 205px;
+  min-width: 205px;
+  max-width: 205px;
+}
+
+.pivot-project-info,
+.pivot-project-name-line,
+.project-name-status-line {
+  min-width: 0;
+}
+
+.pivot-project-name-line,
+.project-name-status-line {
+  flex-wrap: nowrap;
+}
+
+.pivot-project-name,
+.project-title-ellipsis {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pivot-project-name {
+  display: block;
+  flex: 1 1 auto;
+}
+
+.project-title-ellipsis {
+  display: block;
+  flex: 1 1 auto;
+  max-width: 100%;
+}
+
+.projected-breakdown-table .project-cell,
+.monthly-project-table .project-cell {
+  width: 280px;
+  min-width: 280px;
+  max-width: 280px;
+}
+
+.project-pivot-table .pivot-probability-column {
+  width: 92px;
+  min-width: 92px;
+  max-width: 92px;
+}
+
+.project-pivot-table.pivot-source-potential
+th.pivot-project-column,
+.project-pivot-table.pivot-source-potential
+td.pivot-project-column,
+.project-pivot-table.pivot-source-combined
+th.pivot-project-column,
+.project-pivot-table.pivot-source-combined
+td.pivot-project-column {
+  border-right: 0;
+  box-shadow: none;
+}
+
+.project-pivot-table.pivot-source-potential
+th.pivot-probability-column,
+.project-pivot-table.pivot-source-potential
+td.pivot-probability-column,
+.project-pivot-table.pivot-source-combined
+th.pivot-probability-column,
+.project-pivot-table.pivot-source-combined
+td.pivot-probability-column {
+  position: sticky;
+  left: 270px;
+  z-index: 5;
+  border-right: 1px solid var(--border-strong);
+  background: var(--surface);
+  background-clip: padding-box;
+  box-shadow: 8px 0 12px rgba(0, 0, 0, 0.14);
+}
+
+.project-pivot-table.pivot-source-combined
+th.pivot-probability-column,
+.project-pivot-table.pivot-source-combined
+td.pivot-probability-column {
+  left: 446px;
+}
+
+.project-pivot-table.pivot-source-potential
+th.pivot-probability-column,
+.project-pivot-table.pivot-source-combined
+th.pivot-probability-column {
+  z-index: 8;
+  background: var(--surface-2);
+}
+
+.project-pivot-table.pivot-source-potential
+.pivot-project-row:hover
+td.pivot-probability-column,
+.project-pivot-table.pivot-source-combined
+.pivot-project-row:hover
+td.pivot-probability-column {
+  background: color-mix(
+    in srgb,
+    var(--surface) 92%,
+    var(--accent) 8%
+  );
+}
+
+.floating-table-header-table
+th.pivot-probability-column {
+  z-index: 12;
+}
+
+.pivot-header-total-values,
+.pivot-header-activity-counts {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+
+.pivot-header-activity-separator {
+  display: none;
+}
+
+@media (max-width: 1100px) {
+  .projected-page-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .projected-heading-controls,
+  .projected-heading-source-toggles {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 760px) {
+  .projected-heading-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .projected-heading-source-toggles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .projected-heading-source-toggles button {
+    min-width: 0;
+  }
+
+  .projected-export-button {
+    width: 100%;
+  }
+
+  .project-pivot-table.pivot-source-potential
+  th.pivot-probability-column,
+  .project-pivot-table.pivot-source-potential
+  td.pivot-probability-column {
+    left: 220px;
+  }
+
+  .project-pivot-table.pivot-source-combined
+  th.pivot-probability-column,
+  .project-pivot-table.pivot-source-combined
+  td.pivot-probability-column {
+    left: 396px;
+  }
+}
+
+
+/* ============================================================
+   BRIAN REVIEW - TEAM BADGES ACROSS PROJECT / BID WORKSPACES
+   ============================================================ */
+
+.active-project-name-line {
+  min-width: 0;
+}
+
+.active-project-name-line .project-title-ellipsis {
+  flex: 1 1 auto;
+}
+
+.active-project-team-cell {
+  width: 205px;
+  min-width: 205px;
+  max-width: 205px;
+}
+
+.completed-project-name {
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
+}
+
+.completed-project-name .project-title-ellipsis {
+  max-width: 100%;
+}
+
+.completed-project-table .project-team-badge-column {
+  width: 205px;
+  min-width: 205px;
+  max-width: 205px;
+}
+
+.bid-log-name-cell {
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
+}
+
+.bid-log-name-line {
+  min-width: 0;
+}
+
+.bid-log-name-line .project-title-ellipsis {
+  flex: 1 1 auto;
+}

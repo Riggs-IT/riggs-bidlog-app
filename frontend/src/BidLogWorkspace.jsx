@@ -168,7 +168,7 @@ function PMInitialsBadge({
   return (
     <span
       className="pm-initials-badge"
-      title={name || 'Project Manager'}
+      title={name ? `PM: ${name}` : 'Project Manager'}
       style={{
         backgroundColor: background,
         color: pmBadgeTextColor(background),
@@ -510,6 +510,21 @@ function sortedUnique(items, selector) {
     (a, b) =>
       a.localeCompare(b),
   );
+}
+
+
+function historicalLastOptions(
+  options,
+  historicalValues,
+) {
+  return [
+    ...options.filter(
+      value => !historicalValues.has(value),
+    ),
+    ...options.filter(
+      value => historicalValues.has(value),
+    ),
+  ];
 }
 
 
@@ -1128,6 +1143,54 @@ export default function BidLogWorkspace({
         row => row.pm,
       ),
     [items],
+  );
+
+
+  const historicalPmOptions = useMemo(
+    () => {
+      const currentKeys = new Set();
+      const separatedKeys = new Set();
+
+      for (const row of pmDirectory) {
+        const name = String(row?.pm || '').trim();
+        const key = pmDirectoryKey(name);
+
+        if (!key) {
+          continue;
+        }
+
+        if (row?.pmSeparated === true) {
+          separatedKeys.add(key);
+          continue;
+        }
+
+        if (row?.projectCompleted !== true) {
+          currentKeys.add(key);
+        }
+      }
+
+      if (activeView) {
+        for (const row of items) {
+          const key = pmDirectoryKey(row?.pm);
+
+          if (key && !separatedKeys.has(key)) {
+            currentKeys.add(key);
+          }
+        }
+      }
+
+      return new Set(
+        pmOptions.filter(option => {
+          const key = pmDirectoryKey(option);
+
+          return (
+            separatedKeys.has(key)
+            || !currentKeys.has(key)
+          );
+        }),
+      );
+    },
+    [activeView, items, pmDirectory, pmOptions],
   );
 
 
@@ -2352,13 +2415,28 @@ export default function BidLogWorkspace({
               onChange={event => setPmFilter(event.target.value)}
             >
               <option value={ALL}>All PMs</option>
-              {pmOptions.map(
-                option => (
-                  <option key={option} value={option}>
+              {historicalLastOptions(
+                pmOptions,
+                historicalPmOptions,
+              ).map(option => {
+                const historical =
+                  historicalPmOptions.has(option);
+
+                return (
+                  <option
+                    key={option}
+                    value={option}
+                    style={
+                      historical
+                        ? { color: 'var(--warning)' }
+                        : undefined
+                    }
+                  >
                     {option}
+                    {historical ? ' · Historical' : ''}
                   </option>
-                ),
-              )}
+                );
+              })}
             </select>
           </label>
 
@@ -2565,7 +2643,12 @@ export default function BidLogWorkspace({
 
                       <td className="bid-log-name-cell">
                         <div className="bid-log-name-line">
-                          <strong>{displayValue(row.bidName)}</strong>
+                          <strong
+                            className="project-title-ellipsis"
+                            title={displayValue(row.bidName)}
+                          >
+                            {displayValue(row.bidName)}
+                          </strong>
                           <button
                             type="button"
                             className={

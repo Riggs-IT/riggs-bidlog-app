@@ -12,7 +12,7 @@ import {
   commercialSourceLabel,
   moneyDifference,
   MoneyValue,
-  ProjectTeamCell,
+  ProjectTeamBadges,
   retentionLabel,
   retentionNumber,
 } from './BillingDisplay.jsx';
@@ -237,6 +237,65 @@ function pmDirectoryKey(value) {
   return String(value || '')
     .trim()
     .toLowerCase();
+}
+
+
+function historicalLastOptions(
+  options,
+  historicalValues,
+) {
+  return [
+    ...options.filter(
+      value => !historicalValues.has(value),
+    ),
+    ...options.filter(
+      value => historicalValues.has(value),
+    ),
+  ];
+}
+
+
+function historicalDirectoryStaffOptions(
+  options,
+  directoryRows,
+  field,
+  separatedField,
+) {
+  const currentKeys = new Set();
+  const separatedKeys = new Set();
+
+  for (const row of directoryRows) {
+    const value = String(row?.[field] || '').trim();
+    const key = pmDirectoryKey(value);
+
+    if (!key) {
+      continue;
+    }
+
+    if (row?.[separatedField] === true) {
+      separatedKeys.add(key);
+      continue;
+    }
+
+    if (row?.projectCompleted !== true) {
+      currentKeys.add(key);
+    }
+  }
+
+  return new Set(
+    options.filter(value => {
+      if (value === UNASSIGNED) {
+        return false;
+      }
+
+      const key = pmDirectoryKey(value);
+
+      return (
+        separatedKeys.has(key)
+        || !currentKeys.has(key)
+      );
+    }),
+  );
 }
 
 
@@ -896,6 +955,50 @@ export default function ProjectAccountability({
   );
 
 
+  const historicalPmOptions = useMemo(
+    () => historicalDirectoryStaffOptions(
+      pmOptions,
+      pmDirectory,
+      'pm',
+      'pmSeparated',
+    ),
+    [pmDirectory, pmOptions],
+  );
+
+
+  const historicalPeOptions = useMemo(
+    () => historicalDirectoryStaffOptions(
+      peOptions,
+      pmDirectory,
+      'pe',
+      'peSeparated',
+    ),
+    [peOptions, pmDirectory],
+  );
+
+
+  const historicalSuperintendentOptions = useMemo(
+    () => historicalDirectoryStaffOptions(
+      superintendentOptions,
+      pmDirectory,
+      'superintendent',
+      'superintendentSeparated',
+    ),
+    [pmDirectory, superintendentOptions],
+  );
+
+
+  const historicalApmOptions = useMemo(
+    () => historicalDirectoryStaffOptions(
+      apmOptions,
+      pmDirectory,
+      'apm',
+      'apmSeparated',
+    ),
+    [apmOptions, pmDirectory],
+  );
+
+
   const gcOptions = useMemo(
     () => [
       ...new Set(
@@ -1432,17 +1535,19 @@ export default function ProjectAccountability({
                 comparison =
                   compareText(
                     [
+                      a.projectManager,
                       a.projectEngineer,
-                      a.superintendent,
                       a.apm,
+                      a.superintendent,
                     ]
                       .filter(Boolean)
                       .join(' '),
 
                     [
+                      b.projectManager,
                       b.projectEngineer,
-                      b.superintendent,
                       b.apm,
+                      b.superintendent,
                     ]
                       .filter(Boolean)
                       .join(' '),
@@ -1796,17 +1901,31 @@ export default function ProjectAccountability({
                 All PMs
               </option>
 
-              {pmOptions.map(
-                value => (
-                  <option
-                    key={value}
-                    value={value}
-                  >
-                    {pmLabel(
-                      value
-                    )}
-                  </option>
-                )
+              {historicalLastOptions(
+                pmOptions,
+                historicalPmOptions,
+              ).map(
+                value => {
+                  const historical =
+                    historicalPmOptions.has(value);
+
+                  return (
+                    <option
+                      key={value}
+                      value={value}
+                      style={
+                        historical
+                          ? { color: 'var(--warning)' }
+                          : undefined
+                      }
+                    >
+                      {pmLabel(value)}
+                      {historical
+                        ? ' · Historical'
+                        : ''}
+                    </option>
+                  );
+                }
               )}
             </select>
           </label>
@@ -1956,15 +2075,31 @@ export default function ProjectAccountability({
                     All PEs
                   </option>
 
-                  {peOptions.map(
-                    value => (
-                      <option
-                        key={value}
-                        value={value}
-                      >
-                        {value}
-                      </option>
-                    )
+                  {historicalLastOptions(
+                    peOptions,
+                    historicalPeOptions,
+                  ).map(
+                    value => {
+                      const historical =
+                        historicalPeOptions.has(value);
+
+                      return (
+                        <option
+                          key={value}
+                          value={value}
+                          style={
+                            historical
+                              ? { color: 'var(--warning)' }
+                              : undefined
+                          }
+                        >
+                          {value}
+                          {historical
+                            ? ' · Historical'
+                            : ''}
+                        </option>
+                      );
+                    }
                   )}
                 </select>
               </label>
@@ -1988,15 +2123,31 @@ export default function ProjectAccountability({
                     All Superintendents
                   </option>
 
-                  {superintendentOptions.map(
-                    value => (
-                      <option
-                        key={value}
-                        value={value}
-                      >
-                        {value}
-                      </option>
-                    )
+                  {historicalLastOptions(
+                    superintendentOptions,
+                    historicalSuperintendentOptions,
+                  ).map(
+                    value => {
+                      const historical =
+                        historicalSuperintendentOptions.has(value);
+
+                      return (
+                        <option
+                          key={value}
+                          value={value}
+                          style={
+                            historical
+                              ? { color: 'var(--warning)' }
+                              : undefined
+                          }
+                        >
+                          {value}
+                          {historical
+                            ? ' · Historical'
+                            : ''}
+                        </option>
+                      );
+                    }
                   )}
                 </select>
               </label>
@@ -2020,15 +2171,31 @@ export default function ProjectAccountability({
                     All APMs
                   </option>
 
-                  {apmOptions.map(
-                    value => (
-                      <option
-                        key={value}
-                        value={value}
-                      >
-                        {value}
-                      </option>
-                    )
+                  {historicalLastOptions(
+                    apmOptions,
+                    historicalApmOptions,
+                  ).map(
+                    value => {
+                      const historical =
+                        historicalApmOptions.has(value);
+
+                      return (
+                        <option
+                          key={value}
+                          value={value}
+                          style={
+                            historical
+                              ? { color: 'var(--warning)' }
+                              : undefined
+                          }
+                        >
+                          {value}
+                          {historical
+                            ? ' · Historical'
+                            : ''}
+                        </option>
+                      );
+                    }
                   )}
                 </select>
               </label>
@@ -2637,13 +2804,6 @@ export default function ProjectAccountability({
                 />
 
                 <CompletedSortHeader
-                  label="PM"
-                  sortKey="pm"
-                  sortState={sortState}
-                  onSort={toggleSort}
-                />
-
-                <CompletedSortHeader
                   label="Team"
                   sortKey="team"
                   sortState={sortState}
@@ -2755,7 +2915,13 @@ export default function ProjectAccountability({
                     </td>
 
                     <td className="completed-project-name">
-                      <strong>
+                      <strong
+                        className="project-title-ellipsis"
+                        title={displayValue(
+                          row.jobName,
+                          'Unnamed Project',
+                        )}
+                      >
                         {displayValue(
                           row.jobName,
                           'Unnamed Project',
@@ -2771,7 +2937,7 @@ export default function ProjectAccountability({
                       />
                     </td>
 
-                    <td className="pm-badge-cell">
+                    <td className="project-team-column project-team-badge-column">
                       {(() => {
                         const pmName = displayValue(
                           row.projectManager,
@@ -2782,21 +2948,16 @@ export default function ProjectAccountability({
                         );
 
                         return (
-                          <PMInitialsBadge
-                            name={pmName}
-                            initials={identity?.initials}
-                            hexColor={identity?.hexColor}
+                          <ProjectTeamBadges
+                            pm={pmName}
+                            pmInitials={identity?.initials}
+                            pmHexColor={identity?.hexColor}
+                            pe={row.projectEngineer}
+                            apm={row.apm}
+                            superintendent={row.superintendent}
                           />
                         );
                       })()}
-                    </td>
-
-                    <td className="project-team-column">
-                      <ProjectTeamCell
-                        pe={row.projectEngineer}
-                        superintendent={row.superintendent}
-                        apm={row.apm}
-                      />
                     </td>
 
                     <td>

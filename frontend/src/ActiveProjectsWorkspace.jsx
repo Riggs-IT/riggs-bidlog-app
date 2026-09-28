@@ -11,7 +11,7 @@ import {
 } from './GeneralContractors.jsx';
 import {
   MoneyValue,
-  ProjectTeamCell,
+  ProjectTeamBadges,
 } from './BillingDisplay.jsx';
 import ActiveProjectEditDrawer from './ActiveProjectEditDrawer.jsx';
 
@@ -193,6 +193,59 @@ function sortedUnique(items, selector) {
   );
 }
 
+
+function historicalLastOptions(
+  options,
+  historicalValues,
+) {
+  return [
+    ...options.filter(
+      value => !historicalValues.has(value),
+    ),
+    ...options.filter(
+      value => historicalValues.has(value),
+    ),
+  ];
+}
+
+
+function historicalProjectStaffOptions(
+  rows,
+  field,
+  separatedField,
+) {
+  const currentValues = new Set();
+  const historicalValues = new Set();
+  const separatedValues = new Set();
+
+  for (const row of rows) {
+    const value = String(row?.[field] || '').trim();
+
+    if (!value) {
+      continue;
+    }
+
+    if (row?.[separatedField] === true) {
+      separatedValues.add(value);
+      historicalValues.add(value);
+      continue;
+    }
+
+    if (row?.projectCompleted === true) {
+      historicalValues.add(value);
+    } else {
+      currentValues.add(value);
+    }
+  }
+
+  for (const value of currentValues) {
+    if (!separatedValues.has(value)) {
+      historicalValues.delete(value);
+    }
+  }
+
+  return historicalValues;
+}
 
 
 function matchesSearch(project, search) {
@@ -663,6 +716,33 @@ export default function ActiveProjectsWorkspace({
     [items],
   );
 
+  const historicalPmOptions = useMemo(
+    () => historicalProjectStaffOptions(
+      items,
+      'pm',
+      'pmSeparated',
+    ),
+    [items],
+  );
+
+  const historicalPeOptions = useMemo(
+    () => historicalProjectStaffOptions(
+      items,
+      'pe',
+      'peSeparated',
+    ),
+    [items],
+  );
+
+  const historicalSuperOptions = useMemo(
+    () => historicalProjectStaffOptions(
+      items,
+      'superintendent',
+      'superintendentSeparated',
+    ),
+    [items],
+  );
+
   const counts = useMemo(
     () => ({
       active: activeItems.length,
@@ -787,10 +867,10 @@ export default function ActiveProjectsWorkspace({
             bValue = b.pm;
             break;
           case 'team':
-            aValue = [a.pe, a.superintendent, a.apm]
+            aValue = [a.pm, a.pe, a.apm, a.superintendent]
               .filter(Boolean)
               .join(' ');
-            bValue = [b.pe, b.superintendent, b.apm]
+            bValue = [b.pm, b.pe, b.apm, b.superintendent]
               .filter(Boolean)
               .join(' ');
             break;
@@ -1081,9 +1161,28 @@ export default function ActiveProjectsWorkspace({
             >
               <option value={ALL}>All PMs</option>
               <option value={UNASSIGNED}>Unassigned</option>
-              {pmOptions.map(value => (
-                <option key={value} value={value}>{value}</option>
-              ))}
+              {historicalLastOptions(
+                pmOptions,
+                historicalPmOptions,
+              ).map(value => {
+                const historical =
+                  historicalPmOptions.has(value);
+
+                return (
+                  <option
+                    key={value}
+                    value={value}
+                    style={
+                      historical
+                        ? { color: 'var(--warning)' }
+                        : undefined
+                    }
+                  >
+                    {value}
+                    {historical ? ' · Historical' : ''}
+                  </option>
+                );
+              })}
             </select>
           </label>
 
@@ -1121,9 +1220,28 @@ export default function ActiveProjectsWorkspace({
             >
               <option value={ALL}>All PEs</option>
               <option value={UNASSIGNED}>Unassigned</option>
-              {peOptions.map(value => (
-                <option key={value} value={value}>{value}</option>
-              ))}
+              {historicalLastOptions(
+                peOptions,
+                historicalPeOptions,
+              ).map(value => {
+                const historical =
+                  historicalPeOptions.has(value);
+
+                return (
+                  <option
+                    key={value}
+                    value={value}
+                    style={
+                      historical
+                        ? { color: 'var(--warning)' }
+                        : undefined
+                    }
+                  >
+                    {value}
+                    {historical ? ' · Historical' : ''}
+                  </option>
+                );
+              })}
             </select>
           </label>
 
@@ -1135,9 +1253,28 @@ export default function ActiveProjectsWorkspace({
             >
               <option value={ALL}>All Superintendents</option>
               <option value={UNASSIGNED}>Unassigned</option>
-              {superOptions.map(value => (
-                <option key={value} value={value}>{value}</option>
-              ))}
+              {historicalLastOptions(
+                superOptions,
+                historicalSuperOptions,
+              ).map(value => {
+                const historical =
+                  historicalSuperOptions.has(value);
+
+                return (
+                  <option
+                    key={value}
+                    value={value}
+                    style={
+                      historical
+                        ? { color: 'var(--warning)' }
+                        : undefined
+                    }
+                  >
+                    {value}
+                    {historical ? ' · Historical' : ''}
+                  </option>
+                );
+              })}
             </select>
           </label>
         </div>
@@ -1207,12 +1344,6 @@ export default function ActiveProjectsWorkspace({
                 <SortHeader
                   label="GC"
                   sortKey="gc"
-                  sortState={sortState}
-                  onSort={changeSort}
-                />
-                <SortHeader
-                  label="PM"
-                  sortKey="pm"
                   sortState={sortState}
                   onSort={changeSort}
                 />
@@ -1298,7 +1429,12 @@ export default function ActiveProjectsWorkspace({
 
                   <td className="active-project-name-cell">
                     <div className="active-project-name-line">
-                      <strong>{displayValue(project.jobName)}</strong>
+                      <strong
+                        className="project-title-ellipsis"
+                        title={displayValue(project.jobName)}
+                      >
+                        {displayValue(project.jobName)}
+                      </strong>
                       {project.projectCompleted && (
                         <span className="project-status-pill completed">
                           Completed
@@ -1322,15 +1458,14 @@ export default function ActiveProjectsWorkspace({
                     />
                   </td>
 
-                  <td>
-                    <PMBadge project={project} />
-                  </td>
-
-                  <td className="active-project-team-cell">
-                    <ProjectTeamCell
+                  <td className="active-project-team-cell project-team-badge-column">
+                    <ProjectTeamBadges
+                      pm={project.pm}
+                      pmInitials={project.pmInitials}
+                      pmHexColor={project.pmHexColor}
                       pe={project.pe}
-                      superintendent={project.superintendent}
                       apm={project.apm}
+                      superintendent={project.superintendent}
                     />
                   </td>
 
