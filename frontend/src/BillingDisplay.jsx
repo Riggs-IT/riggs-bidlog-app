@@ -1,3 +1,12 @@
+const currencyFormatter = new Intl.NumberFormat(
+    'en-US',
+    {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0,
+    },
+  );
+
 function hasValue(value) {
   return (
     value !== null
@@ -18,14 +27,7 @@ export function money(value) {
     return '—';
   }
 
-  return new Intl.NumberFormat(
-    'en-US',
-    {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0,
-    },
-  ).format(number);
+  return currencyFormatter.format(number);
 }
 
 

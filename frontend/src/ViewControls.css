@@ -1,0 +1,27 @@
+/* Shared controls; use the app palette in both themes. */
+.refresh-icon-button {display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:38px;height:38px;padding:9px;border:1px solid var(--border);border-radius:7px;background:var(--surface-2,transparent);color:var(--text);cursor:pointer;}
+.refresh-icon-button svg {width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+.refresh-icon-button:hover:not(:disabled) {border-color:var(--accent);color:var(--accent);}
+.refresh-icon-button:disabled {opacity:.55;cursor:default;}
+.refresh-icon-button:focus-visible,.info-icon-button:focus-visible,.show-controls button:focus-visible,.filter-toggle-buttons button:focus-visible {outline:2px solid var(--accent);outline-offset:3px;}
+.refresh-icon-button.is-refreshing svg {animation:refresh-turn 1s linear infinite;}
+@keyframes refresh-turn {to {transform:rotate(360deg);}}
+@media(prefers-reduced-motion:reduce) {.refresh-icon-button.is-refreshing svg {animation:none;}}
+.show-controls {display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:.8rem;}
+.show-controls > span {color:var(--muted);margin-right:3px;}
+.show-controls button {font:inherit;font-weight:600;cursor:pointer;color:var(--muted);background:var(--surface-2,transparent);border:1px solid var(--border);border-radius:6px;padding:7px 12px;}
+.show-controls button.active {color:var(--accent);border-color:var(--accent);background:var(--accent-soft,transparent);}
+.info-icon-button {display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid var(--border);border-radius:999px;background:var(--surface-2,transparent);color:var(--muted);font:inherit;font-weight:700;cursor:pointer;}
+.info-icon-button:hover {border-color:var(--accent);color:var(--accent);}
+.info-icon-button[aria-expanded="true"] {border-color:var(--accent);color:var(--accent);background:var(--accent-soft,transparent);}
+.filter-toggle-group {display:flex;flex-direction:column;gap:5px;min-width:0;}
+.filter-toggle-label {color:var(--muted);font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;}
+.filter-toggle-buttons {display:inline-flex;flex-wrap:wrap;gap:6px;}
+.filter-toggle-buttons button {min-height:34px;padding:6px 11px;border:1px solid var(--border);border-radius:7px;background:var(--surface-2,transparent);color:var(--muted);font:inherit;font-size:.78rem;font-weight:600;cursor:pointer;}
+.filter-toggle-buttons button:hover {border-color:var(--border-strong);color:var(--text);}
+.filter-toggle-buttons button.active {color:var(--accent);border-color:var(--accent);background:var(--accent-soft,transparent);}
+.pm-comparison-controls .show-controls {margin-bottom:0;}
+
+/* The top navigation keeps its existing dark surface in both app themes. */
+.topbar-actions .refresh-icon-button {width:40px;min-height:38px;padding:0;border-radius:6px;background:#12171b;color:#dce2e7;border-color:#39434d;}
+.topbar-actions .refresh-icon-button:hover:not(:disabled) {background:#1a2026;border-color:#596774;}

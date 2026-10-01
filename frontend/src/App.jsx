@@ -1,3 +1,11 @@
+import {FilterToggleGroup, RefreshButton} from './ViewControls.jsx';
+import {facetRows, hasMonthlyValues, isCompleted} from './viewFilters.js';
+import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
+import {contractorTokens, canonicalFilterKey} from './gcReference.js';
+import { aggregateCurrentMonthly, summarizePortfolioMonths, summarizeMonthlyTotals, nullableAmount, amountDifference, projectionSourceLabel, buildMonthlyProjectionExport } from './primaryProjection.js';
+import { ProjectionEstimateMarker, ProjectionAmount } from './ProjectionDisplay.jsx';
+import useGcReference, { canReadGcReference } from './useGcReference.js';
+import useProjectedBillingsFreshness from './useProjectedBillingsFreshness.js';
 import {
   useEffect,
   useMemo,
@@ -21,6 +29,7 @@ import ActiveProjectEditDrawer from './ActiveProjectEditDrawer.jsx';
 import CurrentProjectBillingDrawer from './CurrentProjectBillingDrawer.jsx';
 import ActiveBidBillingDrawer from './ActiveBidBillingDrawer.jsx';
 import ProjectBillingPivot from './ProjectBillingPivot.jsx';
+import CsvExportDialog from './CsvExportDialog.jsx';
 import useStickyTableHeader from './useStickyTableHeader.js';
 import {
   ProjectTeamBadges,
@@ -30,6 +39,7 @@ import {
   GeneralContractorDisplay,
   MULTIPLE_GCS,
   generalContractorDisplayText,
+  contractorFilterOptions,
   generalContractorFilterMatch,
   generalContractorNames,
 } from './GeneralContractors.jsx';
@@ -1082,85 +1092,6 @@ async function mapWithConcurrency(
 }
 
 
-function aggregateCurrentMonthly(
-  rows,
-  fromMonth,
-  throughMonth,
-) {
-  let projected = 0;
-  let actual = 0;
-  let marginCollected = 0;
-  let missingMarginRows = 0;
-  let marginDataComplete = true;
-
-  for (const row of rows || []) {
-    const key =
-      monthKey(
-        row.monthStart
-      );
-
-    if (
-      key < fromMonth
-      || key > throughMonth
-    ) {
-      continue;
-    }
-
-    projected +=
-      toNumber(
-        row.projectedAmount
-      );
-
-    actual +=
-      toNumber(
-        row.actualAmount
-      );
-
-    const rowMissingMarginRows =
-      toNumber(
-        row.missingMarginRows
-      );
-
-    missingMarginRows +=
-      rowMissingMarginRows;
-
-    if (
-      row.marginDataComplete === false
-      || rowMissingMarginRows > 0
-    ) {
-      marginDataComplete = false;
-      continue;
-    }
-
-    marginCollected +=
-      toNumber(
-        row.marginCollected
-      );
-  }
-
-  return {
-    projected,
-    actual,
-    marginCollected:
-      marginDataComplete
-        ? marginCollected
-        : null,
-    weightedHistoricalMarginPercent:
-      marginDataComplete
-      && Math.abs(actual) > 0.000001
-        ? (
-            marginCollected
-            / actual
-          ) * 100
-        : null,
-    missingMarginRows,
-    marginDataComplete,
-    variance:
-      actual - projected,
-  };
-}
-
-
 function aggregateBidMonthly(
   rows,
   fromMonth,
@@ -1223,19 +1154,6 @@ function sortedUnique(
 }
 
 
-function projectStaffOptions(
-  rows,
-  field,
-) {
-  return sortedUnique(
-    rows.map(
-      row =>
-        row[field]
-    )
-  );
-}
-
-
 function historicalLastOptions(
   options,
   historicalValues,
@@ -1294,25 +1212,6 @@ function historicalProjectStaffOptions(
   }
 
   return historicalValues;
-}
-
-
-function booleanFilterMatch(
-  value,
-  filter,
-) {
-  if (
-    filter === ALL
-  ) {
-    return true;
-  }
-
-  return (
-    Boolean(value)
-    === (
-      filter === 'true'
-    )
-  );
 }
 
 
@@ -1727,6 +1626,7 @@ export default function App() {
     user,
     setUser,
   ] = useState(null);
+  const gcDirectory = useGcReference(canReadGcReference(user));
 
   const [
     activePage,
@@ -1772,6 +1672,8 @@ export default function App() {
     dataError,
     setDataError,
   ] = useState(null);
+
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   const [
     currentProjects,
@@ -1897,6 +1799,7 @@ export default function App() {
     setMonthlyComparisonView,
   ] = useState('project');
 
+
   const monthlySummaryTableRef =
     useStickyTableHeader(
       monthlyComparisonView
@@ -1911,6 +1814,11 @@ export default function App() {
     includeActiveProjects,
     setIncludeActiveProjects,
   ] = useState(true);
+
+  const [
+    projectionSourceFilter,
+    setProjectionSourceFilter,
+  ] = useState(ALL);
 
   const [
     search,
@@ -2003,26 +1911,6 @@ export default function App() {
   const [
     varianceFilter,
     setVarianceFilter,
-  ] = useState(ALL);
-
-  const [
-    bidStatusFilter,
-    setBidStatusFilter,
-  ] = useState(ALL);
-
-  const [
-    probabilityStateFilter,
-    setProbabilityStateFilter,
-  ] = useState(ALL);
-
-  const [
-    stateFilter,
-    setStateFilter,
-  ] = useState(ALL);
-
-  const [
-    isNewBidFilter,
-    setIsNewBidFilter,
   ] = useState(ALL);
 
   const [
@@ -2284,115 +2172,63 @@ export default function App() {
     === true;
 
 
-  async function loadForecastAttention() {
-    if (
-      !user
-      || !canViewProjectedBillings
-    ) {
-      setForecastAttention([]);
-      return [];
-    }
-
-    setAttentionLoading(true);
-    setAttentionError(null);
-
-    try {
-      const response =
-        await window.fetch(
-          '/api/pm-forecast/attention',
-          {
-            credentials:
-              'same-origin',
-          },
-        );
-
-      let payload = null;
-
-      try {
-        payload =
-          await response.json();
-      } catch {
-        payload = null;
-      }
-
-      if (!response.ok) {
-        throw new Error(
-          friendlyError(
-            payload?.detail
-          )
-        );
-      }
-
-      const rows =
-        Array.isArray(payload)
-          ? payload
-          : [];
-
-      setForecastAttention(
-        rows
-      );
-
-      return rows;
-
-    } catch (err) {
-      setAttentionError(
-        err.message
-        || 'Unable to load notifications.'
-      );
-
-      return [];
-
-    } finally {
-      setAttentionLoading(false);
-    }
+  function handleReadSessionError(error) {
+    if (error?.status !== 401 || logoutInProgressRef.current) return;
+    logoutInProgressRef.current = true;
+    clearUsageSessionId();
+    usageSessionIdRef.current = null;
+    window.location.replace(error.detail === 'application_updated'
+      ? '/?auth_error=application_updated' : '/?signed_out=timeout');
   }
 
-
-  useEffect(() => {
-    if (
-      !user
-      || !canViewProjectedBillings
-    ) {
+  const portfolioFreshness = useProjectedBillingsFreshness({
+    userKey: user ? `${user.eid}:${user.appRole}` : null,
+    enabled: Boolean(user && canViewProjectedBillings),
+    active: activePage === 'projected',
+    fetchJson,
+    isEnding: () => logoutInProgressRef.current,
+    onSessionError: handleReadSessionError,
+    onError: setDataError,
+    onInitialLoading: setDataLoading,
+    onAttention: setForecastAttention,
+    onAttentionError: setAttentionError,
+    onAttentionLoading: setAttentionLoading,
+    onReady: () => {
+      setProjectedInitialLoadComplete(true);
+      setMonthlyProgress({ loaded: 4, total: 4 });
+    },
+    onReset: () => {
+      backgroundPrefetchStartedRef.current = false;
+      setProjectedInitialLoadComplete(false);
+      setDataLoading(false);
+      setDataError(null);
+      setCurrentProjects([]);
+      setActiveBids([]);
+      setCurrentMonthly(new Map());
+      setBidMonthly(new Map());
       setForecastAttention([]);
+      setAttentionError(null);
+      setAttentionLoading(false);
       setAttentionOpen(false);
-      return undefined;
-    }
+      setMonthlyProgress({ loaded: 0, total: 4 });
+    },
+    onCurrent: ({ projects, monthly }) => {
+      setCurrentProjects(projects);
+      setCurrentMonthly(new Map(monthly.items.map(row => [row.jobListId, row.items || []])));
+      // Refresh summary fields without remounting the open PM editor.
+      setSelectedCurrentProject(current => current
+        ? projects.find(row => Number(row.jobListId) === Number(current.jobListId)) || current
+        : null);
+    },
+    onBids: dashboard => {
+      setActiveBids(dashboard.projects.items);
+      setBidMonthly(new Map(dashboard.monthly.map(row => [row.sharePointItemId, row.items || []])));
+    },
+  });
 
-    loadForecastAttention();
-
-    const intervalId =
-      window.setInterval(
-        () => {
-          loadForecastAttention();
-        },
-        60 * 1000,
-      );
-
-    const handleFocus = () => {
-      loadForecastAttention();
-    };
-
-    window.addEventListener(
-      'focus',
-      handleFocus,
-    );
-
-    return () => {
-      window.clearInterval(
-        intervalId
-      );
-
-      window.removeEventListener(
-        'focus',
-        handleFocus,
-      );
-    };
-
-  }, [
-    canViewProjectedBillings,
-    user?.eid,
-  ]);
-
+  function loadForecastAttention() {
+    return portfolioFreshness.refreshAttention({ passive: false });
+  }
 
   function openCurrentProjectDrawer(
     project,
@@ -2444,66 +2280,22 @@ export default function App() {
     );
 
     setSelectedActiveBid(project);
+    void refreshProjectedBidData();
   }
 
 
   async function refreshProjectedCurrentProjectData() {
-    try {
-      const [
-        currentPayload,
-        currentMonthlyPayload,
-      ] = await Promise.all([
-        fetchJson('/api/projected-billings/current-projects'),
-        fetchJson('/api/projected-billings/current-projects/monthly'),
-      ]);
-
-      setCurrentProjects(currentPayload);
-      setCurrentMonthly(
-        new Map(
-          (currentMonthlyPayload?.items || []).map(
-            row => [row.jobListId, row.items || []],
-          ),
-        ),
-      );
-      invalidateProjectsWorkspaceCache();
-    } catch (error) {
-      setDataError(
-        error?.message
-        || 'Unable to refresh projected projects after the edit.',
-      );
-    }
+    invalidateProjectsWorkspaceCache();
+    return Promise.all([
+      portfolioFreshness.refreshCurrent(),
+      portfolioFreshness.refreshAttention(),
+    ]);
   }
-
 
   async function refreshProjectedBidData() {
-    try {
-      const dashboard = await fetchJson(
-        '/api/projected-billings/active-bids/dashboard',
-        { cache: 'no-store' },
-      );
-      const projectPayload = dashboard?.projects || {};
-
-      setActiveBids(
-        Array.isArray(projectPayload?.items)
-          ? projectPayload.items
-          : [],
-      );
-      setBidMonthly(
-        new Map(
-          (dashboard?.monthly || []).map(
-            row => [row.sharePointItemId, row.items || []],
-          ),
-        ),
-      );
-      invalidateBidLogWorkspaceCache();
-    } catch (error) {
-      setDataError(
-        error?.message
-        || 'Unable to refresh projected bids after the edit.',
-      );
-    }
+    invalidateBidLogWorkspaceCache();
+    return portfolioFreshness.refreshBids();
   }
-
 
   function openAttentionProject(
     attention,
@@ -2935,195 +2727,6 @@ export default function App() {
   }, [user]);
 
 
-  useEffect(() => {
-    if (
-      !user
-      || !canViewProjectedBillings
-    ) {
-      backgroundPrefetchStartedRef.current =
-        false;
-
-      setProjectedInitialLoadComplete(false);
-      setDataLoading(false);
-      setDataError(null);
-
-      setCurrentProjects([]);
-      setActiveBids([]);
-
-      setCurrentMonthly(
-        new Map()
-      );
-
-      setBidMonthly(
-        new Map()
-      );
-
-      setMonthlyProgress({
-        loaded: 0,
-        total: 0,
-      });
-
-      return undefined;
-    }
-
-    let cancelled = false;
-
-    async function loadProjectedBillings() {
-      backgroundPrefetchStartedRef.current = false;
-      setProjectedInitialLoadComplete(false);
-      setDataLoading(true);
-      setDataError(null);
-
-      try {
-        let loadedBatches = 0;
-
-        setMonthlyProgress({
-          loaded: 0,
-          total: 3,
-        });
-
-
-        const track = promise =>
-          promise.then(
-            payload => {
-              loadedBatches += 1;
-
-              if (!cancelled) {
-                setMonthlyProgress({
-                  loaded:
-                    loadedBatches,
-
-                  total:
-                    3,
-                });
-              }
-
-              return payload;
-            }
-          );
-
-
-        const [
-          currentPayload,
-          currentMonthlyPayload,
-          bidDashboardPayload,
-        ] = await Promise.all([
-          track(
-            fetchJson(
-              '/api/projected-billings/current-projects'
-            )
-          ),
-
-          track(
-            fetchJson(
-              '/api/projected-billings/current-projects/monthly'
-            )
-          ),
-
-          track(
-            fetchJson(
-              '/api/projected-billings/active-bids/dashboard'
-            )
-          ),
-        ]);
-
-
-        const bidPayload =
-          bidDashboardPayload
-            ?.projects
-          || {};
-
-
-        const bids =
-          Array.isArray(
-            bidPayload?.items
-          )
-            ? bidPayload.items
-            : [];
-
-
-        if (cancelled) {
-          return;
-        }
-
-
-        setCurrentProjects(
-          currentPayload
-        );
-
-        setActiveBids(
-          bids
-        );
-
-
-        const currentMap =
-          new Map(
-            (
-              currentMonthlyPayload
-                ?.items
-              || []
-            ).map(
-              row => [
-                row.jobListId,
-                row.items || [],
-              ]
-            )
-          );
-
-
-        const bidMap =
-          new Map(
-            (
-              bidDashboardPayload
-                ?.monthly
-              || []
-            ).map(
-              row => [
-                row.sharePointItemId,
-                row.items || [],
-              ]
-            )
-          );
-
-
-        setCurrentMonthly(
-          currentMap
-        );
-
-        setBidMonthly(
-          bidMap
-        );
-
-        setProjectedInitialLoadComplete(
-          true
-        );
-      } catch (error) {
-        if (!cancelled) {
-          setDataError(
-            error.message
-            || 'Unable to load projected billings.'
-          );
-        }
-
-      } finally {
-        if (!cancelled) {
-          setDataLoading(false);
-        }
-      }
-    }
-
-    loadProjectedBillings();
-
-    return () => {
-      cancelled = true;
-    };
-
-  }, [
-    canViewProjectedBillings,
-    user,
-  ]);
-
-
   async function signOut() {
     if (
       logoutInProgressRef.current
@@ -3549,18 +3152,6 @@ export default function App() {
       ],
     );
 
-  const potentialBidCount =
-    useMemo(
-      () =>
-        activeBids.filter(
-          isPotentialBid
-        ).length,
-      [
-        activeBids,
-        potentialProbabilityThreshold,
-      ],
-    );
-
   const sourceSelectionKey =
     `${bidScope}-${includeActiveProjects ? 'projects' : 'no-projects'}`;
 
@@ -3732,1112 +3323,71 @@ export default function App() {
   }
 
 
-  const staffContextCurrentProjects =
-    useMemo(
-      () => {
-        if (
-          !includeActiveProjects
-          || !rangeValid
-        ) {
-          return [];
-        }
-
-        return currentProjects.filter(
-          row => {
-            if (!row.projectCompleted) {
-              return true;
-            }
-
-            const monthly =
-              aggregateCurrentMonthly(
-                currentMonthly.get(
-                  row.jobListId
-                ),
-                fromMonth,
-                throughMonth,
-              );
-
-            return (
-              Math.abs(
-                toNumber(
-                  monthly.actual
-                )
-              ) > 0.000001
-            );
-          }
-        );
-      },
-      [
-        includeActiveProjects,
-        rangeValid,
-        currentProjects,
-        currentMonthly,
-        fromMonth,
-        throughMonth,
-      ],
-    );
-
-
-  const pmOptions =
-    useMemo(
-      () => {
-        const values = [];
-
-        if (
-          includeActiveProjects
-        ) {
-          values.push(
-            ...staffContextCurrentProjects.map(
-              row =>
-                pmKey(
-                  row.pm
-                )
-            )
-          );
-        }
-
-        if (
-          includeBids
-        ) {
-          values.push(
-            ...selectedBidSourceRows.map(
-              row =>
-                pmKey(
-                  row.pm
-                )
-            )
-          );
-        }
-
-        return sortedUnique(
-          values,
-          pmLabel,
-        );
-      },
-      [
-        includeActiveProjects,
-        includeBids,
-        staffContextCurrentProjects,
-        selectedBidSourceRows,
-      ],
-    );
-
-
-  const historicalPmOptions =
-    useMemo(
-      () => {
-        const currentValues =
-          new Set();
-
-        const historicalValues =
-          new Set();
-
-        const separatedValues =
-          new Set();
-
-        for (
-          const row
-          of staffContextCurrentProjects
-        ) {
-          const value =
-            pmKey(row.pm);
-
-          if (value === UNASSIGNED) {
-            continue;
-          }
-
-          if (row.pmSeparated === true) {
-            separatedValues.add(value);
-            historicalValues.add(value);
-            continue;
-          }
-
-          if (row.projectCompleted) {
-            historicalValues.add(value);
-          } else {
-            currentValues.add(value);
-          }
-        }
-
-        if (includeBids) {
-          for (
-            const row
-            of selectedBidSourceRows
-          ) {
-            const value =
-              pmKey(row.pm);
-
-            if (value === UNASSIGNED) {
-              continue;
-            }
-
-            if (row.pmSeparated === true) {
-              separatedValues.add(value);
-              historicalValues.add(value);
-            } else {
-              currentValues.add(value);
-            }
-          }
-        }
-
-        for (const value of currentValues) {
-          if (!separatedValues.has(value)) {
-            historicalValues.delete(value);
-          }
-        }
-
-        return historicalValues;
-      },
-      [
-        staffContextCurrentProjects,
-        includeBids,
-        selectedBidSourceRows,
-      ],
-    );
-
-
-  const projectTypeOptions =
-    useMemo(
-      () => {
-        const values = [];
-
-        if (
-          includeActiveProjects
-        ) {
-          values.push(
-            ...currentProjects.map(
-              row =>
-                normalizeProjectType(
-                  row.projectType
-                )
-            )
-          );
-        }
-
-        if (
-          includeBids
-        ) {
-          values.push(
-            ...selectedBidSourceRows.map(
-              row =>
-                normalizeProjectType(
-                  row.projectType
-                )
-            )
-          );
-        }
-
-        return sortedUnique(
-          values,
-          projectTypeLabel,
-        );
-      },
-      [
-        includeActiveProjects,
-        includeBids,
-        currentProjects,
-        selectedBidSourceRows,
-      ],
-    );
-
-
-  const purposeOptions =
-    useMemo(
-      () => {
-        const values = [];
-
-        if (
-          includeActiveProjects
-        ) {
-          values.push(
-            ...currentProjects.map(
-              row =>
-                row.purpose
-            )
-          );
-        }
-
-        if (
-          includeBids
-        ) {
-          values.push(
-            ...selectedBidSourceRows.map(
-              row =>
-                row.purpose
-            )
-          );
-        }
-
-        return sortedUnique(
-          values
-        );
-      },
-      [
-        includeActiveProjects,
-        includeBids,
-        currentProjects,
-        selectedBidSourceRows,
-      ],
-    );
-
-
-  const peOptions =
-    useMemo(
-      () =>
-        projectStaffOptions(
-          staffContextCurrentProjects,
-          'pe'
-        ),
-      [staffContextCurrentProjects],
-    );
-
-
-  const historicalPeOptions =
-    useMemo(
-      () =>
-        historicalProjectStaffOptions(
-          staffContextCurrentProjects,
-          'pe',
-          'peSeparated',
-        ),
-      [staffContextCurrentProjects],
-    );
-
-
-  const superintendentOptions =
-    useMemo(
-      () =>
-        projectStaffOptions(
-          staffContextCurrentProjects,
-          'superintendent'
-        ),
-      [staffContextCurrentProjects],
-    );
-
-
-  const historicalSuperintendentOptions =
-    useMemo(
-      () =>
-        historicalProjectStaffOptions(
-          staffContextCurrentProjects,
-          'superintendent',
-          'superintendentSeparated',
-        ),
-      [staffContextCurrentProjects],
-    );
-
-
-  const apmOptions =
-    useMemo(
-      () =>
-        projectStaffOptions(
-          staffContextCurrentProjects,
-          'apm'
-        ),
-      [staffContextCurrentProjects],
-    );
-
-
-  const historicalApmOptions =
-    useMemo(
-      () =>
-        historicalProjectStaffOptions(
-          staffContextCurrentProjects,
-          'apm',
-          'apmSeparated',
-        ),
-      [staffContextCurrentProjects],
-    );
-
-
-  useEffect(
-    () => {
-      if (
-        pmFilter !== ALL
-        && !pmOptions.includes(
-          pmFilter
-        )
-      ) {
-        setPmFilter(ALL);
-      }
-    },
-    [pmFilter, pmOptions],
-  );
-
-
-  useEffect(
-    () => {
-      if (
-        peFilter !== ALL
-        && !peOptions.includes(
-          peFilter
-        )
-      ) {
-        setPeFilter(ALL);
-      }
-    },
-    [peFilter, peOptions],
-  );
-
-
-  useEffect(
-    () => {
-      if (
-        superintendentFilter !== ALL
-        && !superintendentOptions.includes(
-          superintendentFilter
-        )
-      ) {
-        setSuperintendentFilter(ALL);
-      }
-    },
-    [
-      superintendentFilter,
-      superintendentOptions,
-    ],
-  );
-
-
-  useEffect(
-    () => {
-      if (
-        apmFilter !== ALL
-        && !apmOptions.includes(
-          apmFilter
-        )
-      ) {
-        setApmFilter(ALL);
-      }
-    },
-    [apmFilter, apmOptions],
-  );
-
-
-  const bidStatusOptions =
-    useMemo(
-      () =>
-        sortedUnique(
-          selectedBidSourceRows.map(
-            row =>
-              row.status
-          )
-        ),
-      [selectedBidSourceRows],
-    );
-
-
-  const probabilityStateOptions =
-    useMemo(
-      () =>
-        sortedUnique(
-          selectedBidSourceRows.map(
-            row =>
-              row.probabilityState
-          )
-        ),
-      [selectedBidSourceRows],
-    );
-
-
-  const stateOptions =
-    useMemo(
-      () =>
-        sortedUnique(
-          selectedBidSourceRows.map(
-            row =>
-              row.state
-          )
-        ),
-      [selectedBidSourceRows],
-    );
-
-
-  const gcOptions =
-    useMemo(
-      () => {
-        const values = [];
-
-        if (includeActiveProjects) {
-          values.push(
-            ...currentProjects.flatMap(
-              row =>
-                generalContractorNames(
-                  row.generalContractors
-                  || row.gc
-                )
-            )
-          );
-        }
-
-        if (includeBids) {
-          values.push(
-            ...selectedBidSourceRows.flatMap(
-              row =>
-                generalContractorNames(
-                  row.generalContractors
-                  || row.gc
-                )
-            )
-          );
-        }
-
-        return sortedUnique(values);
-      },
-      [
-        includeActiveProjects,
-        includeBids,
-        currentProjects,
-        selectedBidSourceRows,
-      ],
-    );
-
-
-  const normalizedSearch =
-    search
-      .trim()
-      .toLowerCase();
-
-
-  const multipleGcOptionAvailable =
-    useMemo(
-      () => {
-        if (!includeBids) {
-          return false;
-        }
-
-        return selectedBidSourceRows.some(
-          row => {
-            if (
-              !bidMatchesSearch(
-                row,
-                normalizedSearch,
-              )
-            ) {
-              return false;
-            }
-
-            if (
-              pmFilter !== ALL
-              && pmKey(row.pm)
-                !== pmFilter
-            ) {
-              return false;
-            }
-
-            if (
-              projectTypeFilter !== ALL
-              && normalizeProjectType(
-                row.projectType
-              ) !== projectTypeFilter
-            ) {
-              return false;
-            }
-
-            if (
-              purposeFilter !== ALL
-              && row.purpose
-                !== purposeFilter
-            ) {
-              return false;
-            }
-
-            if (
-              forecastStateFilter !== ALL
-              && row.forecastState
-                !== forecastStateFilter
-            ) {
-              return false;
-            }
-
-            if (
-              bidStatusFilter !== ALL
-              && row.status
-                !== bidStatusFilter
-            ) {
-              return false;
-            }
-
-            if (
-              probabilityStateFilter !== ALL
-              && row.probabilityState
-                !== probabilityStateFilter
-            ) {
-              return false;
-            }
-
-            if (
-              stateFilter !== ALL
-              && row.state
-                !== stateFilter
-            ) {
-              return false;
-            }
-
-            if (
-              !booleanFilterMatch(
-                row.isNewBid,
-                isNewBidFilter,
-              )
-            ) {
-              return false;
-            }
-
-            if (
-              !booleanFilterMatch(
-                row.snoozed,
-                snoozedFilter,
-              )
-            ) {
-              return false;
-            }
-
-            return (
-              generalContractorNames(
-                row.generalContractors
-                || row.gc
-              ).length > 1
-            );
-          }
-        );
-      },
-      [
-        includeBids,
-        selectedBidSourceRows,
-        normalizedSearch,
-        pmFilter,
-        projectTypeFilter,
-        purposeFilter,
-        forecastStateFilter,
-        bidStatusFilter,
-        probabilityStateFilter,
-        stateFilter,
-        isNewBidFilter,
-        snoozedFilter,
-      ],
-    );
-
-
-  useEffect(
-    () => {
-      if (
-        gcFilter === MULTIPLE_GCS
-        && !multipleGcOptionAvailable
-      ) {
-        setGcFilter(ALL);
-      }
-    },
-    [
-      gcFilter,
-      multipleGcOptionAvailable,
-    ],
-  );
-
-
-  const currentDetails =
-    useMemo(
-      () => {
-        if (
-          !includeActiveProjects
-          || !rangeValid
-        ) {
-          return [];
-        }
-
-        return currentProjects
-          .filter(
-            row => {
-              if (
-                !currentMatchesSearch(
-                  row,
-                  normalizedSearch,
-                )
-              ) {
-                return false;
-              }
-
-              if (
-                pmFilter !== ALL
-                && pmKey(row.pm)
-                  !== pmFilter
-              ) {
-                return false;
-              }
-
-              if (
-                projectTypeFilter
-                  !== ALL
-                && normalizeProjectType(
-                  row.projectType
-                ) !==
-                  projectTypeFilter
-              ) {
-                return false;
-              }
-
-              if (
-                purposeFilter !== ALL
-                && row.purpose
-                  !== purposeFilter
-              ) {
-                return false;
-              }
-
-              if (
-                forecastStateFilter
-                  !== ALL
-                && row.forecastState
-                  !== forecastStateFilter
-              ) {
-                return false;
-              }
-
-              if (
-                gcFilter === MULTIPLE_GCS
-                || !generalContractorFilterMatch(
-                  row.generalContractors
-                  || row.gc,
-                  gcFilter,
-                  ALL,
-                )
-              ) {
-                return false;
-              }
-
-              if (
-                peFilter !== ALL
-                && row.pe
-                  !== peFilter
-              ) {
-                return false;
-              }
-
-              if (
-                superintendentFilter
-                  !== ALL
-                && row.superintendent
-                  !== superintendentFilter
-              ) {
-                return false;
-              }
-
-              if (
-                apmFilter !== ALL
-                && row.apm
-                  !== apmFilter
-              ) {
-                return false;
-              }
-
-              if (
-                !booleanFilterMatch(
-                  row.hasFoundationBillingHistory,
-                  foundationFilter,
-                )
-              ) {
-                return false;
-              }
-
-              return true;
-            }
-          )
-          .map(
-            row => {
-              const monthly =
-                aggregateCurrentMonthly(
-                  currentMonthly.get(
-                    row.jobListId
-                  ),
-                  fromMonth,
-                  throughMonth,
-                );
-
-              return {
-                ...row,
-                selectedProjected:
-                  monthly.projected,
-                selectedActual:
-                  monthly.actual,
-                selectedVariance:
-                  monthly.variance,
-                selectedMarginCollected:
-                  monthly.marginCollected,
-              };
-            }
-          )
-          .filter(
-            row => (
-              !row.projectCompleted
-              || Math.abs(
-                   toNumber(
-                     row.selectedActual
-                   )
-                 ) > 0.000001
-            )
-          )
-          .filter(
-            row => {
-              if (
-                varianceFilter
-                  === ALL
-              ) {
-                return true;
-              }
-
-              if (
-                varianceFilter
-                  === 'over'
-              ) {
-                return (
-                  row.selectedVariance
-                  > 0
-                );
-              }
-
-              if (
-                varianceFilter
-                  === 'under'
-              ) {
-                return (
-                  row.selectedVariance
-                  < 0
-                );
-              }
-
-              return (
-                Math.abs(
-                  row.selectedVariance
-                ) < 0.01
-              );
-            }
-          );
-      },
-      [
-        includeActiveProjects,
-        rangeValid,
-        currentProjects,
-        currentMonthly,
-        normalizedSearch,
-        pmFilter,
-        projectTypeFilter,
-        purposeFilter,
-        forecastStateFilter,
-        gcFilter,
-        peFilter,
-        superintendentFilter,
-        apmFilter,
-        foundationFilter,
-        varianceFilter,
-        fromMonth,
-        throughMonth,
-      ],
-    );
-
-
-  const bidDetails =
-    useMemo(
-      () => {
-        if (
-          !includeBids
-          || !rangeValid
-        ) {
-          return [];
-        }
-
-        return selectedBidSourceRows
-          .filter(
-            row => {
-              if (
-                !bidMatchesSearch(
-                  row,
-                  normalizedSearch,
-                )
-              ) {
-                return false;
-              }
-
-              if (
-                pmFilter !== ALL
-                && pmKey(row.pm)
-                  !== pmFilter
-              ) {
-                return false;
-              }
-
-              if (
-                projectTypeFilter
-                  !== ALL
-                && normalizeProjectType(
-                  row.projectType
-                ) !==
-                  projectTypeFilter
-              ) {
-                return false;
-              }
-
-              if (
-                purposeFilter !== ALL
-                && row.purpose
-                  !== purposeFilter
-              ) {
-                return false;
-              }
-
-              if (
-                forecastStateFilter
-                  !== ALL
-                && row.forecastState
-                  !== forecastStateFilter
-              ) {
-                return false;
-              }
-
-              if (
-                !generalContractorFilterMatch(
-                  row.generalContractors
-                  || row.gc,
-                  gcFilter,
-                  ALL,
-                )
-              ) {
-                return false;
-              }
-
-              if (
-                bidStatusFilter
-                  !== ALL
-                && row.status
-                  !== bidStatusFilter
-              ) {
-                return false;
-              }
-
-              if (
-                probabilityStateFilter
-                  !== ALL
-                && row.probabilityState
-                  !== probabilityStateFilter
-              ) {
-                return false;
-              }
-
-              if (
-                stateFilter !== ALL
-                && row.state
-                  !== stateFilter
-              ) {
-                return false;
-              }
-
-              if (
-                !booleanFilterMatch(
-                  row.isNewBid,
-                  isNewBidFilter,
-                )
-              ) {
-                return false;
-              }
-
-              if (
-                !booleanFilterMatch(
-                  row.snoozed,
-                  snoozedFilter,
-                )
-              ) {
-                return false;
-              }
-
-              return true;
-            }
-          )
-          .map(
-            row => {
-              const monthly =
-                aggregateBidMonthly(
-                  bidMonthly.get(
-                    row.sharePointItemId
-                  ),
-                  fromMonth,
-                  throughMonth,
-                );
-
-              return {
-                ...row,
-                selectedBidForecast:
-                  monthly.forecast,
-                selectedWeightedForecast:
-                  monthly.weighted,
-              };
-            }
-          );
-      },
-      [
-        includeBids,
-        rangeValid,
-        selectedBidSourceRows,
-        bidMonthly,
-        normalizedSearch,
-        pmFilter,
-        projectTypeFilter,
-        purposeFilter,
-        forecastStateFilter,
-        gcFilter,
-        bidStatusFilter,
-        probabilityStateFilter,
-        stateFilter,
-        isNewBidFilter,
-        snoozedFilter,
-        fromMonth,
-        throughMonth,
-      ],
-    );
-
-
-
-  const monthlyComparison =
-    useMemo(
-      () => {
-        if (!rangeValid) {
-          return [];
-        }
-
-        return monthRange.map(
-          month => {
-            let currentProjected = 0;
-            let currentActual = 0;
-            let currentMarginCollected = 0;
-            let currentMissingMarginRows = 0;
-            let currentMarginDataComplete = true;
-            let weightedBids = 0;
-
-            for (
-              const row
-              of currentDetails
-            ) {
-              const monthlyRows =
-                currentMonthly.get(
-                  row.jobListId
-                )
-                || [];
-
-              for (
-                const monthly
-                of monthlyRows
-              ) {
-                if (
-                  monthKey(
-                    monthly.monthStart
-                  ) !== month
-                ) {
-                  continue;
-                }
-
-                currentProjected +=
-                  toNumber(
-                    monthly.projectedAmount
-                  );
-
-                currentActual +=
-                  toNumber(
-                    monthly.actualAmount
-                  );
-
-                const monthlyMissingMarginRows =
-                  toNumber(
-                    monthly.missingMarginRows
-                  );
-
-                currentMissingMarginRows +=
-                  monthlyMissingMarginRows;
-
-                if (
-                  monthly.marginDataComplete === false
-                  || monthlyMissingMarginRows > 0
-                ) {
-                  currentMarginDataComplete = false;
-
-                } else {
-                  currentMarginCollected +=
-                    toNumber(
-                      monthly.marginCollected
-                    );
-                }
-              }
-            }
-
-            for (
-              const row
-              of bidDetails
-            ) {
-              const monthlyRows =
-                bidMonthly.get(
-                  row.sharePointItemId
-                )
-                || [];
-
-              for (
-                const monthly
-                of monthlyRows
-              ) {
-                if (
-                  monthKey(
-                    monthly.monthStart
-                  ) !== month
-                ) {
-                  continue;
-                }
-
-                weightedBids +=
-                  toNumber(
-                    monthly.weightedMonthlyForecastAmount
-                  );
-              }
-            }
-
-            const combinedProjected =
-              currentProjected
-              + weightedBids;
-
-
-            return {
-              month,
-              currentProjected,
-              currentActual,
-              currentMarginCollected:
-                currentMarginDataComplete
-                  ? currentMarginCollected
-                  : null,
-              currentWeightedHistoricalMarginPercent:
-                currentMarginDataComplete
-                && Math.abs(currentActual) > 0.000001
-                  ? (
-                      currentMarginCollected
-                      / currentActual
-                    ) * 100
-                  : null,
-              currentMissingMarginRows,
-              currentMarginDataComplete,
-              weightedBids,
-
-              combinedExpected:
-                combinedProjected,
-
-              variance:
-                currentActual
-                - combinedProjected,
-            };
-          }
-        );
-      },
-      [
-        rangeValid,
-        monthRange,
-        currentDetails,
-        bidDetails,
-        currentMonthly,
-        bidMonthly,
-      ],
-    );
-
+  const normalizedSearch = search.trim().toLowerCase();
+  // Scope the overview to represented month values. Preserve its existing completed-
+  // project actual-history inclusion; the editable Projects directory is active-only.
+  const currentRangeRows = useMemo(() => !rangeValid ? [] : currentProjects
+    .filter(row => hasMonthlyValues(currentMonthly.get(row.jobListId), fromMonth, throughMonth,
+      ['projectedAmount','actualAmount']))
+    .map(row => {
+      const m = aggregateCurrentMonthly(currentMonthly.get(row.jobListId), fromMonth, throughMonth);
+      return {...row, selectedActualValueCount:m.actualValueCount, selectedBaseline:m.baseline,
+        selectedMissingPmMonths:m.missingPmMonths, selectedProjected:m.projected,
+        selectedActual:m.actual, selectedVariance:m.variance, selectedMarginCollected:m.marginCollected};
+    }).filter(row => !isCompleted(row) || Math.abs(Number(row.selectedActual)||0)>0.000001), [rangeValid,currentProjects,currentMonthly,fromMonth,throughMonth]);
+  const bidRangeRows = useMemo(() => !rangeValid ? [] : selectedBidSourceRows
+    .filter(row => hasMonthlyValues(bidMonthly.get(row.sharePointItemId),fromMonth,throughMonth,
+      ['monthlyForecastAmount','weightedMonthlyForecastAmount']))
+    .map(row => {const m=aggregateBidMonthly(bidMonthly.get(row.sharePointItemId),fromMonth,throughMonth);
+      return {...row,selectedBidForecast:m.forecast,selectedWeightedForecast:m.weighted};}),
+    [rangeValid,selectedBidSourceRows,bidMonthly,fromMonth,throughMonth]);
+  const portfolioFilters={pm:pmFilter,type:projectTypeFilter,purpose:purposeFilter,forecast:forecastStateFilter,projectionSource:projectionSourceFilter,
+    gc:gcFilter,pe:peFilter,super:superintendentFilter,apm:apmFilter,foundation:foundationFilter,
+    variance:varianceFilter,snoozed:snoozedFilter};
+  const portfolioFacets=useMemo(() => {
+    const entries=[...(includeActiveProjects?currentRangeRows:[]).filter(r=>currentMatchesSearch(r,normalizedSearch)).map(row=>({kind:'current',row})),
+      ...bidRangeRows.filter(r=>bidMatchesSearch(r,normalizedSearch)).map(row=>({kind:'bid',row}))];
+    const shared = field => ({values:e=>[e.row[field]]});
+    const only = (kind,field) => ({values:e=>e.kind===kind?[e.row[field]]:[],
+      matches:(e,value)=>e.kind!==kind || e.row[field]===value});
+    const bool = (kind,field) => ({values:e=>e.kind===kind?[String(Boolean(e.row[field]))]:[],
+      matches:(e,value)=>e.kind!==kind || String(Boolean(e.row[field]))===value});
+    const variance=e=>e.row.selectedVariance==null?null:e.row.selectedVariance>0?'over':e.row.selectedVariance<0?'under':'even';
+    const gc=e=>contractorTokens(e.row.generalContractors||e.row.gc,gcDirectory.directory).map(x=>x.key);
+    return facetRows(entries,{...portfolioFilters,gc:canonicalFilterKey(gcFilter,gcDirectory.directory)},{
+      pm:{values:e=>[pmKey(e.row.pm)]},type:{values:e=>[normalizeProjectType(e.row.projectType)]},
+      purpose:shared('purpose'),forecast:shared('forecastState'),
+      projectionSource:{values:e=>e.kind==='current'?[e.row.hasPmForecast?'pm':'missing']:[],
+        matches:(e,value)=>e.kind!=='current'||(value==='pm'?e.row.hasPmForecast:!e.row.hasPmForecast)},
+      gc:{values:e=>[...gc(e),...(e.kind==='bid' && generalContractorNames(e.row.generalContractors||e.row.gc).length>1?[MULTIPLE_GCS]:[])],
+        matches:(e,value)=>generalContractorFilterMatch(e.row.generalContractors||e.row.gc,value,ALL,gcDirectory.directory)},
+      pe:only('current','pe'),super:only('current','superintendent'),apm:only('current','apm'),
+      foundation:bool('current','hasFoundationBillingHistory'),
+      variance:{values:e=>e.kind==='current'?[variance(e)]:[],matches:(e,value)=>e.kind!=='current'||variance(e)===value},
+      snoozed:bool('bid','snoozed'),
+    });
+  },[includeActiveProjects,currentRangeRows,bidRangeRows,normalizedSearch,gcDirectory.directory,JSON.stringify(portfolioFilters)]);
+  useFacetSelectionCleanup(portfolioFilters,portfolioFacets.selections,{pm:setPmFilter,type:setProjectTypeFilter,
+    purpose:setPurposeFilter,forecast:setForecastStateFilter,projectionSource:setProjectionSourceFilter,gc:setGcFilter,pe:setPeFilter,super:setSuperintendentFilter,
+    apm:setApmFilter,foundation:setFoundationFilter,variance:setVarianceFilter,snoozed:setSnoozedFilter},!dataLoading && rangeValid);
+  const currentDetails=useMemo(()=>portfolioFacets.rows.filter(e=>e.kind==='current').map(e=>e.row),[portfolioFacets]);
+  const bidDetails=useMemo(()=>portfolioFacets.rows.filter(e=>e.kind==='bid').map(e=>e.row),[portfolioFacets]);
+  const pmOptions=portfolioFacets.options.pm;
+  const projectTypeOptions=portfolioFacets.options.type;
+  const purposeOptions=portfolioFacets.options.purpose;
+  const peOptions=portfolioFacets.options.pe;
+  const superintendentOptions=portfolioFacets.options.super;
+  const apmOptions=portfolioFacets.options.apm;
+  const gcOptions=contractorFilterOptions(portfolioFacets.contexts.gc.map(e=>e.row.generalContractors||e.row.gc),gcDirectory.directory);
+  const multipleGcOptionAvailable=portfolioFacets.options.gc.includes(MULTIPLE_GCS);
+  const historicalPmOptions=historicalProjectStaffOptions(portfolioFacets.contexts.pm.map(e=>e.row),'pm','pmSeparated');
+  const historicalPeOptions=historicalProjectStaffOptions(portfolioFacets.contexts.pe.map(e=>e.row),'pe','peSeparated');
+  const historicalSuperintendentOptions=historicalProjectStaffOptions(portfolioFacets.contexts.super.map(e=>e.row),'superintendent','superintendentSeparated');
+  const historicalApmOptions=historicalProjectStaffOptions(portfolioFacets.contexts.apm.map(e=>e.row),'apm','apmSeparated');
+
+  const monthlyComparison = useMemo(() => rangeValid
+    ? summarizePortfolioMonths(monthRange, currentDetails, currentMonthly, bidDetails, bidMonthly)
+    : [], [rangeValid, monthRange, currentDetails, currentMonthly, bidDetails, bidMonthly]);
 
   const sortedMonthlyComparison =
     useMemo(
@@ -4936,82 +3486,18 @@ export default function App() {
     );
 
 
-  const monthlyComparisonTotals =
-    useMemo(
-      () => {
-        const totals =
-          monthlyComparison.reduce(
-            (
-              current,
-              row,
-            ) => ({
-              currentProjected:
-                current.currentProjected
-                + row.currentProjected,
-
-              weightedBids:
-                current.weightedBids
-                + row.weightedBids,
-
-              combinedExpected:
-                current.combinedExpected
-                + row.combinedExpected,
-
-              currentActual:
-                current.currentActual
-                + row.currentActual,
-
-              currentMarginCollected:
-                current.currentMarginCollected
-                + toNumber(
-                    row.currentMarginCollected
-                  ),
-
-              currentMissingMarginRows:
-                current.currentMissingMarginRows
-                + row.currentMissingMarginRows,
-
-              currentMarginDataComplete:
-                current.currentMarginDataComplete
-                && row.currentMarginDataComplete,
-
-              variance:
-                current.variance
-                + row.variance,
-            }),
-            {
-              currentProjected: 0,
-              weightedBids: 0,
-              combinedExpected: 0,
-              currentActual: 0,
-              currentMarginCollected: 0,
-              currentMissingMarginRows: 0,
-              currentMarginDataComplete: true,
-              variance: 0,
-            },
-          );
-
-        return {
-          ...totals,
-          currentMarginCollected:
-            totals.currentMarginDataComplete
-              ? totals.currentMarginCollected
-              : null,
-          currentWeightedHistoricalMarginPercent:
-            totals.currentMarginDataComplete
-            && Math.abs(
-              totals.currentActual
-            ) > 0.000001
-              ? (
-                  totals.currentMarginCollected
-                  / totals.currentActual
-                ) * 100
-              : null,
-        };
-      },
-      [monthlyComparison],
-    );
-
+  const monthlyComparisonTotals = useMemo(() => summarizeMonthlyTotals(monthlyComparison), [monthlyComparison]);
+  const projectionCoverage = useMemo(() => {
+    const rows = (portfolioFacets.contexts.projectionSource || [])
+      .filter(entry => entry.kind === 'current')
+      .map(entry => entry.row);
+    return {
+      pm: rows.filter(p => !isCompleted(p) && p.hasPmForecast).length,
+      system: rows.filter(p => !isCompleted(p) && !p.hasPmForecast).length,
+      historical: rows.filter(p => isCompleted(p)).length,
+      blank: rows.reduce((n, p) => n + (p.selectedMissingPmMonths || 0), 0),
+    };
+  }, [portfolioFacets]);
 
   const selectedMonthDetailRows =
     useMemo(
@@ -5045,10 +3531,7 @@ export default function App() {
             continue;
           }
 
-          const projected =
-            toNumber(
-              monthly.projectedAmount
-            );
+          const projected = nullableAmount(monthly.projectedAmount);
 
           const actual =
             monthly.actualAmount
@@ -5109,10 +3592,9 @@ export default function App() {
               projected,
             actual,
             marginCollected,
-            variance:
-              actual === null
-                ? null
-                : actual - projected,
+            baseline: monthly.systemBaselineAmount ?? (project.projectCompleted ? monthly.projectedAmount : null),
+            missingPmMonths: monthly.missingPmMonths || 0,
+            variance: amountDifference(actual, projected),
             raw:
               project,
           });
@@ -5933,6 +4415,12 @@ export default function App() {
       'Variance To Date',
       'Remaining Amount',
       'Future Projected Amount',
+      'Projection Source',
+      'Latest PM Version ID',
+      'Latest PM Version Number',
+      'Blank PM Comparison Months In Range',
+      'System Baseline In Range',
+      'Projection To Date Through Month',
     ];
 
 
@@ -6083,6 +4571,12 @@ export default function App() {
 
 
           const rowData = {
+            'Projection Source': isBid ? 'Probability-weighted Bid' : projectionSourceLabel(raw),
+            'Latest PM Version ID': raw.latestForecastVersionId ?? '',
+            'Latest PM Version Number': raw.latestForecastVersionNumber ?? '',
+            'Blank PM Comparison Months In Range': isBid ? '' : rangeMargin?.missingPmMonths ?? 0,
+            'System Baseline In Range': isBid ? '' : rangeMargin?.baseline ?? '',
+            'Projection To Date Through Month': isBid ? '' : raw.projectionAsOfMonth ?? '',
             'Source':
               row.source,
 
@@ -6510,12 +5004,19 @@ export default function App() {
   }
 
 
+  function exportMonthlyProjectionView() {
+    const { headers, rows } = buildMonthlyProjectionExport(currentDetails, currentMonthly,
+      bidDetails, bidMonthly, fromMonth, throughMonth, isAdmin);
+    downloadCsv(`riggs-pm-first-monthly-${fromMonth}-to-${throughMonth}.csv`, headers, rows);
+  }
+
   function resetFilters() {
     setSearch('');
     setPmFilter(ALL);
     setProjectTypeFilter(ALL);
     setPurposeFilter(ALL);
     setForecastStateFilter(ALL);
+    setProjectionSourceFilter(ALL);
     setGcFilter(ALL);
     setPotentialProbabilityInput(
       String(
@@ -6527,10 +5028,6 @@ export default function App() {
     setApmFilter(ALL);
     setFoundationFilter(ALL);
     setVarianceFilter(ALL);
-    setBidStatusFilter(ALL);
-    setProbabilityStateFilter(ALL);
-    setStateFilter(ALL);
-    setIsNewBidFilter(ALL);
     setSnoozedFilter(ALL);
     setFromMonth(
       addMonths(
@@ -6677,6 +5174,12 @@ export default function App() {
         </div>
 
         <div className="topbar-actions">
+          {activePage === 'projected' && canViewProjectedBillings && <RefreshButton
+            label="Refresh projected billings" busy={portfolioFreshness.refreshing}
+            title="Refresh projected billings and notifications" onClick={() => {
+              void portfolioFreshness.refreshAll(); void loadForecastAttention();
+              if (canReadGcReference(user)) void gcDirectory.refresh();
+            }} /> }
           <div
             className="notification-center"
             hidden={!canViewProjectedBillings}
@@ -6748,21 +5251,8 @@ export default function App() {
                     )}
                   </div>
 
-                  <button
-                    type="button"
-                    className="text-button"
-                    onClick={
-                      () =>
-                        loadForecastAttention()
-                    }
-                    disabled={
-                      attentionLoading
-                    }
-                  >
-                    {attentionLoading
-                      ? 'Refreshing…'
-                      : 'Refresh'}
-                  </button>
+                  <RefreshButton label="Refresh notifications" busy={attentionLoading}
+                    onClick={() => loadForecastAttention()} />
                 </div>
 
                 {attentionError && (
@@ -6929,7 +5419,7 @@ export default function App() {
                 <span className="toggle-label">
                   <strong>Potential Projects</strong>
                   <small>
-                    {Math.round(potentialProbabilityPercent)}%+ · {potentialBidCount}
+                    {Math.round(potentialProbabilityPercent)}%+ · {activeBids.filter(row => isPotentialBid(row) && hasMonthlyValues(bidMonthly.get(row.sharePointItemId),fromMonth,throughMonth,['weightedMonthlyForecastAmount','monthlyForecastAmount'])).length}
                   </small>
                 </span>
               </button>
@@ -6946,7 +5436,7 @@ export default function App() {
               >
                 <span className="toggle-label">
                   <strong>Projects</strong>
-                  <small>{currentProjects.length} projects</small>
+                  <small>{currentRangeRows.length} filtered</small>
                 </span>
               </button>
             </div>
@@ -6954,14 +5444,14 @@ export default function App() {
             <button
               type="button"
               className="secondary-button projected-export-button"
-              onClick={exportCurrentView}
+              onClick={() => setExportDialogOpen(true)}
               disabled={
                 dataLoading
                 || !rangeValid
                 || !detailRows.length
               }
             >
-              {`Export CSV (${detailRows.length})`}
+              Export CSV
             </button>
           </div>
         </div>
@@ -6982,6 +5472,10 @@ export default function App() {
           </div>
         )}
 
+
+        {gcDirectory.error && canReadGcReference(user) && <div className="page-alert" role="status">
+          General Contractor directory is unavailable. Source names are shown; use the header refresh to retry.
+        </div>}
 
         <section
           className="filter-panel projected-filter-panel"
@@ -7143,18 +5637,11 @@ export default function App() {
                   value={forecastStateFilter}
                   onChange={setForecastStateFilter}
                 >
-                  <option value={ALL}>
+<option value={ALL}>
                     All States
                   </option>
-
-                  <option value="READY">
-                    Ready
-                  </option>
-
-                  <option value="NOT_CONFIGURED">
-                    Not Configured
-                  </option>
-                </SelectField>
+{portfolioFacets.options.forecast.map(value => <option key={value} value={value}>{({"READY": "Ready", "NOT_CONFIGURED": "Not Configured"})[value] || value}</option>)}
+</SelectField>
 
                 <SelectField
                   label="General Contractor"
@@ -7171,16 +5658,11 @@ export default function App() {
                     </option>
                   )}
 
-                  {gcOptions.map(
-                    value => (
-                      <option
-                        key={value}
-                        value={value}
-                      >
-                        {value}
-                      </option>
-                    )
-                  )}
+                  {gcOptions.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}{option.status === 'AMBIGUOUS' ? ' · record unclear' : ''}
+                    </option>
+                  ))}
                 </SelectField>
               </div>
 
@@ -7303,45 +5785,28 @@ export default function App() {
                       )}
                     </SelectField>
 
-                    <SelectField
-                      label="Foundation History"
+                    <FilterToggleGroup
+                      label="Billings"
                       value={foundationFilter}
                       onChange={setFoundationFilter}
-                    >
-                      <option value={ALL}>
-                        All
-                      </option>
+                      allValue={ALL}
+                      options={[
+                        { value: 'true', label: 'Has Billings', available: portfolioFacets.options.foundation.includes('true') },
+                        { value: 'false', label: 'No Billings', available: portfolioFacets.options.foundation.includes('false') },
+                      ]}
+                    />
 
-                      <option value="true">
-                        Has Billings
-                      </option>
-
-                      <option value="false">
-                        No Billings
-                      </option>
-                    </SelectField>
-
-                    <SelectField
-                      label="Selected Variance"
+                    <FilterToggleGroup
+                      label="Difference"
                       value={varianceFilter}
                       onChange={setVarianceFilter}
-                    >
-                      <option value={ALL}>
-                        All
-                      </option>
-
-                      <option value="over">
-                        Actual Over Projection
-                      </option>
-
-                      <option value="under">
-                        Actual Under Projection
-                      </option>
-
-                      <option value="even">
-                        Even
-                      </option>
-                    </SelectField>
+                      allValue={ALL}
+                      options={[
+                        { value: 'over', label: 'Over', available: portfolioFacets.options.variance.includes('over') },
+                        { value: 'under', label: 'Under', available: portfolioFacets.options.variance.includes('under') },
+                        { value: 'even', label: 'Even', available: portfolioFacets.options.variance.includes('even') },
+                      ]}
+                    />
                   </div>
                 </div>
               )}
@@ -7350,7 +5815,7 @@ export default function App() {
               {includeBids && (
                 <div className="source-filter-group">
                   <div className="filter-group-title">
-                    Bid Filters
+                    Potential Project Filters
                   </div>
 
                   <div className="filter-grid">
@@ -7362,106 +5827,15 @@ export default function App() {
                         compact
                       />
                     )}
-                    <SelectField
-                      label="Bid Status"
-                      value={bidStatusFilter}
-                      onChange={setBidStatusFilter}
-                    >
-                      <option value={ALL}>
-                        All Statuses
-                      </option>
-
-                      {bidStatusOptions.map(
-                        value => (
-                          <option
-                            key={value}
-                            value={value}
-                          >
-                            {value}
-                          </option>
-                        )
-                      )}
-                    </SelectField>
-
-                    <SelectField
-                      label="Probability"
-                      value={probabilityStateFilter}
-                      onChange={setProbabilityStateFilter}
-                    >
-                      <option value={ALL}>
-                        All
-                      </option>
-
-                      {probabilityStateOptions.map(
-                        value => (
-                          <option
-                            key={value}
-                            value={value}
-                          >
-                            {value === 'VALID'
-                              ? 'Valid'
-                              : 'Missing / Invalid'}
-                          </option>
-                        )
-                      )}
-                    </SelectField>
-
-                    <SelectField
-                      label="State"
-                      value={stateFilter}
-                      onChange={setStateFilter}
-                    >
-                      <option value={ALL}>
-                        All States
-                      </option>
-
-                      {stateOptions.map(
-                        value => (
-                          <option
-                            key={value}
-                            value={value}
-                          >
-                            {value}
-                          </option>
-                        )
-                      )}
-                    </SelectField>
-
-                    <SelectField
-                      label="New Bid"
-                      value={isNewBidFilter}
-                      onChange={setIsNewBidFilter}
-                    >
-                      <option value={ALL}>
-                        All
-                      </option>
-
-                      <option value="true">
-                        New
-                      </option>
-
-                      <option value="false">
-                        Existing
-                      </option>
-                    </SelectField>
-
-                    <SelectField
+                    <FilterToggleGroup
                       label="Snoozed"
                       value={snoozedFilter}
                       onChange={setSnoozedFilter}
-                    >
-                      <option value={ALL}>
-                        All
-                      </option>
-
-                      <option value="true">
-                        Snoozed
-                      </option>
-
-                      <option value="false">
-                        Not Snoozed
-                      </option>
-                    </SelectField>
+                      allValue={ALL}
+                      options={[
+                        { value: 'true', label: 'Snoozed only', available: portfolioFacets.options.snoozed.includes('true') },
+                      ]}
+                    />
                   </div>
                 </div>
               )}
@@ -7567,7 +5941,7 @@ export default function App() {
                       </strong>
 
                       <small>
-                        {Math.round(potentialProbabilityPercent)}%+ · {potentialBidCount}
+                        {Math.round(potentialProbabilityPercent)}%+ · {activeBids.filter(row => isPotentialBid(row) && hasMonthlyValues(bidMonthly.get(row.sharePointItemId),fromMonth,throughMonth,['weightedMonthlyForecastAmount','monthlyForecastAmount'])).length}
                       </small>
                     </button>
 
@@ -7590,7 +5964,7 @@ export default function App() {
                       </strong>
 
                       <small>
-                        {currentProjects.length} projects
+                        {currentRangeRows.length} filtered
                       </small>
                     </button>
                   </div>
@@ -7728,18 +6102,11 @@ export default function App() {
                       value={forecastStateFilter}
                       onChange={setForecastStateFilter}
                     >
-                      <option value={ALL}>
+<option value={ALL}>
                         All States
                       </option>
-
-                      <option value="READY">
-                        Ready
-                      </option>
-
-                      <option value="NOT_CONFIGURED">
-                        Not Configured
-                      </option>
-                    </SelectField>
+{portfolioFacets.options.forecast.map(value => <option key={value} value={value}>{({"READY": "Ready", "NOT_CONFIGURED": "Not Configured"})[value] || value}</option>)}
+</SelectField>
 
                     <SelectField
                       label="General Contractor"
@@ -7756,16 +6123,11 @@ export default function App() {
                         </option>
                       )}
 
-                      {gcOptions.map(
-                        value => (
-                          <option
-                            key={value}
-                            value={value}
-                          >
-                            {value}
-                          </option>
-                        )
-                      )}
+                      {gcOptions.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}{option.status === 'AMBIGUOUS' ? ' · record unclear' : ''}
+                    </option>
+                  ))}
                     </SelectField>
                   </div>
                 </section>
@@ -7889,45 +6251,28 @@ export default function App() {
                         )}
                       </SelectField>
 
-                      <SelectField
-                        label="Foundation History"
+                      <FilterToggleGroup
+                        label="Billings"
                         value={foundationFilter}
                         onChange={setFoundationFilter}
-                      >
-                        <option value={ALL}>
-                          All
-                        </option>
+                        allValue={ALL}
+                        options={[
+                          { value: 'true', label: 'Has Billings', available: portfolioFacets.options.foundation.includes('true') },
+                          { value: 'false', label: 'No Billings', available: portfolioFacets.options.foundation.includes('false') },
+                        ]}
+                      />
 
-                        <option value="true">
-                          Has Billings
-                        </option>
-
-                        <option value="false">
-                          No Billings
-                        </option>
-                      </SelectField>
-
-                      <SelectField
-                        label="Selected Variance"
+                      <FilterToggleGroup
+                        label="Difference"
                         value={varianceFilter}
                         onChange={setVarianceFilter}
-                      >
-                        <option value={ALL}>
-                          All
-                        </option>
-
-                        <option value="over">
-                          Actual Over Projection
-                        </option>
-
-                        <option value="under">
-                          Actual Under Projection
-                        </option>
-
-                        <option value="even">
-                          Even
-                        </option>
-                      </SelectField>
+                        allValue={ALL}
+                        options={[
+                          { value: 'over', label: 'Over', available: portfolioFacets.options.variance.includes('over') },
+                          { value: 'under', label: 'Under', available: portfolioFacets.options.variance.includes('under') },
+                          { value: 'even', label: 'Even', available: portfolioFacets.options.variance.includes('even') },
+                        ]}
+                      />
                     </div>
                   </section>
                 )}
@@ -7936,7 +6281,7 @@ export default function App() {
                 {includeBids && (
                   <section className="side-filter-section">
                     <div className="side-filter-section-title">
-                      Bid Filters
+                      Potential Project Filters
                     </div>
 
                     <div className="side-filter-fields">
@@ -7947,106 +6292,15 @@ export default function App() {
                           onBlur={normalizePotentialProbabilityInput}
                         />
                       )}
-                      <SelectField
-                        label="Bid Status"
-                        value={bidStatusFilter}
-                        onChange={setBidStatusFilter}
-                      >
-                        <option value={ALL}>
-                          All Statuses
-                        </option>
-
-                        {bidStatusOptions.map(
-                          value => (
-                            <option
-                              key={value}
-                              value={value}
-                            >
-                              {value}
-                            </option>
-                          )
-                        )}
-                      </SelectField>
-
-                      <SelectField
-                        label="Probability"
-                        value={probabilityStateFilter}
-                        onChange={setProbabilityStateFilter}
-                      >
-                        <option value={ALL}>
-                          All
-                        </option>
-
-                        {probabilityStateOptions.map(
-                          value => (
-                            <option
-                              key={value}
-                              value={value}
-                            >
-                              {value === 'VALID'
-                                ? 'Valid'
-                                : 'Missing / Invalid'}
-                            </option>
-                          )
-                        )}
-                      </SelectField>
-
-                      <SelectField
-                        label="State"
-                        value={stateFilter}
-                        onChange={setStateFilter}
-                      >
-                        <option value={ALL}>
-                          All States
-                        </option>
-
-                        {stateOptions.map(
-                          value => (
-                            <option
-                              key={value}
-                              value={value}
-                            >
-                              {value}
-                            </option>
-                          )
-                        )}
-                      </SelectField>
-
-                      <SelectField
-                        label="New Bid"
-                        value={isNewBidFilter}
-                        onChange={setIsNewBidFilter}
-                      >
-                        <option value={ALL}>
-                          All
-                        </option>
-
-                        <option value="true">
-                          New
-                        </option>
-
-                        <option value="false">
-                          Existing
-                        </option>
-                      </SelectField>
-
-                      <SelectField
+                      <FilterToggleGroup
                         label="Snoozed"
                         value={snoozedFilter}
                         onChange={setSnoozedFilter}
-                      >
-                        <option value={ALL}>
-                          All
-                        </option>
-
-                        <option value="true">
-                          Snoozed
-                        </option>
-
-                        <option value="false">
-                          Not Snoozed
-                        </option>
-                      </SelectField>
+                        allValue={ALL}
+                        options={[
+                          { value: 'true', label: 'Snoozed only', available: portfolioFacets.options.snoozed.includes('true') },
+                        ]}
+                      />
                     </div>
                   </section>
                 )}
@@ -8142,10 +6396,6 @@ export default function App() {
                 Projected vs Actual Billings
               </h2>
 
-              <p className="billing-section-explainer">
-                Switch between By Month and By Project.
-                Collapse hides this section.
-              </p>
             </div>
 
             <div className="monthly-heading-actions">
@@ -8200,9 +6450,11 @@ export default function App() {
                 </button>
               </div>
 
-              <span className="section-note">
-                Potential Projects are probability weighted
-              </span>
+              {includeBids && (
+                <span className="section-note">
+                  Potential Projects are probability weighted
+                </span>
+              )}
 
               <button
                 type="button"
@@ -8222,6 +6474,39 @@ export default function App() {
             </div>
           </div>
 
+
+            {monthlyComparisonOpen && (
+              <>
+                <div className="projection-basis-controls">
+                  {includeActiveProjects && (
+                    <div className="projection-source-filter-group" aria-label="Projection source filter">
+                      <button
+                        type="button"
+                        className={`projection-source-count-toggle ${projectionSourceFilter === ALL || projectionSourceFilter === 'pm' ? 'active' : ''}`}
+                        aria-pressed={projectionSourceFilter === ALL || projectionSourceFilter === 'pm'}
+                        title="Show projects with a submitted PM Projection"
+                        onClick={() => setProjectionSourceFilter(value => value === 'pm' ? ALL : 'pm')}
+                      >
+                        {projectionCoverage.pm} PM Projection
+                      </button>
+                      <span className="projection-source-divider" aria-hidden="true">·</span>
+                      <button
+                        type="button"
+                        className={`projection-source-count-toggle ${projectionSourceFilter === ALL || projectionSourceFilter === 'missing' ? 'active' : ''}`}
+                        aria-pressed={projectionSourceFilter === ALL || projectionSourceFilter === 'missing'}
+                        title="* No submitted PM Projection"
+                        onClick={() => setProjectionSourceFilter(value => value === 'missing' ? ALL : 'missing')}
+                      >
+                        {projectionCoverage.system} Missing*
+                      </button>
+                      {projectionCoverage.historical > 0 && (
+                        <span>{projectionCoverage.historical} historical billing</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
 
           {monthlyComparisonView === 'project'
             ? (
@@ -8352,9 +6637,7 @@ export default function App() {
 
                         {includeActiveProjects && (
                           <td className="numeric">
-                            {currency(
-                              row.currentProjected
-                            )}
+                            <ProjectionAmount value={row.currentProjected} currency={currency} missing={row.missingPmMonths} baseline={row.currentBaseline} compare={false} />
                           </td>
                         )}
 
@@ -8368,9 +6651,7 @@ export default function App() {
 
                         {showCombinedSources && (
                           <td className="numeric strong-cell">
-                            {currency(
-                              row.combinedExpected
-                            )}
+                            <ProjectionAmount value={row.combinedExpected} currency={currency} missing={row.missingPmMonths} />
                           </td>
                         )}
 
@@ -8419,9 +6700,7 @@ export default function App() {
                                   )
                             }
                           >
-                            {currency(
-                              row.variance
-                            )}
+                            {row.variance === null ? '—' : currency(row.variance)}
                           </td>
                         )}
                       </tr>
@@ -8626,6 +6905,7 @@ export default function App() {
 
                                               <td className="project-cell">
                                                 <div className="project-name-status-line">
+                                                  {detail.source === 'Current Project' && <ProjectionEstimateMarker project={detail.raw} />}
                                                   <strong
                                                     className="project-title-ellipsis"
                                                     title={displayValue(detail.name)}
@@ -8697,9 +6977,7 @@ export default function App() {
                                               </td>
 
                                               <td className="numeric strong-cell">
-                                                {currency(
-                                                  detail.expected
-                                                )}
+                                                <ProjectionAmount value={detail.expected} currency={currency} missing={detail.missingPmMonths} baseline={detail.baseline} compare={false} />
                                               </td>
 
                                               {includeActiveProjects && (
@@ -8787,9 +7065,7 @@ export default function App() {
 
                     {includeActiveProjects && (
                       <td className="numeric">
-                        {currency(
-                          monthlyComparisonTotals.currentProjected
-                        )}
+                        <ProjectionAmount value={monthlyComparisonTotals.currentProjected} currency={currency} missing={monthlyComparisonTotals.missingPmMonths} baseline={monthlyComparisonTotals.currentBaseline} compare={false} />
                       </td>
                     )}
 
@@ -8803,9 +7079,7 @@ export default function App() {
 
                     {showCombinedSources && (
                       <td className="numeric strong-cell">
-                        {currency(
-                          monthlyComparisonTotals.combinedExpected
-                        )}
+                        <ProjectionAmount value={monthlyComparisonTotals.combinedExpected} currency={currency} missing={monthlyComparisonTotals.missingPmMonths} />
                       </td>
                     )}
 
@@ -8853,9 +7127,7 @@ export default function App() {
                               )
                         }
                       >
-                        {currency(
-                          monthlyComparisonTotals.variance
-                        )}
+                        {monthlyComparisonTotals.variance === null ? '—' : currency(monthlyComparisonTotals.variance)}
                       </td>
                     )}
                   </tr>
@@ -9103,6 +7375,7 @@ export default function App() {
 
                       <td className="project-cell">
                         <div className="project-name-status-line">
+                          {row.source === 'Current Project' && <ProjectionEstimateMarker project={row.raw} />}
                           <strong
                             className="project-title-ellipsis"
                             title={displayValue(row.name)}
@@ -9212,9 +7485,7 @@ export default function App() {
                       )}
 
                       <td className="numeric strong-cell">
-                        {currency(
-                          row.expected
-                        )}
+                        <ProjectionAmount value={row.expected} currency={currency} missing={row.raw?.selectedMissingPmMonths} baseline={row.raw?.selectedBaseline} compare={false} />
                       </td>
 
                       {includeActiveProjects && (
@@ -9292,6 +7563,7 @@ export default function App() {
       ) ? (
         <ActiveProjectsWorkspace
           user={user}
+          onProjectDataChanged={refreshProjectedCurrentProjectData}
         />
       ) : (
         activePage === 'accountability'
@@ -9305,6 +7577,14 @@ export default function App() {
           ]}
         />
       ) : null}
+
+      <CsvExportDialog
+        open={exportDialogOpen}
+        projectCount={detailRows.length}
+        onClose={() => setExportDialogOpen(false)}
+        onMonthly={exportMonthlyProjectionView}
+        onBreakdown={exportCurrentView}
+      />
 
       <CurrentProjectBillingDrawer
         project={selectedCurrentProject}
@@ -9332,9 +7612,7 @@ export default function App() {
           );
           setSelectedCurrentProject(null);
         }}
-        onAttentionChanged={
-          loadForecastAttention
-        }
+        onAttentionChanged={refreshProjectedCurrentProjectData}
       />
 
       <ActiveBidBillingDrawer

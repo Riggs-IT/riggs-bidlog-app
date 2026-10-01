@@ -1,3 +1,5 @@
+import useGcReference from './useGcReference.js';
+import { gcReference } from './gcReference.js';
 import {
   useEffect,
   useMemo,
@@ -143,10 +145,8 @@ export default function BidLogCreateDrawer({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [requiredFields, setRequiredFields] = useState([]);
-  const [gcOptions, setGcOptions] = useState([]);
-  const [gcOptionsLoading, setGcOptionsLoading] = useState(false);
-  const [gcOptionsError, setGcOptionsError] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
+  const { items: gcOptions, loading: gcOptionsLoading, error: gcOptionsError, refresh: retryGcOptions } = useGcReference(open);
 
   const editorPmOptions = useMemo(
     () => Array.from(
@@ -215,34 +215,6 @@ export default function BidLogCreateDrawer({
     onClose();
   }
 
-  async function loadGcOptions() {
-    setGcOptionsLoading(true);
-    setGcOptionsError(null);
-
-    try {
-      const payload = await requestJson(
-        '/api/bid-log/reference/general-contractors',
-      );
-
-      if (!Array.isArray(payload?.items)) {
-        throw new Error(
-          'General contractor reference returned an invalid response.',
-        );
-      }
-
-      setGcOptions(payload.items);
-    } catch (error) {
-      setGcOptionsError(
-        errorMessage(
-          error,
-          'Unable to load the Potential GCs list.',
-        ),
-      );
-    } finally {
-      setGcOptionsLoading(false);
-    }
-  }
-
   useEffect(
     () => {
       if (!open) {
@@ -256,7 +228,6 @@ export default function BidLogCreateDrawer({
       setSaveError(null);
       setRequiredFields([]);
       setSaving(false);
-      loadGcOptions();
     },
     [open],
   );
@@ -510,7 +481,8 @@ export default function BidLogCreateDrawer({
               multiple
               disabled={saving}
               onChange={value => updateField('generalContractors', value)}
-              onRetry={loadGcOptions}
+              onRetry={retryGcOptions}
+              onOpen={() => { void gcReference.load().catch(() => {}); }}
             />
           </Field>
         </div>

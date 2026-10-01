@@ -1,3 +1,8 @@
+import {facetRows} from './viewFilters.js';
+import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
+import {contractorTokens, canonicalFilterKey} from './gcReference.js';
+import {RefreshButton} from './ViewControls.jsx';
+import useGcReference, { canReadGcReference } from './useGcReference.js';
 import {
   Fragment,
   useEffect,
@@ -9,6 +14,10 @@ import {
 import {
   GeneralContractorDisplay,
   generalContractorDisplayText,
+  generalContractorFilterMatch,
+  contractorFilterOptions,
+  MULTIPLE_GCS,
+  generalContractorNames,
 } from './GeneralContractors.jsx';
 import BidLogEditDrawer from './BidLogEditDrawer.jsx';
 import BidLogOutcomeEditDrawer from './BidLogOutcomeEditDrawer.jsx';
@@ -571,7 +580,7 @@ function normalizeOutcomeListPayload(payload) {
 async function loadBidView(viewKey, signal) {
   const view = BID_VIEWS[viewKey] || BID_VIEWS.active;
   const path = view.key === 'active'
-    ? '/api/bid-log/active?limit=500&offset=0'
+    ? '/api/bid-log/active?limit=500&offset=0&fresh=true'
     : `/api/bid-log/outcomes?status=${encodeURIComponent(view.status)}`;
 
   const response = await window.fetch(
@@ -803,11 +812,13 @@ export default function BidLogWorkspace({
   pmDirectory = [],
   onBidDataChanged,
 }) {
+  const gcDirectory = useGcReference(canReadGcReference(user));
   const [
     bidView,
     setBidView,
   ] = useState('active');
 
+  const [gcFilter, setGcFilter] = useState(ALL);
   const currentView = BID_VIEWS[bidView] || BID_VIEWS.active;
   const activeView = currentView.key === 'active';
 
@@ -1136,15 +1147,32 @@ export default function BidLogWorkspace({
   );
 
 
-  const pmOptions = useMemo(
-    () =>
-      sortedUnique(
-        items,
-        row => row.pm,
-      ),
-    [items],
-  );
-
+  const filters={pm:pmFilter,type:typeFilter,gc:gcFilter,due:dueFilter};
+  const facets=useMemo(()=>{
+    const probability=String(minimumProbability).trim()===''?null:Number(minimumProbability)/100;
+    const entries=items.filter(row=>{
+      if(quickFilter==='due30'&&!isDueWithin(row,30))return false;
+      if(quickFilter==='unassigned'&&!isUnassigned(row))return false;
+      if(quickFilter==='snoozed'&&row.snoozed!==true)return false;
+      if(quickFilter==='missingEstimate'&&row.estimatedPrice!=null)return false;
+      if(realBidsOnly&&row.realEstimate!==true)return false;
+      if(probability!==null&&Number.isFinite(probability)){
+        const p=probabilityRatio(row.probability);if(p===null||p<probability)return false;
+      }
+      return matchesSearch(row,search)||(normalizedSearch(search)&&normalizedSearch(generalContractorDisplayText(row.generalContractors)).includes(normalizedSearch(search)));
+    });
+    return facetRows(entries,{...filters,gc:canonicalFilterKey(gcFilter,gcDirectory.directory)},{
+      pm:{values:r=>[String(r.pm||'').trim()]},type:{values:r=>[String(r.projectType||'').trim()]},
+      gc:{values:r=>[...contractorTokens(r.generalContractors,gcDirectory.directory).map(x=>x.key),...(generalContractorNames(r.generalContractors).length>1?[MULTIPLE_GCS]:[])],
+        matches:(r,v)=>generalContractorFilterMatch(r.generalContractors,v,ALL,gcDirectory.directory)},
+      due:{values:r=>[...(isDueWithin(r,7)?['7']:[]),...(isDueWithin(r,30)?['30']:[]),...(activeView&&isOverdue(r)?['overdue']:[])]}
+    });
+  },[items,search,quickFilter,realBidsOnly,minimumProbability,activeView,gcDirectory.directory,JSON.stringify(filters)]);
+  useFacetSelectionCleanup(filters,facets.selections,{pm:setPmFilter,type:setTypeFilter,gc:setGcFilter,due:setDueFilter},!loading);
+  const gcOptions=contractorFilterOptions(facets.contexts.gc.map(r=>r.generalContractors),gcDirectory.directory);
+  const hasMultipleGCs=facets.options.gc.includes(MULTIPLE_GCS);
+  const pmOptions=facets.options.pm;
+  const allPmOptions=useMemo(()=>sortedUnique(items,row=>row.pm),[items]);
 
   const historicalPmOptions = useMemo(
     () => {
@@ -1247,13 +1275,13 @@ export default function BidLogWorkspace({
         return null;
       }
 
-      return pmOptions.some(
+      return allPmOptions.some(
         pm => pmDirectoryKey(pm) === userKey,
       )
         ? approved
         : null;
     },
-    [approvedPmOptions, pmOptions, user?.displayName],
+    [approvedPmOptions, allPmOptions, user?.displayName],
   );
 
 
@@ -1275,15 +1303,7 @@ export default function BidLogWorkspace({
   );
 
 
-  const typeOptions = useMemo(
-    () =>
-      sortedUnique(
-        items,
-        row => row.projectType,
-      ),
-    [items],
-  );
-
+  const typeOptions=facets.options.type;
 
   useEffect(
     () => {
@@ -1370,110 +1390,7 @@ export default function BidLogWorkspace({
 
   const filteredItems = useMemo(
     () => {
-      const probability =
-        String(minimumProbability).trim() === ''
-          ? null
-          : Number(minimumProbability) / 100;
-
-      return items
-        .filter(
-          row => {
-            if (
-              quickFilter === 'due30'
-              && !isDueWithin(row, 30)
-            ) {
-              return false;
-            }
-
-            if (
-              quickFilter === 'unassigned'
-              && !isUnassigned(row)
-            ) {
-              return false;
-            }
-
-            if (
-              quickFilter === 'snoozed'
-              && row.snoozed !== true
-            ) {
-              return false;
-            }
-
-            if (
-              quickFilter === 'missingEstimate'
-              && row.estimatedPrice !== null
-              && row.estimatedPrice !== undefined
-            ) {
-              return false;
-            }
-
-            if (!matchesSearch(row, search)) {
-              return false;
-            }
-
-            if (
-              pmFilter !== ALL
-              && String(row.pm || '').trim()
-                !== pmFilter
-            ) {
-              return false;
-            }
-
-            if (
-              typeFilter !== ALL
-              && String(row.projectType || '').trim()
-                !== typeFilter
-            ) {
-              return false;
-            }
-
-            if (
-              dueFilter === '7'
-              && !isDueWithin(row, 7)
-            ) {
-              return false;
-            }
-
-            if (
-              dueFilter === '30'
-              && !isDueWithin(row, 30)
-            ) {
-              return false;
-            }
-
-            if (
-              dueFilter === 'overdue'
-              && !isOverdue(row)
-            ) {
-              return false;
-            }
-
-            if (
-              realBidsOnly
-              && row.realEstimate !== true
-            ) {
-              return false;
-            }
-
-            if (
-              probability !== null
-              && Number.isFinite(probability)
-            ) {
-              const rowProbability = probabilityRatio(
-                row.probability,
-              );
-
-              if (
-                rowProbability === null
-                || rowProbability < probability
-              ) {
-                return false;
-              }
-            }
-
-            return true;
-          },
-        )
+      return [...facets.rows]
         .sort(
           (a, b) => {
             let comparison = 0;
@@ -1609,7 +1526,7 @@ export default function BidLogWorkspace({
     },
     [
       dueFilter,
-      items,
+      facets,
       minimumProbability,
       pmFilter,
       quickFilter,
@@ -1617,6 +1534,8 @@ export default function BidLogWorkspace({
       search,
       sortState,
       typeFilter,
+      gcFilter,
+      gcDirectory.directory,
     ],
   );
 
@@ -1651,6 +1570,8 @@ export default function BidLogWorkspace({
       sortState.direction,
       sortState.key,
       typeFilter,
+      gcFilter,
+      gcDirectory.directory,
     ],
   );
 
@@ -1762,6 +1683,7 @@ export default function BidLogWorkspace({
     setSearch('');
     setPmFilter(ALL);
     setTypeFilter(ALL);
+    setGcFilter(ALL);
     setDueFilter(ALL);
     setMinimumProbability('');
     setRealBidsOnly(false);
@@ -2361,16 +2283,8 @@ export default function BidLogWorkspace({
           )}
 
           <div className="bid-log-filter-actions">
-            <button
-              type="button"
-              className="secondary-button bid-log-refresh-button"
-              onClick={() => {
-                void refreshCurrentBidView();
-              }}
-              disabled={loading}
-            >
-              {loading ? 'Refreshing…' : 'Refresh'}
-            </button>
+            <RefreshButton label="Refresh bids" className="bid-log-refresh-button" busy={loading}
+              onClick={()=>{void refreshCurrentBidView(); if(canReadGcReference(user))void gcDirectory.refresh();}} />
 
             <button
               type="button"
@@ -2400,11 +2314,9 @@ export default function BidLogWorkspace({
               onChange={event => setDueFilter(event.target.value)}
             >
               <option value={ALL}>All Due Dates</option>
-              <option value="7">Due Within 7 Days</option>
-              <option value="30">Due Within 30 Days</option>
-              {activeView && (
-                <option value="overdue">Overdue</option>
-              )}
+              {facets.options.due.includes('7') && (<option value="7">Due Within 7 Days</option>)}
+              {facets.options.due.includes('30') && (<option value="30">Due Within 30 Days</option>)}
+              {activeView && facets.options.due.includes('overdue') && <option value="overdue">Overdue</option>}
             </select>
           </label>
 
@@ -2454,6 +2366,17 @@ export default function BidLogWorkspace({
                   </option>
                 ),
               )}
+            </select>
+          </label>
+
+          <label className="filter-field">
+            <span>General Contractor</span>
+            <select value={gcFilter} onChange={event => setGcFilter(event.target.value)}>
+              <option value={ALL}>All General Contractors</option>
+              {hasMultipleGCs && <option value={MULTIPLE_GCS}>Multiple GCs</option>}
+              {gcOptions.map(option => <option key={option.value} value={option.value}>
+                {option.label}{option.status === 'AMBIGUOUS' ? ' · record unclear' : ''}
+              </option>)}
             </select>
           </label>
 

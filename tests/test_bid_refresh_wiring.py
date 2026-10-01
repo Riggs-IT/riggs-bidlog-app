@@ -46,10 +46,10 @@ class BidRefreshWiringTests(unittest.TestCase):
             "frontend/src/App.jsx"
         ).read_text()
 
-        self.assertIn(
-            "{ cache: 'no-store' },",
-            source,
-        )
+        freshness = Path("frontend/src/useProjectedBillingsFreshness.js").read_text()
+        self.assertIn("portfolioFreshness.refreshBids()", source)
+        self.assertIn("fresh: true", freshness)
+        self.assertIn("readOptions(config)", freshness)
         self.assertIn(
             "onBidDataChanged={() => {",
             source,

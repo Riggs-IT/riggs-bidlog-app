@@ -30,6 +30,7 @@ from .auth import (
     CurrentUser,
     get_current_user,
     resolve_entra_user,
+    suppress_unchanged_passive_cookie,
 )
 from .config import get_settings
 from .cognito_general import general_request
@@ -71,6 +72,7 @@ from .data_api import (
     get_current_project_monthly,
     get_current_projected_billings,
     get_current_projects_monthly_bulk,
+    get_current_projects_primary_projection,
     get_current_project_originating_bid,
     get_current_project_change_orders,
     get_current_project_bid_candidates,
@@ -292,6 +294,7 @@ async def security_headers(
     response = await call_next(
         request
     )
+    suppress_unchanged_passive_cookie(request, response, SESSION_COOKIE_NAME)
 
     response.headers[
         "X-Content-Type-Options"
@@ -1612,6 +1615,7 @@ def _role_scoped_financial_payload(
     "/api/projected-billings/current-projects"
 )
 def projected_billings_current_projects(
+    fresh: bool = FastAPIQuery(default=False),
     current_user: CurrentUser = Depends(
         get_current_user
     ),
@@ -1620,7 +1624,7 @@ def projected_billings_current_projects(
 
     try:
         return _role_scoped_financial_payload(
-            get_current_projected_billings(),
+            get_current_projected_billings(fresh=fresh),
             current_user,
         )
 
@@ -1630,10 +1634,25 @@ def projected_billings_current_projects(
         )
 
 
+@app.get("/api/projected-billings/current-projects/primary-projection")
+def projected_billings_current_projects_primary_projection(
+    fresh: bool = FastAPIQuery(default=False),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    _require_projected_workspace_access(current_user)
+    try:
+        return _role_scoped_financial_payload(
+            get_current_projects_primary_projection(fresh=fresh), current_user,
+        )
+    except Exception as exc:
+        _raise_projected_billings_error(exc)
+
+
 @app.get(
     "/api/projected-billings/current-projects/monthly"
 )
 def projected_billings_current_projects_monthly_bulk(
+    fresh: bool = FastAPIQuery(default=False),
     current_user: CurrentUser = Depends(
         get_current_user
     ),
@@ -1642,7 +1661,7 @@ def projected_billings_current_projects_monthly_bulk(
 
     try:
         return _role_scoped_financial_payload(
-            get_current_projects_monthly_bulk(),
+            get_current_projects_monthly_bulk(fresh=fresh),
             current_user,
         )
 
@@ -1693,6 +1712,7 @@ def projected_billings_current_project_monthly(
     "/api/active-projects"
 )
 def active_projects_list_proxy(
+    fresh: bool = FastAPIQuery(default=False),
     current_user: CurrentUser = Depends(
         get_current_user
     ),
@@ -1701,7 +1721,8 @@ def active_projects_list_proxy(
 
     try:
         return _role_scoped_financial_payload(
-            get_current_projected_billings(),
+            [row for row in get_current_projected_billings(fresh=fresh)
+             if str(row.get("projectCompleted", False)).strip().lower() not in {"true", "1"}],
             current_user,
         )
 
@@ -1713,6 +1734,7 @@ def active_projects_list_proxy(
     "/api/projects/completed-directory"
 )
 def completed_project_directory_proxy(
+    fresh: bool = FastAPIQuery(default=False),
     current_user: CurrentUser = Depends(
         get_current_user
     ),
@@ -1726,7 +1748,7 @@ def completed_project_directory_proxy(
     available to its dedicated reporting view.
     """
     try:
-        rows = get_completed_projects()
+        rows = get_completed_projects(fresh=fresh)
 
         return [
             {
@@ -2172,6 +2194,7 @@ def bid_log_active_list_proxy(
     search: str | None = FastAPIQuery(default=None),
     limit: int = FastAPIQuery(default=500, ge=1, le=500),
     offset: int = FastAPIQuery(default=0, ge=0),
+    fresh: bool = FastAPIQuery(default=False),
     current_user: CurrentUser = Depends(
         get_current_user
     ),
@@ -2185,6 +2208,7 @@ def bid_log_active_list_proxy(
                 search=search,
                 limit=limit,
                 offset=offset,
+                fresh=fresh,
             ),
             current_user,
         )
@@ -2513,6 +2537,7 @@ def projected_billings_active_bids(
     "/api/projected-billings/active-bids/dashboard"
 )
 def projected_billings_active_bid_dashboard(
+    fresh: bool = FastAPIQuery(default=False),
     current_user: CurrentUser = Depends(
         get_current_user
     ),
@@ -2521,7 +2546,7 @@ def projected_billings_active_bid_dashboard(
 
     try:
         return _role_scoped_financial_payload(
-            get_active_bid_dashboard(),
+            get_active_bid_dashboard(fresh=fresh),
             current_user,
         )
 
@@ -3386,6 +3411,7 @@ async def link_current_project_originating_bid_proxy(
     "/api/completed-projects"
 )
 def completed_projects(
+    fresh: bool = FastAPIQuery(default=False),
     current_user: CurrentUser = Depends(
         get_current_user
     ),
@@ -3394,7 +3420,7 @@ def completed_projects(
 
     try:
         return _role_scoped_financial_payload(
-            get_completed_projects(),
+            get_completed_projects(fresh=fresh),
             current_user,
         )
 

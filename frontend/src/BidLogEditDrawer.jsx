@@ -1,3 +1,5 @@
+import useGcReference from './useGcReference.js';
+import { gcReference } from './gcReference.js';
 import {
   useEffect,
   useMemo,
@@ -385,46 +387,6 @@ async function requestJson(path, options = {}) {
 }
 
 
-let cachedGeneralContractorOptions = null;
-let generalContractorOptionsRequest = null;
-
-
-async function loadGeneralContractorOptions({
-  force = false,
-} = {}) {
-  if (force) {
-    cachedGeneralContractorOptions = null;
-    generalContractorOptionsRequest = null;
-  }
-
-  if (cachedGeneralContractorOptions) {
-    return cachedGeneralContractorOptions;
-  }
-
-  if (!generalContractorOptionsRequest) {
-    generalContractorOptionsRequest = requestJson(
-      '/api/bid-log/reference/general-contractors',
-    )
-      .then(payload => {
-        if (!Array.isArray(payload?.items)) {
-          throw new Error(
-            'General contractor reference returned an invalid response.',
-          );
-        }
-
-        cachedGeneralContractorOptions = payload.items;
-        return cachedGeneralContractorOptions;
-      })
-      .catch(error => {
-        generalContractorOptionsRequest = null;
-        throw error;
-      });
-  }
-
-  return generalContractorOptionsRequest;
-}
-
-
 function Field({
   label,
   children,
@@ -488,11 +450,6 @@ export default function BidLogEditDrawer({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [saveMessage, setSaveMessage] = useState(null);
-  const [gcOptions, setGcOptions] = useState(
-    cachedGeneralContractorOptions || [],
-  );
-  const [gcOptionsLoading, setGcOptionsLoading] = useState(false);
-  const [gcOptionsError, setGcOptionsError] = useState(null);
   const [forecastProject, setForecastProject] = useState(null);
   const [forecastError, setForecastError] = useState(null);
   const [dateAwarded, setDateAwarded] = useState('');
@@ -505,6 +462,7 @@ export default function BidLogEditDrawer({
 
   const role = String(user?.appRole || '').trim().toUpperCase();
   const canEdit = role === 'ADMIN' || role === 'OPERATIONS';
+  const { items: gcOptions, loading: gcOptionsLoading, error: gcOptionsError, refresh: retryGcOptions } = useGcReference(canEdit);
   const projectionInputsRequireRealBid = Boolean(
     optionalText(form?.anticipatedStartDate)
     || optionalText(form?.probabilityPercent),
@@ -682,29 +640,6 @@ export default function BidLogEditDrawer({
   }
 
 
-  async function loadGcOptions({ force = false } = {}) {
-    if (!canEdit) {
-      return;
-    }
-
-    setGcOptionsLoading(true);
-    setGcOptionsError(null);
-
-    try {
-      const items = await loadGeneralContractorOptions({ force });
-      setGcOptions(items);
-    } catch (error) {
-      setGcOptionsError(
-        errorMessage(
-          error,
-          'Unable to load the Potential GCs list.',
-        ),
-      );
-    } finally {
-      setGcOptionsLoading(false);
-    }
-  }
-
   async function loadDetail({ preserveDraft = false } = {}) {
     if (!sharePointItemId) {
       return;
@@ -826,12 +761,6 @@ export default function BidLogEditDrawer({
     [sharePointItemId],
   );
 
-  useEffect(
-    () => {
-      loadGcOptions();
-    },
-    [canEdit],
-  );
 
   useEffect(
     () => {
@@ -1746,7 +1675,7 @@ export default function BidLogEditDrawer({
                     invalid={requiredFields.includes('generalContractors')}
                     hint={
                       canEdit
-                        ? `${gcOptions.length || '—'} Potential GCs available. Search by company, city, or email; multiple GCs may be selected.`
+                        ? `${gcOptions.length || '—'} General Contractors available. Search by company, city, or email; multiple GCs may be selected.`
                         : 'General contractors assigned to this bid.'
                     }
                   >
@@ -1757,7 +1686,8 @@ export default function BidLogEditDrawer({
                       error={gcOptionsError}
                       disabled={!canEdit}
                       onChange={value => updateField('generalContractors', value)}
-                      onRetry={() => loadGcOptions({ force: true })}
+                      onRetry={retryGcOptions}
+                      onOpen={() => { void gcReference.load().catch(() => {}); }}
                     />
                   </Field>
 

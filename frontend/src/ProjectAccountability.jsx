@@ -1,3 +1,7 @@
+import {facetRows} from './viewFilters.js';
+import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
+import {contractorTokens, canonicalFilterKey} from './gcReference.js';
+import useGcReference, { canReadGcReference } from './useGcReference.js';
 import {
   useEffect,
   useMemo,
@@ -18,8 +22,10 @@ import {
 } from './BillingDisplay.jsx';
 import {
   GeneralContractorDisplay,
+  generalContractorDisplayText,
   MULTIPLE_GCS,
   generalContractorFilterMatch,
+  contractorFilterOptions,
   generalContractorNames,
 } from './GeneralContractors.jsx';
 
@@ -586,6 +592,7 @@ export default function ProjectAccountability({
   user,
   pmDirectory = [],
 }) {
+  const gcDirectory = useGcReference(canReadGcReference(user));
   const [rows, setRows] =
     useState(
       () => completedProjectListCache.items || [],
@@ -847,7 +854,7 @@ export default function ProjectAccountability({
       try {
         const payload =
           await fetchJson(
-            '/api/completed-projects',
+            forceRefresh ? '/api/completed-projects?fresh=true' : '/api/completed-projects',
           );
 
         if (
@@ -879,81 +886,33 @@ export default function ProjectAccountability({
   }, [completedRefreshVersion]);
 
 
-  const pmOptions = useMemo(
-    () => [
-      ...new Set(
-        rows.map(
-          row => pmKey(
-            row.projectManager
-          ),
-        ),
-      ),
-    ].sort(
-      (
-        a,
-        b,
-      ) => (
-        pmLabel(a)
-          .localeCompare(
-            pmLabel(b)
-          )
-      ),
-    ),
-    [rows],
-  );
-
-
-  const peOptions = useMemo(
-    () => [
-      ...new Set(
-        rows
-          .map(
-            row => String(
-              row.projectEngineer
-              || ''
-            ).trim()
-          )
-          .filter(Boolean),
-      ),
-    ].sort(),
-    [rows],
-  );
-
-
-  const superintendentOptions =
-    useMemo(
-      () => [
-        ...new Set(
-          rows
-            .map(
-              row => String(
-                row.superintendent
-                || ''
-              ).trim()
-            )
-            .filter(Boolean),
-        ),
-      ].sort(),
-      [rows],
-    );
-
-
-  const apmOptions = useMemo(
-    () => [
-      ...new Set(
-        rows
-          .map(
-            row => String(
-              row.apm
-              || ''
-            ).trim()
-          )
-          .filter(Boolean),
-      ),
-    ].sort(),
-    [rows],
-  );
-
+  const filters={pm:pmFilter,pe:peFilter,super:superintendentFilter,apm:apmFilter,gc:gcFilter,
+    year:completionYearFilter,estimator:estimatorFilter,margin:marginDataFilter,type:typeFilter,purpose:purposeFilter,data:dataFilter};
+  const facets=useMemo(()=>{
+    const text=v=>String(v||'').trim();
+    const query=search.trim().toLowerCase();
+    const entries=rows.filter(row=>!query||[row.jobNumber,row.jobName,row.projectManager,row.projectEngineer,
+      row.superintendent,row.apm,row.generalContractor,generalContractorDisplayText(row.generalContractor),row.projectType,
+      row.purpose,row.primaryEstimator,row.secondaryEstimator].some(v=>containsText(v,query)));
+    const field=f=>({values:r=>[text(r[f])]});
+    return facetRows(entries,{...filters,gc:canonicalFilterKey(gcFilter,gcDirectory.directory)},{pm:{values:r=>[pmKey(r.projectManager)]},pe:field('projectEngineer'),super:field('superintendent'),
+      apm:field('apm'),type:field('projectType'),purpose:field('purpose'),
+      year:{values:r=>[String(r.resolvedEndDate||r.operationsCompletionDate||'').slice(0,4)]},
+      estimator:{values:r=>[text(r.primaryEstimator),text(r.secondaryEstimator)]},
+      margin:{values:r=>[r.marginDataComplete?'complete':'incomplete']},
+      data:{values:r=>[...(r.foundationDerivedStart||r.foundationDerivedEnd?['foundation']:[]),
+        r.missingEstimatorBidLink?'estimator-missing':'estimator-present',...(r.invalidResolvedDateRange?['invalid']:[])]},
+      gc:{values:r=>[...contractorTokens(r.generalContractor,gcDirectory.directory).map(x=>x.key),...(generalContractorNames(r.generalContractor).length>1?[MULTIPLE_GCS]:[])],
+        matches:(r,v)=>generalContractorFilterMatch(r.generalContractor,v,ALL,gcDirectory.directory)}
+    });
+  },[rows,search,gcDirectory.directory,JSON.stringify(filters)]);
+  useFacetSelectionCleanup(filters,facets.selections,{pm:setPmFilter,pe:setPeFilter,super:setSuperintendentFilter,apm:setApmFilter,
+    gc:setGcFilter,year:setCompletionYearFilter,estimator:setEstimatorFilter,margin:setMarginDataFilter,
+    type:setTypeFilter,purpose:setPurposeFilter,data:setDataFilter},!loading);
+  const pmOptions=facets.options.pm;
+  const peOptions=facets.options.pe;
+  const superintendentOptions=facets.options.super;
+  const apmOptions=facets.options.apm;
 
   const historicalPmOptions = useMemo(
     () => historicalDirectoryStaffOptions(
@@ -999,135 +958,12 @@ export default function ProjectAccountability({
   );
 
 
-  const gcOptions = useMemo(
-    () => [
-      ...new Set(
-        rows.flatMap(
-          row =>
-            generalContractorNames(
-              row.generalContractor
-            )
-        )
-      ),
-    ].sort(
-      (a, b) =>
-        a.localeCompare(
-          b,
-          undefined,
-          { sensitivity: 'base' },
-        )
-    ),
-    [rows],
-  );
-
-
-  const multipleGcOptionAvailable =
-    useMemo(
-      () =>
-        rows.some(
-          row =>
-            generalContractorNames(
-              row.generalContractor
-            ).length > 1
-        ),
-      [rows],
-    );
-
-
-  const completionYearOptions =
-    useMemo(
-      () => [
-        ...new Set(
-          rows
-            .map(
-              row => {
-                const value =
-                  row.resolvedEndDate
-                  || row.operationsCompletionDate;
-
-                if (!value) {
-                  return null;
-                }
-
-                const year =
-                  Number(
-                    String(value)
-                      .slice(0, 4)
-                  );
-
-                return (
-                  Number.isFinite(year)
-                    ? year
-                    : null
-                );
-              }
-            )
-            .filter(Boolean),
-        ),
-      ].sort(
-        (a, b) => b - a
-      ),
-      [rows],
-    );
-
-
-  const estimatorOptions =
-    useMemo(
-      () => [
-        ...new Set(
-          rows
-            .flatMap(
-              row => [
-                row.primaryEstimator,
-                row.secondaryEstimator,
-              ]
-            )
-            .map(
-              value =>
-                String(
-                  value || ''
-                ).trim()
-            )
-            .filter(Boolean),
-        ),
-      ].sort(),
-      [rows],
-    );
-
-
-  const typeOptions = useMemo(
-    () => [
-      ...new Set(
-        rows
-          .map(
-            row => String(
-              row.projectType
-              || ''
-            ).trim()
-          )
-          .filter(Boolean),
-      ),
-    ].sort(),
-    [rows],
-  );
-
-
-  const purposeOptions = useMemo(
-    () => [
-      ...new Set(
-        rows
-          .map(
-            row => String(
-              row.purpose
-              || ''
-            ).trim()
-          )
-          .filter(Boolean),
-      ),
-    ].sort(),
-    [rows],
-  );
-
+  const gcOptions=contractorFilterOptions(facets.contexts.gc.map(r=>r.generalContractor),gcDirectory.directory);
+  const multipleGcOptionAvailable=facets.options.gc.includes(MULTIPLE_GCS);
+  const completionYearOptions=[...facets.options.year].sort((a,b)=>b.localeCompare(a));
+  const estimatorOptions=facets.options.estimator;
+  const typeOptions=facets.options.type;
+  const purposeOptions=facets.options.purpose;
 
   const metrics = useMemo(
     () => {
@@ -1187,195 +1023,7 @@ export default function ProjectAccountability({
 
 
   const filteredRows = useMemo(
-    () => {
-      const normalizedSearch =
-        search
-          .trim()
-          .toLowerCase();
-
-      return rows
-        .filter(
-          row => {
-            if (
-              pmFilter !== ALL
-              && pmKey(
-                row.projectManager
-              ) !== pmFilter
-            ) {
-              return false;
-            }
-
-            if (
-              peFilter !== ALL
-              && String(
-                   row.projectEngineer
-                   || ''
-                 ).trim()
-                 !== peFilter
-            ) {
-              return false;
-            }
-
-            if (
-              superintendentFilter !== ALL
-              && String(
-                   row.superintendent
-                   || ''
-                 ).trim()
-                 !== superintendentFilter
-            ) {
-              return false;
-            }
-
-            if (
-              apmFilter !== ALL
-              && String(
-                   row.apm
-                   || ''
-                 ).trim()
-                 !== apmFilter
-            ) {
-              return false;
-            }
-
-            if (
-              !generalContractorFilterMatch(
-                row.generalContractor,
-                gcFilter,
-                ALL,
-              )
-            ) {
-              return false;
-            }
-
-            if (
-              completionYearFilter !== ALL
-            ) {
-              const completionValue =
-                row.resolvedEndDate
-                || row.operationsCompletionDate;
-
-              const completionYear =
-                completionValue
-                  ? String(
-                      completionValue
-                    ).slice(0, 4)
-                  : '';
-
-              if (
-                completionYear
-                !== completionYearFilter
-              ) {
-                return false;
-              }
-            }
-
-            if (
-              estimatorFilter !== ALL
-              && ![
-                row.primaryEstimator,
-                row.secondaryEstimator,
-              ].some(
-                value =>
-                  String(
-                    value || ''
-                  ).trim()
-                  === estimatorFilter
-              )
-            ) {
-              return false;
-            }
-
-            if (
-              marginDataFilter === 'complete'
-              && !row.marginDataComplete
-            ) {
-              return false;
-            }
-
-            if (
-              marginDataFilter === 'incomplete'
-              && row.marginDataComplete
-            ) {
-              return false;
-            }
-
-            if (
-              typeFilter !== ALL
-              && row.projectType
-                 !== typeFilter
-            ) {
-              return false;
-            }
-
-            if (
-              purposeFilter !== ALL
-              && row.purpose
-                 !== purposeFilter
-            ) {
-              return false;
-            }
-
-            if (
-              dataFilter === 'foundation'
-              && !(
-                row.foundationDerivedStart
-                || row.foundationDerivedEnd
-              )
-            ) {
-              return false;
-            }
-
-            if (
-              dataFilter === 'estimator-missing'
-              && !row.missingEstimatorBidLink
-            ) {
-              return false;
-            }
-
-            if (
-              dataFilter === 'estimator-present'
-              && row.missingEstimatorBidLink
-            ) {
-              return false;
-            }
-
-            if (
-              dataFilter === 'invalid'
-              && !row.invalidResolvedDateRange
-            ) {
-              return false;
-            }
-
-            if (
-              normalizedSearch
-              && ![
-                row.jobNumber,
-                row.jobName,
-                row.projectManager,
-                row.projectEngineer,
-                row.superintendent,
-                row.apm,
-                row.generalContractor,
-                row.projectType,
-                row.purpose,
-                row.primaryEstimator,
-                row.secondaryEstimator,
-              ].some(
-                value => (
-                  containsText(
-                    value,
-                    normalizedSearch,
-                  )
-                ),
-              )
-            ) {
-              return false;
-            }
-
-            return true;
-          },
-        )
+    () => [...facets.rows]
         .sort(
           (
             a,
@@ -1389,16 +1037,16 @@ export default function ProjectAccountability({
               a.jobNumber
             )
           ),
-        );
-    },
+        ),
     [
-      rows,
+      facets,
       search,
       pmFilter,
       peFilter,
       superintendentFilter,
       apmFilter,
       gcFilter,
+      gcDirectory.directory,
       completionYearFilter,
       estimatorFilter,
       marginDataFilter,
@@ -2010,21 +1658,21 @@ export default function ProjectAccountability({
                 All Projects
               </option>
 
-              <option value="foundation">
+              {facets.options.data.includes('foundation') && (<option value="foundation">
                 Foundation-Derived Dates
-              </option>
+              </option>)}
 
-              <option value="estimator-present">
+              {facets.options.data.includes('estimator-present') && (<option value="estimator-present">
                 Has Historical Bid Link
-              </option>
+              </option>)}
 
-              <option value="estimator-missing">
+              {facets.options.data.includes('estimator-missing') && (<option value="estimator-missing">
                 Missing Historical Bid Link
-              </option>
+              </option>)}
 
-              <option value="invalid">
+              {facets.options.data.includes('invalid') && (<option value="invalid">
                 Invalid Date Range
-              </option>
+              </option>)}
             </select>
           </label>
 
@@ -2225,16 +1873,11 @@ export default function ProjectAccountability({
                     </option>
                   )}
 
-                  {gcOptions.map(
-                    value => (
-                      <option
-                        key={value}
-                        value={value}
-                      >
-                        {value}
-                      </option>
-                    )
-                  )}
+                  {gcOptions.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}{option.status === 'AMBIGUOUS' ? ' · record unclear' : ''}
+                    </option>
+                  ))}
                 </select>
               </label>
 
@@ -2321,13 +1964,13 @@ export default function ProjectAccountability({
                     All
                   </option>
 
-                  <option value="complete">
+                  {facets.options.margin.includes('complete') && (<option value="complete">
                     Complete
-                  </option>
+                  </option>)}
 
-                  <option value="incomplete">
+                  {facets.options.margin.includes('incomplete') && (<option value="incomplete">
                     Incomplete
-                  </option>
+                  </option>)}
                 </select>
               </label>
             </div>
@@ -2616,16 +2259,11 @@ export default function ProjectAccountability({
                         </option>
                       )}
 
-                      {gcOptions.map(
-                        value => (
-                          <option
-                            key={value}
-                            value={value}
-                          >
-                            {value}
-                          </option>
-                        )
-                      )}
+                      {gcOptions.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}{option.status === 'AMBIGUOUS' ? ' · record unclear' : ''}
+                    </option>
+                  ))}
                     </select>
                   </label>
 
@@ -2703,13 +2341,13 @@ export default function ProjectAccountability({
                         All
                       </option>
 
-                      <option value="complete">
+                      {facets.options.margin.includes('complete') && (<option value="complete">
                         Complete
-                      </option>
+                      </option>)}
 
-                      <option value="incomplete">
+                      {facets.options.margin.includes('incomplete') && (<option value="incomplete">
                         Incomplete
-                      </option>
+                      </option>)}
                     </select>
                   </label>
 
@@ -2729,21 +2367,21 @@ export default function ProjectAccountability({
                         All Projects
                       </option>
 
-                      <option value="foundation">
+                      {facets.options.data.includes('foundation') && (<option value="foundation">
                         Foundation-Derived Dates
-                      </option>
+                      </option>)}
 
-                      <option value="estimator-present">
+                      {facets.options.data.includes('estimator-present') && (<option value="estimator-present">
                         Has Historical Bid Link
-                      </option>
+                      </option>)}
 
-                      <option value="estimator-missing">
+                      {facets.options.data.includes('estimator-missing') && (<option value="estimator-missing">
                         Missing Historical Bid Link
-                      </option>
+                      </option>)}
 
-                      <option value="invalid">
+                      {facets.options.data.includes('invalid') && (<option value="invalid">
                         Invalid Date Range
-                      </option>
+                      </option>)}
                     </select>
                   </label>
                 </div>

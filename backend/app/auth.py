@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass
+import re
 from time import time
 from typing import Annotated
 from uuid import UUID
@@ -276,6 +278,8 @@ def _enforce_session_revision(
 
 def _enforce_idle_timeout(
     request: Request,
+    *,
+    touch_activity: bool = True,
 ) -> None:
 
     now = int(time())
@@ -315,9 +319,50 @@ def _enforce_idle_timeout(
                 detail="session_inactive_timeout",
             )
 
-    request.session[
-        "last_activity_at"
-    ] = now
+    if not touch_activity and last_activity is None:
+        request.session.clear()
+        raise HTTPException(status_code=401, detail="invalid_session")
+
+    if touch_activity:
+        request.session["last_activity_at"] = now
+
+
+_PASSIVE_READ_PATHS = frozenset({
+    "/api/projected-billings/current-projects",
+    "/api/projected-billings/current-projects/monthly",
+    "/api/projected-billings/current-projects/primary-projection",
+    "/api/projected-billings/active-bids/dashboard",
+    "/api/pm-forecast/attention",
+})
+_PASSIVE_PM_PATH = re.compile(
+    r"/api/current-projects/[1-9][0-9]*/pm-forecast"
+    r"(?:/policy|/history(?:/[1-9][0-9]*)?)?"
+)
+
+
+def is_passive_freshness_read(request: Request) -> bool:
+    # This header only SUPPRESSES an activity update. It never supplies identity
+    # or bypasses session revision, expiry, access resolution, or route guards.
+    return (
+        request.method == "GET"
+        and request.headers.get("X-Riggs-Passive-Read") == "1"
+        and (request.url.path in _PASSIVE_READ_PATHS
+             or _PASSIVE_PM_PATH.fullmatch(request.url.path) is not None)
+    )
+
+
+def suppress_unchanged_passive_cookie(request: Request, response, cookie_name: str) -> None:
+    snapshot = getattr(request.state, "passive_read_session_snapshot", None)
+    if snapshot is None or response.status_code == 401 or request.session != snapshot:
+        return
+    # SessionMiddleware may re-sign an unchanged session on every response.
+    # An old polling response must not replace a more recent human-activity
+    # cookie (or resurrect it after logout). Clear/revision-failure cookies stay.
+    prefix = (cookie_name + "=").encode("ascii")
+    response.raw_headers[:] = [
+        (name, value) for name, value in response.raw_headers
+        if not (name.lower() == b"set-cookie" and value.startswith(prefix))
+    ]
 
 
 def get_current_user(
@@ -359,13 +404,13 @@ def get_current_user(
             detail="invalid_session",
         )
 
-    _enforce_idle_timeout(
-        request
-    )
-
-    return resolve_entra_user(
-        identity
-    )
+    passive = is_passive_freshness_read(request)
+    snapshot = deepcopy(request.session) if passive else None
+    _enforce_idle_timeout(request, touch_activity=not passive)
+    user = resolve_entra_user(identity)
+    if passive and request.session == snapshot:
+        request.state.passive_read_session_snapshot = snapshot
+    return user
 
 
 AuthenticatedUser = Annotated[

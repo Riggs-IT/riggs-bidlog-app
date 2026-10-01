@@ -2091,3 +2091,130 @@ Keep those boundaries intact as the application grows.
 ## Internal Use
 
 This repository contains internal Riggs Companies application code and is intended for authorized Riggs use only.
+
+---
+
+## Stage 1B3 — dashboard cache foundation (2026-09-30)
+
+This stage changes **only the web application's server-side cache and existing
+GET route parameters**. It does not modify SQL, the bridge, authentication,
+frontend refresh timers, field ownership, or any projection calculation.
+
+`backend/app/dashboard_cache.py` replaces the old unbounded dictionaries and
+permanent key-lock map. The existing five cached datasets retain their keys
+and `BID_LOG_DASHBOARD_CACHE_TTL_SECONDS` setting (30 seconds by default,
+0 disables reuse, maximum 300 seconds). Invalid/non-finite settings use 30.
+The cache retains at most 256 values and 256 active flight records. Expired
+values are swept on access/invalidation, not by a background task. This bounds
+entry count, not the size of each upstream payload.
+
+Normal same-key misses share a read. Invalidation revokes an in-flight read's
+right to repopulate the cache. A request already in progress may still receive
+its original snapshot, but new callers cannot join the obsolete read. The
+browser must separately guard against obsolete response publication.
+
+These existing authenticated GET routes now accept optional `fresh=true`:
+
+- `/api/projected-billings/current-projects`
+- `/api/projected-billings/current-projects/monthly`
+- `/api/projected-billings/active-bids/dashboard`
+- `/api/active-projects`
+- `/api/projects/completed-directory`
+- `/api/completed-projects`
+- `/api/bid-log/active` (preserves status/search/limit/offset)
+
+The option is consumed by this app only; it is not a new bridge parameter,
+cache-admin endpoint, or permission bypass. It bypasses both a stored result
+and any earlier in-flight read for that key, even an earlier forced read.
+Forced requests intentionally do not join older forced snapshots that may
+predate another-instance write. Ordinary misses remain coalesced. No stale
+result is used as a fallback on transport, permission, or SQL error.
+
+Normal project changes, acknowledged PM submissions/Admin Corrections, policy
+changes, staffing assignments/removals and originating-bid links invalidate
+the relevant project dashboard family. Existing bid-write/settings
+invalidation stays intact. Failed writes are neither invalidated as successes
+nor retried by the cache. The write bodies and upstream endpoints are unchanged.
+
+Current PM projection, immutable-version detail, history, policy and recipient
+attention GETs remain uncached. The existing portfolio `projectedAmount` still
+means **System Baseline**, not PM Projection. PM/Actual/baseline values, explicit
+zeros, nulls, PM-only months, version identities and SQL-derived lock/rebalance
+rules are not transformed by the cache.
+
+**Remaining browser stage:** wire deliberate/post-write GETs to `fresh=true`,
+coordinate mounted portfolio/panel refreshes, ignore superseded responses,
+preserve drafts and make periodic revalidation passive for session inactivity.
+This server-only foundation does not by itself refresh a tab that sends no GET.
+External imports and calendar changes are bounded by TTL only after a new GET.
+
+Tests: `python -B -m unittest discover -s tests -p 'test_*.py'` in the app's
+normal dependency environment. Test cases use mocks rather than production
+projection writes. The installer runs them in isolated no-network containers.
+
+### Stage 1B4: browser freshness (on top of the Stage 1B3 server cache)
+
+Projected Billings keeps one request owner for current-project summary/months
+and another for active-bid dashboard data. Refresh uses the existing `fresh=true`
+GET option. Successful related edits invalidate the browser directory caches
+and refresh the appropriate portfolio data and actor-specific attention. The
+Projects directory callback and originating-bid link now notify this owner.
+Manual list reloads use the existing fresh-read option where the server caches
+that response. No portfolio/PM/actual amounts or SQL contracts change.
+
+The visible, active portfolio revalidates every 60 seconds. Focus, page restore,
+visibility return, and workspace entry also check freshness (30-second minimum
+age). Ordinary automatic reads retain the server's configured short TTL; explicit
+Refresh and post-write reads bypass it. This is bounded revalidation, not push
+notifications or a transactionally consistent snapshot. Hidden/inactive portfolio
+views do not poll. Failures keep the last good response and display an error;
+background reads never submit or replay writes.
+
+The read-only PM panel likewise revalidates forecast/history/policy. Beginning a
+PM/Admin Correction draft cancels the reader. No automatic read can replace its
+amounts, expected version, policy snapshot, or editable-month snapshot while the
+edit/save is in progress. Existing SQL concurrency and month-lock validation stay
+authoritative. Cancel/finish returns the view to revalidation. An acknowledged
+save followed by failed read-back asks for a read-only refresh, not resubmission.
+
+Automatic freshness GETs carry `X-Riggs-Passive-Read: 1` on a narrow server
+allowlist. They retain normal session revision/idle/identity/role checks, but do
+not update `last_activity_at` or reissue an unchanged signed session cookie.
+Requests outside the allowlist and all writes keep their existing behavior.
+Human Refresh uses ordinary activity behavior. Existing telemetry, Microsoft
+login/logout, and session-duration settings are unchanged.
+
+Regression checks:
+
+```sh
+python -B -m unittest discover -s tests -p 'test_*.py' -v
+node --test frontend/tests/*.test.mjs
+```
+
+The standalone browser-fixture validation is recorded with the Stage 1B4 package;
+production OAuth, Cloud Run instance routing, SQL, and live writes are not exercised
+by that fixture. The portfolio still exposes System Baseline as `projectedAmount`;
+PM projection portfolio presentation is a separate product/API change.
+
+
+## Stage 1D3 — PM-first overview
+
+Active-project primary projections now come from the existing PM-first bulk
+bridge contract. Summary/pivot/range CSV/monthly CSV share the same selected
+amounts, retain blank-versus-zero and label PM Projection versus System Estimate.
+An optional overview baseline comparison does not change the selected plan.
+See `docs/stage1d3-pm-first-overview.md` for freshness, data and release boundaries.
+
+
+## Stage 1D4 — contextual filters and review controls
+
+See `docs/ui-review-stage1d4.md` for the active-directory fix, date-scoped filters,
+refresh icons, styled display controls, baseline-origin markers, and explicit
+separation from the unfinished SQL baseline/contract-review rollout.
+
+### 2026-10-01 — Stage 1D6 projection copy polish
+
+- Projected Billings coverage summary labels projects without a submitted PM forecast as `Missing` rather than emphasizing System Estimate.
+- Aggregate month headers no longer use an asterisk; the asterisk remains only on individual System Estimate values where its hover explanation is relevant.
+- PM projection balance language is shortened, and the latest projection timestamp is presented as secondary metadata under the balance rule.
+- Current-project billing variance is labeled simply `Variance` with a small `vs PM Projection` or `vs System Estimate` source note.

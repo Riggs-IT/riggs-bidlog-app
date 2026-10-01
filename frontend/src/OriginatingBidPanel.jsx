@@ -314,6 +314,7 @@ export default function OriginatingBidPanel({
   project,
   user,
   onBidLoaded,
+  onLinked,
   infoOpen = false,
   onInfoOpenChange,
 }) {
@@ -602,6 +603,8 @@ export default function OriginatingBidPanel({
       setLinkNotice(
         'Originating bid linked.'
       );
+      // A failed read-back must not relabel or replay an acknowledged link.
+      void Promise.resolve().then(() => onLinked?.()).catch(() => {});
 
     } catch (error) {
       setCandidateError(

@@ -1,3 +1,5 @@
+import useGcReference from './useGcReference.js';
+import { gcReference } from './gcReference.js';
 import {
   useCallback,
   useEffect,
@@ -80,46 +82,6 @@ async function requestJson(url, options = {}) {
   }
 
   return payload;
-}
-
-
-let cachedActiveProjectGcOptions = null;
-let activeProjectGcOptionsRequest = null;
-
-
-async function loadActiveProjectGcOptions({
-  force = false,
-} = {}) {
-  if (force) {
-    cachedActiveProjectGcOptions = null;
-    activeProjectGcOptionsRequest = null;
-  }
-
-  if (cachedActiveProjectGcOptions) {
-    return cachedActiveProjectGcOptions;
-  }
-
-  if (!activeProjectGcOptionsRequest) {
-    activeProjectGcOptionsRequest = requestJson(
-      '/api/bid-log/reference/general-contractors',
-    )
-      .then(result => {
-        if (!Array.isArray(result?.items)) {
-          throw new Error(
-            'General contractor reference returned an invalid response.',
-          );
-        }
-
-        cachedActiveProjectGcOptions = result.items;
-        return cachedActiveProjectGcOptions;
-      })
-      .catch(error => {
-        activeProjectGcOptionsRequest = null;
-        throw error;
-      });
-  }
-
-  return activeProjectGcOptionsRequest;
 }
 
 
@@ -231,6 +193,7 @@ export default function ActiveProjectEditDrawer({
 }) {
   const role = String(user?.appRole || '').toUpperCase();
   const canEdit = role === 'ADMIN';
+  const { items: gcOptions, loading: gcOptionsLoading, error: gcOptionsError, refresh: retryGcOptions } = useGcReference(canEdit);
   const { editor, state, dirty: hasUnsavedChanges, needsReview } = useActiveProjectEditor(jobListId, canEdit);
   const payload = state.project.snapshot;
   const form = state.project.draft;
@@ -252,11 +215,6 @@ export default function ActiveProjectEditDrawer({
   const [toastBottom, setToastBottom] = useState(140);
   const onSavedRef = useRef(onSaved);
   onSavedRef.current = onSaved;
-  const [gcOptions, setGcOptions] = useState(
-    cachedActiveProjectGcOptions || [],
-  );
-  const [gcOptionsLoading, setGcOptionsLoading] = useState(false);
-  const [gcOptionsError, setGcOptionsError] = useState(null);
 
   useLayoutEffect(() => {
     const footer = footerRef.current;
@@ -268,30 +226,6 @@ export default function ActiveProjectEditDrawer({
     window.addEventListener('resize', positionToast);
     return () => { observer?.disconnect(); window.removeEventListener('resize', positionToast); };
   }, [Boolean(payload), jobListId]);
-
-  const loadGcOptions = useCallback(
-    async ({ force = false } = {}) => {
-      if (!canEdit) {
-        return;
-      }
-
-      setGcOptionsLoading(true);
-      setGcOptionsError(null);
-
-      try {
-        const items = await loadActiveProjectGcOptions({ force });
-        setGcOptions(items);
-      } catch (error) {
-        setGcOptionsError(
-          error?.message
-          || 'Unable to load the Potential GCs list.',
-        );
-      } finally {
-        setGcOptionsLoading(false);
-      }
-    },
-    [canEdit],
-  );
 
   const loadCognitoDetail = useCallback(async ({ quiet = false } = {}) => {
     if (!jobListId) return;
@@ -422,12 +356,6 @@ export default function ActiveProjectEditDrawer({
     return () => { cancelled = true; timers.forEach(window.clearTimeout); referenceRequest.current?.abort(); };
   }, [state.refreshKey, state.saving, loadCognitoDetail]);
 
-  useEffect(
-    () => {
-      loadGcOptions();
-    },
-    [loadGcOptions],
-  );
 
   function updateField(name, value) { editor.edit('project', name, value); }
   const loadDetail = () => editor.load('project');
@@ -637,7 +565,7 @@ export default function ActiveProjectEditDrawer({
                 <div className="bid-edit-grid two-column">
                   <Field
                     label="General Contractor"
-                    hint="Choose from the Potential GCs directory."
+                    hint="Choose from the General Contractors directory."
                   >
                     <BidLogGeneralContractorSelect
                       value={form.gc ? [form.gc] : []}
@@ -650,7 +578,8 @@ export default function ActiveProjectEditDrawer({
                         'gc',
                         values.at(-1) || '',
                       )}
-                      onRetry={() => loadGcOptions({ force: true })}
+                      onRetry={retryGcOptions}
+                      onOpen={() => { void gcReference.load().catch(() => {}); }}
                     />
                   </Field>
 

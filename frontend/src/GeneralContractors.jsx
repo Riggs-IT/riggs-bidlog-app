@@ -1,135 +1,28 @@
-export const MULTIPLE_GCS = '__MULTIPLE_GCS__';
+import useGcReference from './useGcReference.js';
+import { gcReference, contractorTokens, contractorFilterMatch } from './gcReference.js';
+export { MULTIPLE_GCS, generalContractorNames, contractorFilterOptions } from './gcReference.js';
 
-
-export function generalContractorNames(value) {
-  const rawValues =
-    Array.isArray(value)
-      ? value
-      : [value];
-
-  const names = rawValues
-    .flatMap(
-      item =>
-        String(item ?? '')
-          .split('¡')
-    )
-    .map(
-      item => item.trim()
-    )
-    .filter(Boolean);
-
-  const seen = new Set();
-
-  return names.filter(
-    name => {
-      const key =
-        name.toLocaleLowerCase();
-
-      if (seen.has(key)) {
-        return false;
-      }
-
-      seen.add(key);
-      return true;
-    }
-  );
+export function generalContractorDisplayText(value, fallback = '—', directory = gcReference.getSnapshot().directory) {
+  const tokens = contractorTokens(value, directory);
+  return tokens.length ? tokens.map(token => token.name).join(' · ') : fallback;
 }
 
-
-export function generalContractorDisplayText(
-  value,
-  fallback = '—',
-) {
-  const names =
-    generalContractorNames(value);
-
-  return names.length
-    ? names.join(' · ')
-    : fallback;
+export function generalContractorFilterMatch(value, filterValue, allValue, directory = gcReference.getSnapshot().directory) {
+  return contractorFilterMatch(value, filterValue, allValue, directory);
 }
 
-
-export function generalContractorFilterMatch(
-  value,
-  filterValue,
-  allValue,
-) {
-  if (
-    !filterValue
-    || filterValue === allValue
-  ) {
-    return true;
-  }
-
-  const names =
-    generalContractorNames(value);
-
-  if (filterValue === MULTIPLE_GCS) {
-    return names.length > 1;
-  }
-
-  const normalizedFilter =
-    String(filterValue)
-      .trim()
-      .toLocaleLowerCase();
-
-  return names.some(
-    name =>
-      name.toLocaleLowerCase()
-      === normalizedFilter
-  );
-}
-
-
-export function GeneralContractorDisplay({
-  value,
-  fallback = '—',
-  compact = false,
-}) {
-  const names =
-    generalContractorNames(value);
-
-  if (!names.length) {
-    return (
-      <span className="gc-empty">
-        {fallback}
-      </span>
-    );
-  }
-
-  const visibleNames =
-    compact
-      ? names.slice(0, 2)
-      : names;
-
-  const hiddenCount =
-    names.length - visibleNames.length;
-
+export function GeneralContractorDisplay({ value, fallback = '—', compact = false }) {
+  const { directory } = useGcReference();
+  const tokens = contractorTokens(value, directory);
+  if (!tokens.length) return <span className="gc-empty">{fallback}</span>;
+  const visible = compact ? tokens.slice(0, 2) : tokens;
   return (
-    <div
-      className={
-        compact
-          ? 'gc-display compact'
-          : 'gc-display'
-      }
-      title={names.join(' · ')}
-    >
-      {visibleNames.map(
-        name => (
-          <span
-            className="gc-chip"
-            key={name}
-          >
-            {name}
-          </span>
-        )
-      )}
-
-      {hiddenCount > 0 && (
-        <span className="gc-chip gc-chip-more">
-          +{hiddenCount}
-        </span>
-      )}
+    <div className={compact ? 'gc-display compact' : 'gc-display'} title={tokens.map(token => token.name).join(' · ')}>
+      {visible.map(token => <span className="gc-chip" key={token.key}
+        title={token.status === 'AMBIGUOUS' ? `${token.raw} — directory identity unresolved` : token.raw === token.name ? token.name : `${token.name} (source: ${token.raw})`}>
+        {token.name}
+      </span>)}
+      {tokens.length > visible.length && <span className="gc-chip gc-chip-more">+{tokens.length - visible.length}</span>}
     </div>
   );
 }

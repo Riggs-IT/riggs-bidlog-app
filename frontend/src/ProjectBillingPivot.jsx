@@ -1,3 +1,5 @@
+import { pivotCurrentCell, pivotTotals, nullableAmount } from './primaryProjection.js';
+import { ProjectionEstimateMarker, ProjectionAmount } from './ProjectionDisplay.jsx';
 import {
   useEffect,
   useMemo,
@@ -217,67 +219,7 @@ function currentProjectPivotRow(
   const indexed =
     monthlyIndex(rows);
 
-  const cells =
-    months.map(
-      month => {
-        const row =
-          indexed.get(month);
-
-        if (!row) {
-          return {
-            month,
-            hasActivity: false,
-            projected: null,
-            actual: null,
-            variance: null,
-            marginCollected: null,
-          };
-        }
-
-        const projected =
-          toNumber(
-            row.projectedAmount
-          );
-
-        const hasActual =
-          row.actualAmount !== null
-          && row.actualAmount !== undefined;
-
-        const actual =
-          hasActual
-            ? toNumber(
-                row.actualAmount
-              )
-            : null;
-
-        const marginCollected =
-          row.marginCollected === null
-          || row.marginCollected === undefined
-            ? null
-            : toNumber(
-                row.marginCollected
-              );
-
-        return {
-          month,
-
-          hasActivity:
-            projected !== 0
-            || hasActual,
-
-          projected,
-
-          actual,
-
-          variance:
-            hasActual
-              ? actual - projected
-              : null,
-
-          marginCollected,
-        };
-      }
-    );
+  const cells = months.map(month => pivotCurrentCell(indexed.get(month), month));
 
   const pmName =
     displayText(
@@ -352,25 +294,13 @@ function currentProjectPivotRow(
     cells,
 
     total: {
-      projected:
-        toNumber(
-          project.selectedProjected
-        ),
-
-      actual:
-        toNumber(
-          project.selectedActual
-        ),
-
-      variance:
-        toNumber(
-          project.selectedVariance
-        ),
-
-      marginCollected:
-        toNumber(
-          project.selectedMarginCollected
-        ),
+      projected: nullableAmount(project.selectedProjected),
+      actual: project.selectedActualValueCount ? nullableAmount(project.selectedActual) : null,
+      variance: nullableAmount(project.selectedVariance),
+      marginCollected: nullableAmount(project.selectedMarginCollected),
+      baseline: nullableAmount(project.selectedBaseline),
+      missingPmMonths: project.selectedMissingPmMonths || 0,
+      isSystemEstimate:project.hasPmForecast !== true,
     },
 
     raw:
@@ -546,6 +476,7 @@ function ProjectMeta({
   return (
     <div className="pivot-project-info">
       <div className="pivot-project-name-line">
+        {row.source === 'current' && <ProjectionEstimateMarker project={row.raw} />}
         <strong
           className="pivot-project-name"
           title={row.name}
@@ -863,29 +794,19 @@ function PivotSortHeader({
 }
 
 
-function BillingValue({
-  cell,
-  metric,
-  currency,
-  source,
-}) {
-  if (metric === 'all') {
-    return (
-      <AllBillingValues
-        cell={cell}
-        currency={currency}
-        source={source}
-      />
-    );
+function BillingValue({ cell, metric, currency, source, showBaseline = false }) {
+  const compare = showBaseline && source === 'current';
+  if (metric === 'projected') {
+    return <ProjectionAmount value={cell.projected} currency={currency} missing={cell.missingPmMonths}
+      baseline={cell.baseline} compare={compare} />;
   }
+  if (metric === 'all') {
+    return <div><AllBillingValues cell={cell} currency={currency} source={source} />
 
-  return (
-    <SingleBillingValue
-      cell={cell}
-      metric={metric}
-      currency={currency}
-    />
-  );
+      {compare && <small className="baseline-reference">Baseline {cell.baseline == null ? '—' : currency(cell.baseline)}</small>}
+    </div>;
+  }
+  return <SingleBillingValue cell={cell} metric={metric} currency={currency} />;
 }
 
 
@@ -927,6 +848,10 @@ function HeaderTotal({
   potentialBidsProjected = null,
   includeProjectProjection = true,
   includeBidProjection = true,
+  missingPmMonths = 0,
+  hasSystemEstimate = false,
+  baselineValue = null,
+  showBaseline = false,
 }) {
   const allMode =
     metric === 'all';
@@ -973,7 +898,7 @@ function HeaderTotal({
     || projectedMode;
 
   return (
-    <span className="pivot-header-total">
+    <span className="pivot-header-total" title={missingPmMonths ? `${missingPmMonths} PM month(s) have no entered amount. Total includes entered values only.` : undefined}>
       <span className="pivot-header-total-label">
         {label}
       </span>
@@ -1047,6 +972,9 @@ function HeaderTotal({
         </small>
       )}
 
+
+      {showBaseline && includeProjectProjection && <small className="baseline-reference">Baseline {headerCurrency(baselineValue)}</small>}
+
       {(projectBilledText || bidsProjectedText) && (
         <span className="pivot-header-activity-counts">
           {projectBilledText && (
@@ -1095,6 +1023,7 @@ export default function ProjectBillingPivot({
   canViewMargin = false,
   includeActiveProjects = true,
   includeBids = true,
+  showBaseline = false,
 }) {
   const [
     billingMetric,
@@ -1196,7 +1125,7 @@ export default function ProjectBillingPivot({
 
   const stickyTableRef =
     useStickyTableHeader(
-      `${months.join('|')}|${billingMetric}|${sortState.key}|${sortState.direction}|${includeActiveProjects}|${includeBids}`
+      `${months.join('|')}|${billingMetric}|${sortState.key}|${sortState.direction}|${includeActiveProjects}|${includeBids}|${showBaseline}`
     );
 
   const rows =
@@ -1469,251 +1398,11 @@ export default function ProjectBillingPivot({
     );
 
 
-  const monthTotals =
-    useMemo(
-      () =>
-        months.map(
-          (
-            month,
-            index,
-          ) => {
-            let hasValue =
-              headerMetric
-              === 'projected';
-
-            let hasActualValue = false;
-
-            const totals =
-              rows.reduce(
-                (
-                  current,
-                  row,
-                ) => {
-                  const cell =
-                    row.cells[index];
-
-                  const cellValue =
-                    cell?.[
-                      headerMetric
-                    ];
-
-                  if (
-                    cellValue !== null
-                    && cellValue !== undefined
-                  ) {
-                    hasValue = true;
-                    current.value +=
-                      toNumber(cellValue);
-                  }
-
-                  if (row.source === 'bid') {
-                    current.bidProjectedValue +=
-                      toNumber(
-                        cell?.projected
-                      );
-
-                    if (
-                      cell?.hasActivity
-                      && toNumber(cell?.projected) !== 0
-                    ) {
-                      current.potentialBidsProjected += 1;
-                    }
-                  } else {
-                    current.projectedValue +=
-                      toNumber(
-                        cell?.projected
-                      );
-                  }
-
-                  if (
-                    cell?.actual !== null
-                    && cell?.actual !== undefined
-                  ) {
-                    hasActualValue = true;
-                    current.actualValue +=
-                      toNumber(
-                        cell.actual
-                      );
-                  }
-
-                  return current;
-                },
-                {
-                  value: 0,
-                  projectedValue: 0,
-                  bidProjectedValue: 0,
-                  actualValue: 0,
-                  potentialBidsProjected: 0,
-                },
-              );
-
-            const activeProjectsBilled =
-              includeActiveProjects
-                ? rows.reduce(
-                    (
-                      count,
-                      row,
-                    ) => {
-                      if (row.source !== 'current') {
-                        return count;
-                      }
-
-                      const actual =
-                        row.cells[index]?.actual;
-
-                      if (
-                        actual === null
-                        || actual === undefined
-                        || toNumber(actual) === 0
-                      ) {
-                        return count;
-                      }
-
-                      return count + 1;
-                    },
-                    0,
-                  )
-                : null;
-
-            return {
-              month,
-
-              value:
-                hasValue
-                  ? totals.value
-                  : null,
-
-              projectedValue:
-                totals.projectedValue,
-
-              bidProjectedValue:
-                includeBids
-                && totals.potentialBidsProjected > 0
-                  ? totals.bidProjectedValue
-                  : null,
-
-              actualValue:
-                hasActualValue
-                  ? totals.actualValue
-                  : null,
-
-              activeProjectsBilled,
-
-              potentialBidsProjected:
-                includeBids
-                  ? totals.potentialBidsProjected
-                  : null,
-            };
-          }
-        ),
-      [
-        months,
-        rows,
-        headerMetric,
-        includeActiveProjects,
-        includeBids,
-      ],
-    );
-
-
-  const grandTotals =
-    useMemo(
-      () => {
-        let hasValue =
-          headerMetric
-          === 'projected';
-
-        let hasActualValue = false;
-
-        const totals =
-          rows.reduce(
-            (
-              current,
-              row,
-            ) => {
-              const totalValue =
-                row.total?.[
-                  headerMetric
-                ];
-
-              if (
-                totalValue !== null
-                && totalValue !== undefined
-              ) {
-                hasValue = true;
-                current.value +=
-                  toNumber(
-                    totalValue
-                  );
-              }
-
-              if (row.source === 'bid') {
-                current.bidProjectedValue +=
-                  toNumber(
-                    row.total?.projected
-                  );
-              } else {
-                current.projectedValue +=
-                  toNumber(
-                    row.total?.projected
-                  );
-              }
-
-              if (
-                row.total?.actual !== null
-                && row.total?.actual !== undefined
-              ) {
-                hasActualValue = true;
-                current.actualValue +=
-                  toNumber(
-                    row.total.actual
-                  );
-              }
-
-              return current;
-            },
-            {
-              value: 0,
-              projectedValue: 0,
-              bidProjectedValue: 0,
-              actualValue: 0,
-            },
-          );
-
-        const hasBidProjectedValue =
-          includeBids
-          && rows.some(
-            row =>
-              row.source === 'bid'
-              && toNumber(row.total?.projected) !== 0
-          );
-
-        return {
-          value:
-            hasValue
-              ? totals.value
-              : null,
-
-          projectedValue:
-            totals.projectedValue,
-
-          bidProjectedValue:
-            hasBidProjectedValue
-              ? totals.bidProjectedValue
-              : null,
-
-          actualValue:
-            hasActualValue
-              ? totals.actualValue
-              : null,
-        };
-      },
-      [
-        rows,
-        headerMetric,
-        includeBids,
-      ],
-    );
+  const monthTotals = useMemo(() => months.map((month, index) => ({ month,
+    ...pivotTotals(rows, index, headerMetric, includeBids),
+  })), [months, rows, headerMetric, includeBids]);
+  const grandTotals = useMemo(() => pivotTotals(rows, null, headerMetric, includeBids),
+    [rows, headerMetric, includeBids]);
 
 
   return (
@@ -1904,6 +1593,10 @@ export default function ProjectBillingPivot({
                             index
                           ]?.actualValue
                         }
+                        missingPmMonths={monthTotals[index]?.missingPmMonths}
+                        hasSystemEstimate={monthTotals[index]?.hasSystemEstimate}
+                        baselineValue={monthTotals[index]?.baselineValue}
+                        showBaseline={showBaseline}
                         metric={billingMetric}
                         currency={currency}
                         activeProjectsBilled={
@@ -1944,6 +1637,10 @@ export default function ProjectBillingPivot({
                     actualValue={
                       grandTotals.actualValue
                     }
+                    missingPmMonths={grandTotals.missingPmMonths}
+                    hasSystemEstimate={grandTotals.hasSystemEstimate}
+                    baselineValue={grandTotals.baselineValue}
+                    showBaseline={showBaseline}
                     metric={billingMetric}
                     currency={currency}
                     includeProjectProjection={includeActiveProjects}
@@ -1968,8 +1665,8 @@ export default function ProjectBillingPivot({
                   ...row.total,
 
                   hasActivity:
-                    row.total.projected !== 0
-                    || row.total.actual !== null
+                    row.total.projected != null
+                    || row.total.actual != null
                     || row.total.marginCollected !== null,
                 };
 
@@ -2082,6 +1779,7 @@ export default function ProjectBillingPivot({
                             metric={billingMetric}
                             currency={currency}
                             source={row.source}
+                            showBaseline={showBaseline}
                           />
                         </td>
                       )
@@ -2093,6 +1791,7 @@ export default function ProjectBillingPivot({
                         metric={billingMetric}
                         currency={currency}
                         source={row.source}
+                        showBaseline={showBaseline}
                       />
                     </td>
                   </tr>

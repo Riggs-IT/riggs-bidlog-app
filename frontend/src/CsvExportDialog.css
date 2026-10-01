@@ -1,0 +1,14 @@
+.csv-export-backdrop {position:fixed;inset:0;z-index:1400;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.52);backdrop-filter:blur(2px);}
+.csv-export-dialog {width:min(560px,100%);padding:18px;border:1px solid var(--border-strong);border-radius:12px;background:var(--surface-1);box-shadow:0 24px 70px rgba(0,0,0,.32);}
+.csv-export-heading {display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px;}
+.csv-export-heading span {display:block;margin-bottom:4px;color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.08em;}
+.csv-export-heading h2 {margin:0;font-size:20px;}
+.csv-export-close {width:34px;height:34px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--muted);font-size:22px;line-height:1;cursor:pointer;}
+.csv-export-close:hover {border-color:var(--accent);color:var(--accent);}
+.csv-export-options {display:grid;gap:10px;}
+.csv-export-option {display:flex;flex-direction:column;align-items:flex-start;gap:5px;width:100%;padding:14px 15px;text-align:left;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);color:var(--text);cursor:pointer;}
+.csv-export-option:hover {border-color:var(--accent);background:var(--accent-soft,var(--surface-2));}
+.csv-export-option strong {font-size:14px;}
+.csv-export-option span {color:var(--muted);font-size:12px;line-height:1.45;}
+.csv-export-footer {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);color:var(--muted);font-size:11px;}
+@media(max-width:560px){.csv-export-backdrop{align-items:flex-end;padding:10px}.csv-export-dialog{border-radius:12px}.csv-export-footer{align-items:stretch;flex-direction:column}.csv-export-footer button{width:100%}}

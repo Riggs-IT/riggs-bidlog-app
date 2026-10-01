@@ -1,3 +1,5 @@
+import useGcReference from './useGcReference.js';
+import { gcReference } from './gcReference.js';
 import {
   useEffect,
   useMemo,
@@ -232,42 +234,6 @@ async function requestJson(path, options = {}) {
 }
 
 
-let cachedGeneralContractorOptions = null;
-let generalContractorOptionsRequest = null;
-
-
-async function loadGeneralContractorOptions({ force = false } = {}) {
-  if (force) {
-    cachedGeneralContractorOptions = null;
-    generalContractorOptionsRequest = null;
-  }
-
-  if (cachedGeneralContractorOptions) {
-    return cachedGeneralContractorOptions;
-  }
-
-  if (!generalContractorOptionsRequest) {
-    generalContractorOptionsRequest = requestJson(
-      '/api/bid-log/reference/general-contractors',
-    )
-      .then(payload => {
-        if (!Array.isArray(payload?.items)) {
-          throw new Error('General contractor reference returned an invalid response.');
-        }
-
-        cachedGeneralContractorOptions = payload.items;
-        return cachedGeneralContractorOptions;
-      })
-      .catch(error => {
-        generalContractorOptionsRequest = null;
-        throw error;
-      });
-  }
-
-  return generalContractorOptionsRequest;
-}
-
-
 function Field({
   label,
   children,
@@ -325,13 +291,11 @@ export default function BidLogOutcomeEditDrawer({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [saveMessage, setSaveMessage] = useState(null);
-  const [gcOptions, setGcOptions] = useState(cachedGeneralContractorOptions || []);
-  const [gcOptionsLoading, setGcOptionsLoading] = useState(false);
-  const [gcOptionsError, setGcOptionsError] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
 
   const role = String(user?.appRole || '').trim().toUpperCase();
   const canEdit = role === 'ADMIN' || role === 'OPERATIONS';
+  const { items: gcOptions, loading: gcOptionsLoading, error: gcOptionsError, refresh: retryGcOptions } = useGcReference(canEdit);
 
   const editableFields = useMemo(
     () => new Set(Array.isArray(detail?.editableFields) ? detail.editableFields : []),
@@ -362,25 +326,6 @@ export default function BidLogOutcomeEditDrawer({
     || editorPmOptions.some(
       pm => pm.toUpperCase() === String(detail?.pm || '').trim().toUpperCase(),
     );
-
-  async function loadGcOptions({ force = false } = {}) {
-    if (!canEdit) {
-      return;
-    }
-
-    setGcOptionsLoading(true);
-    setGcOptionsError(null);
-
-    try {
-      setGcOptions(await loadGeneralContractorOptions({ force }));
-    } catch (error) {
-      setGcOptionsError(
-        errorMessage(error, 'Unable to load the Potential GCs list.'),
-      );
-    } finally {
-      setGcOptionsLoading(false);
-    }
-  }
 
   async function loadDetail({ preserveDraft = false } = {}) {
     if (!originalBidLogId || !outcomeStatus) {
@@ -452,12 +397,6 @@ export default function BidLogOutcomeEditDrawer({
     [originalBidLogId, outcomeStatus],
   );
 
-  useEffect(
-    () => {
-      loadGcOptions();
-    },
-    [canEdit],
-  );
 
   function updateField(name, value) {
     setForm(current => ({
@@ -960,7 +899,8 @@ export default function BidLogOutcomeEditDrawer({
                       error={gcOptionsError}
                       disabled={!canField('generalContractors')}
                       onChange={value => updateField('generalContractors', value)}
-                      onRetry={() => loadGcOptions({ force: true })}
+                      onRetry={retryGcOptions}
+                      onOpen={() => { void gcReference.load().catch(() => {}); }}
                     />
                   </Field>
                 )}

@@ -17,6 +17,7 @@ import PMForecastPanel from './PMForecastPanel.jsx';
 import OriginatingBidPanel from './OriginatingBidPanel.jsx';
 import { GeneralContractorDisplay } from './GeneralContractors.jsx';
 import ChangeOrdersPanel from './ChangeOrdersPanel.jsx';
+import { amountDifference } from './primaryProjection.js';
 
 
 function text(
@@ -182,6 +183,25 @@ export default function CurrentProjectBillingDrawer({
 
   const projectControlsRef =
     useRef(null);
+
+  const varianceMonth =
+    String(project?.projectionAsOfMonth || '').slice(0, 7);
+
+  const varianceMonthRow =
+    (monthlyRows || []).find(
+      row => String(row?.monthStart || '').slice(0, 7) === varianceMonth,
+    ) || null;
+
+  const monthlyBillingVariance =
+    amountDifference(
+      varianceMonthRow?.actualAmount,
+      varianceMonthRow?.projectedAmount,
+    );
+
+  const varianceProjectionSource =
+    project?.hasPmForecast
+      ? 'PM Projection'
+      : 'System Baseline';
 
 
   useEffect(
@@ -813,15 +833,14 @@ export default function CurrentProjectBillingDrawer({
 
             <article>
               <span>
-                Projected To Date
+                Projected Through Current Month
               </span>
 
               <strong>
                 <MoneyValue
-                  value={
-                    project.projectedToDate
-                  }
+                  value={project.projectedToDate}
                 />
+                {project.projectionToDateMissingPmMonths > 0 && <small className="baseline-reference">Partial: blank PM comparison months</small>}
               </strong>
             </article>
 
@@ -846,18 +865,21 @@ export default function CurrentProjectBillingDrawer({
             <article
               className={
                 varianceClass(
-                  project.varianceToDate
+                  monthlyBillingVariance
                 )
               }
             >
-              <span>
-                Variance To Date
+              <span
+                className="billing-variance-label"
+                title={`Foundation Billing − ${varianceProjectionSource} for the current month`}
+              >
+                Monthly Billing Variance
               </span>
 
               <strong>
                 <MoneyValue
                   value={
-                    project.varianceToDate
+                    monthlyBillingVariance
                   }
                 />
               </strong>
@@ -901,7 +923,7 @@ export default function CurrentProjectBillingDrawer({
                 </span>
 
                 <h3>
-                  Forecast Configuration
+                  System Estimate Configuration
                 </h3>
               </div>
             </div>
@@ -977,6 +999,7 @@ export default function CurrentProjectBillingDrawer({
                 project={project}
                 user={user}
                 onBidLoaded={setOriginatingBidDetail}
+                onLinked={onAttentionChanged}
                 infoOpen={
                   openProjectControl
                   === 'originating-bid'

@@ -1,3 +1,8 @@
+import {facetRows, projectDirectoryRows, isCompleted} from './viewFilters.js';
+import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
+import {contractorTokens, canonicalFilterKey, contractorFilterOptions, contractorFilterMatch} from './gcReference.js';
+import {RefreshButton} from './ViewControls.jsx';
+import useGcReference, { canReadGcReference } from './useGcReference.js';
 import {
   useCallback,
   useEffect,
@@ -500,7 +505,7 @@ async function fetchProjectList(path, signal, label) {
 
 function fetchActiveProjects(signal) {
   return fetchProjectList(
-    '/api/active-projects',
+    '/api/active-projects?fresh=true',
     signal,
     'active projects',
   );
@@ -509,7 +514,7 @@ function fetchActiveProjects(signal) {
 
 function fetchCompletedProjects(signal) {
   return fetchProjectList(
-    '/api/projects/completed-directory',
+    '/api/projects/completed-directory?fresh=true',
     signal,
     'completed projects',
   );
@@ -558,7 +563,9 @@ export async function prefetchProjectsWorkspace({
 
 export default function ActiveProjectsWorkspace({
   user,
+  onProjectDataChanged,
 }) {
+  const gcDirectory = useGcReference(canReadGcReference(user));
   const [activeItems, setActiveItems] = useState(
     () => activeProjectsCache.items || [],
   );
@@ -578,6 +585,7 @@ export default function ActiveProjectsWorkspace({
   const [purposeFilter, setPurposeFilter] = useState(ALL);
   const [peFilter, setPeFilter] = useState(ALL);
   const [superFilter, setSuperFilter] = useState(ALL);
+  const [gcFilter, setGcFilter] = useState(ALL);
   const [quickFilter, setQuickFilter] = useState(null);
   const [editProjectId, setEditProjectId] = useState(null);
   const [sortState, setSortState] = useState({
@@ -684,37 +692,32 @@ export default function ActiveProjectsWorkspace({
     [loadCompletedProjects, showCompleted],
   );
 
-  const items = useMemo(
-    () => showCompleted
-      ? [...activeItems, ...completedItems]
-      : activeItems,
-    [activeItems, completedItems, showCompleted],
-  );
-
-  const pmOptions = useMemo(
-    () => sortedUnique(items, row => row.pm),
-    [items],
-  );
-
-  const typeOptions = useMemo(
-    () => sortedUnique(items, row => row.projectType),
-    [items],
-  );
-
-  const purposeOptions = useMemo(
-    () => sortedUnique(items, row => row.purpose),
-    [items],
-  );
-
-  const peOptions = useMemo(
-    () => sortedUnique(items, row => row.pe),
-    [items],
-  );
-
-  const superOptions = useMemo(
-    () => sortedUnique(items, row => row.superintendent),
-    [items],
-  );
+  const items=useMemo(()=>projectDirectoryRows(activeItems,completedItems,showCompleted),[activeItems,completedItems,showCompleted]);
+  const filters={pm:pmFilter,type:typeFilter,purpose:purposeFilter,pe:peFilter,super:superFilter,gc:gcFilter};
+  const facets=useMemo(()=>{
+    const text=v=>String(v||'').trim();
+    const staff=field=>({values:r=>[isUnassigned(r[field])?UNASSIGNED:text(r[field])]});
+    const entries=items.filter(p=>{
+      if (isCompleted(p) && quickFilter) return false;
+      if (quickFilter==='noPm' && !isUnassigned(p.pm)) return false;
+      if (quickFilter==='noSuper' && !isUnassigned(p.superintendent)) return false;
+      if (quickFilter==='noDuration' && Number.isFinite(Number(p.estimatedDurationMonths)) && Number(p.estimatedDurationMonths)>0) return false;
+      if (quickFilter==='noStart' && dateOnly(p.effectiveStartDate)) return false;
+      return matchesSearch(p,search) || (search.trim() && generalContractorDisplayText(p.generalContractors||p.gc).toLowerCase().includes(search.trim().toLowerCase()));
+    });
+    return facetRows(entries,{...filters,gc:canonicalFilterKey(gcFilter,gcDirectory.directory)},{pm:staff('pm'),pe:staff('pe'),super:staff('superintendent'),
+      type:{values:r=>[text(r.projectType)]},purpose:{values:r=>[text(r.purpose)]},
+      gc:{values:r=>contractorTokens(r.generalContractors||r.gc,gcDirectory.directory).map(x=>x.key),
+        matches:(r,value)=>contractorFilterMatch(r.generalContractors||r.gc,value,ALL,gcDirectory.directory)}});
+  },[items,search,quickFilter,gcDirectory.directory,JSON.stringify(filters)]);
+  useFacetSelectionCleanup(filters,facets.selections,{pm:setPmFilter,type:setTypeFilter,purpose:setPurposeFilter,
+    pe:setPeFilter,super:setSuperFilter,gc:setGcFilter},!loading && !completedLoading);
+  const pmOptions=facets.options.pm.filter(v=>v!==UNASSIGNED);
+  const peOptions=facets.options.pe.filter(v=>v!==UNASSIGNED);
+  const superOptions=facets.options.super.filter(v=>v!==UNASSIGNED);
+  const typeOptions=facets.options.type;
+  const purposeOptions=facets.options.purpose;
+  const gcOptions=contractorFilterOptions(facets.contexts.gc.map(r=>r.generalContractors||r.gc),gcDirectory.directory);
 
   const historicalPmOptions = useMemo(
     () => historicalProjectStaffOptions(
@@ -745,15 +748,15 @@ export default function ActiveProjectsWorkspace({
 
   const counts = useMemo(
     () => ({
-      active: activeItems.length,
-      completed: completedItems.length,
-      noPm: activeItems.filter(row => isUnassigned(row.pm)).length,
-      noSuper: activeItems.filter(row => isUnassigned(row.superintendent)).length,
-      noDuration: activeItems.filter(
+      active: projectDirectoryRows(activeItems).length,
+      completed: projectDirectoryRows(activeItems,completedItems,true).filter(isCompleted).length,
+      noPm: projectDirectoryRows(activeItems).filter(row => isUnassigned(row.pm)).length,
+      noSuper: projectDirectoryRows(activeItems).filter(row => isUnassigned(row.superintendent)).length,
+      noDuration: projectDirectoryRows(activeItems).filter(
         row => !Number.isFinite(Number(row.estimatedDurationMonths))
           || Number(row.estimatedDurationMonths) <= 0,
       ).length,
-      noStart: activeItems.filter(
+      noStart: projectDirectoryRows(activeItems).filter(
         row => !dateOnly(row.effectiveStartDate),
       ).length,
     }),
@@ -761,94 +764,7 @@ export default function ActiveProjectsWorkspace({
   );
 
   const filteredItems = useMemo(
-    () => items
-      .filter(project => {
-        if (project.projectCompleted && quickFilter) {
-          return false;
-        }
-
-        if (
-          quickFilter === 'noPm'
-          && !isUnassigned(project.pm)
-        ) {
-          return false;
-        }
-
-        if (
-          quickFilter === 'noSuper'
-          && !isUnassigned(project.superintendent)
-        ) {
-          return false;
-        }
-
-        if (
-          quickFilter === 'noDuration'
-          && Number.isFinite(Number(project.estimatedDurationMonths))
-          && Number(project.estimatedDurationMonths) > 0
-        ) {
-          return false;
-        }
-
-        if (
-          quickFilter === 'noStart'
-          && dateOnly(project.effectiveStartDate)
-        ) {
-          return false;
-        }
-
-        if (!matchesSearch(project, search)) {
-          return false;
-        }
-
-        if (
-          pmFilter !== ALL
-          && (
-            pmFilter === UNASSIGNED
-              ? !isUnassigned(project.pm)
-              : String(project.pm || '').trim() !== pmFilter
-          )
-        ) {
-          return false;
-        }
-
-        if (
-          typeFilter !== ALL
-          && String(project.projectType || '').trim() !== typeFilter
-        ) {
-          return false;
-        }
-
-        if (
-          purposeFilter !== ALL
-          && String(project.purpose || '').trim() !== purposeFilter
-        ) {
-          return false;
-        }
-
-        if (
-          peFilter !== ALL
-          && (
-            peFilter === UNASSIGNED
-              ? !isUnassigned(project.pe)
-              : String(project.pe || '').trim() !== peFilter
-          )
-        ) {
-          return false;
-        }
-
-        if (
-          superFilter !== ALL
-          && (
-            superFilter === UNASSIGNED
-              ? !isUnassigned(project.superintendent)
-              : String(project.superintendent || '').trim() !== superFilter
-          )
-        ) {
-          return false;
-        }
-
-        return true;
-      })
+    () => [...facets.rows]
       .sort((a, b) => {
         let aValue;
         let bValue;
@@ -928,7 +844,7 @@ export default function ActiveProjectsWorkspace({
         );
       }),
     [
-      items,
+      facets,
       peFilter,
       pmFilter,
       purposeFilter,
@@ -937,6 +853,7 @@ export default function ActiveProjectsWorkspace({
       sortState,
       superFilter,
       typeFilter,
+      gcDirectory.directory,
     ],
   );
 
@@ -981,6 +898,7 @@ export default function ActiveProjectsWorkspace({
     setPurposeFilter(ALL);
     setPeFilter(ALL);
     setSuperFilter(ALL);
+    setGcFilter(ALL);
     setQuickFilter(null);
   }
 
@@ -1118,19 +1036,11 @@ export default function ActiveProjectsWorkspace({
           </button>
 
           <div className="active-project-filter-actions">
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => {
-                void loadProjects({ quiet: false });
-                if (showCompleted) {
-                  void loadCompletedProjects({ quiet: false });
-                }
-              }}
-              disabled={loading || completedLoading}
-            >
-              Refresh
-            </button>
+            <RefreshButton label="Refresh projects" busy={loading || completedLoading} onClick={() => {
+              void loadProjects({quiet:false});
+              if(showCompleted) void loadCompletedProjects({quiet:false});
+              if(canReadGcReference(user)) void gcDirectory.refresh();
+            }} />
 
             <button
               type="button"
@@ -1160,7 +1070,7 @@ export default function ActiveProjectsWorkspace({
               onChange={event => setPmFilter(event.target.value)}
             >
               <option value={ALL}>All PMs</option>
-              <option value={UNASSIGNED}>Unassigned</option>
+              {facets.options.pm.includes(UNASSIGNED) && (<option value={UNASSIGNED}>Unassigned</option>)}
               {historicalLastOptions(
                 pmOptions,
                 historicalPmOptions,
@@ -1219,7 +1129,7 @@ export default function ActiveProjectsWorkspace({
               onChange={event => setPeFilter(event.target.value)}
             >
               <option value={ALL}>All PEs</option>
-              <option value={UNASSIGNED}>Unassigned</option>
+              {facets.options.pe.includes(UNASSIGNED) && (<option value={UNASSIGNED}>Unassigned</option>)}
               {historicalLastOptions(
                 peOptions,
                 historicalPeOptions,
@@ -1252,7 +1162,7 @@ export default function ActiveProjectsWorkspace({
               onChange={event => setSuperFilter(event.target.value)}
             >
               <option value={ALL}>All Superintendents</option>
-              <option value={UNASSIGNED}>Unassigned</option>
+              {facets.options.super.includes(UNASSIGNED) && (<option value={UNASSIGNED}>Unassigned</option>)}
               {historicalLastOptions(
                 superOptions,
                 historicalSuperOptions,
@@ -1275,6 +1185,12 @@ export default function ActiveProjectsWorkspace({
                   </option>
                 );
               })}
+            </select>
+          </label>
+          <label className="filter-field"><span>General Contractor</span>
+            <select value={gcFilter} onChange={event=>setGcFilter(event.target.value)}>
+              <option value={ALL}>All General Contractors</option>
+              {gcOptions.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
           </label>
         </div>
@@ -1520,6 +1436,7 @@ export default function ActiveProjectsWorkspace({
         user={user}
         onClose={() => setEditProjectId(null)}
         onSaved={() => {
+          void Promise.resolve().then(() => onProjectDataChanged?.()).catch(() => {});
           void loadProjects({ quiet: true });
           if (showCompleted) {
             void loadCompletedProjects({ quiet: true });

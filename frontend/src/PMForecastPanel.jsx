@@ -1,8 +1,12 @@
+import {InfoButton, RefreshButton, ShowControls} from './ViewControls.jsx';
+import './ReviewControls.css';
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
+import { createLatestRead, readOptions, watchVisibleReads } from './browserFreshness.js';
 
 
 const fmtMoney = (
@@ -210,10 +214,10 @@ const errorText = detail => ({
     'One of these months is now locked. Reload the projection before saving.',
 
   bid_log_pm_forecast_total_mismatch:
-    'The projection total must match the System Baseline total.',
+    'The projection total must match the system estimate total.',
 
   bid_log_pm_forecast_baseline_not_ready:
-    'This project does not have a complete System Baseline yet.',
+    'This project does not have a complete system estimate yet.',
 
   bid_log_pm_forecast_user_not_authorized:
     'Your account is not authorized to edit this projection.',
@@ -252,11 +256,10 @@ async function fetchJson(
   }
 
   if (!response.ok) {
-    throw new Error(
-      errorText(
-        payload?.detail
-      )
-    );
+    const error = new Error(errorText(payload?.detail));
+    error.status = response.status;
+    error.detail = payload?.detail;
+    throw error;
   }
 
   return payload;
@@ -347,84 +350,104 @@ export default function PMForecastPanel({
   ] = useState(null);
 
 
-  const load = async () => {
-    if (!project?.jobListId) {
-      return;
-    }
+  const [baselineComparison, setBaselineComparison] = useState(false);
+  const [showRunningTotals, setShowRunningTotals] = useState(false);
+  const [latestNoteOpen, setLatestNoteOpen] = useState(false);
+  const showBaseline = !forecast?.hasPmForecast || baselineComparison;
+  useEffect(() => { setBaselineComparison(false); setShowRunningTotals(false); setLatestNoteOpen(false); }, [project?.jobListId]);
 
-    setLoading(true);
-    setError(null);
+  const [refreshError, setRefreshError] = useState(null);
+  const draftBusy = useRef(false);
+  const mutationBusy = useRef(false);
+  const onChangedRef = useRef(onAttentionChanged);
+  onChangedRef.current = onAttentionChanged;
+  draftBusy.current = editing || saving || policySaving;
+  const projectId = project?.jobListId;
+  const reader = useMemo(() => {
+    const owner = { alive: false };
+    owner.read = createLatestRead({
+      read: async config => {
+        const base = `/api/current-projects/${projectId}/pm-forecast`;
+        const [forecastPayload, historyPayload, policyPayload] = await Promise.all([
+          fetchJson(base, readOptions(config)),
+          fetchJson(`${base}/history`, readOptions(config)),
+          fetchJson(`${base}/policy`, readOptions(config)),
+        ]);
+        if (!forecastPayload || !Array.isArray(forecastPayload.items)
+            || !Array.isArray(historyPayload?.items) || !policyPayload) {
+          throw new Error('Projection data returned an invalid response.');
+        }
+        return { forecastPayload, historyPayload, policyPayload };
+      },
+      publish: (data, config) => {
+        if (!owner.alive || (draftBusy.current && !config.afterSave)) return false;
+        setForecast(data.forecastPayload);
+        setHistory(data.historyPayload.items);
+        setPolicy(data.policyPayload);
+        setError(null);
+        setRefreshError(null);
+      },
+      failed: (err, config) => {
+        if (!owner.alive || (draftBusy.current && !config.afterSave)) return;
+        if (err?.status === 401) {
+          window.location.replace(err.detail === 'application_updated'
+            ? '/?auth_error=application_updated' : '/?signed_out=timeout');
+          return;
+        }
+        if (config.afterSave && !config.quiet) {
+          setError('Projection saved, but the read-back failed. Retry the read below; do not repeat the save.');
+        } else if (config.quiet) {
+          setRefreshError('Could not refresh projection data. Last loaded values are shown.');
+        } else setError(err.message || 'Unable to load billing projections.');
+      },
+    });
+    return owner;
+  }, [projectId]);
 
-    try {
-      const [
-        forecastPayload,
-        historyPayload,
-        policyPayload,
-      ] = await Promise.all([
-        fetchJson(
-          `/api/current-projects/${project.jobListId}/pm-forecast`
-        ),
-
-        fetchJson(
-          `/api/current-projects/${project.jobListId}/pm-forecast/history`
-        ),
-
-        fetchJson(
-          `/api/current-projects/${project.jobListId}/pm-forecast/policy`
-        ),
-      ]);
-
-      setForecast(
-        forecastPayload
-      );
-
-      setHistory(
-        Array.isArray(
-          historyPayload?.items
-        )
-          ? historyPayload.items
-          : []
-      );
-
-      setPolicy(
-        policyPayload
-      );
-
-    } catch (err) {
-      setError(
-        err.message
-        || 'Unable to load billing projections.'
-      );
-
-    } finally {
-      setLoading(false);
-    }
+  const load = async ({ quiet = false, ...config } = {}) => {
+    if (!projectId || !reader.alive || (draftBusy.current && !config.afterSave)) return;
+    if (!quiet) setLoading(true);
+    try { return await reader.read.load({ quiet, ...config }); }
+    finally { if (reader.alive && !reader.read.pending && !quiet) setLoading(false); }
   };
+  const loadRef = useRef(load);
+  loadRef.current = load;
 
+  useEffect(() => {
+    reader.alive = true;
+    draftBusy.current = false;
+    mutationBusy.current = false;
+    setForecast(null);
+    setHistory([]);
+    setPolicy(null);
+    setError(null);
+    setRefreshError(null);
+    setEditing(false);
+    setEditMode('pm');
+    setCorrectionReason('');
+    setEdits({});
+    setNotes('');
+    setSaving(false);
+    setPolicySaving(false);
+    setSaveError(null);
+    setPolicyError(null);
+    setHistoryOpen(false);
+    void loadRef.current({ passive: true });
+    return () => { reader.alive = false; reader.read.cancel(); };
+  }, [reader]);
 
-  useEffect(
-    () => {
-      setForecast(null);
-      setHistory([]);
-      setPolicy(null);
+  useEffect(() => {
+    if (!projectId || editing || saving || policySaving) return undefined;
+    return watchVisibleReads(config => loadRef.current({ quiet: true, ...config }), {
+      allowed: () => reader.alive && !draftBusy.current,
+    });
+  }, [reader, projectId, editing, saving, policySaving]);
 
-      setEditing(false);
-      setEditMode('pm');
-      setCorrectionReason('');
-      setEdits({});
-      setNotes('');
-
-      setSaveError(null);
-      setPolicyError(null);
-      setHistoryOpen(false);
-
-      load();
-    },
-    [
-      project?.jobListId,
-    ],
-  );
-
+  function notifyProjectionChanged() {
+    // A failed portfolio/attention refresh cannot turn a completed write into
+    // a retryable save error. Both independent readers display their errors.
+    void Promise.resolve().then(() => onChangedRef.current?.()).catch(() => {});
+  }
 
   const sourceRows =
     useMemo(
@@ -446,10 +469,11 @@ export default function PMForecastPanel({
               row.monthStart,
 
             systemBaselineAmount:
-              row.projectedAmount,
+              Object.prototype.hasOwnProperty.call(row, 'systemBaselineAmount')
+                ? row.systemBaselineAmount : row.projectedAmount,
 
             pmForecastAmount:
-              null,
+              row.hasPmForecast ? row.pmForecastAmount : null,
 
             foundationActualAmount:
               row.actualAmount,
@@ -642,6 +666,8 @@ export default function PMForecastPanel({
   const canEdit =
     canSubmit
     && !loading
+    && !saving
+    && !policySaving
     && !error
     && Boolean(forecast);
 
@@ -730,6 +756,7 @@ export default function PMForecastPanel({
       !isAdmin
       || !policy
       || policySaving
+      || mutationBusy.current
     ) {
       return;
     }
@@ -740,6 +767,9 @@ export default function PMForecastPanel({
         .requireBaselineTotalMatch;
 
 
+    reader.read.cancel();
+    mutationBusy.current = true;
+    draftBusy.current = true;
     setPolicySaving(true);
     setPolicyError(null);
 
@@ -764,25 +794,26 @@ export default function PMForecastPanel({
         );
 
 
+      notifyProjectionChanged();
+      if (!reader.alive) return;
       setPolicy(
         updated
       );
-
-      if (
-        typeof onAttentionChanged
-        === 'function'
-      ) {
-        await onAttentionChanged();
-      }
+      if (!editing) await load({ replace: true, passive: true, quiet: true, afterSave: true });
 
     } catch (err) {
+      if (!reader.alive) return;
       setPolicyError(
         err.message
         || 'Unable to update the projection total setting.'
       );
 
     } finally {
-      setPolicySaving(false);
+      if (reader.alive) {
+        mutationBusy.current = false;
+        draftBusy.current = editing;
+        setPolicySaving(false);
+      }
     }
   };
 
@@ -790,6 +821,8 @@ export default function PMForecastPanel({
   const beginEdit = (
     mode = 'pm',
   ) => {
+    reader.read.cancel();
+    draftBusy.current = true;
     const next = {};
 
     editableRows.forEach(
@@ -834,6 +867,7 @@ export default function PMForecastPanel({
 
 
   const cancelEdit = () => {
+    draftBusy.current = false;
     setEditing(false);
     setEditMode('pm');
     setCorrectionReason('');
@@ -844,6 +878,10 @@ export default function PMForecastPanel({
 
 
   const save = async () => {
+    if (saving || policySaving || mutationBusy.current || !editing) return;
+    mutationBusy.current = true;
+    reader.read.cancel();
+    draftBusy.current = true;
     setSaving(true);
     setSaveError(null);
 
@@ -856,7 +894,7 @@ export default function PMForecastPanel({
 
       if (totalMismatch) {
         throw new Error(
-          'The projection total must match the System Baseline total.'
+          'The projection total must match the system estimate total.'
         );
       }
 
@@ -951,29 +989,28 @@ export default function PMForecastPanel({
         },
       );
 
+      notifyProjectionChanged();
+      if (!reader.alive) return;
       setEditing(false);
       setEditMode('pm');
       setCorrectionReason('');
       setEdits({});
       setNotes('');
 
-      await load();
-
-      if (
-        typeof onAttentionChanged
-        === 'function'
-      ) {
-        await onAttentionChanged();
-      }
+      await load({ replace: true, passive: true, afterSave: true });
 
     } catch (err) {
+      if (!reader.alive) return;
       setSaveError(
         err.message
         || 'Unable to save the billing projection.'
       );
 
     } finally {
-      setSaving(false);
+      if (reader.alive) {
+        mutationBusy.current = false;
+        setSaving(false);
+      }
     }
   };
 
@@ -1031,6 +1068,10 @@ export default function PMForecastPanel({
         </div>
 
 
+        {refreshError && <div className="pm-forecast-message error" role="status">{refreshError}</div>}
+        {!editing && (error || refreshError) && <RefreshButton label="Retry projection read" busy={loading}
+          disabled={saving || policySaving} onClick={() => void load({replace:true})} />}
+
         {loading && (
           <div className="pm-forecast-message">
             Loading billing projections…
@@ -1050,50 +1091,30 @@ export default function PMForecastPanel({
           && forecast
           && (
             <>
-              <div className="pm-forecast-status-line">
-                <strong>
-                  {forecast.hasPmForecast
-                    ? 'PM Projection'
-                    : 'Using System Baseline'}
-                </strong>
-
-                {forecast.hasPmForecast
-                  && latest?.submittedAtUTC
-                  && (
-                    <>
-                      <span>
-                        ·
-                      </span>
-
-                      <span>
-                        Updated {
-                          fmtDateTime(
-                            latest.submittedAtUTC
-                          )
-                        }
-                      </span>
-                    </>
-                  )}
-              </div>
+              {!isAdmin && forecast.hasPmForecast && latest?.submittedAtUTC && (
+                <div className="pm-forecast-status-line">
+                  <span>Projection updated {fmtDateTime(latest.submittedAtUTC)}</span>
+                </div>
+              )}
 
 
               {isAdmin && policy && (
                 <div className="pm-policy-admin-control">
                   <div className="pm-policy-admin-copy">
                     <span className="pm-policy-admin-kicker">
-                      PROJECTION TOTAL SETTING
+                      PROJECTION BALANCE
                     </span>
 
                     <strong>
-                      Keep editable projection total equal to baseline
+                      {policy.requireBaselineTotalMatch
+                        ? 'Projection total must stay balanced'
+                        : 'PM projection total can change'}
                     </strong>
 
                     <small>
-                      Applies to this project. {
-                        policy.requireBaselineTotalMatch
-                          ? 'Operations can adjust billing timing between editable months, while the editable total stays aligned with the System Baseline.'
-                          : 'Operations can adjust both billing timing and the remaining projection total.'
-                      }
+                      {policy.requireBaselineTotalMatch
+                        ? "Move dollars between editable months, but keep their total equal to the project's overall projection amount."
+                        : 'You can change both the timing and total projected dollars.'}
                     </small>
 
                     <small className="pm-policy-updated">
@@ -1119,7 +1140,14 @@ export default function PMForecastPanel({
                                 : null}
                             </>
                           )
-                        : 'Using company default'}
+                        : 'Company default'}
+                      {forecast.hasPmForecast && latest?.submittedAtUTC
+                        ? (
+                            <>
+                              {' · '}Projection updated {fmtDateTime(latest.submittedAtUTC)}
+                            </>
+                          )
+                        : null}
                     </small>
                   </div>
 
@@ -1171,20 +1199,6 @@ export default function PMForecastPanel({
                 </div>
               )}
 
-
-              {latest?.notes
-                && !editing
-                && (
-                  <div className="pm-latest-note">
-                    <span>
-                      Latest projection note
-                    </span>
-
-                    <p>
-                      {latest.notes}
-                    </p>
-                  </div>
-                )}
             </>
           )}
       </section>
@@ -1208,15 +1222,18 @@ export default function PMForecastPanel({
         </div>
 
 
+        <div className="pm-comparison-controls">
+          <ShowControls baseline={baselineComparison} onBaseline={forecast?.hasPmForecast ? setBaselineComparison : undefined}
+            running={showRunningTotals} onRunning={setShowRunningTotals} />
+        </div>
+
         <div className="billing-monthly-table-wrap">
           <table className="billing-monthly-table pm-accountability-table">
             <thead>
               <tr>
                 <th>Month</th>
 
-                <th className="numeric">
-                  System Baseline
-                </th>
+                {showBaseline && <th className="numeric">System Baseline</th>}
 
                 <th className="numeric">
                   PM Projection
@@ -1226,9 +1243,7 @@ export default function PMForecastPanel({
                   Actual Billings
                 </th>
 
-                <th className="numeric">
-                  Variance
-                </th>
+                <th className="numeric" title="Actual Billings minus the selected projection">Difference</th>
               </tr>
             </thead>
 
@@ -1264,21 +1279,21 @@ export default function PMForecastPanel({
                         )}
                       </td>
 
-                      <td className="numeric">
+                      {showBaseline && <td className="numeric">
                         <strong>
                           {fmtMoney(
                             row.baseline
                           )}
                         </strong>
 
-                        <small>
+                        {showRunningTotals && <small>
                           Running total {
                             fmtMoney(
                               row.runningBaseline
                             )
                           }
-                        </small>
-                      </td>
+                        </small>}
+                      </td>}
 
                       <td className="numeric pm-forecast-cell">
                         {inlineEdit
@@ -1321,7 +1336,7 @@ export default function PMForecastPanel({
                                 />
                               </div>
 
-                              {(
+                              {(showBaseline &&
                                 edits[
                                   row.monthStart
                                 ] !== ''
@@ -1393,7 +1408,7 @@ export default function PMForecastPanel({
                             </strong>
                           )}
 
-                        <small>
+                        {showRunningTotals && <small>
                           Running total {
                             (
                               forecast
@@ -1405,7 +1420,7 @@ export default function PMForecastPanel({
                                 )
                               : '—'
                           }
-                        </small>
+                        </small>}
                       </td>
 
                       <td className="numeric">
@@ -1415,13 +1430,13 @@ export default function PMForecastPanel({
                           )}
                         </strong>
 
-                        <small>
+                        {showRunningTotals && <small>
                           Running total {
                             fmtMoney(
                               row.runningActual
                             )
                           }
-                        </small>
+                        </small>}
                       </td>
 
                       <td
@@ -1440,13 +1455,13 @@ export default function PMForecastPanel({
                           )}
                         </strong>
 
-                        <small>
+                        {showRunningTotals && <small>
                           Running total {
                             fmtMoney(
                               row.runningVariance
                             )
                           }
-                        </small>
+                        </small>}
                       </td>
                     </tr>
                   );
@@ -1456,7 +1471,7 @@ export default function PMForecastPanel({
               {!rows.length && (
                 <tr>
                   <td
-                    colSpan="5"
+                    colSpan={showBaseline ? 5 : 4}
                     className="empty-cell"
                   >
                     No System Baseline or actual billing rows are available for this project.
@@ -1477,7 +1492,7 @@ export default function PMForecastPanel({
                   : (
                       forecast.hasPmForecast
                         ? 'Revise PM Projection'
-                        : 'Start from System Baseline'
+                        : 'Start from System Estimate'
                     )}
               </strong>
 
@@ -1492,7 +1507,7 @@ export default function PMForecastPanel({
             <div className="pm-inline-totals">
               <div>
                 <span>
-                  Editable System Baseline
+                  Editable System Estimate
                 </span>
 
                 <strong>
@@ -1539,7 +1554,7 @@ export default function PMForecastPanel({
 
             {totalMismatch && (
               <div className="pm-forecast-message warning">
-                The PM Projection total must equal the editable System Baseline total.
+                The PM Projection total must equal the editable system estimate total.
               </div>
             )}
 
@@ -1550,7 +1565,7 @@ export default function PMForecastPanel({
                     editTotals.difference,
                     true,
                   )
-                } difference from the editable System Baseline. The assigned PM, APM, PE, and Superintendent will see a Needs Rebalance notification until Operations balances the projection.
+                } difference from the editable system estimate. The assigned PM, APM, PE, and Superintendent will see a Needs Rebalance notification until Operations balances the projection.
               </div>
             )}
 
@@ -1670,22 +1685,38 @@ export default function PMForecastPanel({
             </h3>
           </div>
 
-          <button
-            type="button"
-            className="text-button"
-            onClick={
-              () =>
-                setHistoryOpen(
-                  current =>
-                    !current
-                )
-            }
-          >
-            {historyOpen
-              ? 'Hide History'
-              : `View History (${history.length})`}
-          </button>
+          <div className="pm-history-actions">
+            {latest?.notes && !editing && (
+              <InfoButton
+                label="Latest projection note"
+                expanded={latestNoteOpen}
+                onClick={() => setLatestNoteOpen(current => !current)}
+              />
+            )}
+
+            <button
+              type="button"
+              className="text-button"
+              onClick={
+                () =>
+                  setHistoryOpen(
+                    current =>
+                      !current
+                  )
+              }
+            >
+              {historyOpen
+                ? 'Hide History'
+                : `View History (${history.length})`}
+            </button>
+          </div>
         </div>
+
+        {latestNoteOpen && latest?.notes && !editing && (
+          <div className="pm-latest-note pm-latest-note-inline" role="note">
+            <p>{latest.notes}</p>
+          </div>
+        )}
 
 
         {historyOpen && (

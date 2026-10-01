@@ -834,7 +834,7 @@ def get_bid_log_general_contractors() -> dict:
     return payload
 
 
-def get_active_bids(
+def _fetch_active_bids(
     *,
     bid_status: str | None = None,
     search: str | None = None,
@@ -1445,7 +1445,7 @@ def assign_active_project_staffing(
         **payload,
     }
 
-    return _active_project_write_request(
+    result = _active_project_write_request(
         "POST",
         "/v1/staffing/assignments",
         operation="Assign Active Project staffing",
@@ -1453,6 +1453,10 @@ def assign_active_project_staffing(
         request_id=request_id,
         payload=body,
     )
+
+
+    _invalidate_project_dashboard_cache()
+    return result
 
 
 def unassign_active_project_staffing(
@@ -1467,7 +1471,7 @@ def unassign_active_project_staffing(
         **payload,
     }
 
-    return _active_project_write_request(
+    result = _active_project_write_request(
         "POST",
         "/v1/staffing/unassignments",
         operation="Unassign Active Project staffing",
@@ -1475,6 +1479,10 @@ def unassign_active_project_staffing(
         request_id=request_id,
         payload=body,
     )
+
+
+    _invalidate_project_dashboard_cache()
+    return result
 
 
 def create_active_project_resource_schedule(
@@ -1603,22 +1611,11 @@ def update_active_project(
         operation=operation,
     )
 
-    # Job master-data edits can change the Current Project summary and
-    # projected monthly allocation. Force the next list/dashboard read to
-    # reload SQL instead of serving the pre-edit process cache.
-    _dashboard_cache_invalidate_key(
-        "current_project_summary",
-    )
-    _dashboard_cache_invalidate_key(
-        "current_project_monthly_bulk",
-    )
-    _dashboard_cache_invalidate_key(
-        "completed_projects",
-    )
+    _invalidate_project_dashboard_cache()
 
     return result
 
-def get_current_projected_billings() -> list[dict]:
+def _fetch_current_projected_billings() -> list[dict]:
     operation = "Current Project projected billings"
 
     response = _get_service_response(
@@ -1830,7 +1827,7 @@ def get_project_close_accountability() -> list[dict]:
 
 
 
-def get_completed_projects() -> list[dict]:
+def _fetch_completed_projects() -> list[dict]:
     operation = "Completed Projects"
 
     response = _get_service_response(
@@ -2125,6 +2122,7 @@ def update_pm_forecast_policy(
         )
 
 
+    _invalidate_project_dashboard_cache()
     return payload_out
 
 
@@ -2249,7 +2247,7 @@ def update_current_project_pm_forecast_policy(
     actor_eid: int,
     request_id: str,
 ) -> dict:
-    return _pm_forecast_write_request(
+    result = _pm_forecast_write_request(
         "PUT",
         (
             "/v1/bid-log/current-projects/"
@@ -2262,6 +2260,10 @@ def update_current_project_pm_forecast_policy(
             "Update Current Project PM Forecast policy"
         ),
     )
+
+
+    _invalidate_project_dashboard_cache()
+    return result
 
 
 def get_pm_forecast_attention(
@@ -2518,6 +2520,7 @@ def save_current_project_pm_forecast(
             "is missing its items list."
         )
 
+    _invalidate_project_dashboard_cache()
     return payload_out
 
 
@@ -2556,6 +2559,7 @@ def save_current_project_pm_forecast_admin_correction(
             "is missing its items list."
         )
 
+    _invalidate_project_dashboard_cache()
     return payload_out
 
 
@@ -2915,7 +2919,7 @@ def link_current_project_originating_bid(
     actor_eid: int,
     request_id: str,
 ) -> dict:
-    return _originating_bid_request(
+    result = _originating_bid_request(
         "POST",
         (
             "/v1/bid-log/current-projects/"
@@ -2933,8 +2937,34 @@ def link_current_project_originating_bid(
     )
 
 
+    _invalidate_project_dashboard_cache()
+    _dashboard_cache_invalidate_key("active_bid_dashboard")
+    return result
 
-def get_current_projects_monthly_bulk() -> dict:
+
+
+def _fetch_current_projects_primary_projection() -> dict:
+    operation = "Current Project primary projection bulk"
+    response = _get_service_response(
+        "/v1/bid-log/current-projects/primary-projection", operation=operation,
+    )
+    payload = _json_object(response, operation=operation)
+    if (payload.get("contractVersion") != 1
+            or not isinstance(payload.get("projects"), list)
+            or not isinstance(payload.get("items"), list)):
+        raise DataAPIInvalidResponse("Invalid PM-first portfolio response.")
+    return payload
+
+
+def get_current_projects_primary_projection(*, fresh: bool = False) -> dict:
+    return _dashboard_cached(
+        "current_project_primary_projection",
+        _fetch_current_projects_primary_projection,
+        fresh=fresh,
+    )
+
+
+def _fetch_current_projects_monthly_bulk() -> dict:
     operation = (
         "Current Project monthly bulk"
     )
@@ -2965,7 +2995,7 @@ def get_current_projects_monthly_bulk() -> dict:
     return payload
 
 
-def get_active_bid_dashboard() -> dict:
+def _fetch_active_bid_dashboard() -> dict:
     operation = (
         "Active Bid projected-billings dashboard"
     )
@@ -3011,220 +3041,54 @@ def get_active_bid_dashboard() -> dict:
 
 # ============================================================
 # DASHBOARD READ CACHE
-#
-# Short-lived process-local cache for expensive portfolio and
-# list datasets.
-#
-# Direct project/bid detail, PM Forecast, history, writes, auth,
-# health, etc. remain uncached. Bid detail intentionally stays
-# fresh so edit drawers always receive the latest ETag.
-#
-# Cache is process-local by design. Multiple Cloud Run
-# instances may each hold their own <=30 second copy.
+# Existing shared read datasets only; detail, PM versions, policy,
+# attention, human identity, and delegated sessions remain uncached.
+# Default TTL is 30 seconds; an existing setting may select 0..300.
+# The frontend must still request data; TTL is not browser polling.
 # ============================================================
 
+import math as _dashboard_math
 import os as _dashboard_os
-import threading as _dashboard_threading
-import time as _dashboard_time
+from .dashboard_cache import DashboardReadCache
+
+
+_dashboard_read_cache = DashboardReadCache()
 
 
 def _dashboard_cache_ttl_seconds() -> float:
     raw = _dashboard_os.getenv(
-        "BID_LOG_DASHBOARD_CACHE_TTL_SECONDS",
-        "30",
+        "BID_LOG_DASHBOARD_CACHE_TTL_SECONDS", "30",
     ).strip()
-
     try:
         value = float(raw)
     except ValueError:
         return 30.0
+    if not _dashboard_math.isfinite(value):
+        return 30.0
+    return max(0.0, min(value, 300.0))
 
-    return max(
-        0.0,
-        min(
-            value,
-            300.0,
-        ),
+
+def _dashboard_cached(key: str, loader, *, fresh: bool = False):
+    return _dashboard_read_cache.get(
+        key, loader, ttl=_dashboard_cache_ttl_seconds(), fresh=fresh,
     )
 
 
-_dashboard_cache_guard = (
-    _dashboard_threading.Lock()
-)
-
-_dashboard_cache_values: dict[
-    str,
-    tuple[
-        float,
-        object,
-    ],
-] = {}
-
-_dashboard_cache_key_locks: dict[
-    str,
-    _dashboard_threading.Lock,
-] = {}
+def _dashboard_cache_invalidate_key(key: str) -> None:
+    _dashboard_read_cache.invalidate_key(key)
 
 
-def _dashboard_cache_key_lock(
-    key: str,
-):
-    with _dashboard_cache_guard:
-        lock = (
-            _dashboard_cache_key_locks
-            .get(key)
-        )
-
-        if lock is None:
-            lock = (
-                _dashboard_threading.Lock()
-            )
-
-            _dashboard_cache_key_locks[
-                key
-            ] = lock
-
-        return lock
+def _dashboard_cache_invalidate_prefix(prefix: str) -> None:
+    _dashboard_read_cache.invalidate_prefix(prefix)
 
 
-def _dashboard_cached(
-    key: str,
-    loader,
-):
-    ttl = (
-        _dashboard_cache_ttl_seconds()
-    )
-
-    if ttl <= 0:
-        return loader()
-
-
-    now = (
-        _dashboard_time.monotonic()
-    )
-
-
-    with _dashboard_cache_guard:
-        cached = (
-            _dashboard_cache_values
-            .get(key)
-        )
-
-        if (
-            cached is not None
-            and cached[0] > now
-        ):
-            return cached[1]
-
-
-    key_lock = (
-        _dashboard_cache_key_lock(
-            key
-        )
-    )
-
-
-    # Only serialize callers for the SAME dataset.
-    #
-    # Current summary, current monthly, and Active Bid
-    # dashboard can still load concurrently.
-    with key_lock:
-
-        now = (
-            _dashboard_time.monotonic()
-        )
-
-
-        # Re-check after acquiring the per-key lock.
-        # Another request may have filled the cache while
-        # this request was waiting.
-        with _dashboard_cache_guard:
-            cached = (
-                _dashboard_cache_values
-                .get(key)
-            )
-
-            if (
-                cached is not None
-                and cached[0] > now
-            ):
-                return cached[1]
-
-
-        value = loader()
-
-
-        expires_at = (
-            _dashboard_time.monotonic()
-            + ttl
-        )
-
-
-        with _dashboard_cache_guard:
-            _dashboard_cache_values[
-                key
-            ] = (
-                expires_at,
-                value,
-            )
-
-
-        return value
-
-
-def _dashboard_cache_invalidate_key(
-    key: str,
-) -> None:
-    with _dashboard_cache_guard:
-        _dashboard_cache_values.pop(
-            key,
-            None,
-        )
-
-
-def _dashboard_cache_invalidate_prefix(
-    prefix: str,
-) -> None:
-    with _dashboard_cache_guard:
-        keys = [
-            key
-            for key in _dashboard_cache_values
-            if key.startswith(prefix)
-        ]
-
-        for key in keys:
-            _dashboard_cache_values.pop(
-                key,
-                None,
-            )
-
-
-# ============================================================
-# Wrap the expensive portfolio/list load functions.
-#
-# Preserve the original implementations for direct invocation
-# and easy rollback/debugging.
-# ============================================================
-
-_uncached_get_active_bids = (
-    get_active_bids
-)
-
-_uncached_get_completed_projects = (
-    get_completed_projects
-)
-
-_uncached_get_current_projected_billings = (
-    get_current_projected_billings
-)
-
-_uncached_get_current_projects_monthly_bulk = (
-    get_current_projects_monthly_bulk
-)
-
-_uncached_get_active_bid_dashboard = (
-    get_active_bid_dashboard
-)
+def _invalidate_project_dashboard_cache() -> None:
+    # Invalidate read representations, not SQL policy or forecast history.
+    # Legacy baseline reads and the explicit PM-first response stay separate.
+    _dashboard_cache_invalidate_key("current_project_primary_projection")
+    _dashboard_cache_invalidate_key("current_project_summary")
+    _dashboard_cache_invalidate_key("current_project_monthly_bulk")
+    _dashboard_cache_invalidate_key("completed_projects")
 
 
 def get_active_bids(
@@ -3233,98 +3097,45 @@ def get_active_bids(
     search: str | None = None,
     limit: int = 500,
     offset: int = 0,
+    fresh: bool = False,
 ) -> dict:
-    normalized_status = (
-        bid_status.strip()
-        if bid_status is not None
-        else ""
-    )
-    normalized_search = (
-        search.strip()
-        if search is not None
-        else ""
-    )
-
+    normalized_status = bid_status.strip() if bid_status is not None else ""
+    normalized_search = search.strip() if search is not None else ""
     key = (
         "active_bid_list:"
-        f"{normalized_status!r}:"
-        f"{normalized_search!r}:"
-        f"{limit}:{offset}"
+        f"{normalized_status!r}:{normalized_search!r}:{limit}:{offset}"
     )
-
     return _dashboard_cached(
         key,
-        lambda: _uncached_get_active_bids(
-            bid_status=(
-                normalized_status or None
-            ),
-            search=(
-                normalized_search or None
-            ),
+        lambda: _fetch_active_bids(
+            bid_status=normalized_status or None,
+            search=normalized_search or None,
             limit=limit,
             offset=offset,
         ),
+        fresh=fresh,
     )
 
 
-def get_completed_projects() -> list[dict]:
+def get_completed_projects(*, fresh: bool = False) -> list[dict]:
     return _dashboard_cached(
-        "completed_projects",
-        _uncached_get_completed_projects,
+        "completed_projects", _fetch_completed_projects, fresh=fresh,
     )
 
 
-def get_current_projected_billings(
-    *args,
-    **kwargs,
-):
-    # If some future caller adds parameters, do not accidentally
-    # mix parameterized datasets into this dashboard cache key.
-    if args or kwargs:
-        return (
-            _uncached_get_current_projected_billings(
-                *args,
-                **kwargs,
-            )
-        )
-
+def get_current_projected_billings(*, fresh: bool = False) -> list[dict]:
     return _dashboard_cached(
-        "current_project_summary",
-        _uncached_get_current_projected_billings,
+        "current_project_summary", _fetch_current_projected_billings, fresh=fresh,
     )
 
 
-def get_current_projects_monthly_bulk(
-    *args,
-    **kwargs,
-):
-    if args or kwargs:
-        return (
-            _uncached_get_current_projects_monthly_bulk(
-                *args,
-                **kwargs,
-            )
-        )
-
+def get_current_projects_monthly_bulk(*, fresh: bool = False) -> dict:
     return _dashboard_cached(
-        "current_project_monthly_bulk",
-        _uncached_get_current_projects_monthly_bulk,
+        "current_project_monthly_bulk", _fetch_current_projects_monthly_bulk, fresh=fresh,
     )
 
 
-def get_active_bid_dashboard(
-    *args,
-    **kwargs,
-):
-    if args or kwargs:
-        return (
-            _uncached_get_active_bid_dashboard(
-                *args,
-                **kwargs,
-            )
-        )
-
+def get_active_bid_dashboard(*, fresh: bool = False) -> dict:
     return _dashboard_cached(
-        "active_bid_dashboard",
-        _uncached_get_active_bid_dashboard,
+        "active_bid_dashboard", _fetch_active_bid_dashboard, fresh=fresh,
     )
