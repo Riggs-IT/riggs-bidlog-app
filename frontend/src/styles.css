@@ -5791,7 +5791,7 @@ tfoot th {
 .billing-kpi-secondary-grid {
   grid-template-columns:
     repeat(
-      3,
+      4,
       minmax(0, 1fr)
     );
 }

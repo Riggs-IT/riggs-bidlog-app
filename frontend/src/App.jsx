@@ -4419,7 +4419,7 @@ export default function App() {
       'Latest PM Version ID',
       'Latest PM Version Number',
       'Blank PM Comparison Months In Range',
-      'System Baseline In Range',
+      'System Estimate In Range',
       'Projection To Date Through Month',
     ];
 
@@ -4575,7 +4575,7 @@ export default function App() {
             'Latest PM Version ID': raw.latestForecastVersionId ?? '',
             'Latest PM Version Number': raw.latestForecastVersionNumber ?? '',
             'Blank PM Comparison Months In Range': isBid ? '' : rangeMargin?.missingPmMonths ?? 0,
-            'System Baseline In Range': isBid ? '' : rangeMargin?.baseline ?? '',
+            'System Estimate In Range': isBid ? '' : rangeMargin?.baseline ?? '',
             'Projection To Date Through Month': isBid ? '' : raw.projectionAsOfMonth ?? '',
             'Source':
               row.source,
@@ -5328,11 +5328,11 @@ export default function App() {
                                         || 'An administrator'
                                       }
                                     </strong>
-                                    {' changed the projection total. Operations needs to rebalance it to the System Baseline.'}
+                                    {' changed the projection total. Operations needs to bring the PM Projection back to the remaining contract.'}
                                   </>
                                 )
                               : (
-                                  'This projection no longer matches the editable System Baseline and needs to be rebalanced.'
+                                  'This PM Projection no longer covers the remaining contract and needs to be rebalanced.'
                                 )}
                           </p>
 

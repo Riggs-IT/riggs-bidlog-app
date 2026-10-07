@@ -168,7 +168,7 @@ function itemNumber(item) {
 }
 
 
-function itemCostClass(value) {
+function amountClass(value) {
   const number =
     Number(value);
 
@@ -455,7 +455,7 @@ export default function ChangeOrdersPanel({
                 <div className="change-orders-summary-grid">
                   <div>
                     <span>
-                      Foundation COs
+                      Approved COs
                     </span>
 
                     <strong>
@@ -468,18 +468,18 @@ export default function ChangeOrdersPanel({
 
                   <div>
                     <span>
-                      Net Cost Adjustment
+                      Approved CO Total
                     </span>
 
                     <strong
                       className={
-                        itemCostClass(
-                          data.netCostAdjustment
+                        amountClass(
+                          data.approvedChangeOrderAmount
                         )
                       }
                     >
                       {money(
-                        data.netCostAdjustment,
+                        data.approvedChangeOrderAmount,
                         true,
                       )}
                     </strong>
@@ -488,8 +488,7 @@ export default function ChangeOrdersPanel({
 
 
                 <p className="change-orders-context">
-                  Foundation cost-budget adjustments tied to this job.
-                  These values are not being treated as customer contract revenue.
+                  Active Foundation change orders included in the current contract total.
                 </p>
 
 
@@ -520,13 +519,13 @@ export default function ChangeOrdersPanel({
 
                             <span
                               className={
-                                itemCostClass(
-                                  item.costAdjustment
+                                amountClass(
+                                  item.incomeAdjustment
                                 )
                               }
                             >
                               {money(
-                                item.costAdjustment,
+                                item.incomeAdjustment,
                                 true,
                               )}
                             </span>
@@ -534,22 +533,15 @@ export default function ChangeOrdersPanel({
 
                           <div className="change-orders-item-meta">
                             <span>
-                              {
-                                item.lineCount
-                                || 0
-                              } budget {
-                                item.lineCount === 1
-                                  ? 'line'
-                                  : 'lines'
+                              Effective {
+                                dateLabel(
+                                  item.effectiveDate
+                                )
                               }
                             </span>
 
                             <span>
-                              Updated {
-                                dateLabel(
-                                  item.lastSourceModifiedOn
-                                )
-                              }
+                              Foundation active CO
                             </span>
                           </div>
                         </article>

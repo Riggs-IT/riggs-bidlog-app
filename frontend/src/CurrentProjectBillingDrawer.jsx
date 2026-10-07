@@ -201,7 +201,7 @@ export default function CurrentProjectBillingDrawer({
   const varianceProjectionSource =
     project?.hasPmForecast
       ? 'PM Projection'
-      : 'System Baseline';
+      : 'System Estimate';
 
 
   useEffect(
@@ -324,6 +324,18 @@ export default function CurrentProjectBillingDrawer({
   const effectiveBidEstimate =
     originatingBidDetail?.estimatedPrice
     ?? project.bidEstimatedPrice;
+
+
+  const approvedChangeOrderAmount =
+    project.approvedChangeOrderAmount
+    ?? changeOrderDetail?.approvedChangeOrderAmount
+    ?? null;
+
+
+  const approvedChangeOrderCount =
+    project.approvedChangeOrderCount
+    ?? changeOrderDetail?.changeOrderCount
+    ?? 0;
 
 
   const foundationVsCognito =
@@ -809,28 +821,60 @@ export default function CurrentProjectBillingDrawer({
                 Approved Change Orders
               </span>
 
-              {changeOrderDetail ? (
-                <>
-                  <strong>
-                    <MoneyValue
-                      value={
-                        changeOrderDetail.netCostAdjustment
-                      }
-                    />
-                  </strong>
+              <strong>
+                <MoneyValue
+                  value={
+                    approvedChangeOrderAmount
+                  }
+                />
+              </strong>
 
-                  <small className="commercial-source-note">
-                    Foundation · Net Cost Adjustment
-                  </small>
-                </>
-              ) : (
-                <strong className="drawer-tbd-value">
-                  TBD
-                </strong>
-              )}
+              <small className="commercial-source-note">
+                Foundation · {approvedChangeOrderCount} active CO{approvedChangeOrderCount === 1 ? '' : 's'}
+              </small>
             </article>
 
 
+            <article>
+              <span>
+                Total Contract
+              </span>
+
+              <strong>
+                <MoneyValue
+                  value={
+                    project.totalContractAmount
+                  }
+                />
+              </strong>
+
+              <small className="commercial-source-note">
+                Original contract + approved change orders
+              </small>
+            </article>
+
+
+            <article>
+              <span>
+                Contract Remaining
+              </span>
+
+              <strong>
+                <MoneyValue
+                  value={
+                    project.contractRemainingAmount
+                  }
+                />
+              </strong>
+
+              <small className="commercial-source-note">
+                Total contract − actual billings
+              </small>
+            </article>
+          </section>
+
+
+          <section className="billing-kpi-grid billing-kpi-secondary-grid">
             <article>
               <span>
                 Projected Through Current Month
@@ -847,7 +891,7 @@ export default function CurrentProjectBillingDrawer({
 
             <article>
               <span>
-                Actual To Date
+                Actual Billings
               </span>
 
               <strong>
@@ -857,11 +901,13 @@ export default function CurrentProjectBillingDrawer({
                   }
                 />
               </strong>
+
+              <small className="commercial-source-note">
+                Foundation
+              </small>
             </article>
-          </section>
 
 
-          <section className="billing-kpi-grid billing-kpi-secondary-grid">
             <article
               className={
                 varianceClass(
@@ -880,21 +926,6 @@ export default function CurrentProjectBillingDrawer({
                 <MoneyValue
                   value={
                     monthlyBillingVariance
-                  }
-                />
-              </strong>
-            </article>
-
-
-            <article>
-              <span>
-                Remaining Amount
-              </span>
-
-              <strong>
-                <MoneyValue
-                  value={
-                    project.remainingAmount
                   }
                 />
               </strong>
@@ -981,7 +1012,7 @@ export default function CurrentProjectBillingDrawer({
                       </strong>
 
                       <p>
-                        The billing curve controls how the System Baseline distributes the project value across the expected project duration.
+                        The billing curve controls how the System Estimate distributes the project value across the expected project duration.
                       </p>
 
                       {project.curveDescription && (

@@ -11,6 +11,6 @@ export function ProjectionAmount({ value, currency, missing = 0, baseline, compa
     <span title={missing ? `${missing} PM month(s) have no entered amount; this total includes entered amounts only.` : undefined}>
       {value === null || value === undefined ? '—' : currency(value)}
     </span>
-    {compare && <small className="baseline-reference">Baseline {baseline === null || baseline === undefined ? '—' : currency(baseline)}</small>}
+    {compare && <small className="baseline-reference">System Estimate {baseline === null || baseline === undefined ? '—' : currency(baseline)}</small>}
   </span>;
 }

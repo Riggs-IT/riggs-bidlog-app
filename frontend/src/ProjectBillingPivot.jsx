@@ -803,7 +803,7 @@ function BillingValue({ cell, metric, currency, source, showBaseline = false }) 
   if (metric === 'all') {
     return <div><AllBillingValues cell={cell} currency={currency} source={source} />
 
-      {compare && <small className="baseline-reference">Baseline {cell.baseline == null ? '—' : currency(cell.baseline)}</small>}
+      {compare && <small className="baseline-reference">System Estimate {cell.baseline == null ? '—' : currency(cell.baseline)}</small>}
     </div>;
   }
   return <SingleBillingValue cell={cell} metric={metric} currency={currency} />;
@@ -973,7 +973,7 @@ function HeaderTotal({
       )}
 
 
-      {showBaseline && includeProjectProjection && <small className="baseline-reference">Baseline {headerCurrency(baselineValue)}</small>}
+      {showBaseline && includeProjectProjection && <small className="baseline-reference">System Estimate {headerCurrency(baselineValue)}</small>}
 
       {(projectBilledText || bidsProjectedText) && (
         <span className="pivot-header-activity-counts">

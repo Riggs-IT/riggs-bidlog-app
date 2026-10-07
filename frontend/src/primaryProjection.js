@@ -260,7 +260,7 @@ export function pivotTotals(rows, index, metric, includeBids) {
 
 export function buildMonthlyProjectionExport(projects, currentMonthly, bids, bidMonthly, from, through, canViewMargin = false) {
   const headers = ['Source', 'Projection Source', 'Job List ID', 'Job Number', 'Bid ID', 'Project / Bid', 'Month',
-    'Primary Projected Amount', 'PM Projection Amount', 'System Baseline Amount', 'Actual Billings', 'Variance vs Primary',
+    'Primary Projected Amount', 'PM Projection Amount', 'System Estimate Amount', 'Actual Billings', 'Variance vs Primary',
     'PM Entry Present', 'Latest PM Version ID', 'Latest PM Version Number'];
   if (canViewMargin) headers.push('Margin Collected', 'Margin Data Complete');
   const rows = [];
@@ -269,7 +269,7 @@ export function buildMonthlyProjectionExport(projects, currentMonthly, bids, bid
     const row = { 'Source': 'Current Project', 'Projection Source': projectionSourceLabel(p), 'Job List ID': p.jobListId,
       'Job Number': p.jobNumber, 'Bid ID': '', 'Project / Bid': p.jobName, 'Month': ym(m.monthStart),
       'Primary Projected Amount': nullableAmount(m.projectedAmount), 'PM Projection Amount': m.pmForecastAmount ?? null,
-      'System Baseline Amount': own(m, 'systemBaselineAmount') ? m.systemBaselineAmount : m.projectedAmount,
+      'System Estimate Amount': own(m, 'systemBaselineAmount') ? m.systemBaselineAmount : m.projectedAmount,
       'Actual Billings': m.actualAmount ?? null, 'Variance vs Primary': amountDifference(m.actualAmount, m.projectedAmount),
       'PM Entry Present': p.hasPmForecast ? (m.pmForecastAmount == null ? 'No' : 'Yes') : 'Not submitted',
       'Latest PM Version ID': p.latestForecastVersionId ?? '', 'Latest PM Version Number': p.latestForecastVersionNumber ?? '',
@@ -282,7 +282,7 @@ export function buildMonthlyProjectionExport(projects, currentMonthly, bids, bid
     rows.push({ 'Source': 'Active Bid', 'Projection Source': 'Probability-weighted Bid', 'Job List ID': '', 'Job Number': '',
       'Bid ID': p.sharePointItemId, 'Project / Bid': p.bidName, 'Month': ym(m.monthStart),
       'Primary Projected Amount': m.weightedMonthlyForecastAmount, 'PM Projection Amount': null,
-      'System Baseline Amount': null, 'Actual Billings': null, 'Variance vs Primary': null,
+      'System Estimate Amount': null, 'Actual Billings': null, 'Variance vs Primary': null,
       'PM Entry Present': 'Not applicable', 'Latest PM Version ID': '', 'Latest PM Version Number': '',
     });
   }

@@ -2683,8 +2683,12 @@ def get_current_project_change_orders(
         "changeOrderCount"
     )
 
-    net_cost_adjustment = payload.get(
-        "netCostAdjustment"
+    approved_change_order_amount = payload.get(
+        "approvedChangeOrderAmount"
+    )
+
+    change_order_cost_amount = payload.get(
+        "changeOrderCostAmount"
     )
 
     items = payload.get(
@@ -2740,23 +2744,33 @@ def get_current_project_change_orders(
         )
 
 
-    if (
-        not isinstance(
-            net_cost_adjustment,
-            (
-                int,
-                float,
-            ),
-        )
-        or isinstance(
-            net_cost_adjustment,
-            bool,
-        )
+    for field_name, value in (
+        (
+            "approvedChangeOrderAmount",
+            approved_change_order_amount,
+        ),
+        (
+            "changeOrderCostAmount",
+            change_order_cost_amount,
+        ),
     ):
-        raise DataAPIInvalidResponse(
-            "Change order response has "
-            "an invalid netCostAdjustment."
-        )
+        if (
+            not isinstance(
+                value,
+                (
+                    int,
+                    float,
+                ),
+            )
+            or isinstance(
+                value,
+                bool,
+            )
+        ):
+            raise DataAPIInvalidResponse(
+                "Change order response has "
+                f"an invalid {field_name}."
+            )
 
 
     if (
@@ -2787,21 +2801,9 @@ def get_current_project_change_orders(
 
     if (
         payload.get(
-            "valueMeaning"
-        )
-        != "COST_BUDGET_ADJUSTMENT"
-    ):
-        raise DataAPIInvalidResponse(
-            "Change order response has "
-            "an unexpected value meaning."
-        )
-
-
-    if (
-        payload.get(
             "source"
         )
-        != "FOUNDATION_JOB_CHANGE_BUDGET"
+        != "FOUNDATION_ACTIVE_CHANGE_ORDERS"
     ):
         raise DataAPIInvalidResponse(
             "Change order response has "

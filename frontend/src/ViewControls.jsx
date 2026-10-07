@@ -17,7 +17,7 @@ export function ShowControls({baseline, onBaseline, running, onRunning}) {
   return <div className="show-controls" role="group" aria-label="Display options">
     <span>Show:</span>
     {onBaseline && <button type="button" className={baseline ? 'active' : ''}
-      aria-label="Compare with System Baseline" aria-pressed={baseline} onClick={() => onBaseline(!baseline)}>Baseline</button>}
+      aria-label="Compare with System Estimate" aria-pressed={baseline} onClick={() => onBaseline(!baseline)}>System Estimate</button>}
     {onRunning && <button type="button" className={running ? 'active' : ''}
       aria-label="Show running totals" aria-pressed={running} onClick={() => onRunning(!running)}>Running totals</button>}
   </div>;

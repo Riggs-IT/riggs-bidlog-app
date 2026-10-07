@@ -14,9 +14,9 @@ test('overview no longer exposes baseline comparison control', () => {
 
 test('projection balance copy explains the actual current save rule plainly', () => {
   const source = read('PMForecastPanel.jsx');
-  assert.match(source, /Projection total must stay balanced/);
-  assert.match(source, /Move dollars between editable months, but keep their total equal to the project's overall projection amount\./);
-  assert.doesNotMatch(source, /keep their total equal to the system estimate/);
+  assert.match(source, /Projection must cover remaining contract/);
+  assert.match(source, /remaining contract after locked Foundation billings/);
+  assert.doesNotMatch(source, /PM Projection total must equal the editable system estimate total/);
 });
 
 test('billing variance exposes the exact current-month comparison only in its tooltip', () => {

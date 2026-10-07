@@ -214,7 +214,7 @@ const errorText = detail => ({
     'One of these months is now locked. Reload the projection before saving.',
 
   bid_log_pm_forecast_total_mismatch:
-    'The projection total must match the system estimate total.',
+    'The PM Projection must cover the remaining contract amount.',
 
   bid_log_pm_forecast_baseline_not_ready:
     'This project does not have a complete system estimate yet.',
@@ -678,13 +678,21 @@ export default function PMForecastPanel({
   const editTotals =
     useMemo(
       () => {
-        let baseline = 0;
+        let systemEstimate = 0;
         let pm = 0;
-        let valid = true;
+        let supplied = 0;
+
+        const target =
+          Number(
+            forecast?.projectionTargetAmount
+          );
+
+        let valid =
+          Number.isFinite(target);
 
         editableRows.forEach(
           row => {
-            baseline += Number(
+            systemEstimate += Number(
               row.baseline
               || 0
             );
@@ -694,34 +702,59 @@ export default function PMForecastPanel({
                 row.monthStart
               ];
 
-            if (
+            const blank =
               raw === ''
               || raw === null
-              || raw === undefined
-              || !Number.isFinite(
-                Number(raw)
-              )
+              || raw === undefined;
+
+            if (blank) {
+              /*
+                A month that was intentionally unsupplied in the latest
+                PM version may remain blank. A previously supplied PM
+                month cannot be silently removed by the sparse write
+                contract; enter 0 when the intended amount is zero.
+              */
+              if (row.savedPm !== null) {
+                valid = false;
+              }
+
+              return;
+            }
+
+            const amount =
+              Number(raw);
+
+            if (
+              !Number.isFinite(amount)
+              || amount < 0
             ) {
               valid = false;
-            } else {
-              pm += Number(raw);
+              return;
             }
+
+            supplied += 1;
+            pm += amount;
           }
         );
 
+        const difference =
+          pm - target;
+
         return {
-          baseline,
+          systemEstimate,
+          target,
           pm,
-
-          difference:
-            pm - baseline,
-
+          supplied,
+          difference,
+          balanceAmount:
+            Math.abs(difference),
           valid,
         };
       },
       [
         editableRows,
         edits,
+        forecast?.projectionTargetAmount,
       ],
     );
 
@@ -827,13 +860,21 @@ export default function PMForecastPanel({
 
     editableRows.forEach(
       row => {
+        const initialValue =
+          forecast?.hasPmForecast
+            ? row.savedPm
+            : (
+                row.savedPm
+                ?? row.baseline
+                ?? 0
+              );
+
         next[
           row.monthStart
-        ] = Number(
-          row.savedPm
-          ?? row.baseline
-          ?? 0
-        ).toFixed(2);
+        ] = initialValue === null
+          ? ''
+          : Number(initialValue)
+              .toFixed(2);
       }
     );
 
@@ -888,13 +929,13 @@ export default function PMForecastPanel({
     try {
       if (!editTotals.valid) {
         throw new Error(
-          'Enter an amount for every editable month.'
+          'Enter a valid non-negative amount. Previously supplied PM months must contain a value; intentionally blank PM months may stay blank.'
         );
       }
 
       if (totalMismatch) {
         throw new Error(
-          'The projection total must match the system estimate total.'
+          'The PM Projection must cover the remaining contract amount.'
         );
       }
 
@@ -916,20 +957,41 @@ export default function PMForecastPanel({
         );
       }
 
-      const items =
-        editableRows.map(
-          row => ({
-            monthStart:
-              row.monthStart,
+      if (!editTotals.supplied) {
+        throw new Error(
+          'Enter at least one editable projection amount.'
+        );
+      }
 
-            forecastAmount:
-              Number(
+      const items =
+        editableRows
+          .filter(
+            row => {
+              const raw =
                 edits[
                   row.monthStart
-                ]
-              ),
-          })
-        );
+                ];
+
+              return !(
+                raw === ''
+                || raw === null
+                || raw === undefined
+              );
+            }
+          )
+          .map(
+            row => ({
+              monthStart:
+                row.monthStart,
+
+              forecastAmount:
+                Number(
+                  edits[
+                    row.monthStart
+                  ]
+                ),
+            })
+          );
 
       if (
         items.some(
@@ -1107,14 +1169,14 @@ export default function PMForecastPanel({
 
                     <strong>
                       {policy.requireBaselineTotalMatch
-                        ? 'Projection total must stay balanced'
-                        : 'PM projection total can change'}
+                        ? 'Projection must cover remaining contract'
+                        : 'PM projection may differ from remaining contract'}
                     </strong>
 
                     <small>
                       {policy.requireBaselineTotalMatch
-                        ? "Move dollars between editable months, but keep their total equal to the project's overall projection amount."
-                        : 'You can change both the timing and total projected dollars.'}
+                        ? 'Move dollars between editable months, but keep the PM total equal to the remaining contract after locked Foundation billings.'
+                        : 'You can change both billing timing and the projected total.'}
                     </small>
 
                     <small className="pm-policy-updated">
@@ -1233,7 +1295,7 @@ export default function PMForecastPanel({
               <tr>
                 <th>Month</th>
 
-                {showBaseline && <th className="numeric">System Baseline</th>}
+                {showBaseline && <th className="numeric">System Estimate</th>}
 
                 <th className="numeric">
                   PM Projection
@@ -1364,11 +1426,11 @@ export default function PMForecastPanel({
                                   type="button"
                                   className="pm-inline-reset-button"
                                   disabled={saving}
-                                  title="Reset to System Baseline"
+                                  title="Reset to System Estimate"
                                   aria-label={
                                     `Reset ${fmtMonth(
                                       row.monthStart
-                                    )} to System Baseline`
+                                    )} to System Estimate`
                                   }
                                   onClick={
                                     () =>
@@ -1474,7 +1536,7 @@ export default function PMForecastPanel({
                     colSpan={showBaseline ? 5 : 4}
                     className="empty-cell"
                   >
-                    No System Baseline or actual billing rows are available for this project.
+                    No System Estimate or actual billing rows are available for this project.
                   </td>
                 </tr>
               )}
@@ -1507,12 +1569,12 @@ export default function PMForecastPanel({
             <div className="pm-inline-totals">
               <div>
                 <span>
-                  Editable System Estimate
+                  Remaining Contract to Project
                 </span>
 
                 <strong>
                   {fmtMoney(
-                    editTotals.baseline,
+                    editTotals.target,
                     true,
                   )}
                 </strong>
@@ -1539,12 +1601,31 @@ export default function PMForecastPanel({
                 }
               >
                 <span>
-                  Difference
+                  {Math.abs(editTotals.difference) < 0.005
+                    ? 'Balanced'
+                    : (
+                        editTotals.difference < 0
+                          ? 'Still to Project'
+                          : 'Over Contract'
+                      )}
                 </span>
 
                 <strong>
                   {fmtMoney(
-                    editTotals.difference,
+                    editTotals.balanceAmount,
+                    true,
+                  )}
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  System Estimate Reference
+                </span>
+
+                <strong>
+                  {fmtMoney(
+                    editTotals.systemEstimate,
                     true,
                   )}
                 </strong>
@@ -1554,18 +1635,23 @@ export default function PMForecastPanel({
 
             {totalMismatch && (
               <div className="pm-forecast-message warning">
-                The PM Projection total must equal the editable system estimate total.
+                The PM Projection is {
+                  fmtMoney(
+                    editTotals.balanceAmount,
+                    true,
+                  )
+                } {editTotals.difference < 0 ? 'short of' : 'over'} the remaining contract. Adjust editable months until the projection is balanced.
               </div>
             )}
 
             {adminCreatesVariance && (
               <div className="pm-forecast-message warning">
-                This Admin Correction will leave a {
+                This Admin Correction will leave the PM Projection {
                   fmtMoney(
-                    editTotals.difference,
+                    editTotals.balanceAmount,
                     true,
                   )
-                } difference from the editable system estimate. The assigned PM, APM, PE, and Superintendent will see a Needs Rebalance notification until Operations balances the projection.
+                } {editTotals.difference < 0 ? 'short of' : 'over'} the remaining contract. The assigned PM, APM, PE, and Superintendent will see a Needs Rebalance notification until Operations balances the projection.
               </div>
             )}
 
@@ -1770,7 +1856,7 @@ export default function PMForecastPanel({
                     <div className="pm-history-totals">
                       <span>
                         <small>
-                          Baseline
+                          System Estimate
                         </small>
 
                         <strong>
