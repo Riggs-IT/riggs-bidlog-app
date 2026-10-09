@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mergePrimaryPortfolio, validatePrimaryProjection, nullableAmount, sumAmounts, amountDifference,
-  aggregateCurrentMonthly, summarizePortfolioMonths, summarizeMonthlyTotals, pivotCurrentCell, pivotTotals,
+  aggregateCurrentMonthly, summarizePortfolioMonths, summarizeMonthlyTotals, pivotCurrentCell, completedProjectPivotCell, pivotTotals,
   buildMonthlyProjectionExport, projectionSourceLabel } from '../src/primaryProjection.js';
 
 const clone = value => structuredClone(value);
@@ -61,8 +61,8 @@ for (const [name, change] of [
 test('nullable amounts preserve zero and negative credits, reject blank strings',()=>{assert.equal(nullableAmount(null),null);assert.equal(nullableAmount(0),0);assert.equal(nullableAmount('-1.25'),-1.25);assert.throws(()=>nullableAmount(''));});
 test('cent sums have no binary floating tail',()=>{assert.equal(sumAmounts([0.1,0.2,null]),0.3);assert.equal(sumAmounts([null]),null);assert.equal(sumAmounts([null],0),0);});
 test('zero actual is distinct from absent actual for variance',()=>{assert.equal(amountDifference(0,75),-75);assert.equal(amountDifference(null,75),null);assert.equal(amountDifference(75,null),null);});
-test('range totals sum entered values and carry blank count',()=>{const r=merged(),a=aggregateCurrentMonthly(r.map.get(1),'2026-10','2027-03');assert.equal(a.projected,275.19);assert.equal(a.baseline,200);assert.equal(a.missingPmMonths,1);assert.equal(a.variance,null);});
-test('range with only a blank PM entry remains null, not zero',()=>{const r=merged(),a=aggregateCurrentMonthly(r.map.get(1),'2026-11','2026-11');assert.equal(a.projected,null);assert.equal(a.actual,50);assert.equal(a.variance,null);});
+test('range totals calculate incomplete variance from comparable rows only',()=>{const r=merged(),a=aggregateCurrentMonthly(r.map.get(1),'2026-10','2027-03');assert.equal(a.projected,275.19);assert.equal(a.baseline,200);assert.equal(a.missingPmMonths,1);assert.equal(a.variance,0);assert.equal(a.varianceComparableRows,1);assert.equal(a.varianceMissingEditableRows,1);assert.equal(a.varianceHistoricalUnavailableRows,0);});
+test('range with only a blank editable PM entry remains incomplete',()=>{const r=merged(),a=aggregateCurrentMonthly(r.map.get(1),'2026-11','2026-11');assert.equal(a.projected,null);assert.equal(a.actual,50);assert.equal(a.variance,null);assert.equal(a.varianceMissingEditableRows,1);assert.equal(a.varianceHistoricalUnavailableRows,0);});
 test('project range with explicit zero remains a genuine zero',()=>{const r=merged(),a=aggregateCurrentMonthly(r.map.get(1),'2026-10','2026-10');assert.equal(a.projected,0);assert.equal(a.variance,0);});
 test('negative Foundation actual and historical margin are preserved',()=>{const f=fixture();f.primary.items[3].foundationActualAmount=-100;f.monthly.items[1].items[0].actualAmount=-100;f.monthly.items[1].items[0].marginCollected=-10;const r=merged(f);assert.equal(r.map.get(2)[0].actualAmount,-100);assert.equal(r.map.get(2)[0].marginCollected,-10);});
 test('incomplete margin is never added as zero to assert completeness',()=>{const r=merged();r.map.get(1)[0].marginDataComplete=false;const a=aggregateCurrentMonthly(r.map.get(1),'2026-10','2027-03');assert.equal(a.marginCollected,null);assert.equal(a.marginDataComplete,false);});
@@ -72,11 +72,54 @@ test('next Arizona month changes derived summary without changing saved amounts'
 test('monthly totals and pivot totals agree, including weighted bids',()=>{
  const r=merged(),months=['2026-10','2026-11','2027-03']; const bp=[{sharePointItemId:88}],bm=new Map([[88,[{monthStart:'2026-10-01',weightedMonthlyForecastAmount:70}]]]);
  const rows=summarizePortfolioMonths(months,r.projects,r.map,bp,bm),total=summarizeMonthlyTotals(rows);
- assert.equal(total.currentProjected,433.74);assert.equal(total.weightedBids,70);assert.equal(total.combinedExpected,503.74);assert.equal(total.missingPmMonths,1);assert.equal(total.variance,null);
- const pivot=r.projects.map(p=>({source:'current',cells:months.map(month=>pivotCurrentCell(r.map.get(p.jobListId).find(m=>m.monthStart.startsWith(month)),month))}));
+ assert.equal(total.currentProjected,400.74);assert.equal(total.weightedBids,70);assert.equal(total.combinedExpected,470.74);assert.equal(total.missingPmMonths,1);assert.equal(total.variance,-25.55);
+ const pivot=r.projects.map(p=>({source:'current',cells:months.map(month=>(p.projectCompleted?completedProjectPivotCell:pivotCurrentCell)(r.map.get(p.jobListId).find(m=>m.monthStart.startsWith(month)),month))}));
  pivot.push({source:'bid',cells:months.map((month,i)=>({projected:i===0?70:null,actual:null}))});
  for(let i=0;i<months.length;i++){const pt=pivotTotals(pivot,i,'projected',true);assert.equal(sumAmounts([pt.projectedValue,pt.bidProjectedValue]),rows[i].combinedExpected);}
 });
+test('pivot header total forecast includes bids while performance variance stays active-project only',()=>{
+ const rows=[
+  {source:'current',cells:[{projected:100,actual:90,variance:-10,marginCollected:5,missingPmMonths:0,baseline:100,isSystemEstimate:false}]},
+  {source:'bid',cells:[{projected:50,actual:null,variance:null,marginCollected:null,missingPmMonths:0}]},
+ ];
+ const totals=pivotTotals(rows,0,'variance',true);
+ assert.equal(totals.projectedValue,100);
+ assert.equal(totals.bidProjectedValue,50);
+ assert.equal(totals.totalForecastValue,150);
+ assert.equal(totals.actualValue,90);
+ assert.equal(totals.varianceValue,-10);
+ assert.equal(totals.value,-10);
+});
+test('pivot variance uses comparable subset and separates editable from historical gaps',()=>{
+ const rows=[
+  {source:'current',cells:[{projected:100,actual:110,variance:10,marginCollected:5,missingPmMonths:0,isEditable:false,projectCompleted:false}]},
+  {source:'current',cells:[{projected:null,actual:50,variance:null,marginCollected:2,missingPmMonths:1,isEditable:true,projectCompleted:false}]},
+  {source:'current',cells:[{projected:null,actual:25,variance:null,marginCollected:1,missingPmMonths:1,isEditable:false,projectCompleted:false}]},
+ ];
+ const totals=pivotTotals(rows,0,'variance',false);
+ assert.equal(totals.actualValue,185);
+ assert.equal(totals.varianceProjectedValue,100);
+ assert.equal(totals.varianceActualValue,110);
+ assert.equal(totals.varianceValue,10);
+ assert.equal(totals.varianceComparableProjects,1);
+ assert.equal(totals.varianceActualProjects,3);
+ assert.equal(totals.varianceMissingEditableProjects,1);
+ assert.equal(totals.varianceHistoricalUnavailableProjects,1);
+});
+test('locked PM gap is historical, not an actionable missing projection',()=>{
+ const f=fixture();
+ f.primary.items[1].monthEditState='LOCKED_PAST';
+ f.primary.items[1].isEditable=false;
+ const r=merged(f),a=aggregateCurrentMonthly(r.map.get(1),'2026-11','2026-11');
+ assert.equal(a.variance,null);
+ assert.equal(a.varianceMissingEditableRows,0);
+ assert.equal(a.varianceHistoricalUnavailableRows,1);
+});
+test('completed project pivot cell contributes actual history but no forecast or variance',()=>{
+ const c=completedProjectPivotCell({projectedAmount:100,actualAmount:90,marginCollected:9},'2026-10');
+ assert.equal(c.projected,null);assert.equal(c.actual,90);assert.equal(c.variance,null);assert.equal(c.projectCompleted,true);assert.equal(c.isEditable,false);
+});
+
 test('monthly CSV retains null, zero, source, ID, outside-baseline months and filters',()=>{const r=merged(),out=buildMonthlyProjectionExport(r.projects,r.map,[],new Map(),'2026-10','2027-03');assert.equal(out.rows.length,5);const one=out.rows.filter(x=>x['Job List ID']===1);assert.deepEqual(one.map(x=>x['Primary Projected Amount']),[0,null,275.19]);assert.equal(one[0]['Projection Source'],'PM Projection');assert.equal(one[0]['Latest PM Version ID'],10);assert.equal(one[1]['PM Entry Present'],'No');});
 test('monthly CSV hides margin columns and values from non-admin views',()=>{const r=merged(),a=buildMonthlyProjectionExport(r.projects,r.map,[],new Map(),'2026-01','2027-12',false);assert.ok(!a.headers.some(h=>h.includes('Margin')));assert.ok(a.rows.every(r=>!Object.keys(r).some(k=>k.includes('Margin'))));const b=buildMonthlyProjectionExport(r.projects,r.map,[],new Map(),'2026-01','2027-12',true);assert.ok(b.headers.includes('Margin Collected'));});
 test('same latest version may acquire changed baseline/actual without altering PM amounts',()=>{const f=fixture(),first=merged(f);f.primary.items[0].systemBaselineAmount=555;f.monthly.items[0].items[0].projectedAmount=555;const second=merged(f);assert.equal(second.map.get(1)[0].projectedAmount,first.map.get(1)[0].projectedAmount);assert.equal(second.map.get(1)[0].systemBaselineAmount,555);});

@@ -18,6 +18,7 @@ import OriginatingBidPanel from './OriginatingBidPanel.jsx';
 import { GeneralContractorDisplay } from './GeneralContractors.jsx';
 import ChangeOrdersPanel from './ChangeOrdersPanel.jsx';
 import { amountDifference } from './primaryProjection.js';
+import { isCompleted } from './viewFilters.js';
 
 
 function text(
@@ -165,6 +166,7 @@ export default function CurrentProjectBillingDrawer({
   onClose,
   onEditProject,
   onAttentionChanged,
+  initialProjectControl = null,
 }) {
   const [
     originatingBidDetail,
@@ -208,9 +210,14 @@ export default function CurrentProjectBillingDrawer({
     () => {
       setOriginatingBidDetail(null);
       setChangeOrderDetail(null);
-      setOpenProjectControl(null);
+      setOpenProjectControl(
+        initialProjectControl,
+      );
     },
-    [project?.jobListId],
+    [
+      project?.jobListId,
+      initialProjectControl,
+    ],
   );
 
 
@@ -305,6 +312,10 @@ export default function CurrentProjectBillingDrawer({
   if (!project) {
     return null;
   }
+
+
+  const projectIsCompleted =
+    isCompleted(project);
 
 
   const projectionMessage =
@@ -418,7 +429,9 @@ export default function CurrentProjectBillingDrawer({
         <header className="billing-drawer-header">
           <div>
             <span className="section-kicker">
-              ACTIVE PROJECT · PROJECTED BILLINGS
+              {projectIsCompleted
+                ? 'COMPLETED PROJECT · BILLING HISTORY'
+                : 'ACTIVE PROJECT · PROJECTED BILLINGS'}
             </span>
 
             <h2 id="billing-drawer-title">
@@ -427,8 +440,22 @@ export default function CurrentProjectBillingDrawer({
               )}
             </h2>
 
-            <p>
-              Job {text(project.jobNumber)}
+            <p className="billing-drawer-job-line">
+              <span>Job {text(project.jobNumber)}</span>
+
+              {projectIsCompleted && (
+                <>
+                  <span className="project-completed-pill">
+                    Completed
+                  </span>
+
+                  {project.dateCompleted && (
+                    <span className="billing-drawer-completed-date">
+                      {dateLabel(project.dateCompleted)}
+                    </span>
+                  )}
+                </>
+              )}
             </p>
           </div>
 
@@ -875,74 +902,117 @@ export default function CurrentProjectBillingDrawer({
 
 
           <section className="billing-kpi-grid billing-kpi-secondary-grid">
-            <article>
-              <span>
-                Projected Through Current Month
-              </span>
+            {projectIsCompleted ? (
+              <>
+                <article>
+                  <span>
+                    Actual Billings
+                  </span>
 
-              <strong>
-                <MoneyValue
-                  value={project.projectedToDate}
-                />
-                {project.projectionToDateMissingPmMonths > 0 && <small className="baseline-reference">Partial: blank PM comparison months</small>}
-              </strong>
-            </article>
+                  <strong>
+                    <MoneyValue
+                      value={project.actualToDate}
+                    />
+                  </strong>
+
+                  <small className="commercial-source-note">
+                    Foundation
+                  </small>
+                </article>
 
 
-            <article>
-              <span>
-                Actual Billings
-              </span>
+                <article>
+                  <span>
+                    Completed Date
+                  </span>
 
-              <strong>
-                <MoneyValue
-                  value={
-                    project.actualToDate
+                  <strong className="date-kpi">
+                    {dateLabel(
+                      project.dateCompleted
+                      || project.projectedCompletionDate
+                    )}
+                  </strong>
+                </article>
+
+
+                <article>
+                  <span>
+                    Foundation Billing History
+                  </span>
+
+                  <strong>
+                    {project.foundationBillingMonthCount || 0} months
+                  </strong>
+                </article>
+              </>
+            ) : (
+              <>
+                <article>
+                  <span>
+                    Projected Through Current Month
+                  </span>
+
+                  <strong>
+                    <MoneyValue
+                      value={project.projectedToDate}
+                    />
+                    {project.projectionToDateMissingPmMonths > 0 && <small className="baseline-reference">Partial: blank PM comparison months</small>}
+                  </strong>
+                </article>
+
+
+                <article>
+                  <span>
+                    Actual Billings
+                  </span>
+
+                  <strong>
+                    <MoneyValue
+                      value={project.actualToDate}
+                    />
+                  </strong>
+
+                  <small className="commercial-source-note">
+                    Foundation
+                  </small>
+                </article>
+
+
+                <article
+                  className={
+                    varianceClass(
+                      monthlyBillingVariance
+                    )
                   }
-                />
-              </strong>
+                >
+                  <span
+                    className="billing-variance-label"
+                    title={`Foundation Billing − ${varianceProjectionSource} for the current month`}
+                  >
+                    Monthly Billing Variance
+                  </span>
 
-              <small className="commercial-source-note">
-                Foundation
-              </small>
-            </article>
-
-
-            <article
-              className={
-                varianceClass(
-                  monthlyBillingVariance
-                )
-              }
-            >
-              <span
-                className="billing-variance-label"
-                title={`Foundation Billing − ${varianceProjectionSource} for the current month`}
-              >
-                Monthly Billing Variance
-              </span>
-
-              <strong>
-                <MoneyValue
-                  value={
-                    monthlyBillingVariance
-                  }
-                />
-              </strong>
-            </article>
+                  <strong>
+                    <MoneyValue
+                      value={monthlyBillingVariance}
+                    />
+                  </strong>
+                </article>
 
 
-            <article>
-              <span>
-                Projected Completion
-              </span>
+                <article>
+                  <span>
+                    Projected Completion
+                  </span>
 
-              <strong className="date-kpi">
-                {dateLabel(
-                  project.projectedCompletionDate
-                )}
-              </strong>
-            </article>
+                  <strong className="date-kpi">
+                    {dateLabel(
+                      project.projectedCompletionDate
+                    )}
+                  </strong>
+                </article>
+              </>
+            )}
           </section>
 
 
@@ -954,7 +1024,9 @@ export default function CurrentProjectBillingDrawer({
                 </span>
 
                 <h3>
-                  System Estimate Configuration
+                  {projectIsCompleted
+                    ? 'Project History'
+                    : 'System Estimate Configuration'}
                 </h3>
               </div>
             </div>
@@ -964,66 +1036,68 @@ export default function CurrentProjectBillingDrawer({
               className="project-setup-flags"
               ref={projectControlsRef}
             >
-              <div className="project-setup-flag">
-                <span className="billing-detail-label">
-                  Billing Curve
-                </span>
+              {!projectIsCompleted && (
+                <div className="project-setup-flag">
+                  <span className="billing-detail-label">
+                    Billing Curve
+                  </span>
 
-                <div className="project-setup-flag-row">
-                  <strong className="project-setup-tag">
-                    {project.curveDisplayName
-                      || 'Not configured'}
-                  </strong>
+                  <div className="project-setup-flag-row">
+                    <strong className="project-setup-tag">
+                      {project.curveDisplayName
+                        || 'Not configured'}
+                    </strong>
 
-                  <details
-                    className="billing-curve-help project-setup-help"
-                    data-project-control="curve"
-                    open={
-                      openProjectControl
-                      === 'curve'
-                    }
-                    onToggle={
-                      event => {
-                        if (
-                          event.currentTarget.open
-                        ) {
-                          setOpenProjectControl(
-                            'curve'
-                          );
-                        } else if (
-                          openProjectControl
-                          === 'curve'
-                        ) {
-                          setOpenProjectControl(null);
+                    <details
+                      className="billing-curve-help project-setup-help"
+                      data-project-control="curve"
+                      open={
+                        openProjectControl
+                        === 'curve'
+                      }
+                      onToggle={
+                        event => {
+                          if (
+                            event.currentTarget.open
+                          ) {
+                            setOpenProjectControl(
+                              'curve'
+                            );
+                          } else if (
+                            openProjectControl
+                            === 'curve'
+                          ) {
+                            setOpenProjectControl(null);
+                          }
                         }
                       }
-                    }
-                  >
-                    <summary
-                      aria-label="What the billing curve means"
-                      title="What the billing curve means"
                     >
-                      ⓘ
-                    </summary>
+                      <summary
+                        aria-label="What the billing curve means"
+                        title="What the billing curve means"
+                      >
+                        ⓘ
+                      </summary>
 
-                    <div className="billing-curve-help-popover">
-                      <strong>
-                        What does the billing curve mean?
-                      </strong>
+                      <div className="billing-curve-help-popover">
+                        <strong>
+                          What does the billing curve mean?
+                        </strong>
 
-                      <p>
-                        The billing curve controls how the System Estimate distributes the project value across the expected project duration.
-                      </p>
-
-                      {project.curveDescription && (
                         <p>
-                          {project.curveDescription}
+                          The billing curve controls how the System Estimate distributes the project value across the expected project duration.
                         </p>
-                      )}
-                    </div>
-                  </details>
+
+                        {project.curveDescription && (
+                          <p>
+                            {project.curveDescription}
+                          </p>
+                        )}
+                      </div>
+                    </details>
+                  </div>
                 </div>
-              </div>
+              )}
 
 
               <OriginatingBidPanel
@@ -1085,7 +1159,7 @@ export default function CurrentProjectBillingDrawer({
             </div>
 
 
-            {projectionMessage && (
+            {!projectIsCompleted && projectionMessage && (
               <div className="projection-attention-message">
                 {projectionMessage}
               </div>
@@ -1093,72 +1167,110 @@ export default function CurrentProjectBillingDrawer({
 
 
             <div className="billing-assumption-grid projection-detail-grid">
-              <div>
-                <span>
-                  Projected Start Date
-                </span>
+              {projectIsCompleted ? (
+                <>
+                  <div>
+                    <span>
+                      Project Start Date
+                    </span>
 
-                <strong>
-                  {dateLabel(
-                    project.effectiveStartDate
-                  )}
-                </strong>
-              </div>
-
-
-              <div>
-                <span>
-                  Estimated Duration
-                </span>
-
-                <strong>
-                  {project.estimatedDurationMonths
-                    ? (
-                        `${project.estimatedDurationMonths} months`
-                      )
-                    : '—'}
-                </strong>
-              </div>
+                    <strong>
+                      {dateLabel(
+                        project.effectiveStartDate
+                      )}
+                    </strong>
+                  </div>
 
 
-              <div>
-                <span>
-                  Projected Completion Date
-                </span>
+                  <div>
+                    <span>
+                      Completed Date
+                    </span>
 
-                <strong>
-                  {dateLabel(
-                    project.projectedCompletionDate
-                  )}
-                </strong>
-              </div>
-
-
-              <div>
-                <span>
-                  Foundation Billing History
-                </span>
-
-                <strong>
-                  {
-                    project.foundationBillingMonthCount
-                    || 0
-                  } months
-                </strong>
-              </div>
+                    <strong>
+                      {dateLabel(
+                        project.dateCompleted
+                        || project.projectedCompletionDate
+                      )}
+                    </strong>
+                  </div>
 
 
-              <div>
-                <span>
-                  Future Projected Billings
-                </span>
+                  <div>
+                    <span>
+                      Foundation Billing History
+                    </span>
 
-                <strong>
-                  {money(
-                    project.futureProjectedAmount
-                  )}
-                </strong>
-              </div>
+                    <strong>
+                      {project.foundationBillingMonthCount || 0} months
+                    </strong>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <span>
+                      Projected Start Date
+                    </span>
+
+                    <strong>
+                      {dateLabel(
+                        project.effectiveStartDate
+                      )}
+                    </strong>
+                  </div>
+
+
+                  <div>
+                    <span>
+                      Estimated Duration
+                    </span>
+
+                    <strong>
+                      {project.estimatedDurationMonths
+                        ? `${project.estimatedDurationMonths} months`
+                        : '—'}
+                    </strong>
+                  </div>
+
+
+                  <div>
+                    <span>
+                      Projected Completion Date
+                    </span>
+
+                    <strong>
+                      {dateLabel(
+                        project.projectedCompletionDate
+                      )}
+                    </strong>
+                  </div>
+
+
+                  <div>
+                    <span>
+                      Foundation Billing History
+                    </span>
+
+                    <strong>
+                      {project.foundationBillingMonthCount || 0} months
+                    </strong>
+                  </div>
+
+
+                  <div>
+                    <span>
+                      Future Projected Billings
+                    </span>
+
+                    <strong>
+                      {money(
+                        project.futureProjectedAmount
+                      )}
+                    </strong>
+                  </div>
+                </>
+              )}
             </div>
           </section>
 

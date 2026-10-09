@@ -7,6 +7,7 @@ import {
   useState,
 } from 'react';
 import { createLatestRead, readOptions, watchVisibleReads } from './browserFreshness.js';
+import { isCompleted } from './viewFilters.js';
 
 
 const fmtMoney = (
@@ -272,6 +273,9 @@ export default function PMForecastPanel({
   user,
   onAttentionChanged,
 }) {
+  const projectIsCompleted =
+    isCompleted(project);
+
   const [
     forecast,
     setForecast,
@@ -353,7 +357,7 @@ export default function PMForecastPanel({
   const [baselineComparison, setBaselineComparison] = useState(false);
   const [showRunningTotals, setShowRunningTotals] = useState(false);
   const [latestNoteOpen, setLatestNoteOpen] = useState(false);
-  const showBaseline = !forecast?.hasPmForecast || baselineComparison;
+  const showBaseline = !projectIsCompleted && (!forecast?.hasPmForecast || baselineComparison);
   useEffect(() => { setBaselineComparison(false); setShowRunningTotals(false); setLatestNoteOpen(false); }, [project?.jobListId]);
 
   const [refreshError, setRefreshError] = useState(null);
@@ -405,7 +409,7 @@ export default function PMForecastPanel({
   }, [projectId]);
 
   const load = async ({ quiet = false, ...config } = {}) => {
-    if (!projectId || !reader.alive || (draftBusy.current && !config.afterSave)) return;
+    if (!projectId || projectIsCompleted || !reader.alive || (draftBusy.current && !config.afterSave)) return;
     if (!quiet) setLoading(true);
     try { return await reader.read.load({ quiet, ...config }); }
     finally { if (reader.alive && !reader.read.pending && !quiet) setLoading(false); }
@@ -432,16 +436,21 @@ export default function PMForecastPanel({
     setSaveError(null);
     setPolicyError(null);
     setHistoryOpen(false);
-    void loadRef.current({ passive: true });
+    setLoading(!projectIsCompleted);
+
+    if (!projectIsCompleted) {
+      void loadRef.current({ passive: true });
+    }
+
     return () => { reader.alive = false; reader.read.cancel(); };
-  }, [reader]);
+  }, [reader, projectIsCompleted]);
 
   useEffect(() => {
-    if (!projectId || editing || saving || policySaving) return undefined;
+    if (projectIsCompleted || !projectId || editing || saving || policySaving) return undefined;
     return watchVisibleReads(config => loadRef.current({ quiet: true, ...config }), {
       allowed: () => reader.alive && !draftBusy.current,
     });
-  }, [reader, projectId, editing, saving, policySaving]);
+  }, [reader, projectId, projectIsCompleted, editing, saving, policySaving]);
 
   function notifyProjectionChanged() {
     // A failed portfolio/attention refresh cannot turn a completed write into
@@ -664,7 +673,8 @@ export default function PMForecastPanel({
     role === 'ADMIN';
 
   const canEdit =
-    canSubmit
+    !projectIsCompleted
+    && canSubmit
     && !loading
     && !saving
     && !policySaving
@@ -1079,7 +1089,8 @@ export default function PMForecastPanel({
 
   return (
     <>
-      <section className="pm-forecast-section">
+      {!projectIsCompleted && (
+        <section className="pm-forecast-section">
         <div className="section-heading compact pm-forecast-heading">
           <div>
             <span className="section-kicker">
@@ -1263,18 +1274,23 @@ export default function PMForecastPanel({
 
             </>
           )}
-      </section>
+        </section>
+      )}
 
 
       <section className="billing-monthly-section pm-monthly-section">
         <div className="section-heading compact">
           <div>
             <span className="section-kicker">
-              MONTHLY BILLINGS
+              {projectIsCompleted
+                ? 'BILLING HISTORY'
+                : 'MONTHLY BILLINGS'}
             </span>
 
             <h3>
-              Projected vs Actual Billings
+              {projectIsCompleted
+                ? 'Actual Billing History'
+                : 'Projected vs Actual Billings'}
             </h3>
           </div>
 
@@ -1285,8 +1301,12 @@ export default function PMForecastPanel({
 
 
         <div className="pm-comparison-controls">
-          <ShowControls baseline={baselineComparison} onBaseline={forecast?.hasPmForecast ? setBaselineComparison : undefined}
-            running={showRunningTotals} onRunning={setShowRunningTotals} />
+          <ShowControls
+            baseline={baselineComparison}
+            onBaseline={projectIsCompleted ? undefined : (forecast?.hasPmForecast ? setBaselineComparison : undefined)}
+            running={showRunningTotals}
+            onRunning={setShowRunningTotals}
+          />
         </div>
 
         <div className="billing-monthly-table-wrap">
@@ -1295,17 +1315,21 @@ export default function PMForecastPanel({
               <tr>
                 <th>Month</th>
 
-                {showBaseline && <th className="numeric">System Estimate</th>}
+                {!projectIsCompleted && showBaseline && <th className="numeric">System Estimate</th>}
 
-                <th className="numeric">
-                  PM Projection
-                </th>
+                {!projectIsCompleted && (
+                  <th className="numeric">
+                    PM Projection
+                  </th>
+                )}
 
                 <th className="numeric">
                   Actual Billings
                 </th>
 
-                <th className="numeric" title="Actual Billings minus the selected projection">Difference</th>
+                {!projectIsCompleted && (
+                  <th className="numeric" title="Actual Billings minus the selected projection">Difference</th>
+                )}
               </tr>
             </thead>
 
@@ -1341,7 +1365,7 @@ export default function PMForecastPanel({
                         )}
                       </td>
 
-                      {showBaseline && <td className="numeric">
+                      {!projectIsCompleted && showBaseline && <td className="numeric">
                         <strong>
                           {fmtMoney(
                             row.baseline
@@ -1357,6 +1381,7 @@ export default function PMForecastPanel({
                         </small>}
                       </td>}
 
+                      {!projectIsCompleted && (
                       <td className="numeric pm-forecast-cell">
                         {inlineEdit
                           ? (
@@ -1485,6 +1510,8 @@ export default function PMForecastPanel({
                         </small>}
                       </td>
 
+                      )}
+
                       <td className="numeric">
                         <strong>
                           {fmtMoney(
@@ -1501,6 +1528,7 @@ export default function PMForecastPanel({
                         </small>}
                       </td>
 
+                      {!projectIsCompleted && (
                       <td
                         className={
                           (
@@ -1525,6 +1553,7 @@ export default function PMForecastPanel({
                           }
                         </small>}
                       </td>
+                      )}
                     </tr>
                   );
                 }
@@ -1533,10 +1562,12 @@ export default function PMForecastPanel({
               {!rows.length && (
                 <tr>
                   <td
-                    colSpan={showBaseline ? 5 : 4}
+                    colSpan={projectIsCompleted ? 2 : (showBaseline ? 5 : 4)}
                     className="empty-cell"
                   >
-                    No System Estimate or actual billing rows are available for this project.
+                    {projectIsCompleted
+                      ? 'No actual billing rows are available for this completed project.'
+                      : 'No System Estimate or actual billing rows are available for this project.'}
                   </td>
                 </tr>
               )}
@@ -1545,7 +1576,7 @@ export default function PMForecastPanel({
         </div>
 
 
-        {editing && (
+        {!projectIsCompleted && editing && (
           <div className="pm-inline-editor">
             <div className="pm-inline-edit-intro">
               <strong>
@@ -1618,18 +1649,20 @@ export default function PMForecastPanel({
                 </strong>
               </div>
 
-              <div>
-                <span>
-                  System Estimate Reference
-                </span>
+              {baselineComparison && (
+                <div>
+                  <span>
+                    System Estimate Reference
+                  </span>
 
-                <strong>
-                  {fmtMoney(
-                    editTotals.systemEstimate,
-                    true,
-                  )}
-                </strong>
-              </div>
+                  <strong>
+                    {fmtMoney(
+                      editTotals.systemEstimate,
+                      true,
+                    )}
+                  </strong>
+                </div>
+              )}
             </div>
 
 
@@ -1759,6 +1792,7 @@ export default function PMForecastPanel({
       </section>
 
 
+      {!projectIsCompleted && (
       <section className="pm-history-section">
         <div className="section-heading compact pm-history-heading">
           <div>
@@ -1924,7 +1958,8 @@ export default function PMForecastPanel({
             )}
           </div>
         )}
-      </section>
+        </section>
+      )}
     </>
   );
 }

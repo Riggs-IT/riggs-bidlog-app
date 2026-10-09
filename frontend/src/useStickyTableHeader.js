@@ -208,6 +208,9 @@ export default function useStickyTableHeader(
       let horizontalControlActive =
         false;
 
+      let floatingControlsPointerInside =
+        false;
+
       const clearControlsIdleTimer =
         () => {
           if (controlsIdleTimer === null) {
@@ -224,16 +227,19 @@ export default function useStickyTableHeader(
 
       const hideFloatingControls =
         () => {
-          if (horizontalControlActive) {
+          controlsIdleTimer =
+            null;
+
+          if (
+            horizontalControlActive
+            || floatingControlsPointerInside
+          ) {
             return;
           }
 
           floating.classList.remove(
             'controls-visible'
           );
-
-          controlsIdleTimer =
-            null;
         };
 
       const scheduleFloatingControlsHide =
@@ -257,7 +263,10 @@ export default function useStickyTableHeader(
             'controls-visible'
           );
 
-          if (!horizontalControlActive) {
+          if (
+            !horizontalControlActive
+            && !floatingControlsPointerInside
+          ) {
             scheduleFloatingControlsHide();
           }
         };
@@ -659,8 +668,6 @@ export default function useStickyTableHeader(
           */
           floatingTableViewport.scrollLeft =
             wrapper.scrollLeft;
-
-          showFloatingControls();
         };
 
 
@@ -684,15 +691,25 @@ export default function useStickyTableHeader(
         };
 
 
-      const handlePointerEnter =
+      const handleFloatingControlsPointerEnter =
         () => {
-          if (
-            floating.classList.contains(
-              'visible'
-            )
-          ) {
-            showFloatingControls();
-          }
+          floatingControlsPointerInside =
+            true;
+
+          clearControlsIdleTimer();
+
+          floating.classList.add(
+            'controls-visible'
+          );
+        };
+
+
+      const handleFloatingControlsPointerLeave =
+        () => {
+          floatingControlsPointerInside =
+            false;
+
+          scheduleFloatingControlsHide();
         };
 
 
@@ -839,22 +856,6 @@ export default function useStickyTableHeader(
         },
       );
 
-      wrapper.addEventListener(
-        'pointerenter',
-        handlePointerEnter,
-        {
-          passive: true,
-        },
-      );
-
-      floating.addEventListener(
-        'pointerenter',
-        handlePointerEnter,
-        {
-          passive: true,
-        },
-      );
-
       controls?.addEventListener(
         'input',
         handleHorizontalControlInput,
@@ -868,6 +869,22 @@ export default function useStickyTableHeader(
       floatingControls?.addEventListener(
         'input',
         handleHorizontalControlInput,
+      );
+
+      floatingControls?.addEventListener(
+        'pointerenter',
+        handleFloatingControlsPointerEnter,
+        {
+          passive: true,
+        },
+      );
+
+      floatingControls?.addEventListener(
+        'pointerleave',
+        handleFloatingControlsPointerLeave,
+        {
+          passive: true,
+        },
       );
 
       floatingControls?.addEventListener(
@@ -932,16 +949,6 @@ export default function useStickyTableHeader(
           handleScroll,
         );
 
-        wrapper.removeEventListener(
-          'pointerenter',
-          handlePointerEnter,
-        );
-
-        floating.removeEventListener(
-          'pointerenter',
-          handlePointerEnter,
-        );
-
         controls?.removeEventListener(
           'input',
           handleHorizontalControlInput,
@@ -955,6 +962,16 @@ export default function useStickyTableHeader(
         floatingControls?.removeEventListener(
           'input',
           handleHorizontalControlInput,
+        );
+
+        floatingControls?.removeEventListener(
+          'pointerenter',
+          handleFloatingControlsPointerEnter,
+        );
+
+        floatingControls?.removeEventListener(
+          'pointerleave',
+          handleFloatingControlsPointerLeave,
         );
 
         floatingControls?.removeEventListener(

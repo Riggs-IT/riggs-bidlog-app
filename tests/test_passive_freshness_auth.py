@@ -37,7 +37,7 @@ class PassiveFreshnessAuthTests(unittest.TestCase):
             if request.query_params.get('mutate'):request.session['changed']='test'
             return response
         for p in [PATH,'/api/projected-billings/current-projects/primary-projection','/api/projected-billings/current-projects/monthly','/api/projected-billings/active-bids/dashboard',
-                  '/api/pm-forecast/attention','/api/current-projects/24/pm-forecast','/api/current-projects/24/pm-forecast/history',
+                  '/api/pm-forecast/attention','/api/originating-bid/attention','/api/current-projects/24/pm-forecast','/api/current-projects/24/pm-forecast/history',
                   '/api/current-projects/24/pm-forecast/history/1','/api/current-projects/24/pm-forecast/policy',
                   '/api/other','/api/current-projects/0/pm-forecast','/api/current-projects/24/pm-forecast/admin-correction']:
             self.app.add_api_route(p,endpoint,methods=['GET','POST','PUT'])
@@ -84,7 +84,7 @@ class PassiveFreshnessAuthTests(unittest.TestCase):
     def test_passive_caller_cannot_supply_actor(self):
         r=self.client.get(PATH,headers={**HEADER,'X-Riggs-User-EID':'999'});self.assertEqual(r.json()['eid'],2021)
     def test_allowlisted_forecast_reads_are_passive(self):
-        for path in ['/api/pm-forecast/attention','/api/current-projects/24/pm-forecast','/api/current-projects/24/pm-forecast/history','/api/current-projects/24/pm-forecast/history/1','/api/current-projects/24/pm-forecast/policy']:
+        for path in ['/api/pm-forecast/attention','/api/originating-bid/attention','/api/current-projects/24/pm-forecast','/api/current-projects/24/pm-forecast/history','/api/current-projects/24/pm-forecast/history/1','/api/current-projects/24/pm-forecast/policy']:
             with self.subTest(path=path):
                 r=self.client.get(path,headers=HEADER);self.assertEqual(r.json()['last_activity_at'],1000);self.assertNotIn('set-cookie',r.headers)
     def test_write_action_and_invalid_id_not_allowlisted(self):

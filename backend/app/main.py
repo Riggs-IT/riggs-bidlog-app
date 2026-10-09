@@ -74,6 +74,7 @@ from .data_api import (
     get_current_projects_monthly_bulk,
     get_current_projects_primary_projection,
     get_current_project_originating_bid,
+    get_originating_bid_attention,
     get_current_project_change_orders,
     get_current_project_bid_candidates,
     link_current_project_originating_bid,
@@ -2747,6 +2748,29 @@ async def update_pm_forecast_policy_proxy(
             request_id=_browser_request_id(
                 request
             ),
+        )
+
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(
+            exc
+        )
+
+
+@app.get(
+    "/api/originating-bid/attention"
+)
+def originating_bid_attention(
+    current_user: CurrentUser = Depends(
+        get_current_user
+    ),
+):
+    _require_bid_log_workspace_access(
+        current_user
+    )
+
+    try:
+        return get_originating_bid_attention(
+            current_user.eid
         )
 
     except Exception as exc:

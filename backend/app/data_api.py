@@ -2655,6 +2655,72 @@ def get_current_project_originating_bid(
     )
 
 
+def get_originating_bid_attention(
+    actor_eid: int,
+) -> dict:
+    payload = _originating_bid_request(
+        "GET",
+        "/v1/bid-log/originating-bid/attention",
+        operation=(
+            "Originating bid attention"
+        ),
+        actor_eid=actor_eid,
+    )
+
+    scope = payload.get("scope")
+    items = payload.get("items")
+
+    if scope not in {
+        "ADMIN",
+        "PM",
+        "OPERATIONS_REVIEW",
+        "NONE",
+    }:
+        raise DataAPIInvalidResponse(
+            "Originating bid attention response "
+            "has an invalid scope."
+        )
+
+    if (
+        not isinstance(items, list)
+        or not all(
+            isinstance(item, dict)
+            for item in items
+        )
+    ):
+        raise DataAPIInvalidResponse(
+            "Originating bid attention response "
+            "is missing its items list."
+        )
+
+    for key in (
+        "graceHours",
+        "candidateCountBeforeGrace",
+        "graceSuppressedCount",
+        "attentionCount",
+        "unlinkedCount",
+        "reviewExceptionCount",
+    ):
+        value = payload.get(key)
+        if (
+            not isinstance(value, int)
+            or isinstance(value, bool)
+            or value < 0
+        ):
+            raise DataAPIInvalidResponse(
+                "Originating bid attention response "
+                f"has an invalid {key}."
+            )
+
+    if payload["attentionCount"] != len(items):
+        raise DataAPIInvalidResponse(
+            "Originating bid attention response "
+            "count does not match its items list."
+        )
+
+    return payload
+
+
 
 def get_current_project_change_orders(
     job_list_id: int,

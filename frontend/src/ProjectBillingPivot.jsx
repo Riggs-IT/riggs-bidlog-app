@@ -1,4 +1,4 @@
-import { pivotCurrentCell, pivotTotals, nullableAmount } from './primaryProjection.js';
+import { completedProjectPivotCell, pivotCurrentCell, pivotTotals, nullableAmount } from './primaryProjection.js';
 import { ProjectionEstimateMarker, ProjectionAmount } from './ProjectionDisplay.jsx';
 import {
   useEffect,
@@ -8,6 +8,7 @@ import {
 
 import useStickyTableHeader from './useStickyTableHeader.js';
 import { ProjectTeamBadges } from './BillingDisplay.jsx';
+import { isCompleted } from './viewFilters.js';
 import {
   GeneralContractorDisplay,
   generalContractorDisplayText,
@@ -219,7 +220,13 @@ function currentProjectPivotRow(
   const indexed =
     monthlyIndex(rows);
 
-  const cells = months.map(month => pivotCurrentCell(indexed.get(month), month));
+  const completed = isCompleted(project);
+
+  const cells = months.map(
+    month => completed
+      ? completedProjectPivotCell(indexed.get(month), month)
+      : pivotCurrentCell(indexed.get(month), month)
+  );
 
   const pmName =
     displayText(
@@ -235,7 +242,7 @@ function currentProjectPivotRow(
       'current',
 
     sourceLabel:
-      project.projectCompleted
+      completed
         ? 'Completed'
         : 'Active',
 
@@ -293,15 +300,43 @@ function currentProjectPivotRow(
 
     cells,
 
-    total: {
-      projected: nullableAmount(project.selectedProjected),
-      actual: project.selectedActualValueCount ? nullableAmount(project.selectedActual) : null,
-      variance: nullableAmount(project.selectedVariance),
-      marginCollected: nullableAmount(project.selectedMarginCollected),
-      baseline: nullableAmount(project.selectedBaseline),
-      missingPmMonths: project.selectedMissingPmMonths || 0,
-      isSystemEstimate:project.hasPmForecast !== true,
-    },
+    total: completed
+      ? {
+          projected: null,
+          actual: project.selectedActualValueCount ? nullableAmount(project.selectedActual) : null,
+          variance: null,
+          marginCollected: nullableAmount(project.selectedMarginCollected),
+          baseline: null,
+          missingPmMonths: 0,
+          isSystemEstimate: false,
+          isEditable: false,
+          monthEditState: 'LOCKED_PAST',
+          projectCompleted: true,
+          varianceProjectedValue: null,
+          varianceActualValue: null,
+          varianceComparableRows: 0,
+          varianceActualRows: project.selectedActualValueCount || 0,
+          varianceMissingEditableRows: 0,
+          varianceHistoricalUnavailableRows: project.selectedActualValueCount || 0,
+        }
+      : {
+          projected: nullableAmount(project.selectedProjected),
+          actual: project.selectedActualValueCount ? nullableAmount(project.selectedActual) : null,
+          variance: nullableAmount(project.selectedVariance),
+          marginCollected: nullableAmount(project.selectedMarginCollected),
+          baseline: nullableAmount(project.selectedBaseline),
+          missingPmMonths: project.selectedMissingPmMonths || 0,
+          isSystemEstimate:project.hasPmForecast !== true,
+          isEditable: false,
+          monthEditState: null,
+          projectCompleted: false,
+          varianceProjectedValue: nullableAmount(project.selectedVarianceProjected),
+          varianceActualValue: nullableAmount(project.selectedVarianceActual),
+          varianceComparableRows: project.selectedVarianceComparableRows || 0,
+          varianceActualRows: project.selectedActualValueCount || 0,
+          varianceMissingEditableRows: project.selectedVarianceMissingEditableRows || 0,
+          varianceHistoricalUnavailableRows: project.selectedVarianceHistoricalUnavailableRows || 0,
+        },
 
     raw:
       project,
@@ -842,6 +877,14 @@ function HeaderTotal({
   projectedValue = null,
   bidProjectedValue = null,
   actualValue = null,
+  totalForecastValue = null,
+  varianceValue = null,
+  varianceProjectedValue = null,
+  varianceActualValue = null,
+  varianceComparableProjects = 0,
+  varianceActualProjects = 0,
+  varianceMissingEditableProjects = 0,
+  varianceHistoricalUnavailableProjects = 0,
   metric,
   currency,
   activeProjectsBilled = null,
@@ -868,10 +911,103 @@ function HeaderTotal({
   const marginMode =
     metric === 'marginCollected';
 
-  const hasBidProjection =
-    includeBidProjection
-    && bidProjectedValue !== null
-    && bidProjectedValue !== undefined;
+  const projectedDisplayValue =
+    includeProjectProjection
+      ? projectedValue
+      : bidProjectedValue;
+
+  const projectedTooltipLabel =
+    includeProjectProjection
+      ? 'Active Project Projection'
+      : 'Potential Bid Projection';
+
+  const hasCombinedForecastSources =
+    includeProjectProjection
+    && includeBidProjection;
+
+  const totalForecastTooltip =
+    [
+      'Total Forecast',
+      `Active projects: ${currency(projectedValue ?? 0)}`,
+      `Potential bids: ${currency(bidProjectedValue ?? 0)}`,
+      `Total: ${currency(totalForecastValue ?? 0)}`,
+    ].join('\n');
+
+  const projectedTooltip =
+    [
+      projectedTooltipLabel,
+      currency(projectedDisplayValue ?? 0),
+      includeProjectProjection
+      && missingPmMonths
+        ? `PM months missing: ${missingPmMonths}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+  const actualTooltip =
+    [
+      'Actual Billings',
+      actualValue === null
+      || actualValue === undefined
+        ? 'No billings'
+        : currency(actualValue),
+    ].join('\n');
+
+  const varianceTooltip =
+    varianceValue === null
+    || varianceValue === undefined
+      ? (
+          varianceActualProjects > 0
+            ? [
+                'Variance',
+                'No comparable Projected + Actual rows',
+                varianceMissingEditableProjects
+                  ? `Missing projection: ${varianceMissingEditableProjects}`
+                  : null,
+                varianceHistoricalUnavailableProjects
+                  ? `Historical projection unavailable: ${varianceHistoricalUnavailableProjects}`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join('\n')
+            : 'Variance\nNo actual billings'
+        )
+      : [
+          'Variance',
+          `Projected: ${currency(varianceProjectedValue ?? 0)}`,
+          `Actual: ${currency(varianceActualValue ?? 0)}`,
+          `Variance: ${currency(varianceValue)}`,
+          '',
+          `Compared: ${varianceComparableProjects} of ${varianceActualProjects} ${label === 'Total' ? 'project-months' : (varianceActualProjects === 1 ? 'project' : 'projects')}`,
+          varianceMissingEditableProjects
+            ? `Missing projection: ${varianceMissingEditableProjects}`
+            : null,
+          varianceHistoricalUnavailableProjects
+            ? `Historical projection unavailable: ${varianceHistoricalUnavailableProjects}`
+            : null,
+        ]
+          .filter(value => value !== null)
+          .join('\n');
+
+  const singleValueTooltip =
+    actualMode
+      ? actualTooltip
+      : (
+          varianceMode
+            ? varianceTooltip
+            : (
+                marginMode
+                  ? [
+                      'Margin Collected',
+                      value === null
+                      || value === undefined
+                        ? 'No value'
+                        : currency(value),
+                    ].join('\n')
+                  : undefined
+              )
+        );
 
   const projectBilledText =
     activeProjectsBilled !== null
@@ -893,85 +1029,125 @@ function HeaderTotal({
         }`
       : null;
 
-  const showSplitProjection =
-    allMode
-    || projectedMode;
-
   return (
-    <span className="pivot-header-total" title={missingPmMonths ? `${missingPmMonths} PM month(s) have no entered amount. Total includes entered values only.` : undefined}>
+    <span className="pivot-header-total">
       <span className="pivot-header-total-label">
         {label}
       </span>
 
-      {showSplitProjection ? (
-        <span
-          className="pivot-header-total-values"
-          title={
-            [
-              includeProjectProjection
-                ? `Project projection: ${currency(projectedValue ?? 0)}`
-                : null,
-              hasBidProjection
-                ? `Bid projection: ${currency(bidProjectedValue ?? 0)}`
-                : null,
-              allMode
-                ? `Actual: ${currency(actualValue ?? 0)}`
-                : null,
-            ]
-              .filter(Boolean)
-              .join(' · ')
-          }
-        >
-          {includeProjectProjection && (
-            <small className="pivot-header-total-value">
-              P {headerCurrency(projectedValue)}
+      {allMode ? (
+        <span className="pivot-header-total-values pivot-header-total-values-all">
+          {hasCombinedForecastSources && (
+            <small
+              className="pivot-header-total-value pivot-header-total-value-total"
+              title={totalForecastTooltip}
+            >
+              T {headerCurrency(totalForecastValue)}
             </small>
           )}
 
-          {hasBidProjection && (
-            <small className="pivot-header-total-value pivot-header-total-value-bid">
-              B {headerCurrency(bidProjectedValue)}
-            </small>
-          )}
+          {includeProjectProjection ? (
+            <>
+              <small
+                className="pivot-header-total-value"
+                title={projectedTooltip}
+              >
+                P {headerCurrency(projectedValue)}
+              </small>
 
-          {allMode && (
-            <small className="pivot-header-total-value pivot-header-total-value-actual">
-              A {headerCurrency(actualValue)}
+              {actualValue !== null && actualValue !== undefined && (
+                <small
+                  className="pivot-header-total-value pivot-header-total-value-actual"
+                  title={actualTooltip}
+                >
+                  A {headerCurrency(actualValue)}
+                </small>
+              )}
+
+              {varianceValue !== null && varianceValue !== undefined && (
+                <small
+                  className={
+                    `pivot-header-total-value pivot-header-total-value-variance ${
+                      metricClass(
+                        'variance',
+                        varianceValue,
+                      )
+                    }`
+                  }
+                  title={varianceTooltip}
+                >
+                  V {headerCurrency(varianceValue)}
+                </small>
+              )}
+            </>
+          ) : (
+            <small
+              className="pivot-header-total-value"
+              title={projectedTooltip}
+            >
+              P {headerCurrency(bidProjectedValue)}
             </small>
           )}
         </span>
+      ) : projectedMode ? (
+        hasCombinedForecastSources ? (
+          <span className="pivot-header-total-values pivot-header-total-values-projected">
+            <small
+              className="pivot-header-total-value pivot-header-total-value-total"
+              title={totalForecastTooltip}
+            >
+              T {headerCurrency(totalForecastValue)}
+            </small>
+
+            <small
+              className="pivot-header-total-value"
+              title={projectedTooltip}
+            >
+              P {headerCurrency(projectedValue)}
+            </small>
+          </span>
+        ) : (
+          <small
+            className="pivot-header-total-value"
+            title={projectedTooltip}
+          >
+            P {headerCurrency(projectedDisplayValue)}
+          </small>
+        )
       ) : (
-        <small
-          className="pivot-header-total-value"
-          title={
-            value === null
-            || value === undefined
-              ? 'No value for the selected metric.'
-              : `Column total: ${currency(value)}`
-          }
-        >
-          {actualMode
-          && value !== null
-          && value !== undefined
-            ? 'A '
-            : ''}
+        (actualMode || varianceMode)
+        && (value === null || value === undefined)
+          ? null
+          : (
+              <small
+                className={
+                  `pivot-header-total-value ${
+                    varianceMode
+                      ? metricClass(
+                          'variance',
+                          value,
+                        )
+                      : ''
+                  }`
+                }
+                title={singleValueTooltip}
+              >
+                {actualMode
+                  ? 'A '
+                  : ''}
 
-          {varianceMode
-          && value !== null
-          && value !== undefined
-            ? 'V '
-            : ''}
+                {varianceMode
+                  ? 'V '
+                  : ''}
 
-          {marginMode
-          && value !== null
-          && value !== undefined
-            ? 'M '
-            : ''}
+                {marginMode
+                  ? 'M '
+                  : ''}
 
-          {headerCurrency(value)}
-        </small>
+                {headerCurrency(value)}
+              </small>
+            )
       )}
-
 
       {showBaseline && includeProjectProjection && <small className="baseline-reference">System Estimate {headerCurrency(baselineValue)}</small>}
 
@@ -1009,7 +1185,6 @@ function HeaderTotal({
   );
 }
 
-
 export default function ProjectBillingPivot({
   months,
   currentProjects,
@@ -1024,6 +1199,10 @@ export default function ProjectBillingPivot({
   includeActiveProjects = true,
   includeBids = true,
   showBaseline = false,
+  projectionSourceFilter = '__ALL__',
+  projectionCoverage = null,
+  onProjectionSourceFilterChange = null,
+  projectionSourceAllValue = '__ALL__',
 }) {
   const [
     billingMetric,
@@ -1416,6 +1595,50 @@ export default function ProjectBillingPivot({
           className="project-pivot-toolbar"
           data-sticky-table-controls
         >
+          {includeActiveProjects
+          && projectionCoverage
+          && onProjectionSourceFilterChange && (
+            <div
+              className="project-pivot-sticky-coverage projection-source-filter-group"
+              aria-label="Projection source filter"
+            >
+              <button
+                type="button"
+                className={`projection-source-count-toggle ${projectionSourceFilter === projectionSourceAllValue || projectionSourceFilter === 'pm' ? 'active' : ''}`}
+                aria-pressed={projectionSourceFilter === projectionSourceAllValue || projectionSourceFilter === 'pm'}
+                title="Show projects with a submitted PM Projection"
+                onClick={() => onProjectionSourceFilterChange(
+                  projectionSourceFilter === 'pm'
+                    ? projectionSourceAllValue
+                    : 'pm'
+                )}
+              >
+                {projectionCoverage.pm} PM Projection
+              </button>
+
+              <span
+                className="projection-source-divider"
+                aria-hidden="true"
+              >
+                ·
+              </span>
+
+              <button
+                type="button"
+                className={`projection-source-count-toggle ${projectionSourceFilter === projectionSourceAllValue || projectionSourceFilter === 'missing' ? 'active' : ''}`}
+                aria-pressed={projectionSourceFilter === projectionSourceAllValue || projectionSourceFilter === 'missing'}
+                title="* No submitted PM Projection"
+                onClick={() => onProjectionSourceFilterChange(
+                  projectionSourceFilter === 'missing'
+                    ? projectionSourceAllValue
+                    : 'missing'
+                )}
+              >
+                {projectionCoverage.system} Missing*
+              </button>
+            </div>
+          )}
+
           <span className="project-pivot-toolbar-label">
             Values
           </span>
@@ -1593,6 +1816,22 @@ export default function ProjectBillingPivot({
                             index
                           ]?.actualValue
                         }
+                        totalForecastValue={
+                          monthTotals[
+                            index
+                          ]?.totalForecastValue
+                        }
+                        varianceValue={
+                          monthTotals[
+                            index
+                          ]?.varianceValue
+                        }
+                        varianceProjectedValue={monthTotals[index]?.varianceProjectedValue}
+                        varianceActualValue={monthTotals[index]?.varianceActualValue}
+                        varianceComparableProjects={monthTotals[index]?.varianceComparableProjects}
+                        varianceActualProjects={monthTotals[index]?.varianceActualProjects}
+                        varianceMissingEditableProjects={monthTotals[index]?.varianceMissingEditableProjects}
+                        varianceHistoricalUnavailableProjects={monthTotals[index]?.varianceHistoricalUnavailableProjects}
                         missingPmMonths={monthTotals[index]?.missingPmMonths}
                         hasSystemEstimate={monthTotals[index]?.hasSystemEstimate}
                         baselineValue={monthTotals[index]?.baselineValue}
@@ -1637,6 +1876,18 @@ export default function ProjectBillingPivot({
                     actualValue={
                       grandTotals.actualValue
                     }
+                    totalForecastValue={
+                      grandTotals.totalForecastValue
+                    }
+                    varianceValue={
+                      grandTotals.varianceValue
+                    }
+                    varianceProjectedValue={grandTotals.varianceProjectedValue}
+                    varianceActualValue={grandTotals.varianceActualValue}
+                    varianceComparableProjects={grandTotals.varianceComparableProjects}
+                    varianceActualProjects={grandTotals.varianceActualProjects}
+                    varianceMissingEditableProjects={grandTotals.varianceMissingEditableProjects}
+                    varianceHistoricalUnavailableProjects={grandTotals.varianceHistoricalUnavailableProjects}
                     missingPmMonths={grandTotals.missingPmMonths}
                     hasSystemEstimate={grandTotals.hasSystemEstimate}
                     baselineValue={grandTotals.baselineValue}

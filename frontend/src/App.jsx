@@ -6,6 +6,7 @@ import { aggregateCurrentMonthly, summarizePortfolioMonths, summarizeMonthlyTota
 import { ProjectionEstimateMarker, ProjectionAmount } from './ProjectionDisplay.jsx';
 import useGcReference, { canReadGcReference } from './useGcReference.js';
 import useProjectedBillingsFreshness from './useProjectedBillingsFreshness.js';
+import useOriginatingBidAttention from './useOriginatingBidAttention.js';
 import {
   useEffect,
   useMemo,
@@ -28,6 +29,7 @@ import BidLogEditDrawer from './BidLogEditDrawer.jsx';
 import ActiveProjectEditDrawer from './ActiveProjectEditDrawer.jsx';
 import CurrentProjectBillingDrawer from './CurrentProjectBillingDrawer.jsx';
 import ActiveBidBillingDrawer from './ActiveBidBillingDrawer.jsx';
+import OriginatingBidAttentionDrawer from './OriginatingBidAttentionDrawer.jsx';
 import ProjectBillingPivot from './ProjectBillingPivot.jsx';
 import CsvExportDialog from './CsvExportDialog.jsx';
 import useStickyTableHeader from './useStickyTableHeader.js';
@@ -454,6 +456,52 @@ function currency(
   ).format(
     toNumber(value),
   );
+}
+
+
+function originatingBidAttentionStatus(item) {
+  if (item.relationshipState === 'LINK_CONFLICT') {
+    return 'Link conflict';
+  }
+
+  if (item.relationshipState === 'PENDING_RECONCILIATION') {
+    return 'Pending reconciliation';
+  }
+
+  if (item.pmIdentityState === 'NO_PM_ASSIGNED') {
+    return 'No PM assigned';
+  }
+
+  if (item.pmIdentityState === 'PM_IDENTITY_UNRESOLVED') {
+    return 'PM identity issue';
+  }
+
+  return item.pmDisplayName || 'Assigned PM';
+}
+
+
+function originatingBidAttentionMessage(data) {
+  if (data.scope === 'PM') {
+    return `You have ${data.attentionCount} active ${
+      data.attentionCount === 1 ? 'project' : 'projects'
+    } that ${
+      data.attentionCount === 1 ? 'is' : 'are'
+    } not linked to ${
+      data.attentionCount === 1 ? 'its' : 'their'
+    } originating ${
+      data.attentionCount === 1 ? 'bid' : 'bids'
+    }.`;
+  }
+
+  if (data.scope === 'OPERATIONS_REVIEW') {
+    return `${data.attentionCount} originating-bid ${
+      data.attentionCount === 1 ? 'exception needs' : 'exceptions need'
+    } Operations review.`;
+  }
+
+  return `${data.attentionCount} active ${
+    data.attentionCount === 1 ? 'project needs' : 'projects need'
+  } originating-bid review.`;
 }
 
 
@@ -1686,8 +1734,18 @@ export default function App() {
   ] = useState(null);
 
   const [
+    selectedCurrentProjectControl,
+    setSelectedCurrentProjectControl,
+  ] = useState(null);
+
+  const [
     selectedActiveBid,
     setSelectedActiveBid,
+  ] = useState(null);
+
+  const [
+    originatingBidReviewProject,
+    setOriginatingBidReviewProject,
   ] = useState(null);
 
   const [
@@ -1709,6 +1767,54 @@ export default function App() {
     attentionOpen,
     setAttentionOpen,
   ] = useState(false);
+
+  const notificationCenterRef =
+    useRef(null);
+
+  useEffect(() => {
+    if (!attentionOpen) {
+      return undefined;
+    }
+
+    const closeOnOutsidePointer = event => {
+      const center = notificationCenterRef.current;
+
+      if (
+        center
+        && !center.contains(event.target)
+      ) {
+        setAttentionOpen(false);
+      }
+    };
+
+    const closeOnEscape = event => {
+      if (event.key === 'Escape') {
+        setAttentionOpen(false);
+      }
+    };
+
+    document.addEventListener(
+      'pointerdown',
+      closeOnOutsidePointer,
+    );
+
+    window.addEventListener(
+      'keydown',
+      closeOnEscape,
+    );
+
+    return () => {
+      document.removeEventListener(
+        'pointerdown',
+        closeOnOutsidePointer,
+      );
+
+      window.removeEventListener(
+        'keydown',
+        closeOnEscape,
+      );
+    };
+  }, [attentionOpen]);
 
   const [
     attentionLoading,
@@ -2226,14 +2332,58 @@ export default function App() {
     },
   });
 
-  function loadForecastAttention() {
-    return portfolioFreshness.refreshAttention({ passive: false });
+  const originatingBidAttention = useOriginatingBidAttention({
+    userKey: user
+      ? `${user.eid}:${user.appRole}:${user.employeeTrade || ''}`
+      : null,
+    enabled: Boolean(user && canViewBidLog),
+    fetchJson,
+    isEnding: () => logoutInProgressRef.current,
+    onSessionError: handleReadSessionError,
+  });
+
+  const originatingBidAttentionData =
+    originatingBidAttention.data;
+
+  const originatingBidAttentionItems =
+    originatingBidAttentionData.items || [];
+
+  const notificationCount =
+    forecastAttention.length
+    + originatingBidAttentionData.attentionCount;
+
+  const notificationsLoading =
+    attentionLoading
+    || originatingBidAttention.loading;
+
+  const notificationsError =
+    [
+      attentionError,
+      originatingBidAttention.error,
+    ]
+      .filter(Boolean)
+      .join(' ')
+    || null;
+
+  function loadNotifications() {
+    return Promise.all([
+      canViewProjectedBillings
+        ? portfolioFreshness.refreshAttention({ passive: false })
+        : Promise.resolve(),
+      canViewBidLog
+        ? originatingBidAttention.refresh({ passive: false })
+        : Promise.resolve(),
+    ]);
   }
 
   function openCurrentProjectDrawer(
     project,
+    initialProjectControl = null,
   ) {
     setSelectedActiveBid(null);
+    setSelectedCurrentProjectControl(
+      initialProjectControl,
+    );
     setSelectedCurrentProject(project);
   }
 
@@ -2289,6 +2439,7 @@ export default function App() {
     return Promise.all([
       portfolioFreshness.refreshCurrent(),
       portfolioFreshness.refreshAttention(),
+      originatingBidAttention.refresh({ passive: false }),
     ]);
   }
 
@@ -2330,6 +2481,34 @@ export default function App() {
     setAttentionOpen(
       false
     );
+  }
+
+
+  function openOriginatingBidAttentionProject(
+    attention,
+  ) {
+    const target =
+      currentProjects.find(
+        project =>
+          Number(project.jobListId)
+          === Number(attention.jobListId)
+      );
+
+    if (target && canViewProjectedBillings) {
+      setActivePage('projected');
+      openCurrentProjectDrawer(
+        target,
+        'originating-bid',
+      );
+    } else {
+      setOriginatingBidReviewProject({
+        jobListId: attention.jobListId,
+        jobNumber: attention.jobNumber,
+        jobName: attention.jobName,
+      });
+    }
+
+    setAttentionOpen(false);
   }
 
 
@@ -3333,7 +3512,11 @@ export default function App() {
       const m = aggregateCurrentMonthly(currentMonthly.get(row.jobListId), fromMonth, throughMonth);
       return {...row, selectedActualValueCount:m.actualValueCount, selectedBaseline:m.baseline,
         selectedMissingPmMonths:m.missingPmMonths, selectedProjected:m.projected,
-        selectedActual:m.actual, selectedVariance:m.variance, selectedMarginCollected:m.marginCollected};
+        selectedActual:m.actual, selectedVariance:m.variance, selectedMarginCollected:m.marginCollected,
+        selectedVarianceProjected:m.varianceProjected, selectedVarianceActual:m.varianceActual,
+        selectedVarianceComparableRows:m.varianceComparableRows,
+        selectedVarianceMissingEditableRows:m.varianceMissingEditableRows,
+        selectedVarianceHistoricalUnavailableRows:m.varianceHistoricalUnavailableRows};
     }).filter(row => !isCompleted(row) || Math.abs(Number(row.selectedActual)||0)>0.000001), [rangeValid,currentProjects,currentMonthly,fromMonth,throughMonth]);
   const bidRangeRows = useMemo(() => !rangeValid ? [] : selectedBidSourceRows
     .filter(row => hasMonthlyValues(bidMonthly.get(row.sharePointItemId),fromMonth,throughMonth,
@@ -5177,12 +5360,13 @@ export default function App() {
           {activePage === 'projected' && canViewProjectedBillings && <RefreshButton
             label="Refresh projected billings" busy={portfolioFreshness.refreshing}
             title="Refresh projected billings and notifications" onClick={() => {
-              void portfolioFreshness.refreshAll(); void loadForecastAttention();
+              void portfolioFreshness.refreshAll(); void loadNotifications();
               if (canReadGcReference(user)) void gcDirectory.refresh();
             }} /> }
           <div
+            ref={notificationCenterRef}
             className="notification-center"
-            hidden={!canViewProjectedBillings}
+            hidden={!canViewProjectedBillings && !canViewBidLog}
           >
             <button
               type="button"
@@ -5190,7 +5374,7 @@ export default function App() {
                 (
                   'notification-button '
                   + (
-                      forecastAttention.length
+                      notificationCount
                         ? 'has-attention'
                         : ''
                     )
@@ -5200,8 +5384,8 @@ export default function App() {
                 attentionOpen
               }
               aria-label={
-                forecastAttention.length
-                  ? `${forecastAttention.length} notifications`
+                notificationCount
+                  ? `${notificationCount} notifications`
                   : 'Notifications'
               }
               title="Notifications"
@@ -5212,7 +5396,7 @@ export default function App() {
                       !current
                   );
 
-                  loadForecastAttention();
+                  void loadNotifications();
                 }
               }
             >
@@ -5225,12 +5409,12 @@ export default function App() {
                 />
               </svg>
 
-              {forecastAttention.length > 0 && (
+              {notificationCount > 0 && (
                 <span className="notification-count">
                   {
-                    forecastAttention.length > 99
+                    notificationCount > 99
                       ? '99+'
-                      : forecastAttention.length
+                      : notificationCount
                   }
                 </span>
               )}
@@ -5244,34 +5428,110 @@ export default function App() {
                       NOTIFICATIONS
                     </span>
 
-                    {forecastAttention.length > 0 && (
+                    {notificationCount > 0 && (
                       <strong>
-                        {`${forecastAttention.length} active`}
+                        {`${notificationCount} active`}
                       </strong>
                     )}
                   </div>
 
-                  <RefreshButton label="Refresh notifications" busy={attentionLoading}
-                    onClick={() => loadForecastAttention()} />
+                  <RefreshButton
+                    label="Refresh notifications"
+                    busy={notificationsLoading}
+                    onClick={() => void loadNotifications()}
+                  />
                 </div>
 
-                {attentionError && (
+                {notificationsError && (
                   <div className="notification-message error">
-                    {attentionError}
+                    {notificationsError}
                   </div>
                 )}
 
-                {!attentionLoading
-                  && !forecastAttention.length
-                  && !attentionError
+                {!notificationsLoading
+                  && !notificationCount
+                  && !notificationsError
                   && (
                     <div className="notification-empty">
                       No notifications.
                     </div>
                   )}
 
-                {forecastAttention.length > 0 && (
+                {notificationCount > 0 && (
                   <div className="notification-list">
+                    {originatingBidAttentionData.attentionCount > 0 && (
+                      <article className="notification-item notification-originating-group">
+                        <div className="notification-item-heading">
+                          <div>
+                            <span>
+                              PROJECT SETUP
+                            </span>
+
+                            <strong>
+                              Originating Bids Need Linking
+                            </strong>
+                          </div>
+
+                          <span className="notification-group-count">
+                            {originatingBidAttentionData.attentionCount}
+                          </span>
+                        </div>
+
+                        <p>
+                          {originatingBidAttentionMessage(
+                            originatingBidAttentionData,
+                          )}
+                        </p>
+
+                        {originatingBidAttentionData.graceSuppressedCount > 0 && (
+                          <p className="notification-originating-grace">
+                            {originatingBidAttentionData.graceSuppressedCount}
+                            {' new '}
+                            {originatingBidAttentionData.graceSuppressedCount === 1
+                              ? 'project is'
+                              : 'projects are'}
+                            {` still inside the ${originatingBidAttentionData.graceHours}-hour setup grace period.`}
+                          </p>
+                        )}
+
+                        <div className="notification-originating-projects">
+                          {originatingBidAttentionItems.map(item => (
+                            <button
+                              key={`originating-${item.jobListId}`}
+                              type="button"
+                              className="notification-originating-project"
+                              onClick={() =>
+                                openOriginatingBidAttentionProject(item)
+                              }
+                            >
+                              <span className="notification-originating-project-copy">
+                                <span>
+                                  {item.jobNumber}
+                                </span>
+
+                                <strong>
+                                  {item.jobName || 'Current Project'}
+                                </strong>
+
+                                <small>
+                                  {originatingBidAttentionStatus(item)}
+                                </small>
+                              </span>
+
+                              <span
+                                className="notification-view-project"
+                                aria-hidden="true"
+                              >
+                                {item.reviewRequired
+                                  ? 'Review'
+                                  : 'View Project'}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </article>
+                    )}
+
                     {forecastAttention.map(
                       item => (
                         <article
@@ -6527,6 +6787,10 @@ export default function App() {
                 canViewMargin={isAdmin}
                 includeActiveProjects={includeActiveProjects}
                 includeBids={includeBids}
+                projectionSourceFilter={projectionSourceFilter}
+                projectionCoverage={projectionCoverage}
+                onProjectionSourceFilterChange={setProjectionSourceFilter}
+                projectionSourceAllValue={ALL}
               />
             )
             : (
@@ -7599,9 +7863,13 @@ export default function App() {
               )
             : []
         }
-        onClose={
-          () => setSelectedCurrentProject(null)
+        initialProjectControl={
+          selectedCurrentProjectControl
         }
+        onClose={() => {
+          setSelectedCurrentProject(null);
+          setSelectedCurrentProjectControl(null);
+        }}
         onEditProject={() => {
           if (!selectedCurrentProject?.jobListId) {
             return;
@@ -7611,8 +7879,18 @@ export default function App() {
             selectedCurrentProject.jobListId,
           );
           setSelectedCurrentProject(null);
+          setSelectedCurrentProjectControl(null);
         }}
         onAttentionChanged={refreshProjectedCurrentProjectData}
+      />
+
+      <OriginatingBidAttentionDrawer
+        project={originatingBidReviewProject}
+        user={user}
+        onClose={() => setOriginatingBidReviewProject(null)}
+        onLinked={() => {
+          void refreshProjectedCurrentProjectData();
+        }}
       />
 
       <ActiveBidBillingDrawer

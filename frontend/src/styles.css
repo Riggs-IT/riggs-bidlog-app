@@ -2671,6 +2671,20 @@ h2 {
 }
 
 
+.billing-drawer-job-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.billing-drawer-completed-date {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+
 .billing-drawer-close {
   width: 46px;
   height: 46px;
@@ -10065,6 +10079,7 @@ tbody td {
 .notification-list {
   max-height: 430px;
 
+  overflow-x: hidden;
   overflow-y: auto;
 }
 
@@ -10165,6 +10180,131 @@ tbody td {
 
 .notification-view-project {
   margin-top: 9px;
+}
+
+.notification-originating-group {
+  background: var(--surface-2);
+}
+
+.notification-group-count {
+  display: inline-grid;
+  place-items: center;
+
+  min-width: 26px;
+  height: 24px;
+  padding: 0 7px;
+
+  border: 1px solid color-mix(in srgb, var(--accent) 48%, var(--border));
+  border-radius: 999px;
+
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  color: var(--text);
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.notification-originating-grace {
+  color: var(--muted);
+  font-size: 9px !important;
+}
+
+.notification-originating-projects {
+  display: grid;
+  gap: 0;
+
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  max-height: 260px;
+  margin-top: 10px;
+
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  border: 1px solid var(--border);
+  border-radius: 7px;
+
+  background: var(--surface);
+}
+
+.notification-originating-project {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: 9px 10px;
+  box-sizing: border-box;
+
+  border: 0;
+  border-bottom: 1px solid var(--border);
+
+  background: transparent;
+  color: inherit;
+
+  font: inherit;
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.notification-originating-project:hover,
+.notification-originating-project:focus-visible {
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
+.notification-originating-project:last-child {
+  border-bottom: 0;
+}
+
+.notification-originating-project-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.notification-originating-project span,
+.notification-originating-project strong,
+.notification-originating-project small {
+  display: block;
+}
+
+.notification-originating-project span {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.notification-originating-project strong {
+  overflow: hidden;
+  margin-top: 1px;
+
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notification-originating-project small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.notification-originating-project .notification-view-project {
+  flex: 0 0 auto;
+  margin-top: 0;
+
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.originating-bid-attention-drawer {
+  width: min(720px, calc(100vw - 28px));
 }
 
 .notification-empty,
@@ -13289,6 +13429,39 @@ td.pivot-project-column {
 }
 
 
+/* Sticky-only projection coverage controls.
+   The real toolbar owns the React handlers but keeps this copy hidden;
+   useStickyTableHeader clones it into the floating toolbar and forwards
+   clicks back to the real controls. */
+.project-pivot-sticky-coverage {
+  display: none;
+}
+
+
+.floating-table-controls
+.project-pivot-sticky-coverage {
+  display: inline-flex;
+
+  flex: 0 0 auto;
+
+  margin-right: auto;
+}
+
+
+.floating-table-controls
+.project-pivot-sticky-coverage
+.projection-source-count-toggle {
+  min-height: 27px;
+
+  padding:
+    3px
+    8px;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+
 /* ============================================================
    PROJECT PIVOT - HEADER TOTALS
    ============================================================ */
@@ -13343,6 +13516,14 @@ td.pivot-project-column {
 }
 
 
+.pivot-header-total-values-all {
+  display: grid;
+  grid-template-columns: max-content;
+  justify-content: end;
+  gap: 2px;
+}
+
+
 .pivot-header-activity-counts {
   display: flex;
   align-items: center;
@@ -13367,6 +13548,12 @@ td.pivot-project-column {
 .pivot-header-total-value-actual {
   color:
     var(--text);
+}
+
+
+.pivot-header-total-value-variance.variance-negative {
+  color:
+    var(--negative);
 }
 
 
@@ -13887,4 +14074,81 @@ th.pivot-probability-column {
 
 .bid-log-name-line .project-title-ellipsis {
   flex: 1 1 auto;
+}
+
+
+/* ========================================================================== */
+/* SUBTLE TABLE ZEBRA STRIPING                                                */
+/*                                                                            */
+/* Keep alternating rows calm enough for dense financial tables. Expanded    */
+/* detail/note rows are excluded from the stripe count so opening a drawer    */
+/* does not shift the pattern below it.                                       */
+/* ========================================================================== */
+
+:is(
+  .monthly-table,
+  .detail-table,
+  .billing-monthly-table,
+  .monthly-project-table,
+  .completed-project-table,
+  .completed-monthly-table,
+  .project-pivot-table,
+  .bid-log-table,
+  .active-bid-monthly-table,
+  .active-project-table
+)
+tbody > tr:nth-child(
+  even of :not(.monthly-project-detail-row):not(.bid-log-notes-row)
+) {
+  background: var(--table-row-alt);
+}
+
+/* Sticky pivot identity cells need their own background so the stripe stays
+   continuous while horizontally scrolling the table. */
+.project-pivot-table
+  tbody > tr:nth-child(even of .pivot-project-row)
+  > :is(
+    td.pivot-source-column,
+    td.pivot-job-column,
+    td.pivot-project-column,
+    td.pivot-probability-column
+  ) {
+  background: var(--table-row-alt);
+}
+
+/* Preserve stronger semantic/interaction states above zebra striping. */
+.monthly-comparison-row.selected {
+  background: rgba(117, 167, 255, 0.10);
+}
+
+.active-project-data-row:has(.project-status-pill.completed) {
+  background: color-mix(in srgb, var(--surface-2) 60%, transparent);
+}
+
+:is(
+  .monthly-table tbody tr,
+  .detail-table tbody tr,
+  .monthly-comparison-row,
+  .month-current-project-row,
+  .completed-project-row,
+  .bid-log-data-row,
+  .active-project-data-row,
+  .pivot-project-row
+):hover {
+  background: var(--surface-2);
+}
+
+.project-pivot-table
+  .pivot-project-row:hover
+  > :is(
+    td.pivot-source-column,
+    td.pivot-job-column,
+    td.pivot-project-column,
+    td.pivot-probability-column
+  ) {
+  background: color-mix(
+    in srgb,
+    var(--surface) 92%,
+    var(--accent) 8%
+  );
 }

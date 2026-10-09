@@ -333,6 +333,7 @@ _PASSIVE_READ_PATHS = frozenset({
     "/api/projected-billings/current-projects/primary-projection",
     "/api/projected-billings/active-bids/dashboard",
     "/api/pm-forecast/attention",
+    "/api/originating-bid/attention",
 })
 _PASSIVE_PM_PATH = re.compile(
     r"/api/current-projects/[1-9][0-9]*/pm-forecast"

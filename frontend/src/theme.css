@@ -53,6 +53,7 @@
   --border: #d9dee3;
   --border-strong: #c5ccd2;
   --row-divider: #e3e7ea;
+  --table-row-alt: color-mix(in srgb, var(--surface-2) 52%, var(--surface));
 
   /* Interaction + meaning */
   --accent: #2d607f;
@@ -101,6 +102,7 @@
   --border: #2d343b;
   --border-strong: #3a434c;
   --row-divider: #2a3138;
+  --table-row-alt: color-mix(in srgb, var(--surface-2) 48%, var(--surface));
 
   /* Interaction + meaning */
   --accent: #72a3c0;

@@ -181,7 +181,19 @@ export function aggregateCurrentMonthly(rows, fromMonth, throughMonth) {
   const missingPmMonths = selected.reduce((n, r) => n + (r.missingPmMonths || 0), 0);
   const estimateValueCount = selected.filter(r => r.primaryProjectionSource !== PM_SOURCE && nullableAmount(r.projectedAmount) !== null).length;
   const projectionValueCount = selected.filter(r => nullableAmount(r.projectedAmount) !== null).length;
-  const actualValueCount = selected.filter(r => nullableAmount(r.actualAmount) !== null).length;
+  const actualRows = selected.filter(r => nullableAmount(r.actualAmount) !== null);
+  const actualValueCount = actualRows.length;
+  const comparableRows = actualRows.filter(r => nullableAmount(r.projectedAmount) !== null);
+  const varianceProjected = sumAmounts(comparableRows.map(r => r.projectedAmount));
+  const varianceActual = sumAmounts(comparableRows.map(r => r.actualAmount));
+  const varianceMissingEditableRows = actualRows.filter(r =>
+    nullableAmount(r.projectedAmount) === null
+    && r.isEditable === true
+  ).length;
+  const varianceHistoricalUnavailableRows = actualRows.filter(r =>
+    nullableAmount(r.projectedAmount) === null
+    && r.isEditable !== true
+  ).length;
   const projected = sumAmounts(selected.map(r => r.projectedAmount), selected.length ? null : 0);
   const actual = sumAmounts(selected.map(r => r.actualAmount), 0);
   const baseline = sumAmounts(selected.map(r => own(r, 'systemBaselineAmount') ? r.systemBaselineAmount : r.projectedAmount), selected.length ? null : 0);
@@ -189,7 +201,11 @@ export function aggregateCurrentMonthly(rows, fromMonth, throughMonth) {
   const marginDataComplete = !selected.some(r => r.marginDataComplete === false || Number(r.missingMarginRows) > 0);
   const marginCollected = marginDataComplete ? sumAmounts(selected.map(r => r.marginCollected), 0) : null;
   return { projected, baseline, actual, missingPmMonths, projectionValueCount, actualValueCount, estimateValueCount,
-    variance: missingPmMonths || !actualValueCount ? null : amountDifference(actual, projected),
+    variance: comparableRows.length ? amountDifference(varianceActual, varianceProjected) : null,
+    varianceProjected, varianceActual,
+    varianceComparableRows: comparableRows.length,
+    varianceMissingEditableRows,
+    varianceHistoricalUnavailableRows,
     marginCollected, missingMarginRows, marginDataComplete,
     weightedHistoricalMarginPercent: marginDataComplete && Math.abs(actual) > 0.000001 ? (marginCollected / actual) * 100 : null,
   };
@@ -198,7 +214,16 @@ export function aggregateCurrentMonthly(rows, fromMonth, throughMonth) {
 export function summarizePortfolioMonths(months, projects, currentMonthly, bids, bidMonthly) {
   const grouped = new Map(months.map(m => [m, []]));
   const weighted = new Map(months.map(m => [m, []]));
-  for (const p of projects) for (const row of currentMonthly.get(p.jobListId) || []) grouped.get(ym(row.monthStart))?.push(row);
+  for (const p of projects) for (const row of currentMonthly.get(p.jobListId) || []) {
+    const completed = p?.projectCompleted === true || p?.projectCompleted === 1
+      || String(p?.projectCompleted ?? '').trim().toLowerCase() === 'true'
+      || String(p?.projectCompleted ?? '').trim() === '1';
+    grouped.get(ym(row.monthStart))?.push(
+      completed
+        ? { ...row, projectedAmount: null, missingPmMonths: 0, isEditable: false, monthEditState: 'LOCKED_PAST' }
+        : row
+    );
+  }
   for (const p of bids) for (const row of bidMonthly.get(p.sharePointItemId) || []) weighted.get(ym(row.monthStart))?.push(row.weightedMonthlyForecastAmount);
   return months.map(month => {
     const a = aggregateCurrentMonthly(grouped.get(month), month, month);
@@ -209,7 +234,12 @@ export function summarizePortfolioMonths(months, projects, currentMonthly, bids,
       currentMissingMarginRows: a.missingMarginRows, currentMarginDataComplete: a.marginDataComplete,
       estimateValueCount:a.estimateValueCount, missingPmMonths: a.missingPmMonths, actualValueCount: a.actualValueCount, weightedBids,
       combinedExpected: combined,
-      variance: a.missingPmMonths || !a.actualValueCount ? null : amountDifference(a.actual, combined),
+      variance: a.variance,
+      varianceProjected: a.varianceProjected,
+      varianceActual: a.varianceActual,
+      varianceComparableRows: a.varianceComparableRows,
+      varianceMissingEditableRows: a.varianceMissingEditableRows,
+      varianceHistoricalUnavailableRows: a.varianceHistoricalUnavailableRows,
     };
   });
 }
@@ -218,11 +248,17 @@ export function summarizeMonthlyTotals(rows) {
   const missingPmMonths = rows.reduce((n, r) => n + r.missingPmMonths, 0);
   const actualValueCount = rows.reduce((n, r) => n + r.actualValueCount, 0);
   const currentActual = sum('currentActual'), combinedExpected = sum('combinedExpected');
+  const varianceProjected = sum('varianceProjected');
+  const varianceActual = sum('varianceActual');
+  const varianceComparableRows = rows.reduce((n, r) => n + (r.varianceComparableRows || 0), 0);
   const currentMarginDataComplete = rows.every(r => r.currentMarginDataComplete);
   const currentMarginCollected = currentMarginDataComplete ? sum('currentMarginCollected') : null;
   return { currentProjected: sum('currentProjected'), currentBaseline: sum('currentBaseline'), weightedBids: sum('weightedBids'),
     currentActual, combinedExpected, missingPmMonths, estimateValueCount:rows.reduce((n,r)=>n+(r.estimateValueCount||0),0),
-    variance: missingPmMonths || !actualValueCount ? null : amountDifference(currentActual, combinedExpected),
+    variance: varianceComparableRows ? amountDifference(varianceActual, varianceProjected) : null,
+    varianceProjected, varianceActual, varianceComparableRows,
+    varianceMissingEditableRows: rows.reduce((n, r) => n + (r.varianceMissingEditableRows || 0), 0),
+    varianceHistoricalUnavailableRows: rows.reduce((n, r) => n + (r.varianceHistoricalUnavailableRows || 0), 0),
     currentMarginDataComplete, currentMarginCollected,
     currentMissingMarginRows: rows.reduce((n, r) => n + r.currentMissingMarginRows, 0),
     currentWeightedHistoricalMarginPercent: currentMarginDataComplete && Math.abs(currentActual) > 0.000001 ? currentMarginCollected / currentActual * 100 : null,
@@ -230,27 +266,88 @@ export function summarizeMonthlyTotals(rows) {
 }
 
 export function pivotCurrentCell(row, month) {
-  if (!row) return { month, hasActivity: false, projected: null, actual: null, variance: null, marginCollected: null, baseline: null, missingPmMonths: 0 };
+  if (!row) return { month, hasActivity: false, projected: null, actual: null, variance: null, marginCollected: null, baseline: null, missingPmMonths: 0, isEditable: false, monthEditState: null, projectCompleted: false };
   const projected = nullableAmount(row.projectedAmount), actual = nullableAmount(row.actualAmount);
   return { month, hasActivity: projected !== null || actual !== null || row.missingPmMonths > 0,
     projected, actual, variance: amountDifference(actual, projected), marginCollected: nullableAmount(row.marginCollected),
     baseline: nullableAmount(own(row, 'systemBaselineAmount') ? row.systemBaselineAmount : row.projectedAmount),
     missingPmMonths: row.missingPmMonths || 0,
     isSystemEstimate:row.primaryProjectionSource!==PM_SOURCE && !row.hasPmForecast,
+    isEditable: row.isEditable === true,
+    monthEditState: row.monthEditState || null,
+    projectCompleted: false,
+  };
+}
+export function completedProjectPivotCell(row, month) {
+  if (!row) return { month, hasActivity: false, projected: null, actual: null, variance: null, marginCollected: null, baseline: null, missingPmMonths: 0, isEditable: false, monthEditState: 'LOCKED_PAST', projectCompleted: true };
+  const actual = nullableAmount(row.actualAmount);
+  const marginCollected = nullableAmount(row.marginCollected);
+  return { month, hasActivity: actual !== null || marginCollected !== null,
+    projected: null, actual, variance: null, marginCollected,
+    baseline: null, missingPmMonths: 0, isSystemEstimate: false,
+    isEditable: false, monthEditState: 'LOCKED_PAST', projectCompleted: true,
   };
 }
 export function pivotTotals(rows, index, metric, includeBids) {
   const cells = rows.map(row => ({ source: row.source, c: index === null ? row.total : row.cells[index] }));
-  const current = cells.filter(x => x.source !== 'bid').map(x => x.c);
-  const bid = cells.filter(x => x.source === 'bid').map(x => x.c);
+  const current = cells.filter(x => x.source !== 'bid').map(x => x.c).filter(Boolean);
+  const bid = cells.filter(x => x.source === 'bid').map(x => x.c).filter(Boolean);
   const projectedValue = sumAmounts(current.map(c => c?.projected), current.length ? null : 0);
   const bidProjectedValue = includeBids ? sumAmounts(bid.map(c => c?.projected), bid.length ? null : 0) : null;
   const actualValue = sumAmounts(current.map(c => c?.actual));
   const missingPmMonths = current.reduce((n, c) => n + (c?.missingPmMonths || 0), 0);
+  const totalForecastValue = sumAmounts([projectedValue, bidProjectedValue]);
+
+  const varianceProjectedValue = sumAmounts(current.map(c => {
+    if (Object.prototype.hasOwnProperty.call(c, 'varianceProjectedValue')) return c.varianceProjectedValue;
+    return c?.actual !== null && c?.actual !== undefined && c?.projected !== null && c?.projected !== undefined
+      ? c.projected : null;
+  }));
+  const varianceActualValue = sumAmounts(current.map(c => {
+    if (Object.prototype.hasOwnProperty.call(c, 'varianceActualValue')) return c.varianceActualValue;
+    return c?.actual !== null && c?.actual !== undefined && c?.projected !== null && c?.projected !== undefined
+      ? c.actual : null;
+  }));
+  const varianceComparableProjects = current.reduce((n, c) => {
+    if (Object.prototype.hasOwnProperty.call(c, 'varianceComparableRows')) return n + (Number(c.varianceComparableRows) || 0);
+    return n + (c?.actual !== null && c?.actual !== undefined && c?.projected !== null && c?.projected !== undefined ? 1 : 0);
+  }, 0);
+  const varianceActualProjects = current.reduce((n, c) => {
+    if (Object.prototype.hasOwnProperty.call(c, 'varianceActualRows')) return n + (Number(c.varianceActualRows) || 0);
+    return n + (c?.actual !== null && c?.actual !== undefined ? 1 : 0);
+  }, 0);
+  const varianceMissingEditableProjects = current.reduce((n, c) => {
+    if (Object.prototype.hasOwnProperty.call(c, 'varianceMissingEditableRows')) return n + (Number(c.varianceMissingEditableRows) || 0);
+    return n + (
+      c?.actual !== null && c?.actual !== undefined
+      && (c?.projected === null || c?.projected === undefined)
+      && c?.isEditable === true
+      && c?.projectCompleted !== true
+        ? 1 : 0
+    );
+  }, 0);
+  const varianceHistoricalUnavailableProjects = current.reduce((n, c) => {
+    if (Object.prototype.hasOwnProperty.call(c, 'varianceHistoricalUnavailableRows')) return n + (Number(c.varianceHistoricalUnavailableRows) || 0);
+    return n + (
+      c?.actual !== null && c?.actual !== undefined
+      && (c?.projected === null || c?.projected === undefined)
+      && (c?.isEditable !== true || c?.projectCompleted === true)
+        ? 1 : 0
+    );
+  }, 0);
+  const varianceValue = varianceComparableProjects
+    ? amountDifference(varianceActualValue, varianceProjectedValue)
+    : null;
+
   let value = sumAmounts(cells.map(x => x.c?.[metric]));
-  if (metric === 'variance') value = missingPmMonths ? null : amountDifference(actualValue, sumAmounts([projectedValue, bidProjectedValue]));
+  if (metric === 'variance') value = varianceValue;
   if (metric === 'marginCollected' && current.some(c => c?.marginCollected == null && c?.actual != null && c.actual !== 0)) value = null;
-  return { value, projectedValue, bidProjectedValue, actualValue, missingPmMonths,
+  return { value, projectedValue, bidProjectedValue, actualValue, totalForecastValue, varianceValue, missingPmMonths,
+    varianceProjectedValue, varianceActualValue,
+    varianceComparableProjects,
+    varianceActualProjects,
+    varianceMissingEditableProjects,
+    varianceHistoricalUnavailableProjects,
     hasSystemEstimate:current.some(c=>c?.isSystemEstimate && c?.projected!=null),
     baselineValue: sumAmounts(current.map(c => c?.baseline)),
     activeProjectsBilled: current.filter(c => c?.actual != null && c.actual !== 0).length,

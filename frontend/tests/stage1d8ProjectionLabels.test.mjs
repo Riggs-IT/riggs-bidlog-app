@@ -79,6 +79,80 @@ test('existing PM blanks stay blank and PM balance uses remaining contract targe
   assert.match(panel, /Remaining Contract to Project/);
   assert.match(panel, /Still to Project/);
   assert.match(panel, /Over Contract/);
-  assert.match(panel, /System Estimate Reference/);
+  assert.match(panel, /baselineComparison && \(\s*<div>[\s\S]*System Estimate Reference/);
   assert.match(panel, /intentionally blank PM months may stay blank/);
+});
+
+test('combined project and potential sources show T in All and Projected while variance stays active-project only', () => {
+  const pivot = read('ProjectBillingPivot.jsx');
+  const app = read('App.jsx');
+  const projection = read('primaryProjection.js');
+
+  assert.match(pivot, /const hasCombinedForecastSources =/);
+  assert.match(pivot, /hasCombinedForecastSources && \(/);
+  assert.match(pivot, /projectedMode \? \(\s*hasCombinedForecastSources \? \(/);
+  assert.match(pivot, /pivot-header-total-values-projected/);
+  assert.match(pivot, /T \{headerCurrency\(totalForecastValue\)\}/);
+  assert.match(pivot, /P \{headerCurrency\(projectedValue\)\}/);
+  assert.match(pivot, /A \{headerCurrency\(actualValue\)\}/);
+  assert.match(pivot, /V \{headerCurrency\(varianceValue\)\}/);
+  assert.match(pivot, /Total Forecast/);
+  assert.match(pivot, /Active projects:/);
+  assert.match(pivot, /Potential bids:/);
+  assert.match(pivot, /`Variance: \${currency\(varianceValue\)}`/);
+  assert.match(pivot, /Compared:/);
+  assert.match(pivot, /Missing projection:/);
+  assert.match(pivot, /Historical projection unavailable:/);
+  assert.doesNotMatch(pivot, /Math\.abs\([\s\S]*bidProjectedValue/);
+  assert.doesNotMatch(pivot, /Potential Bids are included in Total Forecast/);
+  assert.doesNotMatch(pivot, /PM month\(s\) have no entered amount/);
+  assert.match(pivot, /project-pivot-sticky-coverage/);
+  assert.match(pivot, /\{projectionCoverage\.pm\} PM Projection/);
+  assert.match(pivot, /\{projectionCoverage\.system\} Missing\*/);
+  assert.match(app, /projectionSourceFilter=\{projectionSourceFilter\}/);
+  assert.match(app, /projectionCoverage=\{projectionCoverage\}/);
+  assert.match(app, /onProjectionSourceFilterChange=\{setProjectionSourceFilter\}/);
+  assert.match(projection, /totalForecastValue = sumAmounts\(\[projectedValue, bidProjectedValue\]\)/);
+  assert.match(projection, /const varianceValue = varianceComparableProjects/);
+  assert.doesNotMatch(pivot, /B \{headerCurrency\(bidProjectedValue\)\}/);
+});
+
+
+test('completed project detail is read-only billing history and incomplete variance is coverage-aware', () => {
+  const drawer = read('CurrentProjectBillingDrawer.jsx');
+  const panel = read('PMForecastPanel.jsx');
+  const pivot = read('ProjectBillingPivot.jsx');
+  const projection = read('primaryProjection.js');
+
+  assert.match(drawer, /COMPLETED PROJECT · BILLING HISTORY/);
+  assert.match(drawer, /project-completed-pill/);
+  assert.match(drawer, /Project History/);
+  assert.match(drawer, /!projectIsCompleted && projectionMessage/);
+  assert.match(panel, /projectIsCompleted/);
+  assert.match(panel, /Actual Billing History/);
+  assert.match(panel, /!projectIsCompleted && \(\s*<section className="pm-forecast-section">/);
+  assert.match(panel, /!projectIsCompleted && \(\s*<section className="pm-history-section">/);
+  assert.match(pivot, /completedProjectPivotCell/);
+  assert.match(pivot, /actualValue !== null && actualValue !== undefined/);
+  assert.match(pivot, /varianceValue !== null && varianceValue !== undefined/);
+  assert.match(projection, /varianceMissingEditableRows/);
+  assert.match(projection, /varianceHistoricalUnavailableRows/);
+  assert.match(projection, /varianceComparableProjects/);
+});
+
+
+test('sticky controls are pinned by filter hover but generic layout updates do not wake them', () => {
+  const sticky = read('useStickyTableHeader.js');
+  const styles = read('styles.css');
+
+  assert.match(sticky, /floatingControlsPointerInside/);
+  assert.match(sticky, /handleFloatingControlsPointerEnter/);
+  assert.match(sticky, /handleFloatingControlsPointerLeave/);
+  assert.match(sticky, /horizontalControlActive[\s\S]*\|\| floatingControlsPointerInside/);
+  assert.match(sticky, /!horizontalControlActive[\s\S]*&& !floatingControlsPointerInside/);
+  assert.match(sticky, /const handleScroll =[\s\S]*showFloatingControls\(\);[\s\S]*scheduleUpdate\(\);/);
+  assert.doesNotMatch(sticky, /const handlePointerEnter/);
+  assert.doesNotMatch(sticky, /floatingTableViewport\.scrollLeft =[\s\S]*showFloatingControls\(\);\n        \};/);
+  assert.match(styles, /project-pivot-sticky-coverage[\s\S]*projection-source-count-toggle[\s\S]*font-size:\s*12px/);
+  assert.match(styles, /project-pivot-sticky-coverage[\s\S]*projection-source-count-toggle[\s\S]*font-weight:\s*700/);
 });
