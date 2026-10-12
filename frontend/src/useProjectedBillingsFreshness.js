@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { mergePrimaryPortfolio } from './primaryProjection.js';
+import {indexPortfolioRebalance} from './portfolioBalance.js';
 import { createLatestRead, freshReadPath, readOptions, watchVisibleReads } from './browserFreshness.js';
 
 // One owner publishes metadata, primary projections and historical-margin reads
@@ -60,6 +61,19 @@ export default function useProjectedBillingsFreshness(options) {
       },
       failed: error => reportError('bids', error),
     });
+    // Independent of recipient notifications. A failure must not prevent
+    // current-project and bid rows from loading, or claim that 0 need review.
+    const portfolioBalance = createLatestRead({
+      read: config => request('/api/pm-forecast/portfolio-balance', config),
+      publish: data => {
+        if (!usable()) return false;
+        indexPortfolioRebalance(data); // validate before publication
+        latest.current.onPortfolioBalance(data);
+        state.failures.delete('portfolioBalance');
+        latest.current.onError([...state.failures.values()].join(' ') || null);
+      },
+      failed: error => reportError('portfolioBalance', error),
+    });
     const attention = createLatestRead({
       read: config => latest.current.fetchJson('/api/pm-forecast/attention', readOptions(config)),
       publish: data => {
@@ -79,7 +93,7 @@ export default function useProjectedBillingsFreshness(options) {
       state.busy += 1;
       setRefreshing(true);
       try {
-        const result = await Promise.all([current.load(config), bids.load(config)]);
+        const result = await Promise.all([current.load(config), bids.load(config), portfolioBalance.load(config)]);
         if (usable() && current.lastSuccessAt !== null && bids.lastSuccessAt !== null) {
           latest.current.onReady();
         }
@@ -95,7 +109,7 @@ export default function useProjectedBillingsFreshness(options) {
       try { return await attention.load(config); }
       finally { if (usable() && !attention.pending) latest.current.onAttentionLoading(false); }
     };
-    return { state, usable, current, bids, attention, batch, attentionLoad };
+    return { state, usable, current, bids, portfolioBalance, attention, batch, attentionLoad };
   }, [scope]);
 
   useEffect(() => {
@@ -111,7 +125,7 @@ export default function useProjectedBillingsFreshness(options) {
     }
     return () => {
       reads.state.alive = false;
-      reads.current.cancel(); reads.bids.cancel(); reads.attention.cancel();
+      reads.current.cancel(); reads.bids.cancel(); reads.portfolioBalance.cancel(); reads.attention.cancel();
     };
   }, [reads]);
 
@@ -129,7 +143,10 @@ export default function useProjectedBillingsFreshness(options) {
     refreshing, lastUpdatedAt,
     refreshAll: () => reads.batch({ replace: true, fresh: true, passive: false }),
     refreshCurrent: () => reads.usable()
-      ? reads.current.load({ replace: true, fresh: true, passive: true }) : Promise.resolve(),
+      ? Promise.all([
+          reads.current.load({ replace: true, fresh: true, passive: true }),
+          reads.portfolioBalance.load({ replace: true, fresh: true, passive: true }),
+        ]) : Promise.resolve(),
     refreshBids: () => reads.usable()
       ? reads.bids.load({ replace: true, fresh: true, passive: true }) : Promise.resolve(),
     refreshAttention: ({ passive = true } = {}) => reads.attentionLoad({ replace: true, passive }),

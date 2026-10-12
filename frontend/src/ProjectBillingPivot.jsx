@@ -270,10 +270,7 @@ function currentProjectPivotRow(
       {
         label: 'Contract',
         value:
-          wholeCurrencyLabel(
-            project.originalContractAmount
-            ?? project.effectiveAmount
-          ) || '—',
+          wholeCurrencyLabel(project.totalContractAmount) || '—',
       },
       {
         label: 'SF',
@@ -518,6 +515,16 @@ function ProjectMeta({
         >
           {row.name}
         </strong>
+
+        {row.source === 'current' && row.raw?.needsRebalance && !isCompleted(row.raw) && (
+          <span
+            className="needs-rebalance-flag pivot-needs-rebalance"
+            data-needs-rebalance
+            title="PM Projection Out of Balance — click to review Billing projections"
+          >
+            Needs Rebalance
+          </span>
+        )}
 
         {row.raw?.projectCompleted && (
           <span className="project-completed-pill">
@@ -1201,6 +1208,7 @@ export default function ProjectBillingPivot({
   showBaseline = false,
   projectionSourceFilter = '__ALL__',
   projectionCoverage = null,
+  portfolioBalanceAvailable = false,
   onProjectionSourceFilterChange = null,
   projectionSourceAllValue = '__ALL__',
 }) {
@@ -1636,6 +1644,30 @@ export default function ProjectBillingPivot({
               >
                 {projectionCoverage.system} Missing*
               </button>
+
+              <span
+                className="projection-source-divider"
+                aria-hidden="true"
+              >
+                ·
+              </span>
+
+              <button
+                type="button"
+                className={`projection-source-count-toggle ${projectionSourceFilter === 'rebalance' ? 'active' : ''} ${projectionCoverage.rebalance ? 'rebalance-count' : ''}`}
+                aria-pressed={projectionSourceFilter === 'rebalance'}
+                title={portfolioBalanceAvailable
+                  ? 'Show PM projections that do not cover the remaining contract'
+                  : 'Portfolio balance statuses are loading or unavailable'}
+                disabled={!portfolioBalanceAvailable}
+                onClick={() => onProjectionSourceFilterChange(
+                  projectionSourceFilter === 'rebalance'
+                    ? projectionSourceAllValue
+                    : 'rebalance'
+                )}
+              >
+                {portfolioBalanceAvailable ? projectionCoverage.rebalance : '—'} Need Rebalance
+              </button>
             </div>
           )}
 
@@ -1926,12 +1958,15 @@ export default function ProjectBillingPivot({
                     key={row.key}
                     className="pivot-project-row clickable-project-row"
                     onClick={
-                      () => {
+                      event => {
                         if (
                           row.source === 'current'
                         ) {
                           onSelectCurrentProject(
-                            row.raw
+                            row.raw,
+                            event.target.closest('[data-needs-rebalance]')
+                              ? 'pm-forecast'
+                              : null,
                           );
                         } else {
                           onSelectBidProject?.(

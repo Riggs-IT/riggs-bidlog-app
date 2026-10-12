@@ -9,7 +9,8 @@ test('overview no longer exposes baseline comparison control', () => {
   assert.doesNotMatch(source, /showOverviewBaseline/);
   assert.doesNotMatch(source, /Compare with System Baseline/);
   assert.match(source, /\{projectionCoverage\.pm\} PM Projection/);
-  assert.match(source, /\{projectionCoverage\.system\} Missing\*/);
+  assert.match(source, /\{projectionCoverage\.system\} No PM Projection/);
+  assert.match(source, /portfolioBalance === null \? '—' : projectionCoverage\.rebalance/);
 });
 
 test('projection balance copy explains the actual current save rule plainly', () => {

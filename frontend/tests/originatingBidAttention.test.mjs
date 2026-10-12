@@ -16,10 +16,10 @@ test('originating-bid attention uses the shared passive freshness machinery with
   assert.doesNotMatch(hook, /localStorage/);
 });
 
-test('notification bell groups originating-bid attention and refreshes after a successful link', () => {
+test('notification bell shows flat project cards and refreshes after a successful link', () => {
   const app = src('App.jsx');
-  assert.match(app, /Originating Bids Need Linking/);
-  assert.match(app, /notification-originating-projects/);
+  assert.match(app, /<NotificationProjectCards/);
+  assert.match(app, /originatingItems=\{originatingBidAttentionItems\}/);
   assert.match(app, /originatingBidAttentionData\.attentionCount/);
   assert.match(app, /originatingBidAttention\.refresh\(\{ passive: false \}\)/);
   assert.match(app, /openOriginatingBidAttentionProject/);
@@ -37,19 +37,21 @@ test('fallback attention drawer reuses the existing manual originating-bid inter
 test('current project drawer can open directly to the originating-bid control from a notification', () => {
   const drawer = src('CurrentProjectBillingDrawer.jsx');
   assert.match(drawer, /initialProjectControl = null/);
-  assert.match(drawer, /setOpenProjectControl\(\s*initialProjectControl/);
+  assert.match(drawer, /initialProjectControl === 'pm-forecast'/);
+  assert.match(drawer, /setOpenProjectControl\(/);
   assert.match(drawer, /data-project-control/);
 });
 
-test('originating-bid notification project list never requires horizontal scrolling', () => {
+test('one vertically scrolling notification list contains both alert families', () => {
+  const app = src('App.jsx');
+  const cards = src('NotificationProjectCards.jsx');
   const styles = src('styles.css');
-
-  assert.match(styles, /\.notification-list\s*\{[\s\S]*?overflow-x:\s*hidden;/);
-  assert.match(styles, /\.notification-originating-projects\s*\{[\s\S]*?width:\s*100%;[\s\S]*?min-width:\s*0;[\s\S]*?overflow-x:\s*hidden;/);
-  assert.match(styles, /\.notification-originating-project\s*\{[\s\S]*?width:\s*100%;[\s\S]*?min-width:\s*0;[\s\S]*?box-sizing:\s*border-box;/);
-  assert.match(styles, /\.notification-originating-project-copy\s*\{[\s\S]*?flex:\s*1\s+1\s+auto;[\s\S]*?overflow:\s*hidden;/);
+  assert.match(app, /<div className="notification-list">/);
+  assert.match(app, /<NotificationProjectCards/);
+  assert.match(styles, /\.notification-list\s*\{[\s\S]*?overflow-x:\s*hidden;[\s\S]*?overflow-y:\s*auto;/);
+  assert.doesNotMatch(cards, /notification-originating-projects/);
+  assert.match(cards, /notification-action-card/);
 });
-
 
 test('notification panel closes on outside pointer or Escape without treating inside clicks as outside', () => {
   const app = src('App.jsx');
@@ -62,13 +64,15 @@ test('notification panel closes on outside pointer or Escape without treating in
 });
 
 
-test('originating-bid notification opens from the entire project row', () => {
+test('both notification types open from the entire clickable card', () => {
   const app = src('App.jsx');
+  const cards = src('NotificationProjectCards.jsx');
   const styles = src('styles.css');
-
-  assert.match(app, /<button[\s\S]*?className="notification-originating-project"[\s\S]*?onClick=\{\(\) =>[\s\S]*?openOriginatingBidAttentionProject\(item\)/);
-  assert.match(app, /className="notification-originating-project-copy"/);
-  assert.match(app, /className="notification-view-project"[\s\S]*?aria-hidden="true"/);
-  assert.match(styles, /\.notification-originating-project\s*\{[\s\S]*?cursor:\s*pointer;/);
-  assert.match(styles, /\.notification-originating-project:hover,[\s\S]*?\.notification-originating-project:focus-visible/);
+  assert.match(app, /onOpenOriginating=\{openOriginatingBidAttentionProject\}/);
+  assert.match(app, /onOpenForecast=\{openAttentionProject\}/);
+  assert.match(cards, /onClick=\{\(\) => onOpenOriginating\(item\)\}/);
+  assert.match(cards, /onClick=\{\(\) => onOpenForecast\(item\)\}/);
+  assert.match(cards, /className="notification-item notification-action-card"/);
+  assert.match(cards, /aria-hidden="true"/);
+  assert.match(styles, /\.notification-action-card:hover,[\s\S]*?\.notification-action-card:focus-visible/);
 });

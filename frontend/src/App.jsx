@@ -2,6 +2,7 @@ import {FilterToggleGroup, RefreshButton} from './ViewControls.jsx';
 import { resolveSessionIdleTimeoutMs } from './sessionPolicy.js';
 import {facetRows, hasMonthlyValues, isCompleted} from './viewFilters.js';
 import {resolveSignedInPmOption} from './pmScope.js';
+import {indexPortfolioRebalance} from './portfolioBalance.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey} from './gcReference.js';
 import { aggregateCurrentMonthly, summarizePortfolioMonths, summarizeMonthlyTotals, nullableAmount, amountDifference, projectionSourceLabel, buildMonthlyProjectionExport } from './primaryProjection.js';
@@ -30,6 +31,7 @@ import ActiveProjectsWorkspace, {
 import BidLogEditDrawer from './BidLogEditDrawer.jsx';
 import ActiveProjectEditDrawer from './ActiveProjectEditDrawer.jsx';
 import CurrentProjectBillingDrawer from './CurrentProjectBillingDrawer.jsx';
+import NotificationProjectCards from './NotificationProjectCards.jsx';
 import ActiveBidBillingDrawer from './ActiveBidBillingDrawer.jsx';
 import OriginatingBidAttentionDrawer from './OriginatingBidAttentionDrawer.jsx';
 import ProjectBillingPivot from './ProjectBillingPivot.jsx';
@@ -478,31 +480,6 @@ function originatingBidAttentionStatus(item) {
   }
 
   return item.pmDisplayName || 'Assigned PM';
-}
-
-
-function originatingBidAttentionMessage(data) {
-  if (data.scope === 'PM') {
-    return `You have ${data.attentionCount} active ${
-      data.attentionCount === 1 ? 'project' : 'projects'
-    } that ${
-      data.attentionCount === 1 ? 'is' : 'are'
-    } not linked to ${
-      data.attentionCount === 1 ? 'its' : 'their'
-    } originating ${
-      data.attentionCount === 1 ? 'bid' : 'bids'
-    }.`;
-  }
-
-  if (data.scope === 'OPERATIONS_REVIEW') {
-    return `${data.attentionCount} originating-bid ${
-      data.attentionCount === 1 ? 'exception needs' : 'exceptions need'
-    } Operations review.`;
-  }
-
-  return `${data.attentionCount} active ${
-    data.attentionCount === 1 ? 'project needs' : 'projects need'
-  } originating-bid review.`;
 }
 
 
@@ -1765,6 +1742,10 @@ export default function App() {
     setForecastAttention,
   ] = useState([]);
 
+  // NULL means no successful portfolio-wide balance read yet. A failed read
+  // must never be displayed as "0 Need Rebalance".
+  const [portfolioBalance, setPortfolioBalance] = useState(null);
+
   const [
     attentionOpen,
     setAttentionOpen,
@@ -2310,6 +2291,7 @@ export default function App() {
     onError: setDataError,
     onInitialLoading: setDataLoading,
     onAttention: setForecastAttention,
+    onPortfolioBalance: setPortfolioBalance,
     onAttentionError: setAttentionError,
     onAttentionLoading: setAttentionLoading,
     onReady: () => {
@@ -2326,6 +2308,7 @@ export default function App() {
       setCurrentMonthly(new Map());
       setBidMonthly(new Map());
       setForecastAttention([]);
+      setPortfolioBalance(null);
       setAttentionError(null);
       setAttentionLoading(false);
       setAttentionOpen(false);
@@ -2360,6 +2343,11 @@ export default function App() {
 
   const originatingBidAttentionItems =
     originatingBidAttentionData.items || [];
+
+  const rebalanceByJobId = useMemo(
+    () => indexPortfolioRebalance(portfolioBalance || []),
+    [portfolioBalance],
+  );
 
   const notificationCount =
     forecastAttention.length
@@ -2488,7 +2476,8 @@ export default function App() {
     );
 
     openCurrentProjectDrawer(
-      target
+      target,
+      'pm-forecast',
     );
 
     setAttentionOpen(
@@ -3523,7 +3512,10 @@ export default function App() {
       ['projectedAmount','actualAmount']))
     .map(row => {
       const m = aggregateCurrentMonthly(currentMonthly.get(row.jobListId), fromMonth, throughMonth);
-      return {...row, selectedActualValueCount:m.actualValueCount, selectedBaseline:m.baseline,
+      return {...row,
+        needsRebalance: rebalanceByJobId.has(String(row.jobListId)),
+        rebalanceVarianceAmount: rebalanceByJobId.get(String(row.jobListId))?.rebalanceVarianceAmount,
+        selectedActualValueCount:m.actualValueCount, selectedBaseline:m.baseline,
         selectedMissingPmMonths:m.missingPmMonths, selectedProjected:m.projected,
         selectedActual:m.actual, selectedVariance:m.variance, selectedMarginCollected:m.marginCollected,
         selectedVarianceProjected:m.varianceProjected, selectedVarianceActual:m.varianceActual,
@@ -3531,7 +3523,7 @@ export default function App() {
         selectedVarianceMissingEditableRows:m.varianceMissingEditableRows,
         selectedVarianceHistoricalUnavailableRows:m.varianceHistoricalUnavailableRows};
     }).filter(row => !isCompleted(row) || Math.abs(Number(row.selectedActual)||0)>0.000001),
-    [rangeValid,currentProjects,currentMonthly,fromMonth,throughMonth]);
+    [rangeValid,currentProjects,currentMonthly,fromMonth,throughMonth,rebalanceByJobId]);
   const bidRangeRows = useMemo(() => !rangeValid ? [] : selectedBidSourceRows
     .filter(row => hasMonthlyValues(bidMonthly.get(row.sharePointItemId),fromMonth,throughMonth,
       ['monthlyForecastAmount','weightedMonthlyForecastAmount']))
@@ -3561,8 +3553,16 @@ export default function App() {
     return facetRows(entries,{...portfolioFilters,gc:canonicalFilterKey(gcFilter,gcDirectory.directory)},{
       pm:{values:e=>[pmKey(e.row.pm)]},type:{values:e=>[normalizeProjectType(e.row.projectType)]},
       purpose:shared('purpose'),forecast:shared('forecastState'),
-      projectionSource:{values:e=>e.kind==='current'?[e.row.hasPmForecast?'pm':'missing']:[],
-        matches:(e,value)=>e.kind!=='current'||(value==='pm'?e.row.hasPmForecast:!e.row.hasPmForecast)},
+      projectionSource:{
+        values:e=>e.kind==='current'
+          ? [e.row.hasPmForecast ? 'pm' : 'missing', ...(e.row.needsRebalance ? ['rebalance'] : [])]
+          : [],
+        matches:(e,value)=>e.kind!=='current'
+          ? value!=='rebalance'
+          : value==='rebalance'
+            ? Boolean(e.row.needsRebalance)
+            : value==='pm' ? e.row.hasPmForecast : !e.row.hasPmForecast,
+      },
       gc:{values:e=>[...gc(e),...(e.kind==='bid' && generalContractorNames(e.row.generalContractors||e.row.gc).length>1?[MULTIPLE_GCS]:[])],
         matches:(e,value)=>generalContractorFilterMatch(e.row.generalContractors||e.row.gc,value,ALL,gcDirectory.directory)},
       pe:only('current','pe'),super:only('current','superintendent'),apm:only('current','apm'),
@@ -3709,6 +3709,7 @@ export default function App() {
     return {
       pm: rows.filter(p => !isCompleted(p) && p.hasPmForecast).length,
       system: rows.filter(p => !isCompleted(p) && !p.hasPmForecast).length,
+      rebalance: rows.filter(p => !isCompleted(p) && p.needsRebalance).length,
       historical: rows.filter(p => isCompleted(p)).length,
       blank: rows.reduce((n, p) => n + (p.selectedMissingPmMonths || 0), 0),
     };
@@ -5045,10 +5046,9 @@ export default function App() {
 
 
             'Project Value':
-              raw.effectiveAmount
-              ?? row.projectValue
-              ?? raw.estimatedPrice
-              ?? '',
+              isBid
+                ? (raw.effectiveAmount ?? row.projectValue ?? raw.estimatedPrice ?? '')
+                : (raw.totalContractAmount ?? ''),
 
 
             'Original Contract Amount':
@@ -5491,165 +5491,21 @@ export default function App() {
 
                 {notificationCount > 0 && (
                   <div className="notification-list">
-                    {originatingBidAttentionData.attentionCount > 0 && (
-                      <article className="notification-item notification-originating-group">
-                        <div className="notification-item-heading">
-                          <div>
-                            <span>
-                              PROJECT SETUP
-                            </span>
-
-                            <strong>
-                              Originating Bids Need Linking
-                            </strong>
-                          </div>
-
-                          <span className="notification-group-count">
-                            {originatingBidAttentionData.attentionCount}
-                          </span>
-                        </div>
-
-                        <p>
-                          {originatingBidAttentionMessage(
-                            originatingBidAttentionData,
-                          )}
-                        </p>
-
-                        {originatingBidAttentionData.graceSuppressedCount > 0 && (
-                          <p className="notification-originating-grace">
-                            {originatingBidAttentionData.graceSuppressedCount}
-                            {' new '}
-                            {originatingBidAttentionData.graceSuppressedCount === 1
-                              ? 'project is'
-                              : 'projects are'}
-                            {` still inside the ${originatingBidAttentionData.graceHours}-hour setup grace period.`}
-                          </p>
-                        )}
-
-                        <div className="notification-originating-projects">
-                          {originatingBidAttentionItems.map(item => (
-                            <button
-                              key={`originating-${item.jobListId}`}
-                              type="button"
-                              className="notification-originating-project"
-                              onClick={() =>
-                                openOriginatingBidAttentionProject(item)
-                              }
-                            >
-                              <span className="notification-originating-project-copy">
-                                <span>
-                                  {item.jobNumber}
-                                </span>
-
-                                <strong>
-                                  {item.jobName || 'Current Project'}
-                                </strong>
-
-                                <small>
-                                  {originatingBidAttentionStatus(item)}
-                                </small>
-                              </span>
-
-                              <span
-                                className="notification-view-project"
-                                aria-hidden="true"
-                              >
-                                {item.reviewRequired
-                                  ? 'Review'
-                                  : 'View Project'}
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                      </article>
-                    )}
-
-                    {forecastAttention.map(
-                      item => (
-                        <article
-                          key={
-                            (
-                              `${item.jobListId}-`
-                              + `${item.forecastVersionId}`
-                            )
-                          }
-                          className="notification-item"
-                        >
-                          <div className="notification-item-heading">
-                            <div>
-                              <span>
-                                {item.jobNumber}
-                              </span>
-
-                              <strong>
-                                {item.jobName
-                                  || 'Current Project'}
-                              </strong>
-                            </div>
-
-                            <span
-                              className={
-                                (
-                                  'notification-variance '
-                                  + (
-                                      Number(
-                                        item.rebalanceVarianceAmount
-                                      ) < 0
-                                        ? 'variance-negative'
-                                        : ''
-                                    )
-                                )
-                              }
-                            >
-                              {
-                                currency(
-                                  item.rebalanceVarianceAmount
-                                )
-                              }
-                            </span>
-                          </div>
-
-                          <p>
-                            {item.attentionSource
-                              === 'ADMIN_CORRECTION'
-                              ? (
-                                  <>
-                                    <strong>
-                                      {
-                                        item.submittedByName
-                                        || 'An administrator'
-                                      }
-                                    </strong>
-                                    {' changed the projection total. Operations needs to bring the PM Projection back to the remaining contract.'}
-                                  </>
-                                )
-                              : (
-                                  'This PM Projection no longer covers the remaining contract and needs to be rebalanced.'
-                                )}
-                          </p>
-
-                          {item.correctionReason && (
-                            <p className="notification-reason">
-                              {
-                                item.correctionReason
-                              }
-                            </p>
-                          )}
-
-                          <button
-                            type="button"
-                            className="text-button notification-view-project"
-                            onClick={
-                              () =>
-                                openAttentionProject(
-                                  item
-                                )
-                            }
-                          >
-                            View Project
-                          </button>
-                        </article>
-                      )
+                    <NotificationProjectCards
+                      forecastItems={forecastAttention}
+                      originatingItems={originatingBidAttentionItems}
+                      onOpenForecast={openAttentionProject}
+                      onOpenOriginating={openOriginatingBidAttentionProject}
+                      originatingStatus={originatingBidAttentionStatus}
+                      currency={currency}
+                    />
+                    {originatingBidAttentionData.graceSuppressedCount > 0 && (
+                      <p className="notification-message notification-grace-note">
+                        {originatingBidAttentionData.graceSuppressedCount}
+                        {' new projects remain inside the '}
+                        {originatingBidAttentionData.graceHours}
+                        {'-hour setup grace period.'}
+                      </p>
                     )}
                   </div>
                 )}
@@ -6089,14 +5945,14 @@ export default function App() {
                     />
 
                     <FilterToggleGroup
-                      label="Difference"
+                      label="Billing vs Projection"
                       value={varianceFilter}
                       onChange={setVarianceFilter}
                       allValue={ALL}
                       options={[
-                        { value: 'over', label: 'Over', available: portfolioFacets.options.variance.includes('over') },
-                        { value: 'under', label: 'Under', available: portfolioFacets.options.variance.includes('under') },
-                        { value: 'even', label: 'Even', available: portfolioFacets.options.variance.includes('even') },
+                        { value: 'over', label: 'Billed More', available: portfolioFacets.options.variance.includes('over') },
+                        { value: 'under', label: 'Billed Less', available: portfolioFacets.options.variance.includes('under') },
+                        { value: 'even', label: 'On Target', available: portfolioFacets.options.variance.includes('even') },
                       ]}
                     />
                   </div>
@@ -6555,14 +6411,14 @@ export default function App() {
                       />
 
                       <FilterToggleGroup
-                        label="Difference"
+                        label="Billing vs Projection"
                         value={varianceFilter}
                         onChange={setVarianceFilter}
                         allValue={ALL}
                         options={[
-                          { value: 'over', label: 'Over', available: portfolioFacets.options.variance.includes('over') },
-                          { value: 'under', label: 'Under', available: portfolioFacets.options.variance.includes('under') },
-                          { value: 'even', label: 'Even', available: portfolioFacets.options.variance.includes('even') },
+                          { value: 'over', label: 'Billed More', available: portfolioFacets.options.variance.includes('over') },
+                          { value: 'under', label: 'Billed Less', available: portfolioFacets.options.variance.includes('under') },
+                          { value: 'even', label: 'On Target', available: portfolioFacets.options.variance.includes('even') },
                         ]}
                       />
                     </div>
@@ -6779,17 +6635,30 @@ export default function App() {
                         title="Show projects with a submitted PM Projection"
                         onClick={() => setProjectionSourceFilter(value => value === 'pm' ? ALL : 'pm')}
                       >
-                        {projectionCoverage.pm} PM Projection
+                        {projectionCoverage.pm} PM Projections
                       </button>
                       <span className="projection-source-divider" aria-hidden="true">·</span>
                       <button
                         type="button"
                         className={`projection-source-count-toggle ${projectionSourceFilter === ALL || projectionSourceFilter === 'missing' ? 'active' : ''}`}
                         aria-pressed={projectionSourceFilter === ALL || projectionSourceFilter === 'missing'}
-                        title="* No submitted PM Projection"
+                        title="No submitted PM Projection"
                         onClick={() => setProjectionSourceFilter(value => value === 'missing' ? ALL : 'missing')}
                       >
-                        {projectionCoverage.system} Missing*
+                        {projectionCoverage.system} No PM Projection
+                      </button>
+                      <span className="projection-source-divider" aria-hidden="true">·</span>
+                      <button
+                        type="button"
+                        className={`projection-source-count-toggle ${projectionSourceFilter === 'rebalance' ? 'active' : ''} ${projectionCoverage.rebalance ? 'rebalance-count' : ''}`}
+                        aria-pressed={projectionSourceFilter === 'rebalance'}
+                        title={portfolioBalance === null
+                          ? 'Portfolio balance statuses are loading or unavailable'
+                          : 'PM projections that do not cover the remaining contract'}
+                        disabled={portfolioBalance === null}
+                        onClick={() => setProjectionSourceFilter(value => value === 'rebalance' ? ALL : 'rebalance')}
+                      >
+                        {portfolioBalance === null ? '—' : projectionCoverage.rebalance} Need Rebalance
                       </button>
                       {projectionCoverage.historical > 0 && (
                         <span>{projectionCoverage.historical} historical billing</span>
@@ -6821,6 +6690,7 @@ export default function App() {
                 includeBids={includeBids}
                 projectionSourceFilter={projectionSourceFilter}
                 projectionCoverage={projectionCoverage}
+                portfolioBalanceAvailable={portfolioBalance !== null}
                 onProjectionSourceFilterChange={setProjectionSourceFilter}
                 projectionSourceAllValue={ALL}
               />
@@ -7886,6 +7756,9 @@ export default function App() {
       <CurrentProjectBillingDrawer
         project={selectedCurrentProject}
         user={user}
+        rebalanceAttention={selectedCurrentProject
+          ? rebalanceByJobId.get(String(selectedCurrentProject.jobListId)) || null
+          : null}
         monthlyRows={
           selectedCurrentProject
             ? (

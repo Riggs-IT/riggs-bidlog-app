@@ -167,6 +167,7 @@ export default function CurrentProjectBillingDrawer({
   onEditProject,
   onAttentionChanged,
   initialProjectControl = null,
+  rebalanceAttention = null,
 }) {
   const [
     originatingBidDetail,
@@ -185,6 +186,22 @@ export default function CurrentProjectBillingDrawer({
 
   const projectControlsRef =
     useRef(null);
+
+  const pmForecastSectionRef = useRef(null);
+  const [highlightPmForecast, setHighlightPmForecast] = useState(false);
+
+  function jumpToBillingProjections() {
+    pmForecastSectionRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+    setHighlightPmForecast(true);
+    // Action permissions remain inside PMForecastPanel. A read-only user can
+    // inspect the balance but won't see Revise or Admin Correction buttons.
+    pmForecastSectionRef.current
+      ?.querySelector('.pm-forecast-heading-actions button:not([disabled])')
+      ?.focus({ preventScroll: true });
+  }
 
   const varianceMonth =
     String(project?.projectionAsOfMonth || '').slice(0, 7);
@@ -211,7 +228,9 @@ export default function CurrentProjectBillingDrawer({
       setOriginatingBidDetail(null);
       setChangeOrderDetail(null);
       setOpenProjectControl(
-        initialProjectControl,
+        initialProjectControl === 'pm-forecast'
+          ? null
+          : initialProjectControl,
       );
     },
     [
@@ -308,6 +327,22 @@ export default function CurrentProjectBillingDrawer({
       openProjectControl,
     ],
   );
+
+  useEffect(() => {
+    if (initialProjectControl !== 'pm-forecast' || !project?.jobListId) {
+      return undefined;
+    }
+
+    // PMForecastPanel is below the project summary; defer until it mounts.
+    const frame = window.requestAnimationFrame(jumpToBillingProjections);
+    return () => window.cancelAnimationFrame(frame);
+  }, [initialProjectControl, project?.jobListId]);
+
+  useEffect(() => {
+    if (!highlightPmForecast) return undefined;
+    const timeout = window.setTimeout(() => setHighlightPmForecast(false), 2500);
+    return () => window.clearTimeout(timeout);
+  }, [highlightPmForecast]);
 
   if (!project) {
     return null;
@@ -442,6 +477,17 @@ export default function CurrentProjectBillingDrawer({
 
             <p className="billing-drawer-job-line">
               <span>Job {text(project.jobNumber)}</span>
+
+              {!projectIsCompleted && rebalanceAttention && (
+                <button
+                  type="button"
+                  className="needs-rebalance-flag needs-rebalance-action"
+                  title="PM Projection Out of Balance — review billing projections"
+                  onClick={jumpToBillingProjections}
+                >
+                  Needs Rebalance
+                </button>
+              )}
 
               {projectIsCompleted && (
                 <>
@@ -1276,14 +1322,17 @@ export default function CurrentProjectBillingDrawer({
 
 
           
-          <PMForecastPanel
-            project={project}
-            monthlyRows={monthlyRows}
-            user={user}
-            onAttentionChanged={
-              onAttentionChanged
-            }
-          />
+          <div
+            ref={pmForecastSectionRef}
+            className={`pm-forecast-jump-target ${highlightPmForecast ? 'pm-forecast-highlight' : ''}`}
+          >
+            <PMForecastPanel
+              project={project}
+              monthlyRows={monthlyRows}
+              user={user}
+              onAttentionChanged={onAttentionChanged}
+            />
+          </div>
 
         </div>
       </aside>

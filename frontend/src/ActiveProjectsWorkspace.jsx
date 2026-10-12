@@ -807,8 +807,8 @@ export default function ActiveProjectsWorkspace({
             bValue = b.projectedCompletionDate;
             break;
           case 'contract':
-            aValue = a.originalContractAmount;
-            bValue = b.originalContractAmount;
+            aValue = a.totalContractAmount;
+            bValue = b.totalContractAmount;
             break;
           case 'squareFootage':
             aValue = a.squareFootage;
@@ -1397,7 +1397,7 @@ export default function ActiveProjectsWorkspace({
                   </td>
 
                   <td className="numeric active-project-contract-cell">
-                    <MoneyValue value={project.originalContractAmount} />
+                    <MoneyValue value={project.totalContractAmount} />
                   </td>
 
                   <td className="numeric active-project-quantity-cell">

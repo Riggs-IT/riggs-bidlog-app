@@ -21,11 +21,13 @@ test('system estimates use a project-name marker instead of source badges or val
 test('projection coverage counts are low-key source filters with all as the shared state', () => {
   const app = read('App.jsx');
   assert.match(app, /projectionSourceFilter/);
-  assert.match(app, /projectionSource:\{values:e=>e\.kind==='current'\?\[e\.row\.hasPmForecast\?'pm':'missing'\]:\[\]/);
+  assert.match(app, /projectionSource:\{/);
+  assert.match(app, /e\.row\.needsRebalance/);
   assert.match(app, /matches:\(e,value\)=>e\.kind!=='current'/);
   assert.match(app, /projection-source-count-toggle/);
   assert.match(app, /\{projectionCoverage\.pm\} PM Projection/);
-  assert.match(app, /\{projectionCoverage\.system\} Missing\*/);
+  assert.match(app, /\{projectionCoverage\.system\} No PM Projection/);
+  assert.match(app, /portfolioBalance === null \? '—' : projectionCoverage\.rebalance/);
   assert.match(app, /projectionSourceFilter === ALL \|\| projectionSourceFilter === 'pm'/);
   assert.match(app, /projectionSourceFilter === ALL \|\| projectionSourceFilter === 'missing'/);
   assert.match(app, /setProjectionSourceFilter\(value => value === 'pm' \? ALL : 'pm'\)/);
@@ -36,7 +38,7 @@ test('projection coverage counts are low-key source filters with all as the shar
 test('projection balance copy uses remaining-contract language instead of baseline matching', () => {
   const app = read('App.jsx');
   const panel = read('PMForecastPanel.jsx');
-  assert.match(app, /Missing\*/);
+  assert.match(app, /No PM Projection/);
   assert.match(panel, /Projection must cover remaining contract/);
   assert.match(panel, /remaining contract after locked Foundation billings/);
   assert.doesNotMatch(panel, /PM Projection total must equal the editable system estimate total/);

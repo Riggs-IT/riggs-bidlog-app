@@ -2338,6 +2338,16 @@ def update_current_project_pm_forecast_policy(
     return result
 
 
+def get_pm_forecast_portfolio_balance() -> list[dict]:
+    """Read all active-project coverage mismatches, independent of recipients."""
+    operation = "PM Forecast portfolio balance"
+    response = _get_service_response(
+        "/v1/bid-log/pm-forecast/portfolio-balance",
+        operation=operation,
+    )
+    return _json_object_list(response, operation=operation)
+
+
 def get_pm_forecast_attention(
     actor_eid: int,
 ) -> list[dict]:

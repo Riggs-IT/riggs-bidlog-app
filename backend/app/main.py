@@ -91,6 +91,7 @@ from .data_api import (
     get_current_project_pm_forecast_policy,
     update_current_project_pm_forecast_policy,
     get_pm_forecast_attention,
+    get_pm_forecast_portfolio_balance,
     get_current_project_pm_forecast,
     get_current_project_pm_forecast_history,
     get_current_project_pm_forecast_version,
@@ -2828,6 +2829,20 @@ def originating_bid_attention(
         _raise_pm_forecast_proxy_error(
             exc
         )
+
+
+@app.get(
+    "/api/pm-forecast/portfolio-balance"
+)
+def pm_forecast_portfolio_balance(
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    # Authenticated Projected Billings access, no user-EID filter on results.
+    _require_projected_workspace_access(current_user)
+    try:
+        return get_pm_forecast_portfolio_balance()
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(exc)
 
 
 @app.get(

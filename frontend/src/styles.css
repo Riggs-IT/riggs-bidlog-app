@@ -10183,127 +10183,6 @@ tbody td {
   margin-top: 9px;
 }
 
-.notification-originating-group {
-  background: var(--surface-2);
-}
-
-.notification-group-count {
-  display: inline-grid;
-  place-items: center;
-
-  min-width: 26px;
-  height: 24px;
-  padding: 0 7px;
-
-  border: 1px solid color-mix(in srgb, var(--accent) 48%, var(--border));
-  border-radius: 999px;
-
-  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
-  color: var(--text);
-
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.notification-originating-grace {
-  color: var(--muted);
-  font-size: 9px !important;
-}
-
-.notification-originating-projects {
-  display: grid;
-  gap: 0;
-
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  max-height: 260px;
-  margin-top: 10px;
-
-  overflow-x: hidden;
-  overflow-y: auto;
-
-  border: 1px solid var(--border);
-  border-radius: 7px;
-
-  background: var(--surface);
-}
-
-.notification-originating-project {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  padding: 9px 10px;
-  box-sizing: border-box;
-
-  border: 0;
-  border-bottom: 1px solid var(--border);
-
-  background: transparent;
-  color: inherit;
-
-  font: inherit;
-  text-align: left;
-
-  cursor: pointer;
-}
-
-.notification-originating-project:hover,
-.notification-originating-project:focus-visible {
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
-}
-
-.notification-originating-project:last-child {
-  border-bottom: 0;
-}
-
-.notification-originating-project-copy {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.notification-originating-project span,
-.notification-originating-project strong,
-.notification-originating-project small {
-  display: block;
-}
-
-.notification-originating-project span {
-  color: var(--muted);
-  font-size: 9px;
-  font-weight: 600;
-}
-
-.notification-originating-project strong {
-  overflow: hidden;
-  margin-top: 1px;
-
-  font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.notification-originating-project small {
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 9px;
-}
-
-.notification-originating-project .notification-view-project {
-  flex: 0 0 auto;
-  margin-top: 0;
-
-  color: var(--accent);
-  font-size: 11px;
-  font-weight: 600;
-}
-
 .originating-bid-attention-drawer {
   width: min(720px, calc(100vw - 28px));
 }
@@ -13446,6 +13325,10 @@ td.pivot-project-column {
   flex: 0 0 auto;
 
   margin-right: auto;
+
+  /* The third source filter must remain a selectable single-line control. */
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 
@@ -14153,3 +14036,101 @@ tbody > tr:nth-child(
     var(--accent) 8%
   );
 }
+
+/* Bid Log contract-coverage attention: one visible warning and one action. */
+.needs-rebalance-flag {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 3px 7px;
+  border: 1px solid color-mix(in srgb, var(--warning) 50%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+  color: var(--warning);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.needs-rebalance-action {
+  cursor: pointer;
+  font-family: inherit;
+}
+.needs-rebalance-action:hover,
+.needs-rebalance-action:focus-visible {
+  background: color-mix(in srgb, var(--warning) 20%, var(--surface));
+}
+.pivot-needs-rebalance { font-size: 9px; }
+.projection-source-count-toggle.rebalance-count:not(.active) {
+  color: var(--warning);
+}
+.pm-forecast-jump-target { scroll-margin-top: 20px; }
+.pm-forecast-jump-target.pm-forecast-highlight > .pm-forecast-section {
+  outline: 2px solid var(--warning);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+/* Both alert families have the same full-card interaction and one scroll owner. */
+.notification-action-card {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 12px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.notification-action-card:last-child { border-bottom: 0; }
+.notification-action-card:hover,
+.notification-action-card:focus-visible {
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+}
+.notification-card-heading-copy {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+.notification-card-heading-copy > span {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+.notification-card-heading-copy > strong {
+  display: block;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.notification-card-description,
+.notification-card-context,
+.notification-card-reason {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+.notification-card-context { margin-top: 4px; }
+.notification-card-reason { color: var(--text); }
+.notification-card-action {
+  display: block;
+  margin-top: 9px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: right;
+}
+.notification-grace-note { margin: 0; }
