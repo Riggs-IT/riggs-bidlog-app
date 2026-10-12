@@ -2209,9 +2209,9 @@ export default function BidLogWorkspace({
               <span>SHOWING</span>
               <strong>{visibleItems.length}</strong>
               <small>
-                {filteredItems.length === scopedItems.length
-                  ? `of ${scopedItems.length}`
-                  : `of ${filteredItems.length} matching · ${scopedItems.length} total`}
+                {filteredItems.length === countItems.length
+                  ? `of ${countItems.length}`
+                  : `of ${filteredItems.length} matching · ${countItems.length} total`}
               </small>
             </div>
           </div>
