@@ -14153,12 +14153,3 @@ tbody > tr:nth-child(
     var(--accent) 8%
   );
 }
-
-/* PM's default overview scope: small companion to the source selectors. */
-.projected-pm-scope-toggle {
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
-.projected-pm-scope-toggle button {
-  min-height: 32px;
-}

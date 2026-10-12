@@ -806,6 +806,21 @@ def delete_bid_log_delegated_session(
     )
 
 
+def get_bid_log_pm_badges() -> dict:
+    """Small badge-only lookup; available without Projected Billings access."""
+    operation = "Bid Log PM badge directory"
+    response = _get_service_response(
+        "/v1/bid-log/reference/pm-badges", operation=operation,
+    )
+    payload = _json_object(response, operation=operation)
+    if not isinstance(payload.get("items"), list):
+        raise DataAPIInvalidResponse("Invalid PM badge directory response")
+    for item in payload["items"]:
+        if not isinstance(item, dict) or not isinstance(item.get("pm"), str):
+            raise DataAPIInvalidResponse("Invalid PM badge identity")
+    return payload
+
+
 def get_bid_log_general_contractors() -> dict:
     operation = "Bid Log general contractor reference"
 

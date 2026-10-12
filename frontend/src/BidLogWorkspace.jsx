@@ -1,7 +1,7 @@
 import {facetRows} from './viewFilters.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey} from './gcReference.js';
-import {canStartWithMyJobs, matchesSignedInPm} from './pmScope.js';
+import {resolveSignedInPmOption} from './pmScope.js';
 import {RefreshButton} from './ViewControls.jsx';
 import useGcReference, { canReadGcReference } from './useGcReference.js';
 import {
@@ -149,7 +149,8 @@ function initialsFromName(name) {
 function pmDirectoryKey(value) {
   return String(value || '')
     .trim()
-    .toLowerCase();
+    .replace(/\s+/g, ' ')
+    .toLocaleLowerCase('en-US');
 }
 
 
@@ -815,6 +816,33 @@ export default function BidLogWorkspace({
   onBidDataChanged,
 }) {
   const gcDirectory = useGcReference(canReadGcReference(user));
+  const [pmBadgeDirectory, setPmBadgeDirectory] = useState([]);
+
+  useEffect(() => {
+    if (!user?.eid) {
+      setPmBadgeDirectory([]);
+      return undefined;
+    }
+    const controller = new AbortController();
+    const load = async () => {
+      try {
+        const response = await window.fetch('/api/bid-log/reference/pm-badges', {
+          credentials: 'same-origin', cache: 'no-store', signal: controller.signal,
+        });
+        if (!response.ok) throw new Error(`PM badge read failed: ${response.status}`);
+        const payload = await response.json();
+        if (!Array.isArray(payload?.items)) throw new Error('Invalid PM badge directory');
+        if (!controller.signal.aborted) setPmBadgeDirectory(payload.items);
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          // Badges are supplemental. Do not turn a failed lookup into an empty bid list.
+          console.warn('Bid Log PM badge directory unavailable', error);
+        }
+      }
+    };
+    void load();
+    return () => controller.abort();
+  }, [user?.eid]);
   const [
     bidView,
     setBidView,
@@ -870,7 +898,7 @@ export default function BidLogWorkspace({
     setPmFilter,
   ] = useState(ALL);
 
-  const [onlyMyBids, setOnlyMyBids] = useState(() => canStartWithMyJobs(user));
+  const pmFilterDefaultedViewsRef = useRef(new Set());
 
   const [
     typeFilter,
@@ -987,7 +1015,7 @@ export default function BidLogWorkspace({
     () => {
       const map = new Map();
 
-      for (const row of pmDirectory) {
+      for (const row of [...pmDirectory, ...pmBadgeDirectory]) {
         const name = String(row?.pm || '').trim();
         const key = pmDirectoryKey(name);
 
@@ -1002,14 +1030,15 @@ export default function BidLogWorkspace({
           {
             name,
             initials: row?.pmInitials || current.initials || initialsFromName(name),
-            hexColor: row?.pmHexColor || current.hexColor || null,
+            hexColor: /^#[0-9a-f]{6}$/i.test(String(row?.pmHexColor || '').trim())
+              ? row.pmHexColor : current.hexColor || null,
           },
         );
       }
 
       return map;
     },
-    [pmDirectory],
+    [pmDirectory, pmBadgeDirectory],
   );
 
 
@@ -1152,14 +1181,11 @@ export default function BidLogWorkspace({
   );
 
 
-  const scopedItems = useMemo(() => onlyMyBids
-    ? items.filter(row => matchesSignedInPm(row?.pm, user?.displayName))
-    : items, [items, onlyMyBids, user?.displayName]);
 
   const filters={pm:pmFilter,type:typeFilter,gc:gcFilter,due:dueFilter};
   const facets=useMemo(()=>{
     const probability=String(minimumProbability).trim()===''?null:Number(minimumProbability)/100;
-    const entries=scopedItems.filter(row=>{
+    const entries=items.filter(row=>{
       if(quickFilter==='due30'&&!isDueWithin(row,30))return false;
       if(quickFilter==='unassigned'&&!isUnassigned(row))return false;
       if(quickFilter==='snoozed'&&row.snoozed!==true)return false;
@@ -1176,12 +1202,23 @@ export default function BidLogWorkspace({
         matches:(r,v)=>generalContractorFilterMatch(r.generalContractors,v,ALL,gcDirectory.directory)},
       due:{values:r=>[...(isDueWithin(r,7)?['7']:[]),...(isDueWithin(r,30)?['30']:[]),...(activeView&&isOverdue(r)?['overdue']:[])]}
     });
-  },[scopedItems,search,quickFilter,realBidsOnly,minimumProbability,activeView,gcDirectory.directory,JSON.stringify(filters)]);
+  },[items,search,quickFilter,realBidsOnly,minimumProbability,activeView,gcDirectory.directory,JSON.stringify(filters)]);
   useFacetSelectionCleanup(filters,facets.selections,{pm:setPmFilter,type:setTypeFilter,gc:setGcFilter,due:setDueFilter},!loading);
   const gcOptions=contractorFilterOptions(facets.contexts.gc.map(r=>r.generalContractors),gcDirectory.directory);
   const hasMultipleGCs=facets.options.gc.includes(MULTIPLE_GCS);
   const pmOptions=facets.options.pm;
   const allPmOptions=useMemo(()=>sortedUnique(items,row=>row.pm),[items]);
+
+  useEffect(() => {
+    if (!user?.eid || loading || payloadViewKey !== bidView) return;
+    const viewKey = `${user.eid}:${bidView}`;
+    if (pmFilterDefaultedViewsRef.current.has(viewKey)) return;
+    const selectedPm = resolveSignedInPmOption(user, allPmOptions);
+    if (!selectedPm) return;
+    pmFilterDefaultedViewsRef.current.add(viewKey);
+    setPmFilter(selectedPm);
+  }, [user?.eid, user?.displayName, user?.workspaceProfile,
+    loading, payloadViewKey, bidView, allPmOptions]);
 
   const historicalPmOptions = useMemo(
     () => {
@@ -1357,25 +1394,28 @@ export default function BidLogWorkspace({
   );
 
 
+  const countItems = useMemo(() => items.filter(row =>
+    pmFilter === ALL || String(row?.pm || '').trim() === pmFilter
+  ), [items, pmFilter]);
   const counts = useMemo(
     () => ({
-      active: scopedItems.length,
-      due30: scopedItems.filter(
+      active: countItems.length,
+      due30: countItems.filter(
         row => isDueWithin(row, 30),
       ).length,
-      unassigned: scopedItems.filter(
+      unassigned: countItems.filter(
         isUnassigned,
       ).length,
-      snoozed: scopedItems.filter(
+      snoozed: countItems.filter(
         row => row.snoozed === true,
       ).length,
-      missingEstimate: scopedItems.filter(
+      missingEstimate: countItems.filter(
         row =>
           row.estimatedPrice === null
           || row.estimatedPrice === undefined,
       ).length,
     }),
-    [scopedItems],
+    [countItems],
   );
 
 
@@ -2226,7 +2266,7 @@ export default function BidLogWorkspace({
           icon="active"
           label="Total Active Bids"
           value={counts.active}
-          note="All current Bid Log items"
+          note={pmFilter === ALL ? 'All current Bid Log items' : 'For selected PM'}
           onClick={() => toggleQuickFilter('active')}
         />
 
@@ -2287,22 +2327,6 @@ export default function BidLogWorkspace({
             <div className="bid-log-outcome-source-label">
               <span className="bid-log-real-bids-dot" aria-hidden="true" />
               {currentView.label} history
-            </div>
-          )}
-
-          {canStartWithMyJobs(user) && (
-            <div className="comparison-view-toggle bid-log-pm-scope-toggle"
-              role="group" aria-label="Bid Log project manager scope">
-              <button type="button" className={onlyMyBids ? 'active' : undefined}
-                aria-pressed={onlyMyBids}
-                onClick={() => { setPmFilter(ALL); setOnlyMyBids(true); }}>
-                My Bids
-              </button>
-              <button type="button" className={!onlyMyBids ? 'active' : undefined}
-                aria-pressed={!onlyMyBids}
-                onClick={() => { setPmFilter(ALL); setOnlyMyBids(false); }}>
-                All Bids
-              </button>
             </div>
           )}
 

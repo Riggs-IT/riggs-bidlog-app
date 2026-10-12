@@ -214,6 +214,7 @@ export default function useStickyTableHeader(
 
       let floatingControlsPointerInside =
         false;
+      let floatingHeaderPointerInside = false;
 
       const clearControlsIdleTimer =
         () => {
@@ -237,6 +238,7 @@ export default function useStickyTableHeader(
           if (
             horizontalControlActive
             || floatingControlsPointerInside
+            || floatingHeaderPointerInside
           ) {
             return;
           }
@@ -270,6 +272,7 @@ export default function useStickyTableHeader(
           if (
             !horizontalControlActive
             && !floatingControlsPointerInside
+            && !floatingHeaderPointerInside
           ) {
             scheduleFloatingControlsHide();
           }
@@ -637,6 +640,7 @@ export default function useStickyTableHeader(
 
             horizontalControlActive =
               false;
+            floatingHeaderPointerInside = false;
 
             clearControlsIdleTimer();
 
@@ -695,6 +699,17 @@ export default function useStickyTableHeader(
           scheduleUpdate();
         };
 
+
+      const handleFloatingHeaderPointerEnter = () => {
+        floatingHeaderPointerInside = true;
+        clearControlsIdleTimer();
+        showFloatingControls();
+      };
+
+      const handleFloatingHeaderPointerLeave = () => {
+        floatingHeaderPointerInside = false;
+        scheduleFloatingControlsHide();
+      };
 
       const handleFloatingControlsPointerEnter =
         () => {
@@ -884,6 +899,17 @@ export default function useStickyTableHeader(
         handleHorizontalControlInput,
       );
 
+      floatingTableViewport.addEventListener(
+        'pointerenter',
+        handleFloatingHeaderPointerEnter,
+        {passive: true},
+      );
+      floatingTableViewport.addEventListener(
+        'pointerleave',
+        handleFloatingHeaderPointerLeave,
+        {passive: true},
+      );
+
       floatingControls?.addEventListener(
         'pointerenter',
         handleFloatingControlsPointerEnter,
@@ -976,6 +1002,15 @@ export default function useStickyTableHeader(
         floatingControls?.removeEventListener(
           'input',
           handleHorizontalControlInput,
+        );
+
+        floatingTableViewport.removeEventListener(
+          'pointerenter',
+          handleFloatingHeaderPointerEnter,
+        );
+        floatingTableViewport.removeEventListener(
+          'pointerleave',
+          handleFloatingHeaderPointerLeave,
         );
 
         floatingControls?.removeEventListener(

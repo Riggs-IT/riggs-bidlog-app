@@ -1,7 +1,7 @@
 import {FilterToggleGroup, RefreshButton} from './ViewControls.jsx';
 import { resolveSessionIdleTimeoutMs } from './sessionPolicy.js';
 import {facetRows, hasMonthlyValues, isCompleted} from './viewFilters.js';
-import {canStartWithMyJobs, matchesSignedInPm} from './pmScope.js';
+import {resolveSignedInPmOption} from './pmScope.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey} from './gcReference.js';
 import { aggregateCurrentMonthly, summarizePortfolioMonths, summarizeMonthlyTotals, nullableAmount, amountDifference, projectionSourceLabel, buildMonthlyProjectionExport } from './primaryProjection.js';
@@ -1938,9 +1938,8 @@ export default function App() {
     setPmFilter,
   ] = useState(ALL);
 
-  // Personal scope is a display filter, not a substitute for server access.
-  const [onlyMyJobs, setOnlyMyJobs] = useState(null);
-  const personalScopeInitializedForRef = useRef(null);
+  // Default the existing PM dropdown once per authenticated PM, after options load.
+  const pmFilterDefaultRef = useRef(null);
 
   const [
     projectTypeFilter,
@@ -2266,16 +2265,6 @@ export default function App() {
   const capabilities =
     user?.capabilities
     || {};
-
-  useEffect(() => {
-    if (!user?.eid) return;
-    const identityKey = `${user.eid}:${workspaceProfile}`;
-    if (personalScopeInitializedForRef.current === identityKey) return;
-    personalScopeInitializedForRef.current = identityKey;
-    setOnlyMyJobs(canStartWithMyJobs(user));
-  }, [user?.eid, user?.displayName, workspaceProfile]);
-
-  const restrictPortfolioToMine = workspaceProfile === 'PM' && (onlyMyJobs ?? true);
 
 
   const canViewProjectedBillings =
@@ -3541,19 +3530,17 @@ export default function App() {
         selectedVarianceComparableRows:m.varianceComparableRows,
         selectedVarianceMissingEditableRows:m.varianceMissingEditableRows,
         selectedVarianceHistoricalUnavailableRows:m.varianceHistoricalUnavailableRows};
-    }).filter(row => !isCompleted(row) || Math.abs(Number(row.selectedActual)||0)>0.000001)
-    .filter(row => !restrictPortfolioToMine || matchesSignedInPm(row.pm, user?.displayName)),
-    [rangeValid,currentProjects,currentMonthly,fromMonth,throughMonth,restrictPortfolioToMine,user?.displayName]);
+    }).filter(row => !isCompleted(row) || Math.abs(Number(row.selectedActual)||0)>0.000001),
+    [rangeValid,currentProjects,currentMonthly,fromMonth,throughMonth]);
   const bidRangeRows = useMemo(() => !rangeValid ? [] : selectedBidSourceRows
     .filter(row => hasMonthlyValues(bidMonthly.get(row.sharePointItemId),fromMonth,throughMonth,
       ['monthlyForecastAmount','weightedMonthlyForecastAmount']))
     .map(row => {const m=aggregateBidMonthly(bidMonthly.get(row.sharePointItemId),fromMonth,throughMonth);
-      return {...row,selectedBidForecast:m.forecast,selectedWeightedForecast:m.weighted};})
-    .filter(row => !restrictPortfolioToMine || matchesSignedInPm(row.pm, user?.displayName)),
-    [rangeValid,selectedBidSourceRows,bidMonthly,fromMonth,throughMonth,restrictPortfolioToMine,user?.displayName]);
+      return {...row,selectedBidForecast:m.forecast,selectedWeightedForecast:m.weighted};}),
+    [rangeValid,selectedBidSourceRows,bidMonthly,fromMonth,throughMonth]);
 
   const scopedPotentialBidCount = activeBids.filter(row =>
-    (!restrictPortfolioToMine || matchesSignedInPm(row.pm, user?.displayName))
+    (pmFilter === ALL || pmKey(row.pm) === pmFilter)
     && isPotentialBid(row)
     && hasMonthlyValues(bidMonthly.get(row.sharePointItemId), fromMonth, throughMonth,
       ['weightedMonthlyForecastAmount', 'monthlyForecastAmount'])
@@ -3590,6 +3577,17 @@ export default function App() {
   const currentDetails=useMemo(()=>portfolioFacets.rows.filter(e=>e.kind==='current').map(e=>e.row),[portfolioFacets]);
   const bidDetails=useMemo(()=>portfolioFacets.rows.filter(e=>e.kind==='bid').map(e=>e.row),[portfolioFacets]);
   const pmOptions=portfolioFacets.options.pm;
+
+  useEffect(() => {
+    if (!user?.eid || !canViewProjectedBillings || dataLoading || !rangeValid) return;
+    const identity = String(user.eid);
+    if (pmFilterDefaultRef.current === identity) return;
+    const initialPm = resolveSignedInPmOption(user, pmOptions);
+    if (!initialPm) return; // Wait for the user's actual PM option; never guess.
+    pmFilterDefaultRef.current = identity;
+    setPmFilter(initialPm);
+  }, [user?.eid, user?.displayName, user?.workspaceProfile,
+    canViewProjectedBillings, dataLoading, rangeValid, pmOptions]);
   const projectTypeOptions=portfolioFacets.options.type;
   const purposeOptions=portfolioFacets.options.purpose;
   const peOptions=portfolioFacets.options.pe;
@@ -5696,21 +5694,6 @@ export default function App() {
           </h1>
 
           <div className="projected-heading-controls">
-            {workspaceProfile === 'PM' && (
-              <div className="comparison-view-toggle projected-pm-scope-toggle"
-                role="group" aria-label="Project manager job scope">
-                <button type="button" className={restrictPortfolioToMine ? 'active' : undefined}
-                  aria-pressed={restrictPortfolioToMine}
-                  onClick={() => { setPmFilter(ALL); setOnlyMyJobs(true); }}>
-                  My Jobs
-                </button>
-                <button type="button" className={!restrictPortfolioToMine ? 'active' : undefined}
-                  aria-pressed={!restrictPortfolioToMine}
-                  onClick={() => { setPmFilter(ALL); setOnlyMyJobs(false); }}>
-                  All Jobs
-                </button>
-              </div>
-            )}
             <div
               className="source-toggles projected-heading-source-toggles"
               aria-label="Projected billing sources"

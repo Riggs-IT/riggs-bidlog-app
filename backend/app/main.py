@@ -63,6 +63,7 @@ from .data_api import (
     update_active_project_resource_schedule,
     cancel_active_project_resource_schedule,
     get_bid_log_general_contractors,
+    get_bid_log_pm_badges,
     create_bid_log_delegated_session,
     delete_bid_log_delegated_session,
     save_active_bid_projected_billing_settings,
@@ -2186,6 +2187,20 @@ def bid_log_general_contractors_proxy(
     try:
         return get_bid_log_general_contractors()
 
+    except Exception as exc:
+        _raise_active_bid_proxy_error(exc)
+
+
+@app.get("/api/bid-log/reference/pm-badges")
+def bid_log_pm_badges_proxy(
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    _require_bid_log_workspace_access(current_user)
+    try:
+        return JSONResponse(
+            get_bid_log_pm_badges(),
+            headers={"Cache-Control": "no-store"},
+        )
     except Exception as exc:
         _raise_active_bid_proxy_error(exc)
 
