@@ -1,6 +1,7 @@
 import {facetRows} from './viewFilters.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey} from './gcReference.js';
+import {canStartWithMyJobs, matchesSignedInPm} from './pmScope.js';
 import {RefreshButton} from './ViewControls.jsx';
 import useGcReference, { canReadGcReference } from './useGcReference.js';
 import {
@@ -22,6 +23,7 @@ import {
 import BidLogEditDrawer from './BidLogEditDrawer.jsx';
 import BidLogOutcomeEditDrawer from './BidLogOutcomeEditDrawer.jsx';
 import BidLogCreateDrawer from './BidLogCreateDrawer.jsx';
+import BidLogMergeDialog from './BidLogMergeDialog.jsx';
 import ActionToast from './ActionToast.jsx';
 
 
@@ -868,6 +870,8 @@ export default function BidLogWorkspace({
     setPmFilter,
   ] = useState(ALL);
 
+  const [onlyMyBids, setOnlyMyBids] = useState(() => canStartWithMyJobs(user));
+
   const [
     typeFilter,
     setTypeFilter,
@@ -940,12 +944,13 @@ export default function BidLogWorkspace({
     setCreateBidOpen,
   ] = useState(false);
 
+  const [mergeTargetBid, setMergeTargetBid] = useState(null);
+
   const [
     actionToast,
     setActionToast,
   ] = useState(null);
 
-  const startupPmFilterAppliedRef = useRef(false);
   const overdueNoticeShownRef = useRef(false);
 
 
@@ -1147,10 +1152,14 @@ export default function BidLogWorkspace({
   );
 
 
+  const scopedItems = useMemo(() => onlyMyBids
+    ? items.filter(row => matchesSignedInPm(row?.pm, user?.displayName))
+    : items, [items, onlyMyBids, user?.displayName]);
+
   const filters={pm:pmFilter,type:typeFilter,gc:gcFilter,due:dueFilter};
   const facets=useMemo(()=>{
     const probability=String(minimumProbability).trim()===''?null:Number(minimumProbability)/100;
-    const entries=items.filter(row=>{
+    const entries=scopedItems.filter(row=>{
       if(quickFilter==='due30'&&!isDueWithin(row,30))return false;
       if(quickFilter==='unassigned'&&!isUnassigned(row))return false;
       if(quickFilter==='snoozed'&&row.snoozed!==true)return false;
@@ -1167,7 +1176,7 @@ export default function BidLogWorkspace({
         matches:(r,v)=>generalContractorFilterMatch(r.generalContractors,v,ALL,gcDirectory.directory)},
       due:{values:r=>[...(isDueWithin(r,7)?['7']:[]),...(isDueWithin(r,30)?['30']:[]),...(activeView&&isOverdue(r)?['overdue']:[])]}
     });
-  },[items,search,quickFilter,realBidsOnly,minimumProbability,activeView,gcDirectory.directory,JSON.stringify(filters)]);
+  },[scopedItems,search,quickFilter,realBidsOnly,minimumProbability,activeView,gcDirectory.directory,JSON.stringify(filters)]);
   useFacetSelectionCleanup(filters,facets.selections,{pm:setPmFilter,type:setTypeFilter,gc:setGcFilter,due:setDueFilter},!loading);
   const gcOptions=contractorFilterOptions(facets.contexts.gc.map(r=>r.generalContractors),gcDirectory.directory);
   const hasMultipleGCs=facets.options.gc.includes(MULTIPLE_GCS);
@@ -1310,24 +1319,6 @@ export default function BidLogWorkspace({
       if (
         !activeView
         || loading
-        || startupPmFilterAppliedRef.current
-        || !currentUserPm
-      ) {
-        return;
-      }
-
-      startupPmFilterAppliedRef.current = true;
-      setPmFilter(currentUserPm);
-    },
-    [activeView, currentUserPm, loading],
-  );
-
-
-  useEffect(
-    () => {
-      if (
-        !activeView
-        || loading
         || overdueNoticeShownRef.current
         || !currentUserPm
         || !currentUserOverdueBids.length
@@ -1368,23 +1359,23 @@ export default function BidLogWorkspace({
 
   const counts = useMemo(
     () => ({
-      active: items.length,
-      due30: items.filter(
+      active: scopedItems.length,
+      due30: scopedItems.filter(
         row => isDueWithin(row, 30),
       ).length,
-      unassigned: items.filter(
+      unassigned: scopedItems.filter(
         isUnassigned,
       ).length,
-      snoozed: items.filter(
+      snoozed: scopedItems.filter(
         row => row.snoozed === true,
       ).length,
-      missingEstimate: items.filter(
+      missingEstimate: scopedItems.filter(
         row =>
           row.estimatedPrice === null
           || row.estimatedPrice === undefined,
       ).length,
     }),
-    [items],
+    [scopedItems],
   );
 
 
@@ -2061,6 +2052,23 @@ export default function BidLogWorkspace({
   }
 
 
+  function handleBidsMerged(result) {
+    const mergedIds = new Set(result.mergedSourceItemIds.map(Number));
+    setPayload(current => {
+      const oldItems = Array.isArray(current?.items) ? current.items : [];
+      const nextItems = oldItems.filter(row => !mergedIds.has(Number(row.sharePointItemId)));
+      return { ...current, items: nextItems, total: Math.max(0, Number(current?.total ?? oldItems.length) - (oldItems.length - nextItems.length)) };
+    });
+    invalidateBidLogWorkspaceCache();
+    setMergeTargetBid(null);
+    setNotesBidId(null);
+    setEditSelection(null);
+    showActionToast('success', `${result.sourceCount} bid${result.sourceCount === 1 ? '' : 's'} marked Merged. Power Automate will delete the source bids and calendar events.`);
+    window.setTimeout(() => { void refreshBidViewAfterMutation('active'); }, 1500);
+    onBidDataChanged?.();
+  }
+
+
   async function toggleBidNotes(row) {
     const identity = rowIdentity(row);
     const cacheKey = noteCacheKey(row);
@@ -2161,9 +2169,9 @@ export default function BidLogWorkspace({
               <span>SHOWING</span>
               <strong>{visibleItems.length}</strong>
               <small>
-                {filteredItems.length === items.length
-                  ? `of ${items.length}`
-                  : `of ${filteredItems.length} matching · ${items.length} total`}
+                {filteredItems.length === scopedItems.length
+                  ? `of ${scopedItems.length}`
+                  : `of ${filteredItems.length} matching · ${scopedItems.length} total`}
               </small>
             </div>
           </div>
@@ -2279,6 +2287,22 @@ export default function BidLogWorkspace({
             <div className="bid-log-outcome-source-label">
               <span className="bid-log-real-bids-dot" aria-hidden="true" />
               {currentView.label} history
+            </div>
+          )}
+
+          {canStartWithMyJobs(user) && (
+            <div className="comparison-view-toggle bid-log-pm-scope-toggle"
+              role="group" aria-label="Bid Log project manager scope">
+              <button type="button" className={onlyMyBids ? 'active' : undefined}
+                aria-pressed={onlyMyBids}
+                onClick={() => { setPmFilter(ALL); setOnlyMyBids(true); }}>
+                My Bids
+              </button>
+              <button type="button" className={!onlyMyBids ? 'active' : undefined}
+                aria-pressed={!onlyMyBids}
+                onClick={() => { setPmFilter(ALL); setOnlyMyBids(false); }}>
+                All Bids
+              </button>
             </div>
           )}
 
@@ -2753,6 +2777,19 @@ export default function BidLogWorkspace({
         onDismiss={() => setActionToast(null)}
       />
 
+      {activeView && mergeTargetBid && (
+        <BidLogMergeDialog
+          bids={items}
+          targetBid={mergeTargetBid}
+          onClose={() => {
+            setMergeTargetBid(null);
+            setEditSelection(null);
+            void refreshBidViewAfterMutation('active');
+          }}
+          onMerged={handleBidsMerged}
+        />
+      )}
+
       <BidLogCreateDrawer
         open={createBidOpen}
         user={user}
@@ -2772,6 +2809,10 @@ export default function BidLogWorkspace({
           pmOptions={approvedPmOptions}
           onClose={() => setEditSelection(null)}
           onSaved={handleBidSaved}
+          onMergeRequested={target => {
+            setEditSelection(null);
+            setMergeTargetBid(target);
+          }}
         />
       )}
 

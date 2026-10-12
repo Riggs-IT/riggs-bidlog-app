@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
 from urllib.parse import urlencode, urlparse
 from uuid import UUID, uuid4
 
@@ -67,6 +68,7 @@ from .data_api import (
     save_active_bid_projected_billing_settings,
     transition_active_bid_lifecycle,
     update_active_bid,
+    merge_active_bids,
     update_bid_log_outcome,
     update_active_project,
     get_current_project_monthly,
@@ -1227,6 +1229,7 @@ def auth_me(
         )
     )
 
+    payload["sessionIdleTimeoutSeconds"] = settings.session_idle_timeout_seconds
     return payload
 
 
@@ -2399,6 +2402,39 @@ async def bid_log_active_lifecycle_proxy(
             current_user,
         )
 
+    except Exception as exc:
+        _raise_active_bid_proxy_error(exc)
+
+
+@app.post('/api/bid-log/active/merge')
+async def bid_log_active_merge_proxy(
+    request: Request,
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    _require_bid_log_workspace_access(current_user)
+    _require_bid_log_editor(current_user)
+    try:
+        payload = await request.json()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail='invalid_json_body') from exc
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail='invalid_active_bid_merge')
+    delegated_session_id = _bid_log_delegated_session_for_write(
+        request, current_user,
+    )
+    try:
+        return merge_active_bids(
+            payload,
+            actor_eid=current_user.eid,
+            request_id=_browser_request_id(request),
+            delegated_session_id=delegated_session_id,
+        )
+    except DataAPIRequestRejected as exc:
+        try:
+            structured = json.loads(exc.detail)
+        except (ValueError, TypeError):
+            structured = exc.detail
+        raise HTTPException(status_code=exc.status_code, detail=structured) from exc
     except Exception as exc:
         _raise_active_bid_proxy_error(exc)
 

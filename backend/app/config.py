@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     session_secret: str = ""
     session_cookie_secure: bool = True
     session_max_age_seconds: int = 28800
-    session_idle_timeout_seconds: int = 1200
+    session_idle_timeout_seconds: int = 3600
 
     dev_auth_entra_object_id: str = ""
 

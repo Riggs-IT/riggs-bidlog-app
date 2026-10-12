@@ -1058,6 +1058,63 @@ def update_active_bid(
 
 
 
+
+def merge_active_bids(
+    payload: dict,
+    *,
+    actor_eid: int,
+    request_id: str,
+    delegated_session_id: str | None = None,
+) -> dict:
+    """Dedicated, bounded multi-SharePoint merge; ordinary edits reject Merged."""
+    operation = 'Merge Active Bid Log bids'
+    # Normal reads use a short timeout. Merge is a series of sequential Graph
+    # writes and MUST NOT time out after only five seconds.
+    timeout = httpx.Timeout(
+        connect=settings.data_api_connect_timeout_seconds,
+        read=90.0,
+        write=settings.data_api_read_timeout_seconds,
+        pool=settings.data_api_connect_timeout_seconds,
+    )
+    try:
+        response = _get_http_client().post(
+            '/v1/bid-log/active/merge',
+            json=payload,
+            headers=_request_headers(
+                include_service_auth=True,
+                request_id=request_id,
+                actor_eid=actor_eid,
+                delegated_session_id=delegated_session_id,
+            ),
+            timeout=timeout,
+        )
+    except httpx.TimeoutException as exc:
+        raise DataAPIUnavailable('Merge request timed out; review bids before retrying.') from exc
+    except httpx.RequestError as exc:
+        raise DataAPIUnavailable('Merge outcome uncertain; review bids before retrying.') from exc
+
+    if response.status_code in {400, 401, 403, 404, 409, 422, 502}:
+        try:
+            raw = response.json().get('detail')
+        except (ValueError, AttributeError):
+            raw = None
+        detail = (
+            json.dumps(raw, separators=(',', ':'))
+            if isinstance(raw, dict)
+            else str(raw or 'active_bid_merge_rejected')
+        )
+        raise DataAPIRequestRejected(response.status_code, detail)
+
+    _raise_common_failure(response, operation=operation)
+    if response.status_code != 200:
+        raise DataAPIInvalidResponse('Unexpected Data API response while merging bids.')
+    result = _json_object(response, operation=operation)
+    _dashboard_cache_invalidate_prefix('active_bid_list:')
+    _dashboard_cache_invalidate_key('active_bid_dashboard')
+    return result
+
+
+
 def transition_active_bid_lifecycle(
     sharepoint_item_id: int,
     payload: dict,

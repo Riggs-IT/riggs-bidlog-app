@@ -3312,9 +3312,10 @@ h2 {
 }
 
 
-.monthly-comparison-collapsed
-.monthly-table-wrap {
-  display: none;
+/* Collapse the entire comparison (pivot toolbar, month controls and table),
+   not just the table. hidden also prevents focus on controls while collapsed. */
+.monthly-comparison-body[hidden] {
+  display: none !important;
 }
 
 
@@ -14151,4 +14152,13 @@ tbody > tr:nth-child(
     var(--surface) 92%,
     var(--accent) 8%
   );
+}
+
+/* PM's default overview scope: small companion to the source selectors. */
+.projected-pm-scope-toggle {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.projected-pm-scope-toggle button {
+  min-height: 32px;
 }

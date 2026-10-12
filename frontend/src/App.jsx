@@ -1,5 +1,7 @@
 import {FilterToggleGroup, RefreshButton} from './ViewControls.jsx';
+import { resolveSessionIdleTimeoutMs } from './sessionPolicy.js';
 import {facetRows, hasMonthlyValues, isCompleted} from './viewFilters.js';
+import {canStartWithMyJobs, matchesSignedInPm} from './pmScope.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey} from './gcReference.js';
 import { aggregateCurrentMonthly, summarizePortfolioMonths, summarizeMonthlyTotals, nullableAmount, amountDifference, projectionSourceLabel, buildMonthlyProjectionExport } from './primaryProjection.js';
@@ -54,8 +56,7 @@ const DEFAULT_POTENTIAL_PROBABILITY_PERCENT = 85;
 const USAGE_SESSION_STORAGE_KEY =
   'riggs-bid-log-usage-session-id';
 
-const INACTIVITY_TIMEOUT_MS =
-  20 * 60 * 1000;
+// The browser uses the effective idle policy returned by /api/auth/me.
 
 const USAGE_HEARTBEAT_INTERVAL_MS =
   60 * 1000;
@@ -236,7 +237,7 @@ function friendlyError(detail) {
       'Sign in with your Riggs Companies Microsoft account to continue.',
 
     session_inactive_timeout:
-      'Your session ended after 20 minutes of inactivity. Sign in again to continue.',
+      'Your session ended after a period of inactivity. Sign in again to continue.',
 
     invalid_session:
       'Your previous Bid Log session is no longer valid. Sign in again to continue.',
@@ -1674,6 +1675,7 @@ export default function App() {
     user,
     setUser,
   ] = useState(null);
+  const inactivityTimeoutMs = resolveSessionIdleTimeoutMs(user);
   const gcDirectory = useGcReference(canReadGcReference(user));
 
   const [
@@ -1898,7 +1900,7 @@ export default function App() {
   const [
     monthlyComparisonOpen,
     setMonthlyComparisonOpen,
-  ] = useState(true);
+  ] = useState(false);
 
   const [
     monthlyComparisonView,
@@ -1935,6 +1937,10 @@ export default function App() {
     pmFilter,
     setPmFilter,
   ] = useState(ALL);
+
+  // Personal scope is a display filter, not a substitute for server access.
+  const [onlyMyJobs, setOnlyMyJobs] = useState(null);
+  const personalScopeInitializedForRef = useRef(null);
 
   const [
     projectTypeFilter,
@@ -2240,6 +2246,14 @@ export default function App() {
     === 'ADMIN';
 
 
+  // Microsoft authentication resolves after the first render. Set the initial
+  // billing comparison disclosure by role, then allow manual toggling.
+  useEffect(() => {
+    if (!user?.eid) return;
+    setMonthlyComparisonOpen(isAdmin);
+  }, [user?.eid, isAdmin]);
+
+
   const workspaceProfile =
     String(
       user?.workspaceProfile
@@ -2252,6 +2266,16 @@ export default function App() {
   const capabilities =
     user?.capabilities
     || {};
+
+  useEffect(() => {
+    if (!user?.eid) return;
+    const identityKey = `${user.eid}:${workspaceProfile}`;
+    if (personalScopeInitializedForRef.current === identityKey) return;
+    personalScopeInitializedForRef.current = identityKey;
+    setOnlyMyJobs(canStartWithMyJobs(user));
+  }, [user?.eid, user?.displayName, workspaceProfile]);
+
+  const restrictPortfolioToMine = workspaceProfile === 'PM' && (onlyMyJobs ?? true);
 
 
   const canViewProjectedBillings =
@@ -2702,7 +2726,7 @@ export default function App() {
 
       if (
         idleMilliseconds()
-        >= INACTIVITY_TIMEOUT_MS
+        >= inactivityTimeoutMs
       ) {
         await finishTimeout();
         return;
@@ -2792,7 +2816,7 @@ export default function App() {
     function checkInactivity() {
       if (
         idleMilliseconds()
-        >= INACTIVITY_TIMEOUT_MS
+        >= inactivityTimeoutMs
       ) {
         void finishTimeout();
       }
@@ -2810,7 +2834,7 @@ export default function App() {
 
       if (
         idleMilliseconds()
-        >= INACTIVITY_TIMEOUT_MS
+        >= inactivityTimeoutMs
       ) {
         void finishTimeout();
         return;
@@ -2903,7 +2927,7 @@ export default function App() {
       );
     };
 
-  }, [user]);
+  }, [user, inactivityTimeoutMs]);
 
 
   async function signOut() {
@@ -3517,13 +3541,23 @@ export default function App() {
         selectedVarianceComparableRows:m.varianceComparableRows,
         selectedVarianceMissingEditableRows:m.varianceMissingEditableRows,
         selectedVarianceHistoricalUnavailableRows:m.varianceHistoricalUnavailableRows};
-    }).filter(row => !isCompleted(row) || Math.abs(Number(row.selectedActual)||0)>0.000001), [rangeValid,currentProjects,currentMonthly,fromMonth,throughMonth]);
+    }).filter(row => !isCompleted(row) || Math.abs(Number(row.selectedActual)||0)>0.000001)
+    .filter(row => !restrictPortfolioToMine || matchesSignedInPm(row.pm, user?.displayName)),
+    [rangeValid,currentProjects,currentMonthly,fromMonth,throughMonth,restrictPortfolioToMine,user?.displayName]);
   const bidRangeRows = useMemo(() => !rangeValid ? [] : selectedBidSourceRows
     .filter(row => hasMonthlyValues(bidMonthly.get(row.sharePointItemId),fromMonth,throughMonth,
       ['monthlyForecastAmount','weightedMonthlyForecastAmount']))
     .map(row => {const m=aggregateBidMonthly(bidMonthly.get(row.sharePointItemId),fromMonth,throughMonth);
-      return {...row,selectedBidForecast:m.forecast,selectedWeightedForecast:m.weighted};}),
-    [rangeValid,selectedBidSourceRows,bidMonthly,fromMonth,throughMonth]);
+      return {...row,selectedBidForecast:m.forecast,selectedWeightedForecast:m.weighted};})
+    .filter(row => !restrictPortfolioToMine || matchesSignedInPm(row.pm, user?.displayName)),
+    [rangeValid,selectedBidSourceRows,bidMonthly,fromMonth,throughMonth,restrictPortfolioToMine,user?.displayName]);
+
+  const scopedPotentialBidCount = activeBids.filter(row =>
+    (!restrictPortfolioToMine || matchesSignedInPm(row.pm, user?.displayName))
+    && isPotentialBid(row)
+    && hasMonthlyValues(bidMonthly.get(row.sharePointItemId), fromMonth, throughMonth,
+      ['weightedMonthlyForecastAmount', 'monthlyForecastAmount'])
+  ).length;
   const portfolioFilters={pm:pmFilter,type:projectTypeFilter,purpose:purposeFilter,forecast:forecastStateFilter,projectionSource:projectionSourceFilter,
     gc:gcFilter,pe:peFilter,super:superintendentFilter,apm:apmFilter,foundation:foundationFilter,
     variance:varianceFilter,snoozed:snoozedFilter};
@@ -5662,6 +5696,21 @@ export default function App() {
           </h1>
 
           <div className="projected-heading-controls">
+            {workspaceProfile === 'PM' && (
+              <div className="comparison-view-toggle projected-pm-scope-toggle"
+                role="group" aria-label="Project manager job scope">
+                <button type="button" className={restrictPortfolioToMine ? 'active' : undefined}
+                  aria-pressed={restrictPortfolioToMine}
+                  onClick={() => { setPmFilter(ALL); setOnlyMyJobs(true); }}>
+                  My Jobs
+                </button>
+                <button type="button" className={!restrictPortfolioToMine ? 'active' : undefined}
+                  aria-pressed={!restrictPortfolioToMine}
+                  onClick={() => { setPmFilter(ALL); setOnlyMyJobs(false); }}>
+                  All Jobs
+                </button>
+              </div>
+            )}
             <div
               className="source-toggles projected-heading-source-toggles"
               aria-label="Projected billing sources"
@@ -5679,7 +5728,7 @@ export default function App() {
                 <span className="toggle-label">
                   <strong>Potential Projects</strong>
                   <small>
-                    {Math.round(potentialProbabilityPercent)}%+ · {activeBids.filter(row => isPotentialBid(row) && hasMonthlyValues(bidMonthly.get(row.sharePointItemId),fromMonth,throughMonth,['weightedMonthlyForecastAmount','monthlyForecastAmount'])).length}
+                    {Math.round(potentialProbabilityPercent)}%+ · {scopedPotentialBidCount}
                   </small>
                 </span>
               </button>
@@ -6201,7 +6250,7 @@ export default function App() {
                       </strong>
 
                       <small>
-                        {Math.round(potentialProbabilityPercent)}%+ · {activeBids.filter(row => isPotentialBid(row) && hasMonthlyValues(bidMonthly.get(row.sharePointItemId),fromMonth,throughMonth,['weightedMonthlyForecastAmount','monthlyForecastAmount'])).length}
+                        {Math.round(potentialProbabilityPercent)}%+ · {scopedPotentialBidCount}
                       </small>
                     </button>
 
@@ -6659,7 +6708,7 @@ export default function App() {
             </div>
 
             <div className="monthly-heading-actions">
-              <div
+              {monthlyComparisonOpen && <div
                 className="comparison-view-toggle"
                 role="group"
                 aria-label="Projected versus actual billing view"
@@ -6708,9 +6757,9 @@ export default function App() {
                 >
                   By Project
                 </button>
-              </div>
+              </div>}
 
-              {includeBids && (
+              {monthlyComparisonOpen && includeBids && (
                 <span className="section-note">
                   Potential Projects are probability weighted
                 </span>
@@ -6734,7 +6783,7 @@ export default function App() {
             </div>
           </div>
 
-
+          <div className="monthly-comparison-body" hidden={!monthlyComparisonOpen}>
             {monthlyComparisonOpen && (
               <>
                 <div className="projection-basis-controls">
@@ -7400,6 +7449,7 @@ export default function App() {
             </table>
           </div>
             )}
+          </div>
         </section>
 
 

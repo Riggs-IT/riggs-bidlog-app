@@ -442,6 +442,7 @@ export default function BidLogEditDrawer({
   pmOptions = [],
   onClose,
   onSaved,
+  onMergeRequested,
 }) {
   const [detail, setDetail] = useState(null);
   const [form, setForm] = useState(null);
@@ -1354,13 +1355,13 @@ export default function BidLogEditDrawer({
         !loading && !loadError && detail && form ? (
           <footer className="bid-log-edit-footer floating-editor-footer">
             <div className="floating-editor-footer-status">
-              <small>
-                {lifecycleComplete
-                  ? 'Lifecycle action complete. Use Back to Bid Log when finished reviewing.'
-                  : selectedLifecycleAction
-                    ? 'Save will apply field updates first, then complete the selected lifecycle action.'
-                    : 'Save updates the live SharePoint Bid Log item.'}
-              </small>
+              {(lifecycleComplete || selectedLifecycleAction) && (
+                <small>
+                  {lifecycleComplete
+                    ? 'Lifecycle action complete. Use Back to Bid Log when finished reviewing.'
+                    : 'Save will apply field updates first, then complete the selected lifecycle action.'}
+                </small>
+              )}
               {hasUnsavedChanges && (
                 <span className="floating-editor-dirty-indicator">
                   Unsaved changes
@@ -1508,8 +1509,21 @@ export default function BidLogEditDrawer({
                     <span className="section-kicker">BID</span>
                     <h3>Bid & Assignment</h3>
                   </div>
-                  {detail.etag && (
-                    <small>Optimistic concurrency enabled</small>
+                  {canEdit && ordinaryStatus && onMergeRequested && (
+                    <button
+                      type="button"
+                      className="secondary-button bid-log-merge-from-editor"
+                      disabled={saving || lifecycleComplete || !detail.etag || hasUnsavedChanges}
+                      title={hasUnsavedChanges
+                        ? 'Save or discard your edits before merging duplicates.'
+                        : 'Merge other active bids into this bid. This bid will remain.'}
+                      onClick={() => onMergeRequested({
+                        sharePointItemId: Number(sharePointItemId),
+                        bidName: String(detail.bidName || initialBidName || '').trim(),
+                      })}
+                    >
+                      Merge Bids
+                    </button>
                   )}
                 </div>
 

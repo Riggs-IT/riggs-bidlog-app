@@ -82,6 +82,10 @@ export default function useStickyTableHeader(
         )
         || null;
 
+      // The floating header is portaled to document.body, outside the
+      // comparison card. Its visibility must follow the card's hidden state.
+      const comparisonBody = wrapper.closest('.monthly-comparison-body');
+
 
       const floating =
         document.createElement(
@@ -611,7 +615,8 @@ export default function useStickyTableHeader(
             );
 
           const shouldShow =
-            width > 0
+            !comparisonBody?.hidden
+            && width > 0
             && headerRect.top < top
             && tableRect.bottom
               > top
@@ -803,6 +808,14 @@ export default function useStickyTableHeader(
           scheduleUpdate
         );
 
+      const collapseObserver = comparisonBody
+        ? new MutationObserver(scheduleUpdate)
+        : null;
+      collapseObserver?.observe(comparisonBody, {
+        attributes: true,
+        attributeFilter: ['hidden'],
+      });
+
       resizeObserver.observe(
         wrapper
       );
@@ -932,6 +945,7 @@ export default function useStickyTableHeader(
 
         resizeObserver.disconnect();
         contentObserver.disconnect();
+        collapseObserver?.disconnect();
 
 
         window.removeEventListener(
