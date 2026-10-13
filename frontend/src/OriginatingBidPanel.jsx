@@ -382,6 +382,7 @@ export default function OriginatingBidPanel({
 
   const canLink =
     role === 'ADMIN'
+    || role === 'MANAGEMENT_ADMIN'
     || role === 'OPERATIONS';
 
 

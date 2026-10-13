@@ -1,3 +1,4 @@
+import MoneyInput from './MoneyInput.jsx';
 import {InfoButton, RefreshButton, ShowControls} from './ViewControls.jsx';
 import './ReviewControls.css';
 import {
@@ -669,8 +670,10 @@ export default function PMForecastPanel({
 
 
 
+  // Billing administration is available to both full and management admins.
+  // Active Projects master-data editing has a separate ADMIN-only gate.
   const isAdmin =
-    role === 'ADMIN';
+    role === 'ADMIN' || role === 'MANAGEMENT_ADMIN';
 
   const canEdit =
     !projectIsCompleted
@@ -1391,34 +1394,15 @@ export default function PMForecastPanel({
                                   $
                                 </span>
 
-                                <input
-                                  aria-label={
-                                    `${fmtMonth(
-                                      row.monthStart
-                                    )} PM Projection`
-                                  }
-                                  type="number"
-                                  min="0"
-                                  step="0.01"
+                                <MoneyInput
+                                  aria-label={`${fmtMonth(row.monthStart)} PM Projection`}
                                   disabled={saving}
-                                  value={
-                                    edits[
-                                      row.monthStart
-                                    ]
-                                    ?? ''
-                                  }
-                                  onChange={
-                                    event =>
-                                      setEdits(
-                                        current => ({
-                                          ...current,
-
-                                          [row.monthStart]:
-                                            event
-                                              .target
-                                              .value,
-                                        })
-                                      )
+                                  value={edits[row.monthStart] ?? ''}
+                                  onValueChange={value =>
+                                    setEdits(current => ({
+                                      ...current,
+                                      [row.monthStart]: value,
+                                    }))
                                   }
                                 />
                               </div>

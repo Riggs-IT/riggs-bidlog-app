@@ -718,7 +718,8 @@ export default function ProjectAccountability({
       user?.appRole
       || ''
     ).toUpperCase()
-    === 'ADMIN';
+    === 'ADMIN'
+    || String(user?.appRole || '').trim().toUpperCase() === 'MANAGEMENT_ADMIN';
 
 
   const pmIdentityByName = useMemo(

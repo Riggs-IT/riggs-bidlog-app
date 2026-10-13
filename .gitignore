@@ -12,3 +12,6 @@ frontend/dist/
 .env
 .env.*
 !.env.example
+
+# Generated Vite cache
+.vite/

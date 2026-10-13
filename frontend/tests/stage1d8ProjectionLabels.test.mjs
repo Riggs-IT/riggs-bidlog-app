@@ -110,7 +110,7 @@ test('combined project and potential sources show T in All and Projected while v
   assert.doesNotMatch(pivot, /PM month\(s\) have no entered amount/);
   assert.match(pivot, /project-pivot-sticky-coverage/);
   assert.match(pivot, /\{projectionCoverage\.pm\} PM Projection/);
-  assert.match(pivot, /\{projectionCoverage\.system\} Missing\*/);
+  assert.match(pivot, /\{projectionCoverage\.system\} No PM Projection\*/);
   assert.match(app, /projectionSourceFilter=\{projectionSourceFilter\}/);
   assert.match(app, /projectionCoverage=\{projectionCoverage\}/);
   assert.match(app, /onProjectionSourceFilterChange=\{setProjectionSourceFilter\}/);

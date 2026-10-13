@@ -1,3 +1,4 @@
+import MoneyInput from './MoneyInput.jsx';
 import {
   useEffect,
   useMemo,
@@ -365,6 +366,7 @@ export default function ActiveBidBillingDrawer({
 
   const canEdit =
     role === 'ADMIN'
+    || role === 'MANAGEMENT_ADMIN'
     || role === 'OPERATIONS';
 
 
@@ -1061,23 +1063,12 @@ export default function ActiveBidBillingDrawer({
                     Projection Amount
                   </span>
 
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={
-                      form.amountOverride
-                    }
+                  <MoneyInput
+                    aria-label="Projection Amount"
+                    value={form.amountOverride}
                     placeholder="Use estimated price"
-                    onChange={
-                      event =>
-                        setForm(
-                          current => ({
-                            ...current,
-                            amountOverride:
-                              event.target.value,
-                          })
-                        )
+                    onValueChange={value =>
+                      setForm(current => ({...current, amountOverride: value}))
                     }
                     disabled={!canEdit || saving}
                   />

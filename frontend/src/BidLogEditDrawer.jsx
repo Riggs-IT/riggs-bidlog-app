@@ -1,3 +1,4 @@
+import MoneyInput from './MoneyInput.jsx';
 import useGcReference from './useGcReference.js';
 import { gcReference } from './gcReference.js';
 import {
@@ -462,7 +463,7 @@ export default function BidLogEditDrawer({
   const [confirmDialog, setConfirmDialog] = useState(null);
 
   const role = String(user?.appRole || '').trim().toUpperCase();
-  const canEdit = role === 'ADMIN' || role === 'OPERATIONS';
+  const canEdit = role === 'ADMIN' || role === 'MANAGEMENT_ADMIN' || role === 'OPERATIONS';
   const { items: gcOptions, loading: gcOptionsLoading, error: gcOptionsError, refresh: retryGcOptions } = useGcReference(canEdit);
   const projectionInputsRequireRealBid = Boolean(
     optionalText(form?.anticipatedStartDate)
@@ -1784,7 +1785,7 @@ export default function BidLogEditDrawer({
                     fieldKey="estimatedPrice"
                     invalid={requiredFields.includes('estimatedPrice')}
                   >
-                    <input type="number" min="0" step="0.01" value={form.estimatedPrice} disabled={!canEdit} onChange={event => updateField('estimatedPrice', event.target.value)} />
+                    <MoneyInput value={form.estimatedPrice} disabled={!canEdit} onValueChange={value => updateField('estimatedPrice', value)} />
                   </Field>
 
                   <Field
@@ -1832,11 +1833,11 @@ export default function BidLogEditDrawer({
                   </Field>
 
                   <Field label="Redimix Footing Price">
-                    <input type="number" min="0" step="0.01" value={form.redimixFootingPrice} disabled={!canEdit} onChange={event => updateField('redimixFootingPrice', event.target.value)} />
+                    <MoneyInput value={form.redimixFootingPrice} disabled={!canEdit} onValueChange={value => updateField('redimixFootingPrice', value)} />
                   </Field>
 
                   <Field label="Rebar Price">
-                    <input type="number" min="0" step="0.01" value={form.rebarPrice} disabled={!canEdit} onChange={event => updateField('rebarPrice', event.target.value)} />
+                    <MoneyInput value={form.rebarPrice} disabled={!canEdit} onValueChange={value => updateField('rebarPrice', value)} />
                   </Field>
                 </div>
               </section>

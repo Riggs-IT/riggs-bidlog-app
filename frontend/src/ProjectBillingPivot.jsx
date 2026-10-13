@@ -1,6 +1,8 @@
 import { completedProjectPivotCell, pivotCurrentCell, pivotTotals, nullableAmount } from './primaryProjection.js';
 import { ProjectionEstimateMarker, ProjectionAmount } from './ProjectionDisplay.jsx';
+import ScheduleReviewFlag from './ScheduleReviewFlag.jsx';
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -526,6 +528,10 @@ function ProjectMeta({
           </span>
         )}
 
+        {row.source === 'current' && !isCompleted(row.raw) && (
+          <ScheduleReviewFlag review={row.raw?.scheduleReview} />
+        )}
+
         {row.raw?.projectCompleted && (
           <span className="project-completed-pill">
             Completed
@@ -646,80 +652,60 @@ function metricClass(
 }
 
 
-function BillingLine({
-  label,
-  metric,
-  value,
-  currency,
-}) {
-  return (
-    <span
-      className={
-        `pivot-billing-line ${
-          metricClass(
-            metric,
-            value,
-          )
-        }`
-      }
-    >
-      <small>
-        {label}
-      </small>
+// Values -> All has exactly one shared label column. The monthly amounts
+// keep the same four tracks (including null versus zero), so a label cannot
+// become detached from its number when the user scrolls horizontally.
+const ALL_VALUE_TRACKS = [
+  {key: 'projected', label: 'Projected', short: 'P'},
+  {key: 'actual', label: 'Actual', short: 'A'},
+  {key: 'variance', label: 'Variance', short: 'Δ'},
+  {key: 'marginCollected', label: 'Margin Collected', short: 'M'},
+];
 
-      <strong>
-        {value === null
-          || value === undefined
-            ? '—'
-            : currency(value)}
-      </strong>
-    </span>
+
+function MetricLabels({compact}) {
+  return (
+    <div className="pivot-metric-label-list">
+      {ALL_VALUE_TRACKS.map(({key, label, short}) => (
+        <span
+          key={key}
+          className="pivot-metric-label"
+          title={label}
+        >
+          {compact ? (
+            <abbr title={label} aria-label={label}>{short}</abbr>
+          ) : (
+            <span>{label}</span>
+          )}
+        </span>
+      ))}
+    </div>
   );
 }
 
 
-function AllBillingValues({
-  cell,
-  currency,
-  source,
-}) {
-  if (!cell.hasActivity) {
-    return (
-      <span className="pivot-empty-value">
-        —
-      </span>
-    );
-  }
-
+function AllBillingValues({cell, currency, source}) {
   return (
-    <div className="pivot-billing-cell">
-      <BillingLine
-        label={source === 'bid' ? 'Bids' : 'Projected'}
-        metric="projected"
-        value={cell.projected}
-        currency={currency}
-      />
-
-      <BillingLine
-        label="Actual"
-        metric="actual"
-        value={cell.actual}
-        currency={currency}
-      />
-
-      <BillingLine
-        label="Variance"
-        metric="variance"
-        value={cell.variance}
-        currency={currency}
-      />
-
-      <BillingLine
-        label="Margin"
-        metric="marginCollected"
-        value={cell.marginCollected}
-        currency={currency}
-      />
+    <div className="pivot-billing-amounts">
+      {ALL_VALUE_TRACKS.map(({key}) => {
+        // A potential bid has no Foundation Actual, Variance, or Margin.
+        // Keep its four rows aligned, without inventing zero-dollar amounts.
+        const unavailable = key !== 'projected'
+          && (source === 'bid' || cell?.hasActivity === false);
+        const value = cell?.[key] ?? null;
+        return (
+          <span
+            key={key}
+            className={`pivot-billing-amount-line ${metricClass(key, value)}`}
+          >
+            {unavailable ? null : (
+              <strong>
+                {value == null ? '—' : currency(value)}
+              </strong>
+            )}
+          </span>
+        );
+      })}
     </div>
   );
 }
@@ -895,6 +881,7 @@ function HeaderTotal({
   metric,
   currency,
   activeProjectsBilled = null,
+  activeProjectsProjected = null,
   potentialBidsProjected = null,
   includeProjectProjection = true,
   includeBidProjection = true,
@@ -1026,15 +1013,27 @@ function HeaderTotal({
         }`
       : null;
 
-  const bidsProjectedText =
-    potentialBidsProjected !== null
-    && potentialBidsProjected > 0
-      ? `${potentialBidsProjected} ${
-          potentialBidsProjected === 1
-            ? 'bid projected'
-            : 'bids projected'
-        }`
-      : null;
+  const activeProjectedCount = includeProjectProjection
+    ? (activeProjectsProjected ?? 0)
+    : 0;
+  const bidProjectedCount = includeBidProjection
+    ? (potentialBidsProjected ?? 0)
+    : 0;
+  const totalProjectedCount = activeProjectedCount + bidProjectedCount;
+  const projectProjectedText = activeProjectedCount > 0
+    ? `${activeProjectedCount} active ${activeProjectedCount === 1 ? 'project' : 'projects'} projected`
+    : null;
+  const bidsProjectedText = bidProjectedCount > 0
+    ? `${bidProjectedCount} ${bidProjectedCount === 1 ? 'bid' : 'bids'} projected`
+    : null;
+  const combinedProjectedText = hasCombinedForecastSources && totalProjectedCount > 0
+    ? `${totalProjectedCount} projected (active + bids)`
+    : null;
+  // T/P values already have their own dollar tooltips. Only the mixed-source
+  // record count needs a hover, and its job is to split the *counts*.
+  const forecastActivityTooltip = hasCombinedForecastSources
+    ? `${activeProjectedCount} active ${activeProjectedCount === 1 ? 'project' : 'projects'} · ${bidProjectedCount} potential ${bidProjectedCount === 1 ? 'bid' : 'bids'}`
+    : undefined;
 
   return (
     <span className="pivot-header-total">
@@ -1158,32 +1157,19 @@ function HeaderTotal({
 
       {showBaseline && includeProjectProjection && <small className="baseline-reference">System Estimate {headerCurrency(baselineValue)}</small>}
 
-      {(projectBilledText || bidsProjectedText) && (
+      {(projectBilledText || totalProjectedCount > 0) && (
         <span className="pivot-header-activity-counts">
           {projectBilledText && (
-            <small
-              className="pivot-header-billed-count"
-              title={`${projectBilledText} in this month`}
-            >
+            <small className="pivot-header-billed-count" title={`${projectBilledText} in this month`}>
               {projectBilledText}
             </small>
           )}
-
-          {projectBilledText && bidsProjectedText && (
-            <span
-              className="pivot-header-activity-separator"
-              aria-hidden="true"
-            >
-              ·
-            </span>
-          )}
-
-          {bidsProjectedText && (
+          {totalProjectedCount > 0 && (
             <small
-              className="pivot-header-billed-count pivot-header-bid-count"
-              title={`${bidsProjectedText} in this month`}
+              className="pivot-header-billed-count pivot-header-forecast-count"
+              title={forecastActivityTooltip}
             >
-              {bidsProjectedText}
+              {combinedProjectedText || projectProjectedText || bidsProjectedText}
             </small>
           )}
         </span>
@@ -1314,6 +1300,55 @@ export default function ProjectBillingPivot({
     useStickyTableHeader(
       `${months.join('|')}|${billingMetric}|${sortState.key}|${sortState.direction}|${includeActiveProjects}|${includeBids}|${showBaseline}`
     );
+  const [pivotViewport, setPivotViewport] = useState(null);
+  const [metricLabelsPinned, setMetricLabelsPinned] = useState(false);
+
+  const pivotWrapRef = useCallback(node => {
+    stickyTableRef(node);
+    setPivotViewport(node);
+  }, [stickyTableRef]);
+
+  useEffect(() => {
+    if (!pivotViewport || billingMetric !== 'all') {
+      setMetricLabelsPinned(false);
+      return undefined;
+    }
+
+    const table = pivotViewport.querySelector('.project-pivot-table');
+    const metricColumn = table?.querySelector('thead .pivot-metric-labels-column');
+    // Probability is itself frozen in mixed-source views. Pin the metric
+    // labels after the last identity field, not over a job or bid number.
+    const frozenColumn = table?.querySelector(
+      showProbabilityColumn
+        ? 'thead .pivot-probability-column'
+        : 'thead .pivot-project-column',
+    );
+    if (!table || !metricColumn || !frozenColumn) {
+      return undefined;
+    }
+
+    const updatePinned = () => {
+      const pinned = pivotViewport.scrollLeft > 1
+        && metricColumn.getBoundingClientRect().left
+          <= frozenColumn.getBoundingClientRect().right + 1;
+      setMetricLabelsPinned(current => current === pinned ? current : pinned);
+    };
+
+    // Horizontal mouse/trackpad scrolling and the month slider both scroll
+    // the same viewport. A resize may change when the column touches the
+    // frozen project fields, so recheck that boundary too.
+    pivotViewport.addEventListener('scroll', updatePinned, {passive: true});
+    window.addEventListener('resize', updatePinned);
+    const resizeObserver = typeof ResizeObserver === 'function'
+      ? new ResizeObserver(updatePinned) : null;
+    resizeObserver?.observe(pivotViewport);
+    updatePinned();
+    return () => {
+      pivotViewport.removeEventListener('scroll', updatePinned);
+      window.removeEventListener('resize', updatePinned);
+      resizeObserver?.disconnect();
+    };
+  }, [pivotViewport, billingMetric, showProbabilityColumn, months.join('|')]);
 
   const rows =
     useMemo(
@@ -1642,7 +1677,7 @@ export default function ProjectBillingPivot({
                     : 'missing'
                 )}
               >
-                {projectionCoverage.system} Missing*
+                {projectionCoverage.system} No PM Projection*
               </button>
 
               <span
@@ -1755,11 +1790,11 @@ export default function ProjectBillingPivot({
 
       <div
         className="monthly-table-wrap project-pivot-wrap"
-        ref={stickyTableRef}
+        ref={pivotWrapRef}
       >
         <table
           className={
-            `monthly-table project-pivot-table pivot-metric-${billingMetric} ${sourceModeClass}`
+            `monthly-table project-pivot-table pivot-metric-${billingMetric} ${sourceModeClass} ${metricLabelsPinned ? 'pivot-metric-labels-pinned' : ''}`
           }
         >
           <thead>
@@ -1817,6 +1852,16 @@ export default function ProjectBillingPivot({
                 className="pivot-gc-column"
               />
 
+
+              {billingMetric === 'all' && (
+                <th
+                  className="pivot-metric-labels-column"
+                  title="Projected, Actual, Variance, Margin Collected"
+                  scope="col"
+                >
+                  {metricLabelsPinned ? 'P/A/Δ/M' : 'Metric'}
+                </th>
+              )}
 
               {months.map(
                 (
@@ -1880,6 +1925,7 @@ export default function ProjectBillingPivot({
                             index
                           ]?.potentialBidsProjected
                         }
+                        activeProjectsProjected={monthTotals[index]?.activeProjectsProjected}
                         includeProjectProjection={includeActiveProjects}
                         includeBidProjection={includeBids}
                       />
@@ -1964,7 +2010,7 @@ export default function ProjectBillingPivot({
                         ) {
                           onSelectCurrentProject(
                             row.raw,
-                            event.target.closest('[data-needs-rebalance]')
+                            event.target.closest('[data-needs-rebalance], [data-schedule-review]')
                               ? 'pm-forecast'
                               : null,
                           );
@@ -2054,6 +2100,12 @@ export default function ProjectBillingPivot({
                     </td>
 
 
+                    {billingMetric === 'all' && (
+                      <td className="pivot-metric-labels-column">
+                        <MetricLabels compact={metricLabelsPinned} />
+                      </td>
+                    )}
+
                     {row.cells.map(
                       cell => (
                         <td
@@ -2096,6 +2148,7 @@ export default function ProjectBillingPivot({
                     + (showCombinedSources ? 1 : 0)
                     + (includeActiveProjects ? 1 : 0)
                     + (showProbabilityColumn ? 1 : 0)
+                    + (billingMetric === 'all' ? 1 : 0)
                   }
                 >
                   No projects match the selected filters.

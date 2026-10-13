@@ -3,6 +3,7 @@ import { resolveSessionIdleTimeoutMs } from './sessionPolicy.js';
 import {facetRows, hasMonthlyValues, isCompleted} from './viewFilters.js';
 import {resolveSignedInPmOption} from './pmScope.js';
 import {indexPortfolioRebalance} from './portfolioBalance.js';
+import {indexScheduleReview} from './scheduleReview.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey} from './gcReference.js';
 import { aggregateCurrentMonthly, summarizePortfolioMonths, summarizeMonthlyTotals, nullableAmount, amountDifference, projectionSourceLabel, buildMonthlyProjectionExport } from './primaryProjection.js';
@@ -10,6 +11,8 @@ import { ProjectionEstimateMarker, ProjectionAmount } from './ProjectionDisplay.
 import useGcReference, { canReadGcReference } from './useGcReference.js';
 import useProjectedBillingsFreshness from './useProjectedBillingsFreshness.js';
 import useOriginatingBidAttention from './useOriginatingBidAttention.js';
+import useScheduleReviewAttention from './useScheduleReviewAttention.js';
+import ScheduleReviewFlag from './ScheduleReviewFlag.jsx';
 import {
   useEffect,
   useMemo,
@@ -32,6 +35,7 @@ import BidLogEditDrawer from './BidLogEditDrawer.jsx';
 import ActiveProjectEditDrawer from './ActiveProjectEditDrawer.jsx';
 import CurrentProjectBillingDrawer from './CurrentProjectBillingDrawer.jsx';
 import NotificationProjectCards from './NotificationProjectCards.jsx';
+import ScheduleReviewInfoDrawer from './ScheduleReviewInfoDrawer.jsx';
 import ActiveBidBillingDrawer from './ActiveBidBillingDrawer.jsx';
 import OriginatingBidAttentionDrawer from './OriginatingBidAttentionDrawer.jsx';
 import ProjectBillingPivot from './ProjectBillingPivot.jsx';
@@ -1745,6 +1749,8 @@ export default function App() {
   // NULL means no successful portfolio-wide balance read yet. A failed read
   // must never be displayed as "0 Need Rebalance".
   const [portfolioBalance, setPortfolioBalance] = useState(null);
+  const [scheduleReview, setScheduleReview] = useState(null);
+  const [selectedScheduleInfo, setSelectedScheduleInfo] = useState(null);
 
   const [
     attentionOpen,
@@ -2223,7 +2229,8 @@ export default function App() {
     )
       .trim()
       .toUpperCase()
-    === 'ADMIN';
+    === 'ADMIN'
+    || String(user?.appRole || '').trim().toUpperCase() === 'MANAGEMENT_ADMIN';
 
 
   // Microsoft authentication resolves after the first render. Set the initial
@@ -2292,6 +2299,7 @@ export default function App() {
     onInitialLoading: setDataLoading,
     onAttention: setForecastAttention,
     onPortfolioBalance: setPortfolioBalance,
+    onScheduleReview: setScheduleReview,
     onAttentionError: setAttentionError,
     onAttentionLoading: setAttentionLoading,
     onReady: () => {
@@ -2309,6 +2317,8 @@ export default function App() {
       setBidMonthly(new Map());
       setForecastAttention([]);
       setPortfolioBalance(null);
+      setScheduleReview(null);
+      setSelectedScheduleInfo(null);
       setAttentionError(null);
       setAttentionLoading(false);
       setAttentionOpen(false);
@@ -2326,6 +2336,14 @@ export default function App() {
       setActiveBids(dashboard.projects.items);
       setBidMonthly(new Map(dashboard.monthly.map(row => [row.sharePointItemId, row.items || []])));
     },
+  });
+
+  const scheduleReviewAttention = useScheduleReviewAttention({
+    userKey: user ? `${user.eid}:${user.appRole}` : null,
+    enabled: Boolean(user && (canViewProjectedBillings || canViewBidLog)),
+    fetchJson,
+    isEnding: () => logoutInProgressRef.current,
+    onSessionError: handleReadSessionError,
   });
 
   const originatingBidAttention = useOriginatingBidAttention({
@@ -2348,19 +2366,26 @@ export default function App() {
     () => indexPortfolioRebalance(portfolioBalance || []),
     [portfolioBalance],
   );
+  const scheduleReviewByJobId = useMemo(
+    () => indexScheduleReview(scheduleReview || []),
+    [scheduleReview],
+  );
 
   const notificationCount =
     forecastAttention.length
-    + originatingBidAttentionData.attentionCount;
+    + originatingBidAttentionData.attentionCount
+    + scheduleReviewAttention.items.length;
 
   const notificationsLoading =
     attentionLoading
-    || originatingBidAttention.loading;
+    || originatingBidAttention.loading
+    || scheduleReviewAttention.loading;
 
   const notificationsError =
     [
       attentionError,
       originatingBidAttention.error,
+      scheduleReviewAttention.error,
     ]
       .filter(Boolean)
       .join(' ')
@@ -2373,6 +2398,9 @@ export default function App() {
         : Promise.resolve(),
       canViewBidLog
         ? originatingBidAttention.refresh({ passive: false })
+        : Promise.resolve(),
+      (canViewProjectedBillings || canViewBidLog)
+        ? scheduleReviewAttention.refresh({ passive: false })
         : Promise.resolve(),
     ]);
   }
@@ -2441,12 +2469,38 @@ export default function App() {
       portfolioFreshness.refreshCurrent(),
       portfolioFreshness.refreshAttention(),
       originatingBidAttention.refresh({ passive: false }),
+      scheduleReviewAttention.refresh({ passive: false }),
     ]);
   }
 
   async function refreshProjectedBidData() {
     invalidateBidLogWorkspaceCache();
     return portfolioFreshness.refreshBids();
+  }
+
+  function openScheduleReviewProject(item) {
+    setAttentionOpen(false);
+    if (canViewProjectedBillings) {
+      openAttentionProject(item);
+    } else {
+      // Project Engineers can receive assigned notifications without
+      // acquiring Projected Billings read/write permissions.
+      setSelectedScheduleInfo(item);
+    }
+  }
+
+  function openBillingProjectFromDirectory(jobListId) {
+    if (!canViewProjectedBillings) return;
+    const target = currentProjects.find(
+      project => Number(project.jobListId) === Number(jobListId),
+    );
+    if (target) {
+      setActivePage('projected');
+      openCurrentProjectDrawer(target, 'pm-forecast');
+    } else {
+      setActivePage('projected');
+      setDataError('Projected billing details are still loading. Refresh and try again.');
+    }
   }
 
   function openAttentionProject(
@@ -3514,6 +3568,7 @@ export default function App() {
       const m = aggregateCurrentMonthly(currentMonthly.get(row.jobListId), fromMonth, throughMonth);
       return {...row,
         needsRebalance: rebalanceByJobId.has(String(row.jobListId)),
+        scheduleReview: scheduleReviewByJobId.get(String(row.jobListId)) || null,
         rebalanceVarianceAmount: rebalanceByJobId.get(String(row.jobListId))?.rebalanceVarianceAmount,
         selectedActualValueCount:m.actualValueCount, selectedBaseline:m.baseline,
         selectedMissingPmMonths:m.missingPmMonths, selectedProjected:m.projected,
@@ -3523,7 +3578,7 @@ export default function App() {
         selectedVarianceMissingEditableRows:m.varianceMissingEditableRows,
         selectedVarianceHistoricalUnavailableRows:m.varianceHistoricalUnavailableRows};
     }).filter(row => !isCompleted(row) || Math.abs(Number(row.selectedActual)||0)>0.000001),
-    [rangeValid,currentProjects,currentMonthly,fromMonth,throughMonth,rebalanceByJobId]);
+    [rangeValid,currentProjects,currentMonthly,fromMonth,throughMonth,rebalanceByJobId,scheduleReviewByJobId]);
   const bidRangeRows = useMemo(() => !rangeValid ? [] : selectedBidSourceRows
     .filter(row => hasMonthlyValues(bidMonthly.get(row.sharePointItemId),fromMonth,throughMonth,
       ['monthlyForecastAmount','weightedMonthlyForecastAmount']))
@@ -5494,6 +5549,8 @@ export default function App() {
                     <NotificationProjectCards
                       forecastItems={forecastAttention}
                       originatingItems={originatingBidAttentionItems}
+                      scheduleItems={scheduleReviewAttention.items}
+                      onOpenSchedule={openScheduleReviewProject}
                       onOpenForecast={openAttentionProject}
                       onOpenOriginating={openOriginatingBidAttentionProject}
                       originatingStatus={originatingBidAttentionStatus}
@@ -5583,7 +5640,7 @@ export default function App() {
                 onClick={toggleActiveProjects}
               >
                 <span className="toggle-label">
-                  <strong>Projects</strong>
+                  <strong>Active Projects</strong>
                   <small>{currentRangeRows.length} filtered</small>
                 </span>
               </button>
@@ -6108,7 +6165,7 @@ export default function App() {
                       }
                     >
                       <strong>
-                        Projects
+                        Active Projects
                       </strong>
 
                       <small>
@@ -6642,10 +6699,10 @@ export default function App() {
                         type="button"
                         className={`projection-source-count-toggle ${projectionSourceFilter === ALL || projectionSourceFilter === 'missing' ? 'active' : ''}`}
                         aria-pressed={projectionSourceFilter === ALL || projectionSourceFilter === 'missing'}
-                        title="No submitted PM Projection"
+                        title="* No submitted PM Projection"
                         onClick={() => setProjectionSourceFilter(value => value === 'missing' ? ALL : 'missing')}
                       >
-                        {projectionCoverage.system} No PM Projection
+                        {projectionCoverage.system} No PM Projection*
                       </button>
                       <span className="projection-source-divider" aria-hidden="true">·</span>
                       <button
@@ -7026,7 +7083,9 @@ export default function App() {
                                                     === 'Current Project'
                                                   ) {
                                                     openCurrentProjectDrawer(
-                                                      detail.raw
+                                                      detail.raw,
+                                                      event.target.closest('[data-needs-rebalance], [data-schedule-review]')
+                                                        ? 'pm-forecast' : null,
                                                     );
                                                   } else {
                                                     openActiveBidDrawer(
@@ -7081,6 +7140,13 @@ export default function App() {
                                                     )}
                                                   </strong>
 
+                                                  {detail.source === 'Current Project' && !isCompleted(detail.raw) && detail.raw?.needsRebalance && (
+                                                    <span className="needs-rebalance-flag" data-needs-rebalance
+                                                      title="PM Projection Out of Balance — review billing projections">Needs Rebalance</span>
+                                                  )}
+                                                  {detail.source === 'Current Project' && !isCompleted(detail.raw) && (
+                                                    <ScheduleReviewFlag review={detail.raw?.scheduleReview} />
+                                                  )}
                                                   {detail.raw?.projectCompleted && (
                                                     <span className="project-completed-pill">
                                                       Completed
@@ -7419,7 +7485,7 @@ export default function App() {
 
                   {includeActiveProjects && (
                     <SortHeader
-                      label="Project Month"
+                      label="Month"
                       sortKey="month"
                       currentSort={detailSort}
                       onSort={toggleDetailSort}
@@ -7468,13 +7534,15 @@ export default function App() {
                       key={row.key}
                       className="clickable-project-row"
                       onClick={
-                        () => {
+                        event => {
                           if (
                             row.source
                             === 'Current Project'
                           ) {
                             openCurrentProjectDrawer(
-                              row.raw
+                              row.raw,
+                              event.target.closest('[data-needs-rebalance], [data-schedule-review]')
+                                ? 'pm-forecast' : null,
                             );
                           } else {
                             openActiveBidDrawer(
@@ -7552,6 +7620,13 @@ export default function App() {
                             )}
                           </strong>
 
+                          {row.source === 'Current Project' && !isCompleted(row.raw) && row.raw?.needsRebalance && (
+                            <span className="needs-rebalance-flag" data-needs-rebalance
+                              title="PM Projection Out of Balance — review billing projections">Needs Rebalance</span>
+                          )}
+                          {row.source === 'Current Project' && !isCompleted(row.raw) && (
+                            <ScheduleReviewFlag review={row.raw?.scheduleReview} />
+                          )}
                           {row.raw?.projectCompleted && (
                             <span className="project-completed-pill">
                               Completed
@@ -7730,6 +7805,9 @@ export default function App() {
       ) ? (
         <ActiveProjectsWorkspace
           user={user}
+          rebalanceByJobId={rebalanceByJobId}
+          scheduleReviewByJobId={scheduleReviewByJobId}
+          onOpenBillingProject={canViewProjectedBillings ? openBillingProjectFromDirectory : null}
           onProjectDataChanged={refreshProjectedCurrentProjectData}
         />
       ) : (
@@ -7758,6 +7836,9 @@ export default function App() {
         user={user}
         rebalanceAttention={selectedCurrentProject
           ? rebalanceByJobId.get(String(selectedCurrentProject.jobListId)) || null
+          : null}
+        scheduleReview={selectedCurrentProject
+          ? scheduleReviewByJobId.get(String(selectedCurrentProject.jobListId)) || null
           : null}
         monthlyRows={
           selectedCurrentProject
@@ -7788,6 +7869,11 @@ export default function App() {
           setSelectedCurrentProjectControl(null);
         }}
         onAttentionChanged={refreshProjectedCurrentProjectData}
+      />
+
+      <ScheduleReviewInfoDrawer
+        review={selectedScheduleInfo}
+        onClose={() => setSelectedScheduleInfo(null)}
       />
 
       <OriginatingBidAttentionDrawer

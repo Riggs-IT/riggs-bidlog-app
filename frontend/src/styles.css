@@ -4673,7 +4673,7 @@ h2 {
 
 
 .pm-forecast-cell {
-  min-width: 165px;
+  min-width: 195px;
 }
 
 
@@ -4683,7 +4683,7 @@ h2 {
 
   margin-left: auto;
 
-  width: 145px;
+  width: 168px;
 
   border:
     1px solid
@@ -4703,7 +4703,8 @@ h2 {
 
 
 .pm-inline-input-wrap > span {
-  padding-left: 9px;
+  /* A touch more breathing room to the right of the dollar prefix. */
+  padding: 0 12px;
 
   color: var(--muted);
 
@@ -5485,8 +5486,9 @@ h2 {
 
 
 .project-month-cell {
-  min-width: 105px;
-
+  width: 90px;
+  min-width: 90px;
+  max-width: 90px;
   white-space: nowrap;
 }
 
@@ -6370,9 +6372,9 @@ tfoot th {
 
 .project-pivot-table
 .pivot-project-column {
-  width: 270px;
-  min-width: 270px;
-  max-width: 270px;
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
 }
 
 
@@ -6380,9 +6382,9 @@ tfoot th {
 .pivot-month-column,
 .project-pivot-table
 .pivot-total-column {
-  width: 162px;
-  min-width: 162px;
-  max-width: 162px;
+  width: 148px;
+  min-width: 148px;
+  max-width: 148px;
 }
 
 
@@ -6603,9 +6605,9 @@ th.pivot-project-column {
 @media (max-width: 760px) {
   .project-pivot-table
   .pivot-project-column {
-    width: 220px;
-    min-width: 220px;
-    max-width: 220px;
+    width: 260px;
+    min-width: 260px;
+    max-width: 260px;
   }
 }
 
@@ -10232,6 +10234,11 @@ tbody td {
   }
 }
 
+.money-input {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
 /* ============================================================
    PM PROJECTION INPUT RESET / NUMBER SPINNER CLEANUP
    ============================================================ */
@@ -10255,21 +10262,6 @@ tbody td {
   column-gap: 6px;
 
   margin-left: auto;
-}
-
-
-/* Remove Chrome / Edge / Safari number arrows. */
-.pm-inline-input-wrap input[type="number"] {
-  appearance: textfield;
-  -moz-appearance: textfield;
-}
-
-
-.pm-inline-input-wrap input[type="number"]::-webkit-outer-spin-button,
-.pm-inline-input-wrap input[type="number"]::-webkit-inner-spin-button {
-  margin: 0;
-
-  -webkit-appearance: none;
 }
 
 
@@ -13780,15 +13772,18 @@ td.pivot-project-column {
 
 .projected-breakdown-table .project-cell,
 .monthly-project-table .project-cell {
-  width: 280px;
-  min-width: 280px;
-  max-width: 280px;
+  width: 310px;
+  min-width: 310px;
+  max-width: 310px;
 }
 
+/* The full Probability heading, 28px of sort-button padding, and the
+   sort arrow need a real lane. Otherwise the beginning of the heading
+   overflows under the preceding frozen Project / Bid column. */
 .project-pivot-table .pivot-probability-column {
-  width: 92px;
-  min-width: 92px;
-  max-width: 92px;
+  width: 142px;
+  min-width: 142px;
+  max-width: 142px;
 }
 
 .project-pivot-table.pivot-source-potential
@@ -13812,8 +13807,8 @@ th.pivot-probability-column,
 .project-pivot-table.pivot-source-combined
 td.pivot-probability-column {
   position: sticky;
-  left: 270px;
-  z-index: 5;
+  left: 300px;
+  z-index: 6;
   border-right: 1px solid var(--border-strong);
   background: var(--surface);
   background-clip: padding-box;
@@ -13824,14 +13819,14 @@ td.pivot-probability-column {
 th.pivot-probability-column,
 .project-pivot-table.pivot-source-combined
 td.pivot-probability-column {
-  left: 446px;
+  left: 476px;
 }
 
 .project-pivot-table.pivot-source-potential
 th.pivot-probability-column,
 .project-pivot-table.pivot-source-combined
 th.pivot-probability-column {
-  z-index: 8;
+  z-index: 9;
   background: var(--surface-2);
 }
 
@@ -13850,7 +13845,9 @@ td.pivot-probability-column {
 
 .floating-table-header-table
 th.pivot-probability-column {
-  z-index: 12;
+  /* Paint the Probability header above the shadow of the preceding
+     frozen Project / Bid header in the cloned sticky table. */
+  z-index: 13;
 }
 
 .pivot-header-total-values,
@@ -13900,14 +13897,14 @@ th.pivot-probability-column {
   th.pivot-probability-column,
   .project-pivot-table.pivot-source-potential
   td.pivot-probability-column {
-    left: 220px;
+    left: 260px;
   }
 
   .project-pivot-table.pivot-source-combined
   th.pivot-probability-column,
   .project-pivot-table.pivot-source-combined
   td.pivot-probability-column {
-    left: 396px;
+    left: 436px;
   }
 }
 
@@ -14064,6 +14061,14 @@ tbody > tr:nth-child(
 .projection-source-count-toggle.rebalance-count:not(.active) {
   color: var(--warning);
 }
+
+/* Selection is a filled state, not just amber text on a neutral pill.
+   This applies to the regular controls and their floating sticky copies. */
+.projection-source-count-toggle.rebalance-count.active {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 58%, var(--border));
+  background: color-mix(in srgb, var(--accent) 20%, var(--surface-2));
+}
 .pm-forecast-jump-target { scroll-margin-top: 20px; }
 .pm-forecast-jump-target.pm-forecast-highlight > .pm-forecast-section {
   outline: 2px solid var(--warning);
@@ -14134,3 +14139,245 @@ tbody > tr:nth-child(
   text-align: right;
 }
 .notification-grace-note { margin: 0; }
+
+/* A schedule extension is distinct from a financial contract mismatch. */
+.schedule-review-flag {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 3px 7px;
+  border: 1px solid color-mix(in srgb, var(--accent) 50%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 11%, var(--surface));
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.schedule-review-action {cursor: pointer; font-family: inherit;}
+.schedule-review-action:hover, .schedule-review-action:focus-visible {
+  background: color-mix(in srgb, var(--accent) 20%, var(--surface));
+}
+.schedule-review-info-drawer {max-width: 560px;}
+.schedule-review-info-message {line-height: 1.6; font-weight: 600;}
+
+/* Keep project title + warning on ONE line in all project tables.
+   Give the name the flexible/ellipsized space; badges never wrap. */
+.pivot-project-name-line:has(.schedule-review-flag),
+.pivot-project-name-line:has(.needs-rebalance-flag),
+.project-name-status-line:has(.schedule-review-flag),
+.project-name-status-line:has(.needs-rebalance-flag),
+.active-project-name-line:has(.schedule-review-flag),
+.active-project-name-line:has(.needs-rebalance-flag) {
+  flex-wrap: nowrap;
+}
+
+:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line)
+  > :is(.needs-rebalance-flag, .schedule-review-flag) {
+  flex: 0 0 auto;
+}
+
+/* The generic .project-cell span rule has higher specificity than the bare
+   warning badge and was turning it gray in the monthly breakdown tables. */
+:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line)
+  > .needs-rebalance-flag {
+  display: inline-flex;
+  margin-top: 0;
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 50%, var(--border));
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+}
+
+/* The same generic table span selector must not mute schedule warnings. */
+:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line)
+  > .schedule-review-flag {
+  display: inline-flex;
+  margin-top: 0;
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  background: color-mix(in srgb, var(--accent) 11%, var(--surface));
+}
+
+/* ========================================================================== */
+/* Projected Billings / Values All — sticky shared metric labels              */
+/* ========================================================================== */
+/* One label track per project replaces repeated labels in every month.       */
+/* All other value modes keep their original table structure.                 */
+.project-pivot-table.pivot-metric-all .pivot-metric-labels-column {
+  position: sticky;
+  left: 394px; /* Active: Job # (94) + Project (300) */
+  z-index: 7;
+  width: 128px;
+  min-width: 128px;
+  max-width: 128px;
+  box-sizing: border-box;
+  background: var(--surface);
+  border-right: 1px solid var(--border-strong);
+  box-shadow: 5px 0 10px rgba(0, 0, 0, .09);
+}
+
+.project-pivot-table.pivot-metric-all.pivot-source-combined
+  .pivot-metric-labels-column {
+  left: 618px; /* Source (82) + Job # (94) + Project (300) + Probability (142) */
+}
+
+.project-pivot-table.pivot-metric-all th.pivot-metric-labels-column {
+  z-index: 10;
+  background: var(--surface-2);
+  color: var(--muted);
+  text-align: left;
+  font-size: 9px;
+  letter-spacing: .045em;
+  white-space: nowrap;
+}
+
+.project-pivot-table.pivot-metric-all.pivot-metric-labels-pinned
+  .pivot-metric-labels-column {
+  width: 55px;
+  min-width: 55px;
+  max-width: 55px;
+  padding-left: 12px;
+  padding-right: 7px;
+}
+
+/* Identical row tracks in the shared label column and each month, so
+   PROJECTED / ACTUAL / VARIANCE / MARGIN always align with their values. */
+.pivot-metric-label-list,
+.pivot-billing-amounts {
+  display: grid;
+  grid-template-rows: repeat(4, 15px);
+  row-gap: 3px;
+  min-width: 0;
+}
+
+.pivot-metric-label,
+.pivot-billing-amount-line {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  line-height: 15px;
+}
+
+.pivot-metric-label {
+  font-size: 9px;
+  font-weight: 650;
+  color: var(--muted);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pivot-metric-label abbr {
+  color: var(--text-soft);
+  text-decoration: none;
+  cursor: help;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.pivot-billing-amount-line {
+  justify-content: flex-end;
+}
+
+.pivot-billing-amount-line strong {
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 650;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.pivot-billing-amount-line.variance-negative strong {
+  color: var(--negative);
+}
+
+/* The full labels now live in the shared column, making All month cells
+   value-only rather than two-column label/value mini tables. */
+.project-pivot-table.pivot-metric-all .pivot-month-column,
+.project-pivot-table.pivot-metric-all .pivot-total-column {
+  width: 154px;
+  min-width: 154px;
+  max-width: 154px;
+}
+
+/* Keep the frozen label lane striped/highlighted with its own project row. */
+.project-pivot-table.pivot-metric-all
+  tbody > tr:nth-child(even of .pivot-project-row)
+  > td.pivot-metric-labels-column {
+  background: var(--table-row-alt);
+}
+
+.project-pivot-table.pivot-metric-all
+  .pivot-project-row:hover > td.pivot-metric-labels-column {
+  background: color-mix(in srgb, var(--surface) 92%, var(--accent) 8%);
+}
+
+/* A System Estimate comparison note may add height under a month; align
+   all four metric tracks at the top instead of vertically centering only
+   the label column and shifting P/A/Δ/M away from their amounts. */
+.project-pivot-table.pivot-metric-all tbody td.pivot-metric-labels-column,
+.project-pivot-table.pivot-metric-all tbody td.pivot-month-column,
+.project-pivot-table.pivot-metric-all tbody td.pivot-total-column {
+  vertical-align: top;
+}
+
+/* Management administrators review Active Projects while write mapping is incomplete. */
+.active-projects-workspace.management-admin-preview {
+  position: relative;
+  isolation: isolate;
+}
+.active-projects-workspace.management-admin-preview::after {
+  content: 'UNDER DEVELOPMENT · VIEW ONLY';
+  position: fixed;
+  top: 51%;
+  left: 28%;
+  transform: translateY(-50%) rotate(-16deg);
+  font-size: clamp(1.7rem, 4.4vw, 5.25rem);
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  opacity: 0.075;
+  color: var(--text-primary, #cbd5e1);
+  pointer-events: none;
+  z-index: 30;
+  white-space: nowrap;
+  user-select: none;
+}
+.management-preview-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.8rem 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color, #55616e);
+  border-radius: 0.65rem;
+  background: var(--surface-secondary, rgba(110, 126, 141, 0.11));
+  font-size: 0.86rem;
+}
+.management-preview-notice strong {
+  font-size: 0.76rem;
+  letter-spacing: 0.075em;
+  flex: 0 0 auto;
+}
+.management-preview-notice span {
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+.management-preview-drawer-notice { margin: 0 0 1rem; }
+.management-preview-cognito-guide {
+  display: grid;
+  gap: 0.35rem;
+  margin: 1rem 0 0.7rem;
+  padding: 0.85rem 1rem;
+  border: 1px dashed var(--border-color, #65717b);
+  border-radius: 0.6rem;
+  font-size: 0.83rem;
+}
+.management-preview-cognito-guide strong { font-size: 0.9rem; }
+@media (max-width: 760px) {
+  .active-projects-workspace.management-admin-preview::after {
+    left: 10%;
+    font-size: 1.55rem;
+  }
+}

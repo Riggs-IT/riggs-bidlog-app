@@ -1,10 +1,13 @@
 import React from 'react';
+import {scheduleReviewText} from './scheduleReview.js';
 
 // Keep one list and one scroll owner. Each alert is an independent, accessible
 // action; do not put buttons inside buttons or make a second scrolling group.
 export default function NotificationProjectCards({
   forecastItems = [],
   originatingItems = [],
+  scheduleItems = [],
+  onOpenSchedule,
   onOpenForecast,
   onOpenOriginating,
   originatingStatus,
@@ -40,6 +43,25 @@ export default function NotificationProjectCards({
           )}
           <span className="notification-view-project notification-card-action" aria-hidden="true">
             View Project
+          </span>
+        </button>
+      ))}
+
+      {scheduleItems.map(item => (
+        <button
+          key={`schedule-${item.jobListId}-${item.forecastVersionId}`}
+          type="button" className="notification-item notification-action-card"
+          onClick={() => onOpenSchedule(item)}
+        >
+          <span className="notification-item-heading">
+            <span className="notification-card-heading-copy">
+              <span>{item.jobNumber} · SCHEDULE NEEDS REVIEW</span>
+              <strong>{item.jobName || 'Current Project'}</strong>
+            </span>
+          </span>
+          <span className="notification-card-description">{scheduleReviewText(item)}</span>
+          <span className="notification-view-project notification-card-action" aria-hidden="true">
+            Review Project
           </span>
         </button>
       ))}

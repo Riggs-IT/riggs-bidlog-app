@@ -92,6 +92,8 @@ from .data_api import (
     update_current_project_pm_forecast_policy,
     get_pm_forecast_attention,
     get_pm_forecast_portfolio_balance,
+    get_pm_forecast_schedule_review,
+    get_pm_forecast_schedule_review_attention,
     get_current_project_pm_forecast,
     get_current_project_pm_forecast_history,
     get_current_project_pm_forecast_version,
@@ -619,7 +621,7 @@ def _workspace_profile(
         current_user
     )
 
-    if role == "ADMIN":
+    if role in {"ADMIN", "MANAGEMENT_ADMIN"}:
         return "ADMIN"
 
     if role == "VIEWER":
@@ -693,6 +695,7 @@ def _can_edit_bid_log(
         )
         in {
             "ADMIN",
+            "MANAGEMENT_ADMIN",
             "OPERATIONS",
         }
     )
@@ -1586,7 +1589,7 @@ def _can_view_margin(
             current_user.app_role
             or ""
         ).upper()
-        == "ADMIN"
+        in {"ADMIN", "MANAGEMENT_ADMIN"}
     )
 
 
@@ -2745,7 +2748,7 @@ async def update_pm_forecast_policy_proxy(
         .upper()
     )
 
-    if role != "ADMIN":
+    if role not in {"ADMIN", "MANAGEMENT_ADMIN"}:
         raise HTTPException(
             status_code=403,
             detail="bid_log_admin_required",
@@ -2845,6 +2848,32 @@ def pm_forecast_portfolio_balance(
         _raise_pm_forecast_proxy_error(exc)
 
 
+@app.get("/api/pm-forecast/schedule-review")
+def pm_forecast_schedule_review(
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    _require_projected_workspace_access(current_user)
+    try:
+        return get_pm_forecast_schedule_review()
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(exc)
+
+
+@app.get("/api/pm-forecast/schedule-review/attention")
+def pm_forecast_schedule_review_attention(
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    # Recipient-scoped read is available to authorized Bid Log staff without
+    # granting the restricted Projected Billings workspace or write actions.
+    capabilities = _workspace_capabilities(current_user)
+    if not (capabilities["canViewBidLog"] or capabilities["canViewProjectedBillings"]):
+        raise HTTPException(status_code=403, detail="bid_log_user_not_authorized")
+    try:
+        return get_pm_forecast_schedule_review_attention(current_user.eid)
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(exc)
+
+
 @app.get(
     "/api/pm-forecast/attention"
 )
@@ -2918,7 +2947,7 @@ async def update_current_project_pm_forecast_policy_proxy(
         .upper()
     )
 
-    if role != "ADMIN":
+    if role not in {"ADMIN", "MANAGEMENT_ADMIN"}:
         raise HTTPException(
             status_code=403,
             detail="bid_log_admin_required",
@@ -3150,7 +3179,7 @@ async def save_current_project_pm_forecast_admin_correction_proxy(
         .upper()
     )
 
-    if role != "ADMIN":
+    if role not in {"ADMIN", "MANAGEMENT_ADMIN"}:
         raise HTTPException(
             status_code=403,
             detail="bid_log_admin_required",

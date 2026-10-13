@@ -2348,6 +2348,37 @@ def get_pm_forecast_portfolio_balance() -> list[dict]:
     return _json_object_list(response, operation=operation)
 
 
+def get_pm_forecast_schedule_review() -> list[dict]:
+    """Portfolio-wide schedule flags, without recipient information."""
+    operation = "PM Forecast schedule review"
+    response = _get_service_response(
+        "/v1/bid-log/pm-forecast/schedule-review", operation=operation
+    )
+    return _json_object_list(response, operation=operation)
+
+
+def get_pm_forecast_schedule_review_attention(actor_eid: int) -> list[dict]:
+    """Recipient-scoped schedule notifications for the authenticated EID."""
+    operation = "PM Forecast schedule review attention"
+    try:
+        response = _get_http_client().get(
+            "/v1/bid-log/pm-forecast/schedule-review/attention",
+            headers=_request_headers(include_service_auth=True, actor_eid=actor_eid),
+        )
+    except httpx.TimeoutException as exc:
+        raise DataAPIUnavailable(f"Riggs Data API timed out during {operation}.") from exc
+    except httpx.RequestError as exc:
+        raise DataAPIUnavailable(f"Unable to connect to Riggs Data API during {operation}.") from exc
+    if response.status_code in {400, 403, 404, 409, 422}:
+        detail = _detail(response)
+        if detail is not None:
+            raise DataAPIRequestRejected(response.status_code, detail)
+    _raise_common_failure(response, operation=operation)
+    if response.status_code != 200:
+        raise DataAPIInvalidResponse(f"Unexpected response during {operation}.")
+    return _json_object_list(response, operation=operation)
+
+
 def get_pm_forecast_attention(
     actor_eid: int,
 ) -> list[dict]:

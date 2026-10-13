@@ -19,6 +19,7 @@ import {
   ProjectTeamBadges,
 } from './BillingDisplay.jsx';
 import ActiveProjectEditDrawer from './ActiveProjectEditDrawer.jsx';
+import ScheduleReviewFlag from './ScheduleReviewFlag.jsx';
 
 
 const ALL = '__ALL__';
@@ -562,6 +563,9 @@ export async function prefetchProjectsWorkspace({
 
 
 export default function ActiveProjectsWorkspace({
+  rebalanceByJobId = new Map(),
+  scheduleReviewByJobId = new Map(),
+  onOpenBillingProject = null,
   user,
   onProjectDataChanged,
 }) {
@@ -910,12 +914,17 @@ export default function ActiveProjectsWorkspace({
   const role = String(
     user?.appRole || '',
   ).toUpperCase();
-  const canEdit =
-    role === 'ADMIN'
-    || role === 'OPERATIONS';
+  const canEdit = role === 'ADMIN';
+  const managementPreview = role === 'MANAGEMENT_ADMIN';
 
   return (
-    <main className="page-shell active-projects-workspace">
+    <main className={`page-shell active-projects-workspace${managementPreview ? ' management-admin-preview' : ''}`}>
+      {managementPreview && (
+        <div className="management-preview-notice" role="note">
+          <strong>UNDER DEVELOPMENT · VIEW ONLY</strong>
+          <span>Active Projects is a preview. Make job-information changes in Cognito’s Job Information Sheet, not here. Open a project and use the original Cognito entry link at the bottom.</span>
+        </div>
+      )}
       <div className="page-heading bid-log-workspace-heading">
         <div>
           <div className="eyebrow">
@@ -923,7 +932,7 @@ export default function ActiveProjectsWorkspace({
           </div>
           <h1>Projects</h1>
           <p>
-            Review active project ownership and core job details, with completed projects available on demand. Select any project to open its editor.
+            Review active project ownership and core job details, with completed projects available on demand. Select a project to view its information.
           </p>
         </div>
 
@@ -1351,6 +1360,24 @@ export default function ActiveProjectsWorkspace({
                       >
                         {displayValue(project.jobName)}
                       </strong>
+                      {!project.projectCompleted && rebalanceByJobId.has(String(project.jobListId)) && (
+                        onOpenBillingProject ? (
+                          <button type="button" className="needs-rebalance-flag needs-rebalance-action"
+                            title="PM Projection Out of Balance — review billing projections"
+                            onClick={event => {event.stopPropagation(); onOpenBillingProject(project.jobListId);}}
+                            onKeyDown={event => event.stopPropagation()}>
+                            Needs Rebalance
+                          </button>
+                        ) : <span className="needs-rebalance-flag">Needs Rebalance</span>
+                      )}
+                      {!project.projectCompleted && (
+                        <ScheduleReviewFlag
+                          review={scheduleReviewByJobId.get(String(project.jobListId))}
+                          onClick={onOpenBillingProject
+                            ? event => {event.stopPropagation(); onOpenBillingProject(project.jobListId);}
+                            : null}
+                        />
+                      )}
                       {project.projectCompleted && (
                         <span className="project-status-pill completed">
                           Completed

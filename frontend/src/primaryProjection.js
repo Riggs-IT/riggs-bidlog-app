@@ -351,7 +351,8 @@ export function pivotTotals(rows, index, metric, includeBids) {
     hasSystemEstimate:current.some(c=>c?.isSystemEstimate && c?.projected!=null),
     baselineValue: sumAmounts(current.map(c => c?.baseline)),
     activeProjectsBilled: current.filter(c => c?.actual != null && c.actual !== 0).length,
-    potentialBidsProjected: bid.filter(c => c?.projected != null && c.projected !== 0).length,
+    activeProjectsProjected: current.filter(c => c?.projected != null && c.projected > 0).length,
+    potentialBidsProjected: bid.filter(c => c?.projected != null && c.projected > 0).length,
   };
 }
 

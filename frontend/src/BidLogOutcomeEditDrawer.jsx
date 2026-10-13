@@ -1,3 +1,4 @@
+import MoneyInput from './MoneyInput.jsx';
 import useGcReference from './useGcReference.js';
 import { gcReference } from './gcReference.js';
 import {
@@ -294,7 +295,7 @@ export default function BidLogOutcomeEditDrawer({
   const [confirmDialog, setConfirmDialog] = useState(null);
 
   const role = String(user?.appRole || '').trim().toUpperCase();
-  const canEdit = role === 'ADMIN' || role === 'OPERATIONS';
+  const canEdit = role === 'ADMIN' || role === 'MANAGEMENT_ADMIN' || role === 'OPERATIONS';
   const { items: gcOptions, loading: gcOptionsLoading, error: gcOptionsError, refresh: retryGcOptions } = useGcReference(canEdit);
 
   const editableFields = useMemo(
@@ -942,7 +943,7 @@ export default function BidLogOutcomeEditDrawer({
               </div>
 
               <div className="bid-edit-grid four-column">
-                {showField('estimatedPrice') && <Field label="Estimated Price"><input type="number" min="0" step="0.01" value={form.estimatedPrice} disabled={!canField('estimatedPrice')} onChange={event => updateField('estimatedPrice', event.target.value)} /></Field>}
+                {showField('estimatedPrice') && <Field label="Estimated Price"><MoneyInput value={form.estimatedPrice} disabled={!canField('estimatedPrice')} onValueChange={value => updateField('estimatedPrice', value)} /></Field>}
                 {showField('margin') && <Field label="Margin"><input type="number" step="0.0001" value={form.margin} disabled={!canField('margin')} onChange={event => updateField('margin', event.target.value)} /></Field>}
                 {showField('probability') && <Field label="Probability %"><input type="number" min="0" max="100" step="0.1" value={form.probabilityPercent} disabled={!canField('probability')} onChange={event => updateField('probabilityPercent', event.target.value)} /></Field>}
                 {showField('retention') && <Field label="Retention %"><input type="number" min="0" max="100" step="0.1" value={form.retentionPercent} disabled={!canField('retention')} onChange={event => updateField('retentionPercent', event.target.value)} /></Field>}
@@ -952,8 +953,8 @@ export default function BidLogOutcomeEditDrawer({
                 {showField('cubicYards') && <Field label="Cubic Yards"><input type="number" min="0" step="0.01" value={form.cubicYards} disabled={!canField('cubicYards')} onChange={event => updateField('cubicYards', event.target.value)} /></Field>}
                 {showField('squareFootage') && <Field label="Square Footage"><input type="number" min="0" step="0.01" value={form.squareFootage} disabled={!canField('squareFootage')} onChange={event => updateField('squareFootage', event.target.value)} /></Field>}
                 {showField('pavingFootage') && <Field label="Paving SF"><input type="number" min="0" step="0.01" value={form.pavingFootage} disabled={!canField('pavingFootage')} onChange={event => updateField('pavingFootage', event.target.value)} /></Field>}
-                {showField('redimixFootingPrice') && <Field label="Redimix Footing Price"><input type="number" min="0" step="0.01" value={form.redimixFootingPrice} disabled={!canField('redimixFootingPrice')} onChange={event => updateField('redimixFootingPrice', event.target.value)} /></Field>}
-                {showField('rebarPrice') && <Field label="Rebar Price"><input type="number" min="0" step="0.01" value={form.rebarPrice} disabled={!canField('rebarPrice')} onChange={event => updateField('rebarPrice', event.target.value)} /></Field>}
+                {showField('redimixFootingPrice') && <Field label="Redimix Footing Price"><MoneyInput value={form.redimixFootingPrice} disabled={!canField('redimixFootingPrice')} onValueChange={value => updateField('redimixFootingPrice', value)} /></Field>}
+                {showField('rebarPrice') && <Field label="Rebar Price"><MoneyInput value={form.rebarPrice} disabled={!canField('rebarPrice')} onValueChange={value => updateField('rebarPrice', value)} /></Field>}
               </div>
             </section>
           )}

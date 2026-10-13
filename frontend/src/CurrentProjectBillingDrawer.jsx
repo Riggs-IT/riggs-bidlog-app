@@ -1,3 +1,4 @@
+import ScheduleReviewFlag from './ScheduleReviewFlag.jsx';
 import {
   useEffect,
   useRef,
@@ -168,6 +169,7 @@ export default function CurrentProjectBillingDrawer({
   onAttentionChanged,
   initialProjectControl = null,
   rebalanceAttention = null,
+  scheduleReview = null,
 }) {
   const [
     originatingBidDetail,
@@ -364,7 +366,8 @@ export default function CurrentProjectBillingDrawer({
       user?.appRole
       || ''
     ).toUpperCase()
-    === 'ADMIN';
+    === 'ADMIN'
+    || String(user?.appRole || '').trim().toUpperCase() === 'MANAGEMENT_ADMIN';
 
 
   const effectiveBidEstimate =
@@ -487,6 +490,10 @@ export default function CurrentProjectBillingDrawer({
                 >
                   Needs Rebalance
                 </button>
+              )}
+
+              {!projectIsCompleted && (
+                <ScheduleReviewFlag review={scheduleReview} onClick={jumpToBillingProjections} />
               )}
 
               {projectIsCompleted && (

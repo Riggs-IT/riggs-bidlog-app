@@ -193,6 +193,7 @@ export default function ActiveProjectEditDrawer({
 }) {
   const role = String(user?.appRole || '').toUpperCase();
   const canEdit = role === 'ADMIN';
+  const managementPreview = role === 'MANAGEMENT_ADMIN';
   const { items: gcOptions, loading: gcOptionsLoading, error: gcOptionsError, refresh: retryGcOptions } = useGcReference(canEdit);
   const { editor, state, dirty: hasUnsavedChanges, needsReview } = useActiveProjectEditor(jobListId, canEdit);
   const payload = state.project.snapshot;
@@ -404,18 +405,18 @@ export default function ActiveProjectEditDrawer({
     <FloatingEditorShell
       eyebrow={
         job.projectCompleted || projectSummary?.projectCompleted
-          ? 'COMPLETED PROJECT · EDIT PROJECT'
-          : 'ACTIVE PROJECT · EDIT PROJECT'
+          ? (canEdit ? 'COMPLETED PROJECT · EDIT PROJECT' : 'COMPLETED PROJECT · VIEW PROJECT')
+          : (canEdit ? 'ACTIVE PROJECT · EDIT PROJECT' : 'ACTIVE PROJECT · VIEW PROJECT')
       }
       title={job.jobNumber || 'Project'}
       subtitle={job.jobName || 'Loading project…'}
       backLabel="Back to Projects"
       onClose={requestClose}
       saving={saving}
-      className="bid-log-edit-drawer active-project-edit-drawer"
+      className={`bid-log-edit-drawer active-project-edit-drawer${managementPreview ? ' management-admin-project-drawer' : ''}`}
       bodyClassName="bid-log-edit-body"
       footer={
-        !loading && !loadError && payload && form ? (
+        canEdit && !loading && !loadError && payload && form ? (
           <footer ref={footerRef} className="bid-log-edit-footer floating-editor-footer">
             <div className="floating-editor-footer-status">
               <small>
@@ -464,11 +465,16 @@ export default function ActiveProjectEditDrawer({
 
           {!loading && !loadError && payload && form && (
             <>
-              {!canEdit && (
+              {managementPreview ? (
+                <div className="management-preview-notice management-preview-drawer-notice" role="note">
+                  <strong>UNDER DEVELOPMENT · VIEW ONLY</strong>
+                  <span>Project editing is not available in this preview. For job information, including anticipated start and estimated duration, use Cognito’s Job Information Sheet. The Operations Schedule controls here are not the approved workflow.</span>
+                </div>
+              ) : !canEdit ? (
                 <div className="bid-edit-message">
                   Your role can view project details, but only Administrators can edit them.
                 </div>
-              )}
+              ) : null}
 
               <ActionToast message={state.notice?.message} type={state.notice?.type || 'success'} style={{ bottom: toastBottom }}
                 onDismiss={editor.dismissNotice} />
@@ -775,6 +781,12 @@ export default function ActiveProjectEditDrawer({
                   </div>
                 </dl>
 
+                {managementPreview && (
+                  <div className="management-preview-cognito-guide" role="note">
+                    <strong>Make job changes in Cognito</strong>
+                    <span>Open the Job Information Sheet to update anticipated start, estimated duration, and other approved job information. Planned schedule overrides in this preview are not an approved editing path.</span>
+                  </div>
+                )}
                 {job.entryLink && (
                   <a
                     className="active-project-source-link"

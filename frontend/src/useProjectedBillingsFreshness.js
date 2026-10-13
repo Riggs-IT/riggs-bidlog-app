@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { mergePrimaryPortfolio } from './primaryProjection.js';
 import {indexPortfolioRebalance} from './portfolioBalance.js';
+import {indexScheduleReview} from './scheduleReview.js';
 import { createLatestRead, freshReadPath, readOptions, watchVisibleReads } from './browserFreshness.js';
 
 // One owner publishes metadata, primary projections and historical-margin reads
@@ -74,6 +75,17 @@ export default function useProjectedBillingsFreshness(options) {
       },
       failed: error => reportError('portfolioBalance', error),
     });
+    const scheduleReview = createLatestRead({
+      read: config => request('/api/pm-forecast/schedule-review', config),
+      publish: data => {
+        if (!usable()) return false;
+        indexScheduleReview(data); // do not turn a bad response into an empty status
+        latest.current.onScheduleReview(data);
+        state.failures.delete('scheduleReview');
+        latest.current.onError([...state.failures.values()].join(' ') || null);
+      },
+      failed: error => reportError('scheduleReview', error),
+    });
     const attention = createLatestRead({
       read: config => latest.current.fetchJson('/api/pm-forecast/attention', readOptions(config)),
       publish: data => {
@@ -93,7 +105,7 @@ export default function useProjectedBillingsFreshness(options) {
       state.busy += 1;
       setRefreshing(true);
       try {
-        const result = await Promise.all([current.load(config), bids.load(config), portfolioBalance.load(config)]);
+        const result = await Promise.all([current.load(config), bids.load(config), portfolioBalance.load(config), scheduleReview.load(config)]);
         if (usable() && current.lastSuccessAt !== null && bids.lastSuccessAt !== null) {
           latest.current.onReady();
         }
@@ -109,7 +121,7 @@ export default function useProjectedBillingsFreshness(options) {
       try { return await attention.load(config); }
       finally { if (usable() && !attention.pending) latest.current.onAttentionLoading(false); }
     };
-    return { state, usable, current, bids, portfolioBalance, attention, batch, attentionLoad };
+    return { state, usable, current, bids, portfolioBalance, scheduleReview, attention, batch, attentionLoad };
   }, [scope]);
 
   useEffect(() => {
@@ -125,7 +137,7 @@ export default function useProjectedBillingsFreshness(options) {
     }
     return () => {
       reads.state.alive = false;
-      reads.current.cancel(); reads.bids.cancel(); reads.portfolioBalance.cancel(); reads.attention.cancel();
+      reads.current.cancel(); reads.bids.cancel(); reads.portfolioBalance.cancel(); reads.scheduleReview.cancel(); reads.attention.cancel();
     };
   }, [reads]);
 
@@ -146,6 +158,7 @@ export default function useProjectedBillingsFreshness(options) {
       ? Promise.all([
           reads.current.load({ replace: true, fresh: true, passive: true }),
           reads.portfolioBalance.load({ replace: true, fresh: true, passive: true }),
+          reads.scheduleReview.load({ replace: true, fresh: true, passive: true }),
         ]) : Promise.resolve(),
     refreshBids: () => reads.usable()
       ? reads.bids.load({ replace: true, fresh: true, passive: true }) : Promise.resolve(),

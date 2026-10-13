@@ -457,7 +457,8 @@ export default function CompletedProjectBillingDrawer({
       user?.appRole
       || ''
     ).toUpperCase()
-    === 'ADMIN';
+    === 'ADMIN'
+    || String(user?.appRole || '').trim().toUpperCase() === 'MANAGEMENT_ADMIN';
 
 
   const foundationVsCognito =

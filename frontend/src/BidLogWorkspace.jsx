@@ -1006,6 +1006,7 @@ export default function BidLogWorkspace({
 
   const canSeeMargin =
     role === 'ADMIN'
+    || role === 'MANAGEMENT_ADMIN'
     || role === 'OPERATIONS';
 
   const canEdit = canSeeMargin;

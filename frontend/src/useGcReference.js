@@ -4,7 +4,7 @@ import { gcReference } from './gcReference.js';
 export function canReadGcReference(user) {
   const role = String(user?.appRole || '').trim().toUpperCase();
   // Retain the existing server's editor-only full-directory boundary.
-  return ['ADMIN', 'OPERATIONS'].includes(role) && user?.capabilities?.canViewBidLog !== false;
+  return ['ADMIN', 'MANAGEMENT_ADMIN', 'OPERATIONS'].includes(role) && user?.capabilities?.canViewBidLog !== false;
 }
 
 export default function useGcReference(enabled = false) {
