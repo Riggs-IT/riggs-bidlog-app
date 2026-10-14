@@ -18,7 +18,7 @@ import PMForecastPanel from './PMForecastPanel.jsx';
 import OriginatingBidPanel from './OriginatingBidPanel.jsx';
 import { GeneralContractorDisplay } from './GeneralContractors.jsx';
 import ChangeOrdersPanel from './ChangeOrdersPanel.jsx';
-import { amountDifference } from './primaryProjection.js';
+import { amountDifference, pmProjectionForVariance } from './primaryProjection.js';
 import { isCompleted } from './viewFilters.js';
 
 
@@ -213,16 +213,10 @@ export default function CurrentProjectBillingDrawer({
       row => String(row?.monthStart || '').slice(0, 7) === varianceMonth,
     ) || null;
 
-  const monthlyBillingVariance =
-    amountDifference(
-      varianceMonthRow?.actualAmount,
-      varianceMonthRow?.projectedAmount,
-    );
-
-  const varianceProjectionSource =
-    project?.hasPmForecast
-      ? 'PM Projection'
-      : 'System Estimate';
+  const monthlyBillingVariance = amountDifference(
+    varianceMonthRow?.actualAmount,
+    pmProjectionForVariance(varianceMonthRow),
+  );
 
 
   useEffect(
@@ -1040,7 +1034,9 @@ export default function CurrentProjectBillingDrawer({
                 >
                   <span
                     className="billing-variance-label"
-                    title={`Foundation Billing − ${varianceProjectionSource} for the current month`}
+                    title={monthlyBillingVariance === null
+                      ? 'Unavailable without submitted PM projection and actuals. System Estimates are excluded.'
+                      : 'Foundation Actual Billing − submitted PM Projection for the current month'}
                   >
                     Monthly Billing Variance
                   </span>

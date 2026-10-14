@@ -23,7 +23,7 @@ test('projection balance copy explains the actual current save rule plainly', ()
 test('billing variance exposes the exact current-month comparison only in its tooltip', () => {
   const source = read('CurrentProjectBillingDrawer.jsx');
   assert.match(source, /Monthly Billing Variance/);
-  assert.match(source, /Foundation Billing − \$\{varianceProjectionSource\} for the current month/);
+  assert.match(source, /Foundation Actual Billing − submitted PM Projection for the current month/);
   assert.doesNotMatch(source, /Actual to date − Projected to date/);
   assert.doesNotMatch(source, /<small>\s*vs /);
 });

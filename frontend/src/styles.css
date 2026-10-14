@@ -13415,6 +13415,23 @@ td.pivot-project-column {
   white-space: nowrap;
 }
 
+/* The All header carries four numeric tracks; show the projection count on
+   one secondary line, retaining the complete activity breakdown on hover. */
+.project-pivot-table.pivot-metric-all .pivot-header-activity-counts {
+  display: block;
+  max-width: 100%;
+  text-align: right;
+}
+.project-pivot-table.pivot-metric-all .pivot-header-activity-counts
+  .pivot-header-billed-count {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 9px;
+}
+
 
 .pivot-header-activity-separator {
   color: var(--muted);
@@ -14232,13 +14249,16 @@ tbody > tr:nth-child(
   white-space: nowrap;
 }
 
+/* Reclaim space but retain a 15px gap before adjacent month values.
+   The pin threshold depends only on preceding stable column widths,
+   with hysteresis preventing pin/unpin feedback during the resize. */
 .project-pivot-table.pivot-metric-all.pivot-metric-labels-pinned
   .pivot-metric-labels-column {
-  width: 55px;
-  min-width: 55px;
-  max-width: 55px;
+  width: 63px;
+  min-width: 63px;
+  max-width: 63px;
   padding-left: 12px;
-  padding-right: 7px;
+  padding-right: 15px;
 }
 
 /* Identical row tracks in the shared label column and each month, so
@@ -14249,6 +14269,13 @@ tbody > tr:nth-child(
   grid-template-rows: repeat(4, 15px);
   row-gap: 3px;
   min-width: 0;
+}
+
+/* Users without margin access still retain All (P/A/Δ); the margin track
+   is absent from both the labels and values, not merely hidden by CSS. */
+.project-pivot-table.pivot-metric-all.pivot-no-margin .pivot-metric-label-list,
+.project-pivot-table.pivot-metric-all.pivot-no-margin .pivot-billing-amounts {
+  grid-template-rows: repeat(3, 15px);
 }
 
 .pivot-metric-label,
@@ -14321,6 +14348,99 @@ tbody > tr:nth-child(
   vertical-align: top;
 }
 
+/* Values -> All: a single financial legend lives in the frozen Metric header.
+   Each month and Total show the full values only. Identical grid row heights
+   align the shared legend with each number, even for unavailable values. */
+.project-pivot-table.pivot-metric-all .pivot-header-total-label {
+  min-height: 18px;
+  line-height: 18px;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-total-values-all {
+  grid-auto-rows: 15px;
+  row-gap: 2px;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-total-values-all
+  .pivot-header-total-value {
+  display: block;
+  line-height: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-activity-counts {
+  min-height: 12px;
+  line-height: 12px;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-activity-counts
+  .pivot-header-billed-count {
+  line-height: 12px;
+}
+
+.project-pivot-table.pivot-metric-all th.pivot-metric-labels-column {
+  padding: 0 14px;
+  vertical-align: top;
+}
+
+/* Match the 12px vertical / 14px horizontal padding of sortable month headers.
+   In the compact state the existing 12px/15px inset is retained. */
+.project-pivot-table.pivot-metric-all th.pivot-metric-labels-column
+  .pivot-header-metric-rail {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  justify-items: start;
+  gap: 3px;
+  text-transform: none;
+  text-align: left;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-metric-rail
+  .pivot-header-total-label {
+  font-size: 10px;
+  font-weight: 650;
+  color: var(--muted);
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-metric-rail
+  .pivot-header-total-values-all {
+  justify-content: start;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-metric-rail
+  .pivot-header-metric-label {
+  font-size: 10px;
+  font-weight: 650;
+  color: var(--muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-metric-rail
+  .pivot-header-activity-counts {
+  justify-self: start;
+  text-align: left;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-metric-rail
+  .pivot-header-metric-count {
+  text-overflow: ellipsis;
+  font-size: 9px;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-metric-rail
+  .pivot-header-metric-baseline {
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-month-column .table-sort-button,
+.project-pivot-table.pivot-metric-all .pivot-total-column .table-sort-button {
+  align-items: flex-start;
+}
+
 /* Management administrators review Active Projects while write mapping is incomplete. */
 .active-projects-workspace.management-admin-preview {
   position: relative;
@@ -14380,4 +14500,15 @@ tbody > tr:nth-child(
     left: 10%;
     font-size: 1.55rem;
   }
+}
+
+/* A tiny C differentiates pre-15th comparable variance without crowding month figures.
+   Mixed multi-month totals use * and explain the rollup in their tooltip. */
+.pivot-variance-mode-indicator {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 650;
+  margin-left: 3px;
+  vertical-align: super;
+  line-height: 0;
 }

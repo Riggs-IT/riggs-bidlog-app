@@ -539,6 +539,13 @@ export default function useStickyTableHeader(
 
       const syncColumnWidths =
         () => {
+          // Metric label compaction changes table classes without recreating
+          // this detached header. Mirror the current class before measuring.
+          const desiredClassName = `${table.className} floating-table-header-table`;
+          if (floatingTable.className !== desiredClassName) {
+            floatingTable.className = desiredClassName;
+          }
+
           const originalCells =
             header.querySelectorAll(
               'th'

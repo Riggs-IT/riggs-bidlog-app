@@ -20,7 +20,7 @@ test('Bid Log renders for all app roles', async t => {
   const {default: BidLogWorkspace} =
     await vite.ssrLoadModule('/src/BidLogWorkspace.jsx');
 
-  for (const appRole of ['ADMIN', 'OPERATIONS', 'VIEWER']) {
+  for (const appRole of ['ADMIN', 'MANAGEMENT_ADMIN', 'OPERATIONS', 'VIEWER']) {
     const html = renderToString(
       React.createElement(BidLogWorkspace, {
         user: {

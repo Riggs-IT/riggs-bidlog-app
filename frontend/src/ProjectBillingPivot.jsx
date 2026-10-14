@@ -1,4 +1,4 @@
-import { completedProjectPivotCell, pivotCurrentCell, pivotTotals, nullableAmount } from './primaryProjection.js';
+import { completedProjectPivotCell, pivotCurrentCell, pivotTotals, nullableAmount, varianceTooltipText } from './primaryProjection.js';
 import { ProjectionEstimateMarker, ProjectionAmount } from './ProjectionDisplay.jsx';
 import ScheduleReviewFlag from './ScheduleReviewFlag.jsx';
 import {
@@ -9,6 +9,7 @@ import {
 } from 'react';
 
 import useStickyTableHeader from './useStickyTableHeader.js';
+import {metricPinThreshold, shouldPinMetricLabels} from './pivotMetricPinning.js';
 import { ProjectTeamBadges } from './BillingDisplay.jsx';
 import { isCompleted } from './viewFilters.js';
 import {
@@ -314,6 +315,7 @@ function currentProjectPivotRow(
           varianceProjectedValue: null,
           varianceActualValue: null,
           varianceComparableRows: 0,
+          varianceNoPmForecastRows: 0,
           varianceActualRows: project.selectedActualValueCount || 0,
           varianceMissingEditableRows: 0,
           varianceHistoricalUnavailableRows: project.selectedActualValueCount || 0,
@@ -332,6 +334,7 @@ function currentProjectPivotRow(
           varianceProjectedValue: nullableAmount(project.selectedVarianceProjected),
           varianceActualValue: nullableAmount(project.selectedVarianceActual),
           varianceComparableRows: project.selectedVarianceComparableRows || 0,
+          varianceNoPmForecastRows: project.selectedVarianceNoPmForecastRows || 0,
           varianceActualRows: project.selectedActualValueCount || 0,
           varianceMissingEditableRows: project.selectedVarianceMissingEditableRows || 0,
           varianceHistoricalUnavailableRows: project.selectedVarianceHistoricalUnavailableRows || 0,
@@ -663,10 +666,10 @@ const ALL_VALUE_TRACKS = [
 ];
 
 
-function MetricLabels({compact}) {
+function MetricLabels({compact, showMargin = false}) {
   return (
     <div className="pivot-metric-label-list">
-      {ALL_VALUE_TRACKS.map(({key, label, short}) => (
+      {ALL_VALUE_TRACKS.filter(track => showMargin || track.key !== 'marginCollected').map(({key, label, short}) => (
         <span
           key={key}
           className="pivot-metric-label"
@@ -684,10 +687,50 @@ function MetricLabels({compact}) {
 }
 
 
-function AllBillingValues({cell, currency, source}) {
+// Header and project rows share the same frozen Metric lane in Values -> All.
+// One label per row replaces P/A/Δ/M repeated under every month and Total.
+export function HeaderMetricRail({compact, showMargin, includeProjectProjection, includeBidProjection, showBaseline}) {
+  const combined = includeProjectProjection && includeBidProjection;
+  const label = (full, short, title = full) => (
+    <small className="pivot-header-total-value pivot-header-metric-label" title={title}>
+      {compact ? short : full}
+    </small>
+  );
+
+  return (
+    <div className="pivot-header-total pivot-header-metric-rail" aria-label="Shared monthly metric labels">
+      <span className="pivot-header-total-label">Metric</span>
+      <span className="pivot-header-total-values pivot-header-total-values-all">
+        {combined && label('Total', 'T', 'Total projected: active projects + potential bids')}
+        {label(combined ? 'Active' : 'Projected', 'P', 'Active project projection')}
+        {includeProjectProjection && (
+          <>
+            {label('Actual', 'A', 'Actual billings')}
+            {label('Variance', 'Δ', 'Comparable before the Arizona 15th; Actual − PM starting the 15th')}
+            {showMargin && label('Margin', 'M', 'Margin collected')}
+          </>
+        )}
+      </span>
+      {showBaseline && includeProjectProjection && (
+        <small className="baseline-reference pivot-header-metric-baseline" title="System estimate">
+          {compact ? 'SE' : 'System estimate'}
+        </small>
+      )}
+      <span className="pivot-header-activity-counts">
+        <small className="pivot-header-billed-count pivot-header-forecast-count pivot-header-metric-count"
+          title={combined ? 'Projected active projects + potential bids' : includeProjectProjection ? 'Projected active projects' : 'Projected potential bids'}>
+          {compact ? '#' : combined ? 'Projected (all)' : includeProjectProjection ? 'Projected (active)' : 'Projected (bids)'}
+        </small>
+      </span>
+    </div>
+  );
+}
+
+
+function AllBillingValues({cell, currency, source, showMargin = false}) {
   return (
     <div className="pivot-billing-amounts">
-      {ALL_VALUE_TRACKS.map(({key}) => {
+      {ALL_VALUE_TRACKS.filter(track => showMargin || track.key !== 'marginCollected').map(({key}) => {
         // A potential bid has no Foundation Actual, Variance, or Margin.
         // Keep its four rows aligned, without inventing zero-dollar amounts.
         const unavailable = key !== 'projected'
@@ -822,14 +865,14 @@ function PivotSortHeader({
 }
 
 
-function BillingValue({ cell, metric, currency, source, showBaseline = false }) {
+function BillingValue({ cell, metric, currency, source, showBaseline = false, showMargin = false }) {
   const compare = showBaseline && source === 'current';
   if (metric === 'projected') {
     return <ProjectionAmount value={cell.projected} currency={currency} missing={cell.missingPmMonths}
       baseline={cell.baseline} compare={compare} />;
   }
   if (metric === 'all') {
-    return <div><AllBillingValues cell={cell} currency={currency} source={source} />
+    return <div><AllBillingValues cell={cell} currency={currency} source={source} showMargin={showMargin} />
 
       {compare && <small className="baseline-reference">System Estimate {cell.baseline == null ? '—' : currency(cell.baseline)}</small>}
     </div>;
@@ -864,18 +907,25 @@ function headerMetricKey(metric) {
 }
 
 
-function HeaderTotal({
+export function HeaderTotal({
   label,
   value,
   projectedValue = null,
   bidProjectedValue = null,
   actualValue = null,
+  marginCollectedValue = null,
+  showMargin = false,
   totalForecastValue = null,
   varianceValue = null,
+  actualVarianceValue = null,
+  comparableVarianceValue = null,
+  varianceMode = 'ACTUAL',
+  comparisonScope = 'projects',
   varianceProjectedValue = null,
   varianceActualValue = null,
   varianceComparableProjects = 0,
   varianceActualProjects = 0,
+  varianceNoPmForecastProjects = 0,
   varianceMissingEditableProjects = 0,
   varianceHistoricalUnavailableProjects = 0,
   metric,
@@ -899,7 +949,7 @@ function HeaderTotal({
   const projectedMode =
     metric === 'projected';
 
-  const varianceMode =
+  const varianceOnlyMode =
     metric === 'variance';
 
   const marginMode =
@@ -912,7 +962,7 @@ function HeaderTotal({
 
   const projectedTooltipLabel =
     includeProjectProjection
-      ? 'Active Project Projection'
+      ? 'Submitted PM Projection'
       : 'Potential Bid Projection';
 
   const hasCombinedForecastSources =
@@ -922,15 +972,15 @@ function HeaderTotal({
   const totalForecastTooltip =
     [
       'Total Forecast',
-      `Active projects: ${currency(projectedValue ?? 0)}`,
-      `Potential bids: ${currency(bidProjectedValue ?? 0)}`,
-      `Total: ${currency(totalForecastValue ?? 0)}`,
+      `Active projects: ${headerCurrency(projectedValue)}`,
+      `Potential bids: ${headerCurrency(bidProjectedValue)}`,
+      `Total: ${headerCurrency(totalForecastValue)}`,
     ].join('\n');
 
   const projectedTooltip =
     [
       projectedTooltipLabel,
-      currency(projectedDisplayValue ?? 0),
+      headerCurrency(projectedDisplayValue),
       includeProjectProjection
       && missingPmMonths
         ? `PM months missing: ${missingPmMonths}`
@@ -948,47 +998,25 @@ function HeaderTotal({
         : currency(actualValue),
     ].join('\n');
 
-  const varianceTooltip =
-    varianceValue === null
-    || varianceValue === undefined
-      ? (
-          varianceActualProjects > 0
-            ? [
-                'Variance',
-                'No comparable Projected + Actual rows',
-                varianceMissingEditableProjects
-                  ? `Missing projection: ${varianceMissingEditableProjects}`
-                  : null,
-                varianceHistoricalUnavailableProjects
-                  ? `Historical projection unavailable: ${varianceHistoricalUnavailableProjects}`
-                  : null,
-              ]
-                .filter(Boolean)
-                .join('\n')
-            : 'Variance\nNo actual billings'
-        )
-      : [
-          'Variance',
-          `Projected: ${currency(varianceProjectedValue ?? 0)}`,
-          `Actual: ${currency(varianceActualValue ?? 0)}`,
-          `Variance: ${currency(varianceValue)}`,
-          '',
-          `Compared: ${varianceComparableProjects} of ${varianceActualProjects} ${label === 'Total' ? 'project-months' : (varianceActualProjects === 1 ? 'project' : 'projects')}`,
-          varianceMissingEditableProjects
-            ? `Missing projection: ${varianceMissingEditableProjects}`
-            : null,
-          varianceHistoricalUnavailableProjects
-            ? `Historical projection unavailable: ${varianceHistoricalUnavailableProjects}`
-            : null,
-        ]
-          .filter(value => value !== null)
-          .join('\n');
+  // Both figures remain inspectable without making a matched subtotal look
+  // like the subtraction of the two unrestricted portfolio totals.
+  const varianceTooltip = varianceTooltipText({
+    actualVariance:actualVarianceValue, comparableVariance:comparableVarianceValue,
+    mode:varianceMode, compared:varianceComparableProjects,
+    actualProjects:varianceActualProjects, scope:comparisonScope,
+  }, headerCurrency);
+  const varianceIndicator = varianceMode === 'COMPARABLE' ? 'C'
+    : varianceMode === 'MIXED' ? '*' : null;
+  const varianceSuffix = varianceIndicator && varianceValue != null
+    ? <sup className="pivot-variance-mode-indicator" title={varianceMode === 'COMPARABLE'
+      ? 'Comparable variance (before 15th)' : 'Mixed monthly variance'}>{varianceIndicator}</sup>
+    : null;
 
   const singleValueTooltip =
     actualMode
       ? actualTooltip
       : (
-          varianceMode
+          varianceOnlyMode
             ? varianceTooltip
             : (
                 marginMode
@@ -1021,19 +1049,22 @@ function HeaderTotal({
     : 0;
   const totalProjectedCount = activeProjectedCount + bidProjectedCount;
   const projectProjectedText = activeProjectedCount > 0
-    ? `${activeProjectedCount} active ${activeProjectedCount === 1 ? 'project' : 'projects'} projected`
+    ? `${activeProjectedCount} Projected (active)`
     : null;
   const bidsProjectedText = bidProjectedCount > 0
-    ? `${bidProjectedCount} ${bidProjectedCount === 1 ? 'bid' : 'bids'} projected`
+    ? `${bidProjectedCount} Projected (bids)`
     : null;
   const combinedProjectedText = hasCombinedForecastSources && totalProjectedCount > 0
     ? `${totalProjectedCount} projected (active + bids)`
     : null;
   // T/P values already have their own dollar tooltips. Only the mixed-source
   // record count needs a hover, and its job is to split the *counts*.
-  const forecastActivityTooltip = hasCombinedForecastSources
-    ? `${activeProjectedCount} active ${activeProjectedCount === 1 ? 'project' : 'projects'} · ${bidProjectedCount} potential ${bidProjectedCount === 1 ? 'bid' : 'bids'}`
-    : undefined;
+  const forecastActivityTooltip = [
+    projectBilledText,
+    hasCombinedForecastSources
+      ? `${activeProjectedCount} active ${activeProjectedCount === 1 ? 'project' : 'projects'} · ${bidProjectedCount} potential ${bidProjectedCount === 1 ? 'bid' : 'bids'}`
+      : (projectProjectedText || bidsProjectedText),
+  ].filter(Boolean).join('\n') || undefined;
 
   return (
     <span className="pivot-header-total">
@@ -1048,7 +1079,7 @@ function HeaderTotal({
               className="pivot-header-total-value pivot-header-total-value-total"
               title={totalForecastTooltip}
             >
-              T {headerCurrency(totalForecastValue)}
+              {headerCurrency(totalForecastValue)}
             </small>
           )}
 
@@ -1058,31 +1089,35 @@ function HeaderTotal({
                 className="pivot-header-total-value"
                 title={projectedTooltip}
               >
-                P {headerCurrency(projectedValue)}
+                {headerCurrency(projectedValue)}
               </small>
 
-              {actualValue !== null && actualValue !== undefined && (
-                <small
-                  className="pivot-header-total-value pivot-header-total-value-actual"
-                  title={actualTooltip}
-                >
-                  A {headerCurrency(actualValue)}
-                </small>
-              )}
+              <small
+                className="pivot-header-total-value pivot-header-total-value-actual"
+                title={actualTooltip}
+              >
+                {headerCurrency(actualValue)}
+              </small>
 
-              {varianceValue !== null && varianceValue !== undefined && (
+              <small
+                className={
+                  `pivot-header-total-value pivot-header-total-value-variance ${
+                    metricClass('variance', varianceValue)
+                  }`
+                }
+                title={varianceTooltip}
+              >
+                {headerCurrency(varianceValue)}{varianceSuffix}
+              </small>
+
+              {showMargin && (
                 <small
-                  className={
-                    `pivot-header-total-value pivot-header-total-value-variance ${
-                      metricClass(
-                        'variance',
-                        varianceValue,
-                      )
-                    }`
-                  }
-                  title={varianceTooltip}
+                  className="pivot-header-total-value pivot-header-total-value-margin"
+                  title={marginCollectedValue == null
+                    ? 'Margin Collected\nUnavailable or margin data incomplete'
+                    : `Margin Collected\n${currency(marginCollectedValue)}`}
                 >
-                  V {headerCurrency(varianceValue)}
+                  {headerCurrency(marginCollectedValue)}
                 </small>
               )}
             </>
@@ -1091,7 +1126,7 @@ function HeaderTotal({
               className="pivot-header-total-value"
               title={projectedTooltip}
             >
-              P {headerCurrency(bidProjectedValue)}
+              {headerCurrency(bidProjectedValue)}
             </small>
           )}
         </span>
@@ -1121,14 +1156,14 @@ function HeaderTotal({
           </small>
         )
       ) : (
-        (actualMode || varianceMode)
+        (actualMode || varianceOnlyMode)
         && (value === null || value === undefined)
           ? null
           : (
               <small
                 className={
                   `pivot-header-total-value ${
-                    varianceMode
+                    varianceOnlyMode
                       ? metricClass(
                           'variance',
                           value,
@@ -1142,7 +1177,7 @@ function HeaderTotal({
                   ? 'A '
                   : ''}
 
-                {varianceMode
+                {varianceOnlyMode
                   ? 'V '
                   : ''}
 
@@ -1150,27 +1185,42 @@ function HeaderTotal({
                   ? 'M '
                   : ''}
 
-                {headerCurrency(value)}
+                {headerCurrency(value)}{varianceOnlyMode ? varianceSuffix : null}
               </small>
             )
       )}
 
-      {showBaseline && includeProjectProjection && <small className="baseline-reference">System Estimate {headerCurrency(baselineValue)}</small>}
+      {showBaseline && includeProjectProjection && (
+        <small className="baseline-reference" title={`System Estimate: ${headerCurrency(baselineValue)}`}>
+          {allMode ? headerCurrency(baselineValue) : `System Estimate ${headerCurrency(baselineValue)}`}
+        </small>
+      )}
 
-      {(projectBilledText || totalProjectedCount > 0) && (
+      {(allMode || projectBilledText || totalProjectedCount > 0) && (
         <span className="pivot-header-activity-counts">
-          {projectBilledText && (
-            <small className="pivot-header-billed-count" title={`${projectBilledText} in this month`}>
-              {projectBilledText}
-            </small>
-          )}
-          {totalProjectedCount > 0 && (
+          {allMode ? (
             <small
               className="pivot-header-billed-count pivot-header-forecast-count"
               title={forecastActivityTooltip}
             >
-              {combinedProjectedText || projectProjectedText || bidsProjectedText}
+              {totalProjectedCount}
             </small>
+          ) : (
+            <>
+              {projectBilledText && (
+                <small className="pivot-header-billed-count" title={`${projectBilledText} in this month`}>
+                  {projectBilledText}
+                </small>
+              )}
+              {totalProjectedCount > 0 && (
+                <small
+                  className="pivot-header-billed-count pivot-header-forecast-count"
+                  title={forecastActivityTooltip}
+                >
+                  {combinedProjectedText || projectProjectedText || bidsProjectedText}
+                </small>
+              )}
+            </>
           )}
         </span>
       )}
@@ -1186,6 +1236,7 @@ export default function ProjectBillingPivot({
   bidMonthly,
   currency,
   monthLabel,
+  varianceAsOfUTC = null,
   onSelectCurrentProject,
   onSelectBidProject,
   canViewMargin = false,
@@ -1235,8 +1286,7 @@ export default function ProjectBillingPivot({
           canViewMargin
             ? BILLING_METRICS
             : BILLING_METRICS.filter(
-                metric =>
-                  metric.key !== 'marginCollected'
+                metric => metric.key !== 'marginCollected'
               )
         );
 
@@ -1327,21 +1377,36 @@ export default function ProjectBillingPivot({
       return undefined;
     }
 
+    // A live metric-cell bounding rectangle becomes sticky at the boundary.
+    // Using it to decide whether to compact creates a feedback loop once the
+    // column shrinks and changes the horizontal scroll limit. Measure ONLY
+    // the preceding columns, whose widths do not change on compaction.
     const updatePinned = () => {
-      const pinned = pivotViewport.scrollLeft > 1
-        && metricColumn.getBoundingClientRect().left
-          <= frozenColumn.getBoundingClientRect().right + 1;
-      setMetricLabelsPinned(current => current === pinned ? current : pinned);
+      const pinThreshold = metricPinThreshold(metricColumn, frozenColumn);
+      if (pinThreshold === null) {
+        setMetricLabelsPinned(false);
+        return;
+      }
+      const scrollLeft = pivotViewport.scrollLeft;
+      const maxScroll = Math.max(0,
+        pivotViewport.scrollWidth - pivotViewport.clientWidth);
+
+      setMetricLabelsPinned(current => shouldPinMetricLabels({
+        scrollLeft,
+        maxScroll,
+        pinThreshold,
+        isPinned: current,
+      }));
     };
 
-    // Horizontal mouse/trackpad scrolling and the month slider both scroll
-    // the same viewport. A resize may change when the column touches the
-    // frozen project fields, so recheck that boundary too.
+    // Observe the table as well as its viewport: responsive column widths and
+    // switching between full/compact labels must retain the same threshold.
     pivotViewport.addEventListener('scroll', updatePinned, {passive: true});
     window.addEventListener('resize', updatePinned);
     const resizeObserver = typeof ResizeObserver === 'function'
       ? new ResizeObserver(updatePinned) : null;
     resizeObserver?.observe(pivotViewport);
+    resizeObserver?.observe(table);
     updatePinned();
     return () => {
       pivotViewport.removeEventListener('scroll', updatePinned);
@@ -1621,10 +1686,12 @@ export default function ProjectBillingPivot({
 
 
   const monthTotals = useMemo(() => months.map((month, index) => ({ month,
-    ...pivotTotals(rows, index, headerMetric, includeBids),
-  })), [months, rows, headerMetric, includeBids]);
-  const grandTotals = useMemo(() => pivotTotals(rows, null, headerMetric, includeBids),
-    [rows, headerMetric, includeBids]);
+    ...pivotTotals(rows, index, headerMetric, includeBids,
+      {month, asOfUTC: varianceAsOfUTC}),
+  })), [months, rows, headerMetric, includeBids, varianceAsOfUTC]);
+  const grandTotals = useMemo(() => pivotTotals(rows, null, headerMetric, includeBids,
+    {months, asOfUTC: varianceAsOfUTC}),
+    [rows, months, headerMetric, includeBids, varianceAsOfUTC]);
 
 
   return (
@@ -1794,7 +1861,7 @@ export default function ProjectBillingPivot({
       >
         <table
           className={
-            `monthly-table project-pivot-table pivot-metric-${billingMetric} ${sourceModeClass} ${metricLabelsPinned ? 'pivot-metric-labels-pinned' : ''}`
+            `monthly-table project-pivot-table pivot-metric-${billingMetric} ${sourceModeClass} ${canViewMargin ? '' : 'pivot-no-margin'} ${metricLabelsPinned ? 'pivot-metric-labels-pinned' : ''}`
           }
         >
           <thead>
@@ -1856,10 +1923,18 @@ export default function ProjectBillingPivot({
               {billingMetric === 'all' && (
                 <th
                   className="pivot-metric-labels-column"
-                  title="Projected, Actual, Variance, Margin Collected"
+                  title={canViewMargin
+                    ? 'Projected, Actual, Variance, Margin Collected'
+                    : 'Projected, Actual, Variance'}
                   scope="col"
                 >
-                  {metricLabelsPinned ? 'P/A/Δ/M' : 'Metric'}
+                  <HeaderMetricRail
+                    compact={metricLabelsPinned}
+                    showMargin={canViewMargin}
+                    includeProjectProjection={includeActiveProjects}
+                    includeBidProjection={includeBids}
+                    showBaseline={showBaseline}
+                  />
                 </th>
               )}
 
@@ -1893,6 +1968,8 @@ export default function ProjectBillingPivot({
                             index
                           ]?.actualValue
                         }
+                        marginCollectedValue={monthTotals[index]?.marginCollectedValue}
+                        showMargin={canViewMargin}
                         totalForecastValue={
                           monthTotals[
                             index
@@ -1903,10 +1980,14 @@ export default function ProjectBillingPivot({
                             index
                           ]?.varianceValue
                         }
+                        actualVarianceValue={monthTotals[index]?.actualVarianceValue}
+                        comparableVarianceValue={monthTotals[index]?.comparableVarianceValue}
+                        varianceMode={monthTotals[index]?.varianceMode}
                         varianceProjectedValue={monthTotals[index]?.varianceProjectedValue}
                         varianceActualValue={monthTotals[index]?.varianceActualValue}
                         varianceComparableProjects={monthTotals[index]?.varianceComparableProjects}
                         varianceActualProjects={monthTotals[index]?.varianceActualProjects}
+                        varianceNoPmForecastProjects={monthTotals[index]?.varianceNoPmForecastProjects}
                         varianceMissingEditableProjects={monthTotals[index]?.varianceMissingEditableProjects}
                         varianceHistoricalUnavailableProjects={monthTotals[index]?.varianceHistoricalUnavailableProjects}
                         missingPmMonths={monthTotals[index]?.missingPmMonths}
@@ -1954,16 +2035,23 @@ export default function ProjectBillingPivot({
                     actualValue={
                       grandTotals.actualValue
                     }
+                    marginCollectedValue={grandTotals.marginCollectedValue}
+                    showMargin={canViewMargin}
                     totalForecastValue={
                       grandTotals.totalForecastValue
                     }
                     varianceValue={
                       grandTotals.varianceValue
                     }
+                    actualVarianceValue={grandTotals.actualVarianceValue}
+                    comparableVarianceValue={grandTotals.comparableVarianceValue}
+                    varianceMode={grandTotals.varianceMode}
+                    comparisonScope="project-months"
                     varianceProjectedValue={grandTotals.varianceProjectedValue}
                     varianceActualValue={grandTotals.varianceActualValue}
                     varianceComparableProjects={grandTotals.varianceComparableProjects}
                     varianceActualProjects={grandTotals.varianceActualProjects}
+                    varianceNoPmForecastProjects={grandTotals.varianceNoPmForecastProjects}
                     varianceMissingEditableProjects={grandTotals.varianceMissingEditableProjects}
                     varianceHistoricalUnavailableProjects={grandTotals.varianceHistoricalUnavailableProjects}
                     missingPmMonths={grandTotals.missingPmMonths}
@@ -1974,6 +2062,9 @@ export default function ProjectBillingPivot({
                     currency={currency}
                     includeProjectProjection={includeActiveProjects}
                     includeBidProjection={includeBids}
+                    activeProjectsBilled={grandTotals.activeProjectsBilled}
+                    activeProjectsProjected={grandTotals.activeProjectsProjected}
+                    potentialBidsProjected={grandTotals.potentialBidsProjected}
                   />
                 }
                 sortKey="total"
@@ -2102,7 +2193,7 @@ export default function ProjectBillingPivot({
 
                     {billingMetric === 'all' && (
                       <td className="pivot-metric-labels-column">
-                        <MetricLabels compact={metricLabelsPinned} />
+                        <MetricLabels compact={metricLabelsPinned} showMargin={canViewMargin} />
                       </td>
                     )}
 
@@ -2118,6 +2209,7 @@ export default function ProjectBillingPivot({
                             currency={currency}
                             source={row.source}
                             showBaseline={showBaseline}
+                            showMargin={canViewMargin}
                           />
                         </td>
                       )
@@ -2130,6 +2222,7 @@ export default function ProjectBillingPivot({
                         currency={currency}
                         source={row.source}
                         showBaseline={showBaseline}
+                        showMargin={canViewMargin}
                       />
                     </td>
                   </tr>

@@ -56,7 +56,9 @@ test('projected count tooltips show record counts only when sources are combined
     hasPmForecast: true, totalContractAmount: 300};
   const potential = {sharePointItemId: 44, bidName: 'Discovery Oasis', probability: .89};
   const currentMonthly = new Map([[21, [{monthStart: '2026-09-01',
-    projectedAmount: 100, actualAmount: null, marginCollected: null,
+    primaryProjectionSource: 'PM_FORECAST', hasPmForecast: true,
+    pmForecastAmount: 100, projectedAmount: 100,
+    actualAmount: null, marginCollected: null,
     missingPmMonths: 0, systemBaselineAmount: 100}]]]);
   const bidMonthly = new Map([[44, [{monthStart: '2026-09-01',
     weightedMonthlyForecastAmount: 80}]]]);
@@ -75,11 +77,11 @@ test('projected count tooltips show record counts only when sources are combined
     return {attributes: match[1], label: match[2]};
   };
   const activeOnly = count(render(true, false));
-  assert.match(activeOnly.label, /1 active project projected/);
-  assert.doesNotMatch(activeOnly.attributes, /title=/);
+  assert.match(activeOnly.label, /1 Projected \(active\)/);
+  assert.match(activeOnly.attributes, /title="1 Projected \(active\)"/);
   const bidsOnly = count(render(false, true));
-  assert.match(bidsOnly.label, /1 bid projected/);
-  assert.doesNotMatch(bidsOnly.attributes, /title=/);
+  assert.match(bidsOnly.label, /1 Projected \(bids\)/);
+  assert.match(bidsOnly.attributes, /title="1 Projected \(bids\)"/);
   const combinedMarkup = render(true, true);
   const combinedCount = count(combinedMarkup);
   assert.match(combinedCount.label, /2 projected \(active \+ bids\)/);

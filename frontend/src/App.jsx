@@ -6,7 +6,7 @@ import {indexPortfolioRebalance} from './portfolioBalance.js';
 import {indexScheduleReview} from './scheduleReview.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey} from './gcReference.js';
-import { aggregateCurrentMonthly, summarizePortfolioMonths, summarizeMonthlyTotals, nullableAmount, amountDifference, projectionSourceLabel, buildMonthlyProjectionExport } from './primaryProjection.js';
+import { aggregateCurrentMonthly, summarizePortfolioMonths, summarizeMonthlyTotals, nullableAmount, amountDifference, pmProjectionForVariance, projectionSourceLabel, buildMonthlyProjectionExport, arizonaCalendarDay, varianceTooltipText } from './primaryProjection.js';
 import { ProjectionEstimateMarker, ProjectionAmount } from './ProjectionDisplay.jsx';
 import useGcReference, { canReadGcReference } from './useGcReference.js';
 import useProjectedBillingsFreshness from './useProjectedBillingsFreshness.js';
@@ -1656,6 +1656,17 @@ export default function App() {
     user,
     setUser,
   ] = useState(null);
+  // Live Arizona calendar day for the month-specific variance cutoff. Keep a
+  // tab opened overnight consistent with the 15th without a manual refresh.
+  const [varianceAsOfUTC, setVarianceAsOfUTC] = useState(() => new Date().toISOString());
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      const now = new Date().toISOString();
+      setVarianceAsOfUTC(previous =>
+        arizonaCalendarDay(previous) === arizonaCalendarDay(now) ? previous : now);
+    }, 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
   const inactivityTimeoutMs = resolveSessionIdleTimeoutMs(user);
   const gcDirectory = useGcReference(canReadGcReference(user));
 
@@ -3563,9 +3574,9 @@ export default function App() {
   // project actual-history inclusion; the editable Projects directory is active-only.
   const currentRangeRows = useMemo(() => !rangeValid ? [] : currentProjects
     .filter(row => hasMonthlyValues(currentMonthly.get(row.jobListId), fromMonth, throughMonth,
-      ['projectedAmount','actualAmount']))
+      ['projectedAmount','actualAmount','systemBaselineAmount']))
     .map(row => {
-      const m = aggregateCurrentMonthly(currentMonthly.get(row.jobListId), fromMonth, throughMonth);
+      const m = aggregateCurrentMonthly(currentMonthly.get(row.jobListId), fromMonth, throughMonth, varianceAsOfUTC);
       return {...row,
         needsRebalance: rebalanceByJobId.has(String(row.jobListId)),
         scheduleReview: scheduleReviewByJobId.get(String(row.jobListId)) || null,
@@ -3575,10 +3586,11 @@ export default function App() {
         selectedActual:m.actual, selectedVariance:m.variance, selectedMarginCollected:m.marginCollected,
         selectedVarianceProjected:m.varianceProjected, selectedVarianceActual:m.varianceActual,
         selectedVarianceComparableRows:m.varianceComparableRows,
+        selectedVarianceNoPmForecastRows:m.varianceNoPmForecastRows,
         selectedVarianceMissingEditableRows:m.varianceMissingEditableRows,
         selectedVarianceHistoricalUnavailableRows:m.varianceHistoricalUnavailableRows};
     }).filter(row => !isCompleted(row) || Math.abs(Number(row.selectedActual)||0)>0.000001),
-    [rangeValid,currentProjects,currentMonthly,fromMonth,throughMonth,rebalanceByJobId,scheduleReviewByJobId]);
+    [rangeValid,currentProjects,currentMonthly,fromMonth,throughMonth,rebalanceByJobId,scheduleReviewByJobId,varianceAsOfUTC]);
   const bidRangeRows = useMemo(() => !rangeValid ? [] : selectedBidSourceRows
     .filter(row => hasMonthlyValues(bidMonthly.get(row.sharePointItemId),fromMonth,throughMonth,
       ['monthlyForecastAmount','weightedMonthlyForecastAmount']))
@@ -3656,8 +3668,8 @@ export default function App() {
   const historicalApmOptions=historicalProjectStaffOptions(portfolioFacets.contexts.apm.map(e=>e.row),'apm','apmSeparated');
 
   const monthlyComparison = useMemo(() => rangeValid
-    ? summarizePortfolioMonths(monthRange, currentDetails, currentMonthly, bidDetails, bidMonthly)
-    : [], [rangeValid, monthRange, currentDetails, currentMonthly, bidDetails, bidMonthly]);
+    ? summarizePortfolioMonths(monthRange, currentDetails, currentMonthly, bidDetails, bidMonthly, varianceAsOfUTC)
+    : [], [rangeValid, monthRange, currentDetails, currentMonthly, bidDetails, bidMonthly, varianceAsOfUTC]);
 
   const sortedMonthlyComparison =
     useMemo(
@@ -3756,7 +3768,7 @@ export default function App() {
     );
 
 
-  const monthlyComparisonTotals = useMemo(() => summarizeMonthlyTotals(monthlyComparison), [monthlyComparison]);
+  const monthlyComparisonTotals = useMemo(() => summarizeMonthlyTotals(monthlyComparison, varianceAsOfUTC), [monthlyComparison, varianceAsOfUTC]);
   const projectionCoverage = useMemo(() => {
     const rows = (portfolioFacets.contexts.projectionSource || [])
       .filter(entry => entry.kind === 'current')
@@ -3865,7 +3877,7 @@ export default function App() {
             marginCollected,
             baseline: monthly.systemBaselineAmount ?? (project.projectCompleted ? monthly.projectedAmount : null),
             missingPmMonths: monthly.missingPmMonths || 0,
-            variance: amountDifference(actual, projected),
+            variance: amountDifference(actual, pmProjectionForVariance(monthly)),
             raw:
               project,
           });
@@ -6736,6 +6748,7 @@ export default function App() {
                 bidMonthly={bidMonthly}
                 currency={currency}
                 monthLabel={monthLabel}
+                varianceAsOfUTC={varianceAsOfUTC}
                 onSelectCurrentProject={
                   openCurrentProjectDrawer
                 }
@@ -6922,8 +6935,14 @@ export default function App() {
                                       : 'numeric'
                                   )
                             }
+                            title={varianceTooltipText({actualVariance:row.actualVariance,
+                              comparableVariance:row.comparableVariance, mode:row.varianceMode,
+                              compared:row.varianceComparableRows, actualProjects:row.actualValueCount}, currency)}
                           >
                             {row.variance === null ? '—' : currency(row.variance)}
+                            {row.variance != null && row.varianceMode === 'COMPARABLE' && (
+                              <sup className="pivot-variance-mode-indicator" title="Comparable variance">C</sup>
+                            )}
                           </td>
                         )}
                       </tr>
@@ -7358,8 +7377,21 @@ export default function App() {
                                   : 'numeric'
                               )
                         }
+                        title={varianceTooltipText({actualVariance:monthlyComparisonTotals.actualVariance,
+                          comparableVariance:monthlyComparisonTotals.comparableVariance,
+                          mode:monthlyComparisonTotals.varianceMode,
+                          compared:monthlyComparisonTotals.varianceComparableRows,
+                          actualProjects:monthlyComparisonTotals.actualValueCount,
+                          scope:'project-months'}, currency)}
                       >
                         {monthlyComparisonTotals.variance === null ? '—' : currency(monthlyComparisonTotals.variance)}
+                        {monthlyComparisonTotals.variance != null &&
+                        ['COMPARABLE','MIXED'].includes(monthlyComparisonTotals.varianceMode) && (
+                          <sup className="pivot-variance-mode-indicator" title={
+                            monthlyComparisonTotals.varianceMode === 'MIXED'
+                              ? 'Mixed monthly variance' : 'Comparable variance'
+                          }>{monthlyComparisonTotals.varianceMode === 'MIXED' ? '*' : 'C'}</sup>
+                        )}
                       </td>
                     )}
                   </tr>

@@ -3,8 +3,8 @@ import './ProjectionDisplay.css';
 export function ProjectionEstimateMarker({ project, className = '' }) {
   if (!project || project.projectCompleted || project.hasPmForecast) return null;
   return <span className={`projection-estimate-marker ${className}`.trim()}
-    title="No PM Projection submitted; projected values use the System Estimate."
-    aria-label="System Estimate">*</span>;
+    title="No PM Projection submitted. System Estimate is reference only."
+    aria-label="No PM Projection">*</span>;
 }
 export function ProjectionAmount({ value, currency, missing = 0, baseline, compare = false }) {
   return <span className="primary-projection-amount">

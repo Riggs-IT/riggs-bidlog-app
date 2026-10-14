@@ -8,7 +8,7 @@ test('system estimates use a project-name marker instead of source badges or val
   const pivot = read('ProjectBillingPivot.jsx');
   const app = read('App.jsx');
   assert.match(display, /ProjectionEstimateMarker/);
-  assert.match(display, /No PM Projection submitted; projected values use the System Estimate/);
+  assert.match(display, /No PM Projection submitted\. System Estimate is reference only/);
   assert.doesNotMatch(display, /ProjectionSource/);
   assert.doesNotMatch(display, /estimate &&/);
   assert.match(pivot, /<ProjectionEstimateMarker project=\{row\.raw\} \/>/);
@@ -44,18 +44,14 @@ test('projection balance copy uses remaining-contract language instead of baseli
   assert.doesNotMatch(panel, /PM Projection total must equal the editable system estimate total/);
 });
 
-test('billing variance is current-month Foundation billing minus the selected projection source', () => {
+test('billing variance is Foundation actual minus submitted PM only', () => {
   const drawer = read('CurrentProjectBillingDrawer.jsx');
   assert.match(drawer, /Monthly Billing Variance/);
-  assert.match(drawer, /Foundation Billing − \$\{varianceProjectionSource\} for the current month/);
   assert.match(drawer, /varianceMonthRow\?\.actualAmount/);
-  assert.match(drawer, /varianceMonthRow\?\.projectedAmount/);
-  assert.match(drawer, /project\?\.hasPmForecast/);
-  assert.match(drawer, /'PM Projection'/);
-  assert.match(drawer, /'System Estimate'/);
+  assert.match(drawer, /pmProjectionForVariance\(varianceMonthRow\)/);
+  assert.match(drawer, /Foundation Actual Billing − submitted PM Projection/);
   assert.doesNotMatch(drawer, /Actual to date − Projected to date/);
 });
-
 
 test('contract drawer uses approved CO income and current contract wording', () => {
   const drawer = read('CurrentProjectBillingDrawer.jsx');
@@ -85,40 +81,28 @@ test('existing PM blanks stay blank and PM balance uses remaining contract targe
   assert.match(panel, /intentionally blank PM months may stay blank/);
 });
 
-test('combined project and potential sources show T in All and Projected while variance stays active-project only', () => {
+test('shared header keeps the PM source separate from potential bids and a concise variance tooltip', () => {
   const pivot = read('ProjectBillingPivot.jsx');
   const app = read('App.jsx');
   const projection = read('primaryProjection.js');
-
   assert.match(pivot, /const hasCombinedForecastSources =/);
-  assert.match(pivot, /hasCombinedForecastSources && \(/);
-  assert.match(pivot, /projectedMode \? \(\s*hasCombinedForecastSources \? \(/);
-  assert.match(pivot, /pivot-header-total-values-projected/);
+  assert.match(pivot, /<HeaderMetricRail/);
   assert.match(pivot, /T \{headerCurrency\(totalForecastValue\)\}/);
   assert.match(pivot, /P \{headerCurrency\(projectedValue\)\}/);
-  assert.match(pivot, /A \{headerCurrency\(actualValue\)\}/);
-  assert.match(pivot, /V \{headerCurrency\(varianceValue\)\}/);
-  assert.match(pivot, /Total Forecast/);
-  assert.match(pivot, /Active projects:/);
-  assert.match(pivot, /Potential bids:/);
-  assert.match(pivot, /`Variance: \${currency\(varianceValue\)}`/);
-  assert.match(pivot, /Compared:/);
-  assert.match(pivot, /Missing projection:/);
-  assert.match(pivot, /Historical projection unavailable:/);
-  assert.doesNotMatch(pivot, /Math\.abs\([\s\S]*bidProjectedValue/);
-  assert.doesNotMatch(pivot, /Potential Bids are included in Total Forecast/);
-  assert.doesNotMatch(pivot, /PM month\(s\) have no entered amount/);
+  assert.match(pivot, /const varianceTooltip = varianceTooltipText\(/);
+  assert.match(projection, /Comparable:/);
+  assert.match(projection, /Actual:/);
+  assert.match(pivot, /comparisonScope/);
+  assert.match(pivot, /varianceComparableProjects/);
+  assert.doesNotMatch(pivot, /No submitted PM \(System Estimate excluded\):/);
   assert.match(pivot, /project-pivot-sticky-coverage/);
-  assert.match(pivot, /\{projectionCoverage\.pm\} PM Projection/);
-  assert.match(pivot, /\{projectionCoverage\.system\} No PM Projection\*/);
   assert.match(app, /projectionSourceFilter=\{projectionSourceFilter\}/);
   assert.match(app, /projectionCoverage=\{projectionCoverage\}/);
-  assert.match(app, /onProjectionSourceFilterChange=\{setProjectionSourceFilter\}/);
   assert.match(projection, /totalForecastValue = sumAmounts\(\[projectedValue, bidProjectedValue\]\)/);
-  assert.match(projection, /const varianceValue = varianceComparableProjects/);
+  assert.match(projection, /const actualVarianceValue = amountDifference\(actualValue, projectedValue\)/);
+  assert.match(projection, /const comparableVarianceValue =/);
   assert.doesNotMatch(pivot, /B \{headerCurrency\(bidProjectedValue\)\}/);
 });
-
 
 test('completed project detail is read-only billing history and incomplete variance is coverage-aware', () => {
   const drawer = read('CurrentProjectBillingDrawer.jsx');
@@ -135,8 +119,11 @@ test('completed project detail is read-only billing history and incomplete varia
   assert.match(panel, /!projectIsCompleted && \(\s*<section className="pm-forecast-section">/);
   assert.match(panel, /!projectIsCompleted && \(\s*<section className="pm-history-section">/);
   assert.match(pivot, /completedProjectPivotCell/);
-  assert.match(pivot, /actualValue !== null && actualValue !== undefined/);
-  assert.match(pivot, /varianceValue !== null && varianceValue !== undefined/);
+  assert.match(pivot, /actualValue === null/);
+  assert.match(pivot, /const varianceTooltip = varianceTooltipText\(/);
+  assert.match(projection, /Comparable:/);
+  assert.match(projection, /Actual:/);
+  assert.match(pivot, /comparisonScope/);
   assert.match(projection, /varianceMissingEditableRows/);
   assert.match(projection, /varianceHistoricalUnavailableRows/);
   assert.match(projection, /varianceComparableProjects/);

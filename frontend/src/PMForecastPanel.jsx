@@ -790,7 +790,7 @@ export default function PMForecastPanel({
   const adminCreatesVariance =
     Boolean(
       isAdminCorrection
-
+      && policy?.requireBaselineTotalMatch
       && Math.abs(
            editTotals.difference
          ) >= 0.005
@@ -1575,7 +1575,7 @@ export default function PMForecastPanel({
 
               <span>
                 {isAdminCorrection
-                  ? 'Use this only for an intentional administrator adjustment. A reason is required, and an unresolved total variance will notify the assigned project team.'
+                  ? 'Use this only for an intentional administrator adjustment. A reason is required. Needs Rebalance notifications apply only while the Projection Balance policy is ON.'
                   : 'Adjust the months that look different from the current plan. Past locked months stay unchanged.'}
               </span>
             </div>

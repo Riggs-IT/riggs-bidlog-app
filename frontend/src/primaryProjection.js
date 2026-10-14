@@ -31,6 +31,18 @@ export function amountDifference(actual, projected) {
   if (actual === null || actual === undefined || projected === null || projected === undefined) return null;
   return sumAmounts([actual, -projected]);
 }
+
+// A submitted PM month (or Admin Correction) is the ONLY active-project
+// projection. System Estimates are an optional reference, never a substitute
+// in Projected, Total Forecast, counts, variance, or CSV exports.
+export function submittedPmAmount(row) {
+  if (!row || row.primaryProjectionSource !== PM_SOURCE || row.hasPmForecast !== true
+      || row.projectCompleted === true) return null;
+  return nullableAmount(row.pmForecastAmount);
+}
+export function pmProjectionForVariance(row) {
+  return submittedPmAmount(row);
+}
 function sameAmount(a, b) {
   a = nullableAmount(a); b = nullableAmount(b);
   return a === null || b === null ? a === b : Math.round(a * 100) === Math.round(b * 100);
@@ -43,6 +55,51 @@ function indexUnique(rows, key) {
   }
   return map;
 }
+// Values before the 15th of the individual Arizona month use matched projects.
+// Values from the 15th onward use all actuals minus submitted PM dollars.
+// Omitted asOfUTC preserves the prior raw aggregate contract for independent
+// historical/reference callers; reporting views always pass an explicit clock.
+export function arizonaCalendarDay(asOfUTC) {
+  const date = new Date(asOfUTC);
+  if (Number.isNaN(date.getTime())) fail();
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Phoenix', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(date);
+  const part = key => parts.find(p => p.type === key)?.value;
+  return `${part('year')}-${part('month')}-${part('day')}`;
+}
+
+export function varianceModeForMonth(month, asOfUTC = null) {
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) fail();
+  if (asOfUTC === null || asOfUTC === undefined) return 'ACTUAL';
+  return arizonaCalendarDay(asOfUTC) >= `${month}-15` ? 'ACTUAL' : 'COMPARABLE';
+}
+
+export function chooseVarianceForMonth(month, actualVariance, comparableVariance, asOfUTC = null) {
+  const mode = varianceModeForMonth(month, asOfUTC);
+  return {mode, value: mode === 'ACTUAL' ? actualVariance : comparableVariance};
+}
+
+export function varianceModesForRange(modes) {
+  const kinds = new Set(modes);
+  return kinds.size > 1 ? 'MIXED' : ([...kinds][0] || 'ACTUAL');
+}
+
+// Shared concise hover for pivot and monthly summary. Keep both amounts even
+// after the displayed mode changes; never imply the compared subset is a full
+// portfolio subtraction. The caller controls whether it labels projects or
+// project-months (the latter applies to multi-month totals).
+export function varianceTooltipText({actualVariance, comparableVariance,
+  mode, compared, actualProjects, scope = 'projects'}, format) {
+  const money = value => value === null || value === undefined ? '—' : format(value);
+  return [
+    `Actual: ${money(actualVariance)}${mode === 'ACTUAL' ? ' (shown)' : ''}`,
+    `Comparable: ${money(comparableVariance)}${mode === 'COMPARABLE' ? ' (shown)' : ''}`,
+    `${compared}/${actualProjects} ${scope} compared`,
+    ...(mode === 'MIXED' ? ['Shown: monthly cutoff mix'] : []),
+  ].join('\n');
+}
+
 function arizonaMonth(iso) {
   const date = new Date(iso);
   if (typeof iso !== 'string' || !/[zZ]$|[+-]\d\d:\d\d$/.test(iso) || Number.isNaN(+date)) fail();
@@ -128,9 +185,12 @@ export function mergePrimaryPortfolio(summary, legacyMonthly, primary) {
       if (!previous && m.foundationActualAmount !== null && m.foundationActualAmount !== 0) fail();
       next.set(m.monthStart, {
         ...previous, ...m,
-        projectedAmount: m.primaryProjectedAmount,
+        // The API still supplies primaryProjectedAmount with its System Estimate
+        // fallback. Never carry that fallback into the user-facing projection.
+        projectedAmount: meta.hasPmForecast ? nullableAmount(m.pmForecastAmount) : null,
         actualAmount: previous ? previous.actualAmount : m.foundationActualAmount,
-        monthlyVariance: m.actualVsPrimaryVariance,
+        monthlyVariance: amountDifference(m.foundationActualAmount,
+          meta.hasPmForecast ? m.pmForecastAmount : null),
         hasPmForecast: meta.hasPmForecast,
         missingPmMonths: meta.hasPmForecast && m.pmForecastAmount === null ? 1 : 0,
       });
@@ -171,39 +231,80 @@ function nextMonth(month) { const [y, m] = month.split('-').map(Number); return 
 
 export function projectionSourceLabel(project) {
   if (project?.projectCompleted) return 'Historical comparison';
-  return project?.hasPmForecast ? 'PM Projection' : 'System Estimate';
+  return project?.hasPmForecast ? 'PM Projection' : 'No PM Projection';
 }
 
 // Known-amount sums carry their coverage explicitly. Blank PM entries are never
 // converted into zero, baseline or a claim that a forecast is complete.
-export function aggregateCurrentMonthly(rows, fromMonth, throughMonth) {
+export function aggregateCurrentMonthly(rows, fromMonth, throughMonth, asOfUTC = null) {
   const selected = (rows || []).filter(r => ym(r.monthStart) >= fromMonth && ym(r.monthStart) <= throughMonth);
   const missingPmMonths = selected.reduce((n, r) => n + (r.missingPmMonths || 0), 0);
-  const estimateValueCount = selected.filter(r => r.primaryProjectionSource !== PM_SOURCE && nullableAmount(r.projectedAmount) !== null).length;
-  const projectionValueCount = selected.filter(r => nullableAmount(r.projectedAmount) !== null).length;
+  const estimateValueCount = selected.filter(r => r.primaryProjectionSource === SYSTEM_SOURCE
+    && nullableAmount(r.systemBaselineAmount) !== null).length;
+  const projectionValueCount = selected.filter(r => submittedPmAmount(r) !== null).length;
   const actualRows = selected.filter(r => nullableAmount(r.actualAmount) !== null);
   const actualValueCount = actualRows.length;
-  const comparableRows = actualRows.filter(r => nullableAmount(r.projectedAmount) !== null);
-  const varianceProjected = sumAmounts(comparableRows.map(r => r.projectedAmount));
+  // Projected and Variance both use saved PM amounts from the latest version.
+  // A baseline-only project contributes no projected dollars, even if its
+  // System Estimate is nonzero and it has actual billings.
+  const comparableRows = actualRows.filter(r => pmProjectionForVariance(r) !== null);
+  const varianceProjected = sumAmounts(comparableRows.map(pmProjectionForVariance));
   const varianceActual = sumAmounts(comparableRows.map(r => r.actualAmount));
-  const varianceMissingEditableRows = actualRows.filter(r =>
-    nullableAmount(r.projectedAmount) === null
+  const varianceNoPmForecastRows = actualRows.filter(r =>
+    r.primaryProjectionSource === SYSTEM_SOURCE && r.hasPmForecast === false
+  ).length;
+  const missingComparableRows = actualRows.filter(r =>
+    pmProjectionForVariance(r) === null
+    && !(r.primaryProjectionSource === SYSTEM_SOURCE && r.hasPmForecast === false)
+  );
+  const varianceMissingEditableRows = missingComparableRows.filter(r =>
+    r.primaryProjectionSource === PM_SOURCE && r.hasPmForecast === true
     && r.isEditable === true
   ).length;
-  const varianceHistoricalUnavailableRows = actualRows.filter(r =>
-    nullableAmount(r.projectedAmount) === null
-    && r.isEditable !== true
-  ).length;
-  const projected = sumAmounts(selected.map(r => r.projectedAmount), selected.length ? null : 0);
+  const varianceHistoricalUnavailableRows = missingComparableRows.length - varianceMissingEditableRows;
+  const projected = sumAmounts(selected.map(submittedPmAmount), selected.length ? null : 0);
   const actual = sumAmounts(selected.map(r => r.actualAmount), 0);
-  const baseline = sumAmounts(selected.map(r => own(r, 'systemBaselineAmount') ? r.systemBaselineAmount : r.projectedAmount), selected.length ? null : 0);
+  const baseline = sumAmounts(selected.map(r => own(r, 'systemBaselineAmount') ? r.systemBaselineAmount : null), selected.length ? null : 0);
   const missingMarginRows = selected.reduce((n, r) => n + (Number(r.missingMarginRows) || 0), 0);
   const marginDataComplete = !selected.some(r => r.marginDataComplete === false || Number(r.missingMarginRows) > 0);
   const marginCollected = marginDataComplete ? sumAmounts(selected.map(r => r.marginCollected), 0) : null;
+  // Retain BOTH definitions. Nothing here uses the System Estimate:
+  // Actual = all Foundation actuals - all submitted PM amounts.
+  // Comparable = Foundation actuals - PM on the *same* project-months.
+  const actualVariance = actualValueCount && projectionValueCount
+    ? amountDifference(actual, projected) : null;
+  const comparableVariance = comparableRows.length
+    ? amountDifference(varianceActual, varianceProjected) : null;
+  let variance = actualVariance;
+  let varianceMode = 'ACTUAL';
+  if (asOfUTC !== null && asOfUTC !== undefined) {
+    const byMonth = new Map();
+    for (const row of selected) {
+      const month = ym(row.monthStart);
+      if (!byMonth.has(month)) byMonth.set(month, []);
+      byMonth.get(month).push(row);
+    }
+    const chosen = [...byMonth].map(([month, monthRows]) => {
+      const monthActual = monthRows.filter(row => nullableAmount(row.actualAmount) !== null);
+      const monthPm = monthRows.filter(row => submittedPmAmount(row) !== null);
+      const paired = monthActual.filter(row => pmProjectionForVariance(row) !== null);
+      const actualOnly = monthActual.length && monthPm.length
+        ? amountDifference(sumAmounts(monthActual.map(row => row.actualAmount)),
+            sumAmounts(monthPm.map(submittedPmAmount))) : null;
+      const comparableOnly = paired.length
+        ? amountDifference(sumAmounts(paired.map(row => row.actualAmount)),
+            sumAmounts(paired.map(pmProjectionForVariance))) : null;
+      return chooseVarianceForMonth(month, actualOnly, comparableOnly, asOfUTC);
+    });
+    variance = sumAmounts(chosen.map(entry => entry.value));
+    varianceMode = varianceModesForRange(chosen.filter(entry => entry.value !== null).map(entry => entry.mode));
+    if (chosen.length === 1) varianceMode = chosen[0].mode;
+  }
   return { projected, baseline, actual, missingPmMonths, projectionValueCount, actualValueCount, estimateValueCount,
-    variance: comparableRows.length ? amountDifference(varianceActual, varianceProjected) : null,
+    variance, actualVariance, comparableVariance, varianceMode,
     varianceProjected, varianceActual,
     varianceComparableRows: comparableRows.length,
+    varianceNoPmForecastRows,
     varianceMissingEditableRows,
     varianceHistoricalUnavailableRows,
     marginCollected, missingMarginRows, marginDataComplete,
@@ -211,7 +312,7 @@ export function aggregateCurrentMonthly(rows, fromMonth, throughMonth) {
   };
 }
 
-export function summarizePortfolioMonths(months, projects, currentMonthly, bids, bidMonthly) {
+export function summarizePortfolioMonths(months, projects, currentMonthly, bids, bidMonthly, asOfUTC = null) {
   const grouped = new Map(months.map(m => [m, []]));
   const weighted = new Map(months.map(m => [m, []]));
   for (const p of projects) for (const row of currentMonthly.get(p.jobListId) || []) {
@@ -220,43 +321,62 @@ export function summarizePortfolioMonths(months, projects, currentMonthly, bids,
       || String(p?.projectCompleted ?? '').trim() === '1';
     grouped.get(ym(row.monthStart))?.push(
       completed
-        ? { ...row, projectedAmount: null, missingPmMonths: 0, isEditable: false, monthEditState: 'LOCKED_PAST' }
+        ? { ...row, projectedAmount: null, projectCompleted: true, missingPmMonths: 0, isEditable: false, monthEditState: 'LOCKED_PAST' }
         : row
     );
   }
   for (const p of bids) for (const row of bidMonthly.get(p.sharePointItemId) || []) weighted.get(ym(row.monthStart))?.push(row.weightedMonthlyForecastAmount);
   return months.map(month => {
-    const a = aggregateCurrentMonthly(grouped.get(month), month, month);
+    const a = aggregateCurrentMonthly(grouped.get(month), month, month, asOfUTC);
     const weightedBids = sumAmounts(weighted.get(month), 0);
     const combined = sumAmounts([a.projected, ...(weighted.get(month).length ? [weightedBids] : [])]);
     return { month, currentProjected: a.projected, currentBaseline: a.baseline, currentActual: a.actual,
       currentMarginCollected: a.marginCollected, currentWeightedHistoricalMarginPercent: a.weightedHistoricalMarginPercent,
       currentMissingMarginRows: a.missingMarginRows, currentMarginDataComplete: a.marginDataComplete,
-      estimateValueCount:a.estimateValueCount, missingPmMonths: a.missingPmMonths, actualValueCount: a.actualValueCount, weightedBids,
+      estimateValueCount:a.estimateValueCount, missingPmMonths: a.missingPmMonths,
+      projectionValueCount: a.projectionValueCount, actualValueCount: a.actualValueCount, weightedBids,
       combinedExpected: combined,
       variance: a.variance,
+      actualVariance: a.actualVariance,
+      comparableVariance: a.comparableVariance,
+      varianceMode: a.varianceMode,
       varianceProjected: a.varianceProjected,
       varianceActual: a.varianceActual,
       varianceComparableRows: a.varianceComparableRows,
+      varianceNoPmForecastRows: a.varianceNoPmForecastRows,
       varianceMissingEditableRows: a.varianceMissingEditableRows,
       varianceHistoricalUnavailableRows: a.varianceHistoricalUnavailableRows,
     };
   });
 }
-export function summarizeMonthlyTotals(rows) {
+export function summarizeMonthlyTotals(rows, asOfUTC = null) {
   const sum = name => sumAmounts(rows.map(r => r[name]), rows.length ? null : 0);
   const missingPmMonths = rows.reduce((n, r) => n + r.missingPmMonths, 0);
   const actualValueCount = rows.reduce((n, r) => n + r.actualValueCount, 0);
-  const currentActual = sum('currentActual'), combinedExpected = sum('combinedExpected');
+  const currentProjected = sum('currentProjected'), currentActual = sum('currentActual'), combinedExpected = sum('combinedExpected');
   const varianceProjected = sum('varianceProjected');
   const varianceActual = sum('varianceActual');
   const varianceComparableRows = rows.reduce((n, r) => n + (r.varianceComparableRows || 0), 0);
+  const projectionValueCount = rows.reduce((n, r) => n + (r.projectionValueCount || 0), 0);
   const currentMarginDataComplete = rows.every(r => r.currentMarginDataComplete);
   const currentMarginCollected = currentMarginDataComplete ? sum('currentMarginCollected') : null;
-  return { currentProjected: sum('currentProjected'), currentBaseline: sum('currentBaseline'), weightedBids: sum('weightedBids'),
+  return { currentProjected, currentBaseline: sum('currentBaseline'), weightedBids: sum('weightedBids'),
     currentActual, combinedExpected, missingPmMonths, estimateValueCount:rows.reduce((n,r)=>n+(r.estimateValueCount||0),0),
-    variance: varianceComparableRows ? amountDifference(varianceActual, varianceProjected) : null,
+    // Sum the displayed per-month variance. A selected range may straddle
+    // the 15th cutoff; it must not silently revert to all-actual here.
+    variance: asOfUTC == null
+      ? (projectionValueCount && actualValueCount
+          ? amountDifference(currentActual, currentProjected) : null)
+      : sum('variance'),
+    actualVariance: projectionValueCount && actualValueCount
+      ? amountDifference(currentActual, currentProjected) : null,
+    comparableVariance: varianceComparableRows
+      ? amountDifference(varianceActual, varianceProjected) : null,
+    varianceMode: varianceModesForRange(rows.filter(row => row.variance !== null)
+      .map(row => row.varianceMode || 'ACTUAL')),
     varianceProjected, varianceActual, varianceComparableRows,
+    actualValueCount, projectionValueCount,
+    varianceNoPmForecastRows: rows.reduce((n, r) => n + (r.varianceNoPmForecastRows || 0), 0),
     varianceMissingEditableRows: rows.reduce((n, r) => n + (r.varianceMissingEditableRows || 0), 0),
     varianceHistoricalUnavailableRows: rows.reduce((n, r) => n + (r.varianceHistoricalUnavailableRows || 0), 0),
     currentMarginDataComplete, currentMarginCollected,
@@ -267,10 +387,13 @@ export function summarizeMonthlyTotals(rows) {
 
 export function pivotCurrentCell(row, month) {
   if (!row) return { month, hasActivity: false, projected: null, actual: null, variance: null, marginCollected: null, baseline: null, missingPmMonths: 0, isEditable: false, monthEditState: null, projectCompleted: false };
-  const projected = nullableAmount(row.projectedAmount), actual = nullableAmount(row.actualAmount);
+  const projected = submittedPmAmount(row), actual = nullableAmount(row.actualAmount);
+  const submittedPm = pmProjectionForVariance(row);
   return { month, hasActivity: projected !== null || actual !== null || row.missingPmMonths > 0,
-    projected, actual, variance: amountDifference(actual, projected), marginCollected: nullableAmount(row.marginCollected),
-    baseline: nullableAmount(own(row, 'systemBaselineAmount') ? row.systemBaselineAmount : row.projectedAmount),
+    projected, actual, variance: amountDifference(actual, submittedPm), marginCollected: nullableAmount(row.marginCollected),
+    isPmVarianceComparable: submittedPm !== null,
+    hasPmForecast: row.hasPmForecast === true,
+    baseline: nullableAmount(own(row, 'systemBaselineAmount') ? row.systemBaselineAmount : null),
     missingPmMonths: row.missingPmMonths || 0,
     isSystemEstimate:row.primaryProjectionSource!==PM_SOURCE && !row.hasPmForecast,
     isEditable: row.isEditable === true,
@@ -288,39 +411,47 @@ export function completedProjectPivotCell(row, month) {
     isEditable: false, monthEditState: 'LOCKED_PAST', projectCompleted: true,
   };
 }
-export function pivotTotals(rows, index, metric, includeBids) {
+export function pivotTotals(rows, index, metric, includeBids, {month = null, months = null, asOfUTC = null} = {}) {
   const cells = rows.map(row => ({ source: row.source, c: index === null ? row.total : row.cells[index] }));
   const current = cells.filter(x => x.source !== 'bid').map(x => x.c).filter(Boolean);
   const bid = cells.filter(x => x.source === 'bid').map(x => x.c).filter(Boolean);
-  const projectedValue = sumAmounts(current.map(c => c?.projected), current.length ? null : 0);
-  const bidProjectedValue = includeBids ? sumAmounts(bid.map(c => c?.projected), bid.length ? null : 0) : null;
+  const projectedValue = sumAmounts(current.map(c => c?.isSystemEstimate === true ? null : c?.projected), current.length ? null : 0);
+  const bidProjectedValue = includeBids ? sumAmounts(bid.map(c => c?.projected)) : null;
   const actualValue = sumAmounts(current.map(c => c?.actual));
   const missingPmMonths = current.reduce((n, c) => n + (c?.missingPmMonths || 0), 0);
   const totalForecastValue = sumAmounts([projectedValue, bidProjectedValue]);
 
+  // Require the explicit PM marker for pivot cells. The old projected/actual
+  // non-null check was also comparing unsubmitted System Estimates.
+  const isPmComparableCell = c => c?.isPmVarianceComparable === true
+    && c.actual !== null && c.actual !== undefined
+    && c.projected !== null && c.projected !== undefined;
   const varianceProjectedValue = sumAmounts(current.map(c => {
     if (Object.prototype.hasOwnProperty.call(c, 'varianceProjectedValue')) return c.varianceProjectedValue;
-    return c?.actual !== null && c?.actual !== undefined && c?.projected !== null && c?.projected !== undefined
-      ? c.projected : null;
+    return isPmComparableCell(c) ? c.projected : null;
   }));
   const varianceActualValue = sumAmounts(current.map(c => {
     if (Object.prototype.hasOwnProperty.call(c, 'varianceActualValue')) return c.varianceActualValue;
-    return c?.actual !== null && c?.actual !== undefined && c?.projected !== null && c?.projected !== undefined
-      ? c.actual : null;
+    return isPmComparableCell(c) ? c.actual : null;
   }));
   const varianceComparableProjects = current.reduce((n, c) => {
     if (Object.prototype.hasOwnProperty.call(c, 'varianceComparableRows')) return n + (Number(c.varianceComparableRows) || 0);
-    return n + (c?.actual !== null && c?.actual !== undefined && c?.projected !== null && c?.projected !== undefined ? 1 : 0);
+    return n + (isPmComparableCell(c) ? 1 : 0);
   }, 0);
   const varianceActualProjects = current.reduce((n, c) => {
     if (Object.prototype.hasOwnProperty.call(c, 'varianceActualRows')) return n + (Number(c.varianceActualRows) || 0);
     return n + (c?.actual !== null && c?.actual !== undefined ? 1 : 0);
   }, 0);
+  const varianceNoPmForecastProjects = current.reduce((n, c) => {
+    if (Object.prototype.hasOwnProperty.call(c, 'varianceNoPmForecastRows')) return n + (Number(c.varianceNoPmForecastRows) || 0);
+    return n + (c?.actual != null && c?.isSystemEstimate === true ? 1 : 0);
+  }, 0);
   const varianceMissingEditableProjects = current.reduce((n, c) => {
     if (Object.prototype.hasOwnProperty.call(c, 'varianceMissingEditableRows')) return n + (Number(c.varianceMissingEditableRows) || 0);
     return n + (
       c?.actual !== null && c?.actual !== undefined
-      && (c?.projected === null || c?.projected === undefined)
+      && c?.isPmVarianceComparable !== true
+      && c?.hasPmForecast === true
       && c?.isEditable === true
       && c?.projectCompleted !== true
         ? 1 : 0
@@ -330,28 +461,52 @@ export function pivotTotals(rows, index, metric, includeBids) {
     if (Object.prototype.hasOwnProperty.call(c, 'varianceHistoricalUnavailableRows')) return n + (Number(c.varianceHistoricalUnavailableRows) || 0);
     return n + (
       c?.actual !== null && c?.actual !== undefined
-      && (c?.projected === null || c?.projected === undefined)
+      && c?.isPmVarianceComparable !== true
+      && c?.isSystemEstimate !== true
       && (c?.isEditable !== true || c?.projectCompleted === true)
         ? 1 : 0
     );
   }, 0);
-  const varianceValue = varianceComparableProjects
-    ? amountDifference(varianceActualValue, varianceProjectedValue)
-    : null;
+  // Monthly Actual and Comparable are both PM-only. Before the month's
+  // Arizona 15th, the header displays matched-project Comparable; afterward
+  // it displays all Actual - submitted PM. The Total is the sum of these
+  // month-specific values, never a single range-wide cutoff.
+  const actualVarianceValue = amountDifference(actualValue, projectedValue);
+  const comparableVarianceValue = varianceComparableProjects
+    ? amountDifference(varianceActualValue, varianceProjectedValue) : null;
+  let varianceMode = month ? varianceModeForMonth(month, asOfUTC) : 'ACTUAL';
+  let varianceValue = varianceMode === 'COMPARABLE'
+    ? comparableVarianceValue : actualVarianceValue;
+  if (index === null && Array.isArray(months) && asOfUTC != null) {
+    const displayed = months.map((monthAtIndex, i) =>
+      pivotTotals(rows, i, 'variance', includeBids, {month: monthAtIndex, asOfUTC}));
+    varianceValue = sumAmounts(displayed.map(item => item.varianceValue));
+    varianceMode = varianceModesForRange(displayed.filter(item => item.varianceValue !== null)
+      .map(item => item.varianceMode));
+  }
 
+  // An incomplete Foundation margin snapshot cannot be presented as a
+  // zero or a partial portfolio total. Use exactly the same result in the
+  // Margin-only view and in the P/A/Δ/M All header.
+  const marginCollectedValue = current.some(c =>
+    c?.marginCollected == null && c?.actual != null && c.actual !== 0
+  ) ? null : sumAmounts(current.map(c => c?.marginCollected));
   let value = sumAmounts(cells.map(x => x.c?.[metric]));
+  if (metric === 'projected') value = totalForecastValue;
   if (metric === 'variance') value = varianceValue;
-  if (metric === 'marginCollected' && current.some(c => c?.marginCollected == null && c?.actual != null && c.actual !== 0)) value = null;
-  return { value, projectedValue, bidProjectedValue, actualValue, totalForecastValue, varianceValue, missingPmMonths,
+  if (metric === 'marginCollected') value = marginCollectedValue;
+  return { value, projectedValue, bidProjectedValue, actualValue, totalForecastValue, varianceValue,
+    actualVarianceValue, comparableVarianceValue, varianceMode, marginCollectedValue, missingPmMonths,
     varianceProjectedValue, varianceActualValue,
     varianceComparableProjects,
     varianceActualProjects,
+    varianceNoPmForecastProjects,
     varianceMissingEditableProjects,
     varianceHistoricalUnavailableProjects,
-    hasSystemEstimate:current.some(c=>c?.isSystemEstimate && c?.projected!=null),
+    hasSystemEstimate:current.some(c=>c?.isSystemEstimate && c?.baseline!=null),
     baselineValue: sumAmounts(current.map(c => c?.baseline)),
     activeProjectsBilled: current.filter(c => c?.actual != null && c.actual !== 0).length,
-    activeProjectsProjected: current.filter(c => c?.projected != null && c.projected > 0).length,
+    activeProjectsProjected: current.filter(c => c?.isSystemEstimate !== true && c?.projected != null && c.projected > 0).length,
     potentialBidsProjected: bid.filter(c => c?.projected != null && c.projected > 0).length,
   };
 }
@@ -366,9 +521,10 @@ export function buildMonthlyProjectionExport(projects, currentMonthly, bids, bid
     if (ym(m.monthStart) < from || ym(m.monthStart) > through) continue;
     const row = { 'Source': 'Current Project', 'Projection Source': projectionSourceLabel(p), 'Job List ID': p.jobListId,
       'Job Number': p.jobNumber, 'Bid ID': '', 'Project / Bid': p.jobName, 'Month': ym(m.monthStart),
-      'Primary Projected Amount': nullableAmount(m.projectedAmount), 'PM Projection Amount': m.pmForecastAmount ?? null,
-      'System Estimate Amount': own(m, 'systemBaselineAmount') ? m.systemBaselineAmount : m.projectedAmount,
-      'Actual Billings': m.actualAmount ?? null, 'Variance vs Primary': amountDifference(m.actualAmount, m.projectedAmount),
+      'Primary Projected Amount': submittedPmAmount(m), 'PM Projection Amount': submittedPmAmount(m),
+      'System Estimate Amount': own(m, 'systemBaselineAmount') ? m.systemBaselineAmount : null,
+      'Actual Billings': m.actualAmount ?? null,
+      'Variance vs Primary': amountDifference(m.actualAmount, pmProjectionForVariance(m)),
       'PM Entry Present': p.hasPmForecast ? (m.pmForecastAmount == null ? 'No' : 'Yes') : 'Not submitted',
       'Latest PM Version ID': p.latestForecastVersionId ?? '', 'Latest PM Version Number': p.latestForecastVersionNumber ?? '',
     };

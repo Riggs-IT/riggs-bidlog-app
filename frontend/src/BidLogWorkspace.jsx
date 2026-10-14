@@ -1,4 +1,5 @@
 import {facetRows} from './viewFilters.js';
+import {hasMissingEstimate, isOverdueForDays} from './bidLogOverdue.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey} from './gcReference.js';
 import {resolveSignedInPmOption} from './pmScope.js';
@@ -492,16 +493,7 @@ function isDueWithin(row, days) {
 
 
 function isOverdue(row) {
-  const difference = daysFromToday(row.dueDate);
-  const status = normalizedSearch(row.status);
-
-  return (
-    status === 'assigned'
-    && !isUnassigned(row)
-    && row.snoozed !== true
-    && difference !== null
-    && difference < 0
-  );
+  return isOverdueForDays(row, daysFromToday(row?.dueDate));
 }
 
 
@@ -1190,7 +1182,7 @@ export default function BidLogWorkspace({
       if(quickFilter==='due30'&&!isDueWithin(row,30))return false;
       if(quickFilter==='unassigned'&&!isUnassigned(row))return false;
       if(quickFilter==='snoozed'&&row.snoozed!==true)return false;
-      if(quickFilter==='missingEstimate'&&row.estimatedPrice!=null)return false;
+      if(quickFilter==='missingEstimate'&&!hasMissingEstimate(row))return false;
       if(realBidsOnly&&row.realEstimate!==true)return false;
       if(probability!==null&&Number.isFinite(probability)){
         const p=probabilityRatio(row.probability);if(p===null||p<probability)return false;
@@ -1370,7 +1362,7 @@ export default function BidLogWorkspace({
 
       showActionToast(
         'info',
-        `You have ${count} overdue assigned bid${count === 1 ? '' : 's'}.`,
+        `You have ${count} overdue bid${count === 1 ? '' : 's'}.`,
         {
           actionLabel: 'Show Overdue',
           onAction: () => {
@@ -1410,11 +1402,7 @@ export default function BidLogWorkspace({
       snoozed: countItems.filter(
         row => row.snoozed === true,
       ).length,
-      missingEstimate: countItems.filter(
-        row =>
-          row.estimatedPrice === null
-          || row.estimatedPrice === undefined,
-      ).length,
+      missingEstimate: countItems.filter(hasMissingEstimate).length,
     }),
     [countItems],
   );
@@ -2576,7 +2564,7 @@ export default function BidLogWorkspace({
             <tbody>
               {visibleItems.map(
                 row => {
-                  const state = dueState(row);
+                  const state = activeView ? dueState(row) : null;
                   const identity = rowIdentity(row);
                   const cacheKey = noteCacheKey(row);
                   const notesOpen =

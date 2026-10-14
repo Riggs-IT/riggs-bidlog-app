@@ -52,16 +52,17 @@ test('duplicate directory identity is not invented from same company text',()=>{
  const d=canonicalDirectory([{sharePointItemId:1,name:'ESI',cityStateZip:'Denver'},{sharePointItemId:2,name:'ESI',cityStateZip:'Boise'}]);
  assert.equal(contractorTokens('ESI',d)[0].status,'AMBIGUOUS');assert.equal(d.items.length,2);
 });
-const sys={monthStart:'2026-10-01',primaryProjectionSource:'SYSTEM_BASELINE',projectedAmount:200,systemBaselineAmount:200,actualAmount:null};
-const pm={monthStart:'2026-10-01',primaryProjectionSource:'PM_FORECAST',projectedAmount:0,systemBaselineAmount:100,actualAmount:null};
+const sys={monthStart:'2026-10-01',primaryProjectionSource:'SYSTEM_BASELINE',hasPmForecast:false,pmForecastAmount:null,projectedAmount:200,systemBaselineAmount:200,actualAmount:null};
+const pm={monthStart:'2026-10-01',primaryProjectionSource:'PM_FORECAST',hasPmForecast:true,pmForecastAmount:0,projectedAmount:0,systemBaselineAmount:100,actualAmount:null};
 test('baseline origin is marked independently of missing PM coverage',()=>{
  assert.equal(pivotCurrentCell(sys,'2026-10').isSystemEstimate,true);assert.equal(pivotCurrentCell(pm,'2026-10').isSystemEstimate,false);
- const blank=pivotCurrentCell({...pm,projectedAmount:null,missingPmMonths:1},'2026-10');assert.equal(blank.projected,null);assert.equal(blank.isSystemEstimate,false);
+ const blank=pivotCurrentCell({...pm,projectedAmount:null,pmForecastAmount:null,missingPmMonths:1},'2026-10');assert.equal(blank.projected,null);assert.equal(blank.isSystemEstimate,false);
 });
-test('baseline origin survives month and range totals without changing values',()=>{
- const a=aggregateCurrentMonthly([sys,pm],'2026-10','2026-10');assert.equal(a.projected,200);assert.equal(a.estimateValueCount,1);
+test('baseline origin survives as reference but cannot affect projected totals',()=>{
+ const a=aggregateCurrentMonthly([sys,pm],'2026-10','2026-10');assert.equal(a.projected,0);assert.equal(a.baseline,300);assert.equal(a.estimateValueCount,1);
  const rows=[{source:'current',cells:[pivotCurrentCell(sys,'2026-10')]},{source:'current',cells:[pivotCurrentCell(pm,'2026-10')]}];
- assert.equal(pivotTotals(rows,0,'projected',false).hasSystemEstimate,true);assert.equal(pivotTotals(rows,0,'projected',false).projectedValue,200);
+ const total=pivotTotals(rows,0,'projected',false);
+ assert.equal(total.hasSystemEstimate,true);assert.equal(total.projectedValue,0);assert.equal(total.baselineValue,300);assert.equal(total.activeProjectsProjected,0);
 });
 test('all-PM totals have no baseline marker even with baseline comparison available',()=>{
  assert.equal(aggregateCurrentMonthly([pm],'2026-10','2026-10').estimateValueCount,0);
