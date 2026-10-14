@@ -38,16 +38,34 @@ class CacheIntegrationTests(unittest.TestCase):
             self.assertEqual(data_api._dashboard_cached(key,lambda:'new'),'new',key)
         self.assertEqual(data_api._dashboard_cached('active_bid_list:keep',lambda:'wrong'),'unrelated')
 
-    def test_read_wrappers_share_then_bypass(self):
-        for name in ('active_bids','completed_projects','current_projected_billings','current_projects_monthly_bulk','active_bid_dashboard'):
-            with self.subTest(name=name), patch.object(data_api,'_fetch_'+name) as fetch:
+    def test_local_list_cache_and_shared_bridge_reads_have_distinct_ownership(self):
+        local_keys = {'active_bids', 'completed_projects'}
+        shared_keys = {
+            'current_projected_billings', 'current_projects_monthly_bulk',
+            'active_bid_dashboard',
+        }
+        for name in sorted(local_keys | shared_keys):
+            with self.subTest(name=name), patch.object(data_api, '_fetch_' + name) as fetch:
                 self.cache.invalidate_prefix('')
-                fetch.side_effect=[{'items':[0,None]}, {'items':[1,None]}]
-                public=getattr(data_api,'get_'+name)
-                self.assertEqual(public(),{'items':[0,None]})
-                self.assertEqual(public(),{'items':[0,None]})
-                self.assertEqual(public(fresh=True),{'items':[1,None]})
-                self.assertEqual(fetch.call_count,2)
+                public = getattr(data_api, 'get_' + name)
+                fetch.side_effect = [
+                    {'items': [0, None]}, {'items': [1, None]}, {'items': [2, None]},
+                ]
+                self.assertEqual(public(), {'items': [0, None]})
+                if name in local_keys:
+                    self.assertEqual(public(), {'items': [0, None]})
+                    self.assertEqual(public(fresh=True), {'items': [1, None]})
+                    self.assertEqual(fetch.call_count, 2)
+                else:
+                    # The bridge now owns the shared TTL. A second Cloud Run
+                    # cache would hide another user's manual rebuild.
+                    self.assertEqual(public(), {'items': [1, None]})
+                    self.assertEqual(public(fresh=True), {'items': [2, None]})
+                    self.assertEqual(fetch.call_count, 3)
+                    self.assertEqual(
+                        [call.kwargs['shared_fresh'] for call in fetch.call_args_list],
+                        [False, False, True],
+                    )
 
     def test_list_keys_separate_filter_and_page_and_normalize_spaces(self):
         with patch.object(data_api,'_fetch_active_bids',return_value={'items':[]}) as fetch:
@@ -129,13 +147,19 @@ class CacheIntegrationTests(unittest.TestCase):
         for name in ('get_active_bids','get_completed_projects','get_current_projected_billings','get_current_projects_monthly_bulk','get_active_bid_dashboard'):
             self.assertEqual(sum(isinstance(n,ast.FunctionDef) and n.name==name for n in tree.body),1,name)
 
-    def test_fresh_never_added_to_bridge_query(self):
-        payload=[]
-        self.response.json.return_value=payload
-        with patch.object(data_api,'_get_service_response',return_value=self.response) as upstream:
+    def test_explicit_fresh_reaches_bridge_but_ordinary_reads_do_not_force_sql(self):
+        self.response.json.return_value = []
+        base = '/v1/bid-log/current-projects?includeCompletedBilling=true'
+        with patch.object(data_api, '_get_service_response', return_value=self.response) as upstream:
+            data_api.get_current_projected_billings()
             data_api.get_current_projected_billings(fresh=True)
-            self.assertEqual(upstream.call_args.args[0],'/v1/bid-log/current-projects?includeCompletedBilling=true')
-            self.assertNotIn('fresh',upstream.call_args.kwargs)
+            self.assertEqual(
+                [call.args[0] for call in upstream.call_args_list],
+                [base, base + '&fresh=true'],
+            )
+            for call in upstream.call_args_list:
+                self.assertNotIn('fresh', call.kwargs)
+                self.assertIsNotNone(call.kwargs.get('timeout'))
 
 
 if __name__=='__main__': unittest.main()

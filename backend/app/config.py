@@ -39,6 +39,7 @@ class Settings(BaseSettings):
 
     data_api_connect_timeout_seconds: float = 3.0
     data_api_read_timeout_seconds: float = 5.0
+    data_api_dashboard_read_timeout_seconds: float = 15.0
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -173,6 +174,11 @@ class Settings(BaseSettings):
         if self.data_api_read_timeout_seconds <= 0:
             raise ValueError(
                 "DATA_API_READ_TIMEOUT_SECONDS must be "
+                "greater than zero."
+            )
+        if self.data_api_dashboard_read_timeout_seconds <= 0:
+            raise ValueError(
+                "DATA_API_DASHBOARD_READ_TIMEOUT_SECONDS must be "
                 "greater than zero."
             )
 

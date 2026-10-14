@@ -53,6 +53,12 @@ class DataAPIUnavailable(DataAPIError):
     pass
 
 
+class DataAPISharedRefreshRateLimited(DataAPIError):
+    def __init__(self, retry_after_seconds: int):
+        self.retry_after_seconds = retry_after_seconds
+        super().__init__("Shared dashboard cache refresh is rate limited.")
+
+
 class DataAPIInvalidResponse(DataAPIError):
     pass
 
@@ -370,6 +376,7 @@ def _get_service_response(
     operation: str,
     params: dict | None = None,
     resource_not_found: bool = False,
+    timeout: httpx.Timeout | None = None,
 ) -> httpx.Response:
 
     try:
@@ -379,6 +386,7 @@ def _get_service_response(
             headers=_request_headers(
                 include_service_auth=True,
             ),
+            **({"timeout": timeout} if timeout is not None else {}),
         )
 
     except httpx.TimeoutException as exc:
@@ -1687,12 +1695,31 @@ def update_active_project(
 
     return result
 
-def _fetch_current_projected_billings() -> list[dict]:
+def _dashboard_http_timeout() -> httpx.Timeout:
+    # The bridge can need >5 seconds to build a cold SQL snapshot. Limit the
+    # longer budget to the shared dashboard endpoints, not every API call.
+    return httpx.Timeout(
+        connect=settings.data_api_connect_timeout_seconds,
+        read=settings.data_api_dashboard_read_timeout_seconds,
+        write=settings.data_api_read_timeout_seconds,
+        pool=settings.data_api_connect_timeout_seconds,
+    )
+
+
+def _dashboard_path(path: str, fresh: bool) -> str:
+    if not fresh:
+        return path
+    separator = "&" if "?" in path else "?"
+    return f"{path}{separator}fresh=true"
+
+
+def _fetch_current_projected_billings(*, shared_fresh: bool = False) -> list[dict]:
     operation = "Current Project projected billings"
 
     response = _get_service_response(
-        "/v1/bid-log/current-projects?includeCompletedBilling=true",
+        _dashboard_path("/v1/bid-log/current-projects?includeCompletedBilling=true", shared_fresh),
         operation=operation,
+        timeout=_dashboard_http_timeout(),
     )
 
     return _json_object_list(
@@ -2338,21 +2365,23 @@ def update_current_project_pm_forecast_policy(
     return result
 
 
-def get_pm_forecast_portfolio_balance() -> list[dict]:
+def get_pm_forecast_portfolio_balance(*, fresh: bool = False) -> list[dict]:
     """Read all active-project coverage mismatches, independent of recipients."""
     operation = "PM Forecast portfolio balance"
     response = _get_service_response(
-        "/v1/bid-log/pm-forecast/portfolio-balance",
+        _dashboard_path("/v1/bid-log/pm-forecast/portfolio-balance", fresh),
         operation=operation,
+        timeout=_dashboard_http_timeout(),
     )
     return _json_object_list(response, operation=operation)
 
 
-def get_pm_forecast_schedule_review() -> list[dict]:
+def get_pm_forecast_schedule_review(*, fresh: bool = False) -> list[dict]:
     """Portfolio-wide schedule flags, without recipient information."""
     operation = "PM Forecast schedule review"
     response = _get_service_response(
-        "/v1/bid-log/pm-forecast/schedule-review", operation=operation
+        _dashboard_path("/v1/bid-log/pm-forecast/schedule-review", fresh),
+        operation=operation, timeout=_dashboard_http_timeout(),
     )
     return _json_object_list(response, operation=operation)
 
@@ -3124,10 +3153,11 @@ def link_current_project_originating_bid(
 
 
 
-def _fetch_current_projects_primary_projection() -> dict:
+def _fetch_current_projects_primary_projection(*, shared_fresh: bool = False) -> dict:
     operation = "Current Project primary projection bulk"
     response = _get_service_response(
-        "/v1/bid-log/current-projects/primary-projection", operation=operation,
+        _dashboard_path("/v1/bid-log/current-projects/primary-projection", shared_fresh),
+        operation=operation, timeout=_dashboard_http_timeout(),
     )
     payload = _json_object(response, operation=operation)
     if (payload.get("contractVersion") != 1
@@ -3138,21 +3168,20 @@ def _fetch_current_projects_primary_projection() -> dict:
 
 
 def get_current_projects_primary_projection(*, fresh: bool = False) -> dict:
-    return _dashboard_cached(
-        "current_project_primary_projection",
-        _fetch_current_projects_primary_projection,
-        fresh=fresh,
-    )
+    # The bridge owns the shared snapshot; do not create a second Cloud Run
+    # TTL that would delay another user's successful manual rebuild.
+    return _fetch_current_projects_primary_projection(shared_fresh=fresh)
 
 
-def _fetch_current_projects_monthly_bulk() -> dict:
+def _fetch_current_projects_monthly_bulk(*, shared_fresh: bool = False) -> dict:
     operation = (
         "Current Project monthly bulk"
     )
 
     response = _get_service_response(
-        "/v1/bid-log/current-projects/monthly?includeCompletedBilling=true",
+        _dashboard_path("/v1/bid-log/current-projects/monthly?includeCompletedBilling=true", shared_fresh),
         operation=operation,
+        timeout=_dashboard_http_timeout(),
     )
 
     payload = _json_object(
@@ -3176,14 +3205,15 @@ def _fetch_current_projects_monthly_bulk() -> dict:
     return payload
 
 
-def _fetch_active_bid_dashboard() -> dict:
+def _fetch_active_bid_dashboard(*, shared_fresh: bool = False) -> dict:
     operation = (
         "Active Bid projected-billings dashboard"
     )
 
     response = _get_service_response(
-        "/v1/bid-log/projected-billings/dashboard",
+        _dashboard_path("/v1/bid-log/projected-billings/dashboard", shared_fresh),
         operation=operation,
+        timeout=_dashboard_http_timeout(),
     )
 
     payload = _json_object(
@@ -3221,11 +3251,11 @@ def _fetch_active_bid_dashboard() -> dict:
 
 
 # ============================================================
-# DASHBOARD READ CACHE
-# Existing shared read datasets only; detail, PM versions, policy,
-# attention, human identity, and delegated sessions remain uncached.
-# Default TTL is 30 seconds; an existing setting may select 0..300.
-# The frontend must still request data; TTL is not browser polling.
+# APP-LOCAL READ CACHE (other uses only)
+# The six shared Projected Billings datasets now use bridge-owned snapshots.
+# Other existing reads, including active-bid-list and completed-directory,
+# retain the bounded process-local cache and their original invalidation.
+# Detail, PM versions, policy, attention, and delegated sessions stay live.
 # ============================================================
 
 import math as _dashboard_math
@@ -3305,18 +3335,58 @@ def get_completed_projects(*, fresh: bool = False) -> list[dict]:
 
 
 def get_current_projected_billings(*, fresh: bool = False) -> list[dict]:
-    return _dashboard_cached(
-        "current_project_summary", _fetch_current_projected_billings, fresh=fresh,
-    )
+    return _fetch_current_projected_billings(shared_fresh=fresh)
 
 
 def get_current_projects_monthly_bulk(*, fresh: bool = False) -> dict:
-    return _dashboard_cached(
-        "current_project_monthly_bulk", _fetch_current_projects_monthly_bulk, fresh=fresh,
-    )
+    return _fetch_current_projects_monthly_bulk(shared_fresh=fresh)
 
 
 def get_active_bid_dashboard(*, fresh: bool = False) -> dict:
-    return _dashboard_cached(
-        "active_bid_dashboard", _fetch_active_bid_dashboard, fresh=fresh,
+    return _fetch_active_bid_dashboard(shared_fresh=fresh)
+
+
+# ============================================================
+# SHARED BRIDGE DASHBOARD CACHE CONTROL
+# ============================================================
+
+def get_shared_dashboard_cache_status() -> dict:
+    response = _get_service_response(
+        "/v1/bid-log/dashboard-cache/status",
+        operation="Shared dashboard cache status",
     )
+    result = _json_object(response, operation="Shared dashboard cache status")
+    if not isinstance(result.get("datasets"), dict):
+        raise DataAPIInvalidResponse("Invalid shared dashboard cache status.")
+    return result
+
+
+def refresh_shared_dashboard_cache(*, actor_eid: int) -> dict:
+    operation = "Shared dashboard cache refresh"
+    try:
+        response = _get_http_client().post(
+            "/v1/bid-log/dashboard-cache/refresh",
+            headers=_request_headers(include_service_auth=True, actor_eid=actor_eid),
+        )
+    except (httpx.TimeoutException, httpx.RequestError) as exc:
+        raise DataAPIUnavailable("Shared dashboard refresh request failed.") from exc
+    if response.status_code == 429:
+        if _detail(response) != "shared_dashboard_refresh_rate_limited":
+            raise DataAPIInvalidResponse("Unexpected shared dashboard refresh rejection.")
+        raw_retry = response.headers.get("Retry-After", "")
+        try:
+            retry_after = int(raw_retry)
+        except ValueError:
+            raise DataAPIInvalidResponse("Invalid shared dashboard cooldown response.") from None
+        if retry_after < 1 or retry_after > 3600:
+            raise DataAPIInvalidResponse("Invalid shared dashboard cooldown duration.")
+        raise DataAPISharedRefreshRateLimited(retry_after)
+    _raise_common_failure(response, operation=operation)
+    if response.status_code != 202:
+        raise DataAPIInvalidResponse("Unexpected shared dashboard refresh response.")
+    payload = _json_object(response, operation=operation)
+    if not payload.get("refreshId") or payload.get("status") not in {
+        "RUNNING", "COMPLETE", "PARTIAL", "FAILED"
+    }:
+        raise DataAPIInvalidResponse("Invalid shared dashboard refresh receipt.")
+    return payload

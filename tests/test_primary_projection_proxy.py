@@ -19,9 +19,14 @@ class PrimaryProjectionReaderTests(unittest.TestCase):
         with patch.object(api,'_get_service_response',return_value=self.response(self.payload)) as read:
             self.assertEqual(api.get_current_projects_primary_projection(),self.payload)
             self.assertEqual(read.call_args.args,(PATH,));self.assertEqual(read.call_args.kwargs['operation'],'Current Project primary projection bulk')
-    def test_warm_read_reused(self):
-        with patch.object(api,'_get_service_response',return_value=self.response(self.payload)) as read:
-            api.get_current_projects_primary_projection();api.get_current_projects_primary_projection();self.assertEqual(read.call_count,1)
+    def test_shared_primary_projection_uses_bridge_cache_not_second_bff_cache(self):
+        with patch.object(api, '_get_service_response', return_value=self.response(self.payload)) as read:
+            self.assertEqual(api.get_current_projects_primary_projection(), self.payload)
+            self.assertEqual(api.get_current_projects_primary_projection(), self.payload)
+            # Both calls reach the same bridge endpoint; the bridge guarantees
+            # an unchanged snapshot until its shared TTL expires.
+            self.assertEqual(read.call_count, 2)
+            self.assertEqual([call.args[0] for call in read.call_args_list], [PATH, PATH])
     def test_fresh_bypasses_existing_cache(self):
         second={**self.payload,'readCompletedAtUTC':'2026-09-30T22:31:00Z'}
         with patch.object(api,'_get_service_response',side_effect=[self.response(self.payload),self.response(second)]) as read:

@@ -108,24 +108,74 @@ class DashboardCacheRouteTests(unittest.TestCase):
     def test_admin_viewer_cached_payload_isolation(self):
         raw=[{'jobListId':548,'projectionAmount':690102.36,'marginCollected':12,'nested':{'MarginPercent':0.2,'safe':None}}]
         expected=deepcopy(raw)
-        with patch.object(data_api,'_dashboard_read_cache',DashboardReadCache()),patch.object(data_api,'_fetch_current_projected_billings',return_value=raw) as fetch:
-            a=self.client.get('/api/projected-billings/current-projects').json()
-            main.app.dependency_overrides[main.get_current_user]=lambda:user('VIEWER','',False)
-            b=self.client.get('/api/projected-billings/current-projects').json()
-            main.app.dependency_overrides[main.get_current_user]=lambda:user()
-            c=self.client.get('/api/projected-billings/current-projects').json()
-            self.assertEqual(a,expected);self.assertEqual(c,expected)
-            self.assertNotIn('marginCollected',b[0]);self.assertNotIn('MarginPercent',b[0]['nested'])
-            self.assertEqual(raw,expected);self.assertEqual(fetch.call_count,1)
+        with patch.object(data_api, '_fetch_current_projected_billings', return_value=raw) as fetch:
+            a = self.client.get('/api/projected-billings/current-projects').json()
+            main.app.dependency_overrides[main.get_current_user] = lambda: user('VIEWER', '', False)
+            b = self.client.get('/api/projected-billings/current-projects').json()
+            main.app.dependency_overrides[main.get_current_user] = lambda: user()
+            c = self.client.get('/api/projected-billings/current-projects').json()
+            self.assertEqual(a, expected)
+            self.assertEqual(c, expected)
+            self.assertNotIn('marginCollected', b[0])
+            self.assertNotIn('MarginPercent', b[0]['nested'])
+            self.assertEqual(b[0]['nested']['safe'], None)
+            # All callers share bridge-held data, but the BFF must separately
+            # enforce access on EVERY request without mutating the source.
+            self.assertEqual(raw, expected)
+            self.assertEqual(fetch.call_count, 3)
 
-    def test_same_route_fresh_bypasses_warm_response(self):
-        with patch.object(data_api,'_dashboard_read_cache',DashboardReadCache()),patch.object(data_api,'_fetch_current_projected_billings',side_effect=[[{'projectionAmount':1}],[{'projectionAmount':2}]]) as fetch:
-            route='/api/projected-billings/current-projects'
-            self.assertEqual(self.client.get(route).json()[0]['projectionAmount'],1)
-            self.assertEqual(self.client.get(route).json()[0]['projectionAmount'],1)
-            self.assertEqual(self.client.get(route+'?fresh=true').json()[0]['projectionAmount'],2)
-            self.assertEqual(self.client.get(route).json()[0]['projectionAmount'],2)
-            self.assertEqual(fetch.call_count,2)
+    def test_margin_redaction_applies_to_each_shared_financial_response(self):
+        fixtures = (
+            ('/api/projected-billings/current-projects/monthly',
+             'get_current_projects_monthly_bulk',
+             {'items': [{'projectedAmount': 0, 'marginCollected': 14}]}),
+            ('/api/projected-billings/current-projects/primary-projection',
+             'get_current_projects_primary_projection',
+             {'contractVersion': 1, 'projects': [{'marginPercent': .2}],
+              'items': [{'primaryProjectedAmount': None, 'marginCollected': 14}]}),
+            ('/api/projected-billings/active-bids/dashboard',
+             'get_active_bid_dashboard',
+             {'projects': {'items': [{'margin': .15, 'projectedAmount': 100}]},
+              'monthly': [{'marginCollected': 14}]}),
+        )
+        main.app.dependency_overrides[main.get_current_user] = lambda: user('VIEWER', '', False)
+        for route, reader, raw in fixtures:
+            with self.subTest(route=route), patch.object(main, reader, return_value=raw) as fetch:
+                before = deepcopy(raw)
+                result = self.client.get(route)
+                self.assertEqual(result.status_code, 200)
+                self.assertEqual(fetch.call_count, 1)
+                self.assertEqual(raw, before)  # shared source must remain unchanged
+                def no_margins(value):
+                    if isinstance(value, dict):
+                        self.assertFalse(any('margin' in str(key).lower() for key in value))
+                        for child in value.values(): no_margins(child)
+                    elif isinstance(value, list):
+                        for child in value: no_margins(child)
+                no_margins(result.json())
+
+    def test_shared_bridge_fresh_bypasses_old_app_local_response(self):
+        # The BFF makes one upstream call per read; the bridge handles reuse.
+        # Only an explicit fresh=true forces the bridge to reload its SQL data.
+        import httpx
+        base = '/v1/bid-log/current-projects?includeCompletedBilling=true'
+        def reply(amount):
+            return httpx.Response(
+                200, json=[{'projectionAmount': amount}],
+                request=httpx.Request('GET', 'https://synthetic.invalid' + base),
+            )
+        with patch.object(data_api, '_get_service_response',
+                          side_effect=[reply(1), reply(1), reply(2), reply(2)]) as upstream:
+            route = '/api/projected-billings/current-projects'
+            self.assertEqual(self.client.get(route).json()[0]['projectionAmount'], 1)
+            self.assertEqual(self.client.get(route).json()[0]['projectionAmount'], 1)
+            self.assertEqual(self.client.get(route + '?fresh=true').json()[0]['projectionAmount'], 2)
+            self.assertEqual(self.client.get(route).json()[0]['projectionAmount'], 2)
+            self.assertEqual(
+                [call.args[0] for call in upstream.call_args_list],
+                [base, base, base + '&fresh=true', base],
+            )
+            self.assertEqual(upstream.call_count, 4)
 
     def test_upstream_error_not_disguised_as_empty_portfolio(self):
         with patch.object(main,'get_current_projected_billings',side_effect=data_api.DataAPISQLUnavailable('synthetic')):

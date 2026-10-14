@@ -40,6 +40,7 @@ from .data_api import (
     DataAPIEdgeRejected,
     DataAPIInvalidResponse,
     DataAPIRequestRejected,
+    DataAPISharedRefreshRateLimited,
     DataAPIResourceNotFound,
     DataAPIServiceAuthRejected,
     DataAPISQLCapacityUnavailable,
@@ -93,6 +94,8 @@ from .data_api import (
     get_pm_forecast_attention,
     get_pm_forecast_portfolio_balance,
     get_pm_forecast_schedule_review,
+    get_shared_dashboard_cache_status,
+    refresh_shared_dashboard_cache,
     get_pm_forecast_schedule_review_attention,
     get_current_project_pm_forecast,
     get_current_project_pm_forecast_history,
@@ -2834,27 +2837,64 @@ def originating_bid_attention(
         )
 
 
+@app.get("/api/projected-billings/dashboard-cache/status")
+def projected_billings_cache_status(
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    _require_projected_workspace_access(current_user)
+    try:
+        return JSONResponse(
+            get_shared_dashboard_cache_status(),
+            headers={"Cache-Control": "no-store"},
+        )
+    except Exception as exc:
+        _raise_projected_billings_error(exc)
+
+
+@app.post("/api/projected-billings/dashboard-cache/refresh", status_code=202)
+def projected_billings_cache_refresh(
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    _require_projected_workspace_access(current_user)
+    try:
+        return JSONResponse(
+            refresh_shared_dashboard_cache(actor_eid=current_user.eid),
+            status_code=202,
+            headers={"Cache-Control": "no-store"},
+        )
+    except DataAPISharedRefreshRateLimited as exc:
+        raise HTTPException(
+            status_code=429,
+            detail="shared_dashboard_refresh_rate_limited",
+            headers={"Retry-After": str(exc.retry_after_seconds)},
+        ) from exc
+    except Exception as exc:
+        _raise_projected_billings_error(exc)
+
+
 @app.get(
     "/api/pm-forecast/portfolio-balance"
 )
 def pm_forecast_portfolio_balance(
+    fresh: bool = FastAPIQuery(default=False),
     current_user: CurrentUser = Depends(get_current_user),
 ):
     # Authenticated Projected Billings access, no user-EID filter on results.
     _require_projected_workspace_access(current_user)
     try:
-        return get_pm_forecast_portfolio_balance()
+        return get_pm_forecast_portfolio_balance(fresh=fresh)
     except Exception as exc:
         _raise_pm_forecast_proxy_error(exc)
 
 
 @app.get("/api/pm-forecast/schedule-review")
 def pm_forecast_schedule_review(
+    fresh: bool = FastAPIQuery(default=False),
     current_user: CurrentUser = Depends(get_current_user),
 ):
     _require_projected_workspace_access(current_user)
     try:
-        return get_pm_forecast_schedule_review()
+        return get_pm_forecast_schedule_review(fresh=fresh)
     except Exception as exc:
         _raise_pm_forecast_proxy_error(exc)
 

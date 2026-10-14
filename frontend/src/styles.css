@@ -14512,3 +14512,14 @@ tbody > tr:nth-child(
   vertical-align: super;
   line-height: 0;
 }
+
+/* The shared financial snapshot can serve last-good data during a refresh.
+   Do not silently present an expired or failed refresh as current. */
+.dashboard-cache-warning {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--topbar-text);
+  opacity: .86;
+  max-width: 130px;
+  line-height: 1.25;
+}

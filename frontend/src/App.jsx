@@ -296,6 +296,9 @@ function friendlyError(detail) {
     data_api_unavailable:
       'Bid Log could not reach Riggs data services. Check your connection and try again.',
 
+    shared_dashboard_refresh_rate_limited:
+      'Someone refreshed the shared dashboard recently. You can keep viewing current cached data; try Refresh again after the cooldown.',
+
     data_api_not_configured:
       'Bid Log services are temporarily unavailable.',
 
@@ -1051,6 +1054,13 @@ async function fetchJson(
 
     error.status =
       response.status;
+
+    if (detail === 'shared_dashboard_refresh_rate_limited') {
+      const seconds = Number(response.headers.get('Retry-After'));
+      if (Number.isFinite(seconds) && seconds > 0) {
+        error.message = `Shared dashboard Refresh is limited. Try again in ${Math.ceil(seconds)} seconds; existing cached data remains available.`;
+      }
+    }
 
     throw error;
   }
@@ -5458,10 +5468,20 @@ export default function App() {
         <div className="topbar-actions">
           {activePage === 'projected' && canViewProjectedBillings && <RefreshButton
             label="Refresh projected billings" busy={portfolioFreshness.refreshing}
-            title="Refresh projected billings and notifications" onClick={() => {
+            title="Rebuild shared projected billings for everyone and refresh notifications" onClick={() => {
               void portfolioFreshness.refreshAll(); void loadNotifications();
               if (canReadGcReference(user)) void gcDirectory.refresh();
             }} /> }
+          {activePage === 'projected' && canViewProjectedBillings &&
+            portfolioFreshness.cacheStatus &&
+            Object.values(portfolioFreshness.cacheStatus.datasets || {}).some(
+              item => item.state !== 'FRESH' || item.lastErrorType,
+            ) &&
+            <span className="dashboard-cache-warning" role="status"
+              title="At least one shared dashboard dataset is rebuilding or delayed; older financial values may be shown.">
+              {portfolioFreshness.cacheStatus.status === 'RUNNING'
+                ? 'Updating shared data' : 'Shared data may be stale'}
+            </span>}
           <div
             ref={notificationCenterRef}
             className="notification-center"

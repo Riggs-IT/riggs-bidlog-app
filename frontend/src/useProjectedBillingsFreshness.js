@@ -11,6 +11,7 @@ export default function useProjectedBillingsFreshness(options) {
   latest.current = options;
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
+  const [cacheStatus, setCacheStatus] = useState(null);
   const scope = `${options.userKey ?? ''}:${Boolean(options.enabled)}`;
 
   const reads = useMemo(() => {
@@ -100,12 +101,31 @@ export default function useProjectedBillingsFreshness(options) {
         latest.current.onSessionError(error);
       },
     });
+    // Lightweight status metadata; no financial values or user data. A status
+    // check must never block the working dashboard if its endpoint is down.
+    const updateCacheStatus = async () => {
+      if (!usable()) return;
+      try {
+        const result = await latest.current.fetchJson(
+          '/api/projected-billings/dashboard-cache/status',
+          readOptions({ passive: true }),
+        );
+        if (usable() && result?.datasets) setCacheStatus(result);
+      } catch {
+        if (usable()) setCacheStatus(null);
+      }
+    };
+
     const batch = async config => {
       if (!usable()) return [];
       state.busy += 1;
       setRefreshing(true);
       try {
-        const result = await Promise.all([current.load(config), bids.load(config), portfolioBalance.load(config), scheduleReview.load(config)]);
+        const result = await Promise.all([
+          current.load(config), bids.load(config),
+          portfolioBalance.load(config), scheduleReview.load(config),
+          updateCacheStatus(),
+        ]);
         if (usable() && current.lastSuccessAt !== null && bids.lastSuccessAt !== null) {
           latest.current.onReady();
         }
@@ -121,13 +141,60 @@ export default function useProjectedBillingsFreshness(options) {
       try { return await attention.load(config); }
       finally { if (usable() && !attention.pending) latest.current.onAttentionLoading(false); }
     };
-    return { state, usable, current, bids, portfolioBalance, scheduleReview, attention, batch, attentionLoad };
+    const refreshAll = async () => {
+      if (!usable()) return;
+      state.busy += 1;
+      setRefreshing(true);
+      try {
+        // Exactly one POST asks the bridge to rebuild its shared snapshot.
+        // Polling below only checks metadata, never launches SQL reads.
+        const receipt = await latest.current.fetchJson(
+          '/api/projected-billings/dashboard-cache/refresh',
+          { method: 'POST', credentials: 'same-origin', cache: 'no-store' },
+        );
+        if (!receipt?.refreshId) throw new Error('Shared refresh returned no request ID.');
+        let status = receipt;
+        const deadline = Date.now() + 90_000;
+        while (usable() && status.status === 'RUNNING' && Date.now() < deadline) {
+          await new Promise(resolve => setTimeout(resolve, 900));
+          if (!usable()) return;
+          status = await latest.current.fetchJson(
+            '/api/projected-billings/dashboard-cache/status',
+            readOptions({ passive: true }),
+          );
+          // If a different authorized request supersedes the status, wait
+          // for that run rather than treating the wrong ID as success.
+        }
+        if (!usable()) return;
+        if (status.status === 'RUNNING') {
+          throw new Error('Shared dashboard rebuild has not finished yet.');
+        }
+        setCacheStatus(status);
+        // Reads below DO NOT append fresh=true: the POST already rebuilt
+        // once for everyone, and another set of forced GETs would duplicate SQL.
+        await batch({ replace: true, passive: false });
+        if (status.status !== 'COMPLETE') {
+          const error = new Error('Shared dashboard refresh was incomplete; some previous values were retained.');
+          reportError('sharedRefresh', error);
+        } else {
+          state.failures.delete('sharedRefresh');
+          latest.current.onError([...state.failures.values()].join(' ') || null);
+        }
+      } catch (error) {
+        reportError('sharedRefresh', error);
+      } finally {
+        state.busy -= 1;
+        if (usable() && state.busy === 0) setRefreshing(false);
+      }
+    };
+    return { state, usable, current, bids, portfolioBalance, scheduleReview, attention, batch, attentionLoad, refreshAll };
   }, [scope]);
 
   useEffect(() => {
     reads.state.alive = true;
     setLastUpdatedAt(null);
     setRefreshing(false);
+    setCacheStatus(null);
     latest.current.onReset();
     if (options.enabled) {
       latest.current.onInitialLoading(true);
@@ -152,8 +219,8 @@ export default function useProjectedBillingsFreshness(options) {
   }, [reads, options.enabled]);
 
   return {
-    refreshing, lastUpdatedAt,
-    refreshAll: () => reads.batch({ replace: true, fresh: true, passive: false }),
+    refreshing, lastUpdatedAt, cacheStatus,
+    refreshAll: () => reads.refreshAll(),
     refreshCurrent: () => reads.usable()
       ? Promise.all([
           reads.current.load({ replace: true, fresh: true, passive: true }),
