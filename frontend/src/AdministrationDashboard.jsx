@@ -1,5 +1,6 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import './AdministrationDashboard.css';
+import AdministrationPresence from './AdministrationPresence.jsx';
 
 const LABELS = {
   current_project_summary: 'Current projects · summary',
@@ -51,7 +52,7 @@ const QUEUE_LABELS = {
 const displayCount = value => Number.isSafeInteger(value) && value >= 0
   ? value.toLocaleString() : 'Not collected';
 
-export function AdministrationView({overview}) {
+export function AdministrationView({overview, presence}) {
   const services = overview?.services || {};
   const cache = overview?.cache || {};
   const refresh = cache.refresh || {};
@@ -76,6 +77,8 @@ export function AdministrationView({overview}) {
       </div>
       <p className="administration-detail">Cloud Run revision: <strong>{services.bidLog?.cloudRunRevision || 'Not available locally'}</strong>. App version: {services.bidLog?.appVersion || 'Unknown'}.</p>
     </section>
+
+    <AdministrationPresence presence={presence} />
 
     <section className="administration-section" aria-label="Shared dashboard cache">
       <div className="administration-section-heading"><h2>Shared dashboard cache</h2><span>Current process-local snapshot · no historical ledger</span></div>
@@ -183,6 +186,7 @@ export function AdministrationView({overview}) {
 
 export default function AdministrationDashboard({onSessionError}) {
   const [overview, setOverview] = useState(null);
+  const [presence, setPresence] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const pending = useRef(null);
@@ -195,6 +199,7 @@ export default function AdministrationDashboard({onSessionError}) {
     pending.current = controller;
     setBusy(true);
     setError('');
+    setPresence(null);
     try {
       const response = await fetch('/api/admin/overview', {
         method: 'GET', credentials: 'same-origin', cache: 'no-store',
@@ -211,6 +216,23 @@ export default function AdministrationDashboard({onSessionError}) {
         throw new Error('The monitoring service returned an invalid response.');
       }
       if (!controller.signal.aborted) setOverview(payload);
+      // Optional private detail read: no background polling or write action.
+      try {
+        const presenceResponse = await fetch('/api/admin/presence', {
+          method: 'GET', credentials: 'same-origin', cache: 'no-store',
+          headers: {'Accept': 'application/json', 'X-Riggs-Passive-Read': '1'},
+          signal: controller.signal,
+        });
+        if (presenceResponse.status === 401) sessionCallback.current?.({status: 401, detail: 'authentication_required'});
+        if (!presenceResponse.ok) throw new Error('Presence unavailable');
+        const presenceData = await presenceResponse.json();
+        if (presenceData?.readOnly !== true || !['AVAILABLE', 'UNAVAILABLE'].includes(presenceData.availability)) {
+          throw new Error('Invalid presence response');
+        }
+        if (!controller.signal.aborted) setPresence(presenceData);
+      } catch (presenceError) {
+        if (!controller.signal.aborted) setPresence({availability: 'UNAVAILABLE'});
+      }
     } catch (exc) {
       if (!controller.signal.aborted) {
         setOverview(null);
@@ -240,7 +262,7 @@ export default function AdministrationDashboard({onSessionError}) {
     {error && <div className="administration-message administration-message-warning" role="alert">{error}</div>}
     {overview ? <>
       <p className="administration-observed">Observed {displayUTC(overview.observedAtUTC)} · Data reflects this check only; no automatic polling.</p>
-      <AdministrationView overview={overview}/>
+      <AdministrationView overview={overview} presence={presence}/>
     </> : !error && <div className="administration-message">Checking current status…</div>}
   </main>;
 }

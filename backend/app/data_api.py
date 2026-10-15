@@ -3444,6 +3444,43 @@ def refresh_shared_dashboard_cache(*, actor_eid: int) -> dict:
     return payload
 
 
+# Human presence is diagnostic evidence, never an authentication grant.
+def get_bid_log_administration_presence(*, actor_eid: int, entra_object_id: str) -> dict:
+    if type(actor_eid) is not int or actor_eid != 2021:
+        raise DataAPIConfigurationError("Administration actor unavailable")
+    try:
+        oid = UUID(entra_object_id)
+        if oid.int == 0:
+            raise ValueError("empty UUID")
+    except (ValueError, TypeError, AttributeError) as exc:
+        raise DataAPIConfigurationError("Administration identity unavailable") from exc
+
+    headers = _request_headers(include_service_auth=True, actor_eid=actor_eid)
+    headers["X-Riggs-Actor-Entra-OID"] = str(oid)
+    operation = "Bid Log Administration cross-app presence"
+    try:
+        response = _timed_data_api_request(
+            "admin_presence",
+            lambda: _get_http_client().get(
+                "/v1/bid-log/admin/presence",
+                headers=headers,
+                timeout=httpx.Timeout(
+                    connect=settings.data_api_connect_timeout_seconds,
+                    read=settings.data_api_dashboard_read_timeout_seconds,
+                    write=settings.data_api_read_timeout_seconds,
+                    pool=settings.data_api_connect_timeout_seconds,
+                ),
+            ),
+        )
+    except (httpx.TimeoutException, httpx.RequestError) as exc:
+        raise DataAPIUnavailable("Administration presence upstream unavailable") from exc
+
+    _raise_common_failure(response, operation=operation)
+    if response.status_code != 200:
+        raise DataAPIInvalidResponse("Unexpected Administration presence status")
+    return _json_object(response, operation=operation)
+
+
 # Private Administration metrics: owner identity originates exclusively from
 # the signed Entra session after require_administration_owner in main.py.
 def get_bid_log_administration_monitoring(*, actor_eid: int, entra_object_id: str) -> dict:

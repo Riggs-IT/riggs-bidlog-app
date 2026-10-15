@@ -24,6 +24,7 @@ from .data_api import (
     check_data_api_ready,
     get_shared_dashboard_cache_status,
     get_bid_log_administration_monitoring,
+    get_bid_log_administration_presence,
 )
 
 _DATASETS = (
@@ -289,4 +290,114 @@ def get_administration_overview(*, owner_eid: int, owner_oid: str) -> dict:
             "availability": "UNAVAILABLE", "reasonCode": _unavailability_code(exc),
         })
 
+    return result
+
+
+# Owner-only, separate from health/queue monitoring: failure remains unknown.
+_PRESENCE_APP_CODES = ("ACCOUNTING", "BID_LOG", "OPERATIONS")
+_PRESENCE_STATUSES = {"RECENT_ACTIVITY", "RECENT_HEARTBEAT", "IDLE_UNCONFIRMED"}
+
+
+def _sanitize_presence(payload: object) -> dict:
+    if not isinstance(payload, dict) or payload.get("source") != "RIGGSDATAHUB_USAGE_SESSIONS":
+        raise ValueError("Presence source invalid")
+    observed = _timestamp(payload.get("observedAtUTC"))
+    apps = payload.get("apps")
+    sessions = payload.get("sessions")
+    if (not observed or payload.get("activityWindowSeconds") != 120
+            or payload.get("idleWindowMinutes") != 65
+            or payload.get("maxSessionsPerApp") != 50
+            or not isinstance(apps, list) or len(apps) != 3
+            or not isinstance(sessions, list) or len(sessions) > 150):
+        raise ValueError("Presence response shape invalid")
+    seen = {}
+    counts = {code: 0 for code in _PRESENCE_APP_CODES}
+    for entry in apps:
+        if not isinstance(entry, dict):
+            raise ValueError("Presence app item invalid")
+        code = entry.get("appCode")
+        if code not in _PRESENCE_APP_CODES or code in seen or type(entry.get("truncated")) is not bool:
+            raise ValueError("Presence app identity invalid")
+        numbers = {key: _count(entry.get(key), 2_000_000_000) for key in (
+            "openSessions", "recentSessions", "recentUsers",
+            "recentlyActiveSessions", "recentHeartbeatSessions", "idleUnconfirmedSessions",
+        )}
+        if any(value is None for value in numbers.values()):
+            raise ValueError("Presence app counts invalid")
+        if (numbers["recentSessions"] > numbers["openSessions"]
+            or numbers["recentUsers"] > numbers["recentSessions"]
+            or numbers["recentSessions"] != numbers["recentlyActiveSessions"]
+               + numbers["recentHeartbeatSessions"] + numbers["idleUnconfirmedSessions"]
+            or entry["truncated"] != (numbers["recentSessions"] > 50)):
+            raise ValueError("Presence app totals inconsistent")
+        seen[code] = {
+            "appCode": code,
+            **numbers,
+            "lastOpenHeartbeatAtUTC": _timestamp(entry.get("lastOpenHeartbeatAtUTC")),
+            "truncated": entry["truncated"],
+        }
+    if set(seen) != set(_PRESENCE_APP_CODES):
+        raise ValueError("Presence app directory incomplete")
+
+    allowed = {"appCode", "eid", "displayName", "appRole", "currentPage",
+               "startedAtUTC", "lastHeartbeatAtUTC", "lastActiveAtUTC", "status"}
+    safe_sessions = []
+    for item in sessions:
+        if not isinstance(item, dict):
+            raise ValueError("Invalid presence session")
+        code = item.get("appCode")
+        status = item.get("status")
+        eid = item.get("eid")
+        name = item.get("displayName")
+        role = item.get("appRole")
+        page = item.get("currentPage")
+        started = _timestamp(item.get("startedAtUTC"))
+        heartbeat = _timestamp(item.get("lastHeartbeatAtUTC"))
+        active = _timestamp(item.get("lastActiveAtUTC"))
+        if (code not in seen or status not in _PRESENCE_STATUSES
+            or type(eid) is not int or eid <= 0
+            or not isinstance(name, str) or not name.strip() or len(name) > 200
+            or not isinstance(role, str) or not role.strip() or len(role) > 50
+            or (page is not None and (not isinstance(page, str) or len(page) > 100))
+            or not (started and heartbeat and active)
+            or not (started <= active <= heartbeat <= observed)):
+            raise ValueError("Presence session contract invalid")
+        heartbeat_age = (datetime.fromisoformat(observed) - datetime.fromisoformat(heartbeat)).total_seconds()
+        activity_age = (datetime.fromisoformat(observed) - datetime.fromisoformat(active)).total_seconds()
+        if heartbeat_age > 65*60 + 1 or (
+            status == "RECENT_ACTIVITY" and (heartbeat_age > 121 or activity_age > 121)
+        ) or (
+            status == "RECENT_HEARTBEAT" and (heartbeat_age > 121 or activity_age <= 119)
+        ) or (
+            status == "IDLE_UNCONFIRMED" and heartbeat_age < 119
+        ):
+            raise ValueError("Presence data expired or inconsistent")
+        safe_sessions.append({
+            "appCode": code, "eid": eid, "displayName": name.strip(),
+            "appRole": role.strip(), "currentPage": page.strip() if isinstance(page,str) else None,
+            "startedAtUTC": started, "lastHeartbeatAtUTC": heartbeat,
+            "lastActiveAtUTC": active, "status": status,
+        })
+        counts[code] += 1
+    if any(counts[code] != min(seen[code]["recentSessions"], 50)
+           for code in _PRESENCE_APP_CODES):
+        raise ValueError("Presence detail count mismatch")
+    return {
+        "availability": "AVAILABLE", "source": "RIGGSDATAHUB_USAGE_SESSIONS",
+        "observedAtUTC": observed,
+        "activityWindowSeconds": 120, "idleWindowMinutes": 65,
+        "maxSessionsPerApp": 50,
+        "apps": [seen[code] for code in _PRESENCE_APP_CODES],
+        "sessions": safe_sessions,
+    }
+
+
+def get_administration_presence(*, owner_eid: int, owner_oid: str) -> dict:
+    result = {"readOnly": True, "availability": "UNVERIFIED", "source": "RIGGSDATAHUB_USAGE_SESSIONS"}
+    try:
+        return {"readOnly": True, **_sanitize_presence(
+            get_bid_log_administration_presence(actor_eid=owner_eid, entra_object_id=owner_oid)
+        )}
+    except Exception as exc:
+        result.update({"availability": "UNAVAILABLE", "reasonCode": _unavailability_code(exc)})
     return result

@@ -1,0 +1,16 @@
+/* Administration person-level signals: existing light/dark tokens only. */
+.administration-presence-apps { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin: 10px 0 13px; }
+.administration-presence-app { display: flex; flex-direction: column; gap: 7px; }
+.administration-presence-count { margin: 0; font-size: 12px; color: var(--text-soft); }
+.administration-presence-count strong { font-size: 22px; color: var(--text-strong); font-variant-numeric: tabular-nums; margin-right: 5px; }
+.administration-presence-app .administration-tile-detail { margin: 0; }
+.administration-presence-app small { color: var(--muted); }
+.administration-presence-warning { color: var(--warning) !important; }
+.administration-presence-controls { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin: 14px 0 11px; }
+.administration-presence-controls label { display: flex; flex-direction: column; gap: 5px; font-size: 11px; font-weight: 600; color: var(--text-soft); }
+.administration-presence-controls select, .administration-presence-controls input { min-height: 37px; background: var(--surface); color: var(--text-strong); border: 1px solid var(--border); border-radius: 7px; padding: 8px 10px; font: inherit; font-size: 12px; }
+.administration-presence-search { flex: 1 1 240px; }
+.administration-presence-secondary { display: block; margin-top: 4px; font-size: 10px; color: var(--muted); }
+.administration-presence-empty { text-align: center; color: var(--text-soft) !important; padding: 20px !important; }
+@media(max-width: 950px) { .administration-presence-apps { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media(max-width: 600px) { .administration-presence-apps { grid-template-columns: 1fr; } .administration-presence-controls label { width: 100%; } }

@@ -333,6 +333,7 @@ _PASSIVE_READ_PATHS = frozenset({
     "/api/projected-billings/current-projects/primary-projection",
     "/api/projected-billings/dashboard-cache/status",
     "/api/admin/overview",
+    "/api/admin/presence",
     "/api/projected-billings/active-bids/dashboard",
     "/api/pm-forecast/portfolio-balance",
     "/api/pm-forecast/attention",

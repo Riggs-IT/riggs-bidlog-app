@@ -28,7 +28,7 @@ from starlette.middleware.sessions import (
 )
 from starlette.concurrency import run_in_threadpool
 
-from .administration import get_administration_overview
+from .administration import get_administration_overview, get_administration_presence
 from .auth import (
     CurrentUser,
     get_current_user,
@@ -1258,6 +1258,20 @@ def administration_overview(
     # is checked before any bridge status reads.
     return JSONResponse(
         get_administration_overview(
+            owner_eid=current_user.eid,
+            owner_oid=current_user.entra_object_id,
+        ),
+        headers={"Cache-Control": "no-store, private"},
+    )
+
+
+@app.get("/api/admin/presence")
+def administration_presence(
+    current_user: CurrentUser = Depends(require_administration_owner),
+):
+    # Independently protected read-only cross-app usage evidence.
+    return JSONResponse(
+        get_administration_presence(
             owner_eid=current_user.eid,
             owner_oid=current_user.entra_object_id,
         ),
