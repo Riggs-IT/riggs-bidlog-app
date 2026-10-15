@@ -22,9 +22,9 @@ const humanSeconds = value =>
 
 function State({value}) {
   const status = String(value || 'UNVERIFIED').toUpperCase();
-  const tone = ['AVAILABLE', 'CONNECTED', 'FRESH', 'COMPLETE'].includes(status)
+  const tone = ['AVAILABLE', 'CONNECTED', 'FRESH', 'COMPLETE', 'ENABLED'].includes(status)
     ? 'good'
-    : ['STALE', 'RUNNING', 'IDLE', 'UNVERIFIED'].includes(status)
+    : ['STALE', 'RUNNING', 'IDLE', 'UNVERIFIED', 'DISABLED'].includes(status)
       ? 'neutral' : 'attention';
   return <span className={`administration-state administration-state-${tone}`}>{status.replaceAll('_', ' ')}</span>;
 }
@@ -39,12 +39,28 @@ function HealthCard({name, service, detail}) {
   );
 }
 
+const QUEUE_LABELS = {
+  accounting_tickets: 'Accounting · SharePoint tickets',
+  cognito_staffing: 'Cognito · staffing',
+  job_cognito: 'Cognito · job updates',
+  job_sharepoint: 'SharePoint · job updates',
+  ordering_center: 'SharePoint · ordering center',
+  project_forecast: 'Project forecast',
+};
+
+const displayCount = value => Number.isSafeInteger(value) && value >= 0
+  ? value.toLocaleString() : 'Not collected';
+
 export function AdministrationView({overview}) {
   const services = overview?.services || {};
   const cache = overview?.cache || {};
   const refresh = cache.refresh || {};
   const policy = cache.policy || {};
   const datasets = Array.isArray(cache.datasets) ? cache.datasets : [];
+  const monitoring = overview?.monitoring || {};
+  const usage = monitoring.usage || {};
+  const queueRows = Array.isArray(monitoring.queues) ? monitoring.queues : [];
+  const reconciler = monitoring.reconciliation || {};
   const started = refresh.startedAtUTC ? Date.parse(refresh.startedAtUTC) : NaN;
   const finished = refresh.finishedAtUTC ? Date.parse(refresh.finishedAtUTC) : NaN;
   const elapsed = Number.isFinite(started) && Number.isFinite(finished) && finished >= started
@@ -101,6 +117,57 @@ export function AdministrationView({overview}) {
       </> : <div className="administration-message administration-message-warning" role="status">
         Cache status could not be verified. {cache.reasonCode ? `Reason: ${cache.reasonCode}` : 'No current snapshot is available.'}
       </div>}
+    </section>
+
+    <section className="administration-section" aria-label="Usage and automatic closeout">
+      <div className="administration-section-heading"><h2>Usage and session closeout</h2><span>SQL aggregate · no person-level tracking shown</span></div>
+      {monitoring.availability === 'AVAILABLE' ? <>
+        <p className="administration-detail">Observed {displayUTC(monitoring.observedAtUTC)} · Active means a heartbeat within {usage.activeDefinitionSeconds} seconds, not proof someone is at their desk.</p>
+        <div className="administration-metrics">
+          <article className="administration-tile administration-metric"><span>Recently heartbeating</span><strong>{displayCount(usage.recentlyActiveSessions)}</strong><small>Last 120 seconds</small></article>
+          <article className="administration-tile administration-metric"><span>Open records</span><strong>{displayCount(usage.openSessions)}</strong><small>{displayCount(usage.totalSessions)} total session records</small></article>
+          <article className="administration-tile administration-metric"><span>Eligible for closeout</span><strong>{displayCount(usage.eligibleForCloseout)}</strong><small>65-minute cutoff, timestamp checks</small></article>
+          <article className="administration-tile administration-metric"><span>Already finalized</span><strong>{displayCount(usage.endedSessions)}</strong><small>{displayCount(usage.heartbeatExpiredSessions)} heartbeat expired · {displayCount(usage.endedLast24Hours)} ended within 24 hours</small></article>
+        </div>
+        <div className="administration-tiles administration-tiles-two administration-reconciler">
+          <article className="administration-tile">
+            <div className="administration-tile-head"><h3>Automatic closeout</h3><State value={reconciler.enabled ? 'ENABLED' : 'DISABLED'}/></div>
+            <dl className="administration-facts">
+              <div><dt>Run interval</dt><dd>{humanSeconds(reconciler.intervalSeconds)}</dd></div>
+              <div><dt>Maximum per run</dt><dd>{displayCount(reconciler.batchLimit)} sessions</dd></div>
+              <div><dt>Idle eligibility</dt><dd>{displayCount(reconciler.minimumIdleMinutes)} minutes</dd></div>
+              <div><dt>Last successful scheduler run</dt><dd>Not collected</dd></div>
+            </dl>
+          </article>
+          <article className="administration-tile">
+            <div className="administration-tile-head"><h3>Session interpretation</h3><span className="administration-state administration-state-neutral">READ ONLY</span></div>
+            <p className="administration-tile-detail">A missing heartbeat may mean a closed tab, disconnected network, or sleeping computer. Reconciliation uses <strong>heartbeat_expired</strong>, not a confirmed browser-close reason.</p>
+            <p className="administration-tile-detail">Totals reflect current SQL rows. They are not a per-user performance report.</p>
+          </article>
+        </div>
+      </> : <div className="administration-message administration-message-warning" role="status">
+        Usage status unavailable. {monitoring.reasonCode ? `Reason: ${monitoring.reasonCode}` : 'No verified SQL aggregate.'}
+      </div>}
+    </section>
+
+    <section className="administration-section" aria-label="Worker queue evidence">
+      <div className="administration-section-heading"><h2>Worker queues</h2><span>Durable SQL outboxes · not Docker process monitoring</span></div>
+      {monitoring.availability === 'AVAILABLE' ? <>
+        <div className="administration-table-scroller">
+          <table className="administration-table">
+            <thead><tr><th>Queue lane</th><th>Pending</th><th>Processing</th><th>Failed</th><th>Oldest pending</th><th>Last processed event</th></tr></thead>
+            <tbody>{queueRows.map(item => <tr key={item.laneKey}>
+              <td><strong>{QUEUE_LABELS[item.laneKey] || item.laneKey}</strong></td>
+              <td>{displayCount(item.pendingCount)}</td>
+              <td>{displayCount(item.processingCount)}</td>
+              <td>{displayCount(item.failedCount)}</td>
+              <td>{displayUTC(item.oldestPendingAtUTC)}</td>
+              <td>{displayUTC(item.latestProcessedAtUTC)}</td>
+            </tr>)}</tbody>
+          </table>
+        </div>
+        <p className="administration-detail">An empty queue does not prove a worker is running. Process health is not collected here; last processed timestamps are historical evidence only.</p>
+      </> : <div className="administration-message administration-message-warning" role="status">Queue status not verified.</div>}
     </section>
 
     <section className="administration-section" aria-label="Instrumentation not yet collected">
@@ -164,7 +231,7 @@ export default function AdministrationDashboard({onSessionError}) {
       <div>
         <p className="administration-eyebrow">PRIVATE · READ ONLY</p>
         <h1>Administration</h1>
-        <p className="administration-subtitle">Current Riggs services and shared dashboard cache.</p>
+        <p className="administration-subtitle">Current Riggs services, cache, usage sessions, and queue evidence.</p>
       </div>
       <button className="administration-check" type="button" disabled={busy} onClick={() => {void checkStatus();}}>
         {busy ? 'Checking…' : 'Check status'}

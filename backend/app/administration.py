@@ -23,6 +23,7 @@ from .data_api import (
     DataAPIUnavailable,
     check_data_api_ready,
     get_shared_dashboard_cache_status,
+    get_bid_log_administration_monitoring,
 )
 
 _DATASETS = (
@@ -145,7 +146,88 @@ def _sanitize_cache(payload: object) -> dict:
     }
 
 
-def get_administration_overview() -> dict:
+
+_QUEUE_LANES = (
+    "accounting_tickets", "cognito_staffing", "job_cognito",
+    "job_sharepoint", "ordering_center", "project_forecast",
+)
+
+
+def _sanitize_monitoring(payload: object) -> dict:
+    if not isinstance(payload, dict) or payload.get("source") != "RIGGSDATAHUB_AGGREGATE":
+        raise ValueError("monitoring source invalid")
+    observed = _timestamp(payload.get("observedAtUTC"))
+    usage = payload.get("usage")
+    queues = payload.get("queues")
+    maintenance = payload.get("reconciliation")
+    if not observed or not isinstance(usage, dict) or not isinstance(queues, list) or not isinstance(maintenance, dict):
+        raise ValueError("monitoring payload invalid")
+
+    count_keys = (
+        "totalSessions", "openSessions", "recentlyActiveSessions",
+        "eligibleForCloseout", "endedSessions", "heartbeatExpiredSessions",
+        "endedLast24Hours",
+    )
+    counts = {k: _count(usage.get(k), 2_000_000_000) for k in count_keys}
+    if any(value is None for value in counts.values()) or usage.get("activeDefinitionSeconds") != 120:
+        raise ValueError("monitoring counts invalid")
+    if counts["openSessions"] + counts["endedSessions"] != counts["totalSessions"]:
+        raise ValueError("monitoring session totals invalid")
+    if (counts["recentlyActiveSessions"] > counts["openSessions"]
+        or counts["eligibleForCloseout"] > counts["openSessions"]
+        or counts["heartbeatExpiredSessions"] > counts["endedSessions"]
+        or counts["endedLast24Hours"] > counts["endedSessions"]):
+        raise ValueError("monitoring session subcounts invalid")
+
+    if len(queues) != len(_QUEUE_LANES):
+        raise ValueError("monitoring queue count invalid")
+    seen = {}
+    for row in queues:
+        if not isinstance(row, dict):
+            raise ValueError("monitoring queue item invalid")
+        key = row.get("laneKey")
+        if key not in _QUEUE_LANES or key in seen or row.get("processHealth") != "NOT_COLLECTED":
+            raise ValueError("monitoring queue identity invalid")
+        numbers = {name: _count(row.get(name), 2_000_000_000)
+                   for name in ("pendingCount", "processingCount", "failedCount")}
+        if any(value is None for value in numbers.values()):
+            raise ValueError("monitoring queue values invalid")
+        seen[key] = {
+            "laneKey": key,
+            **numbers,
+            "oldestPendingAtUTC": _timestamp(row.get("oldestPendingAtUTC")),
+            "latestProcessedAtUTC": _timestamp(row.get("latestProcessedAtUTC")),
+            "processHealth": "NOT_COLLECTED",
+        }
+    if set(seen) != set(_QUEUE_LANES):
+        raise ValueError("monitoring queue set incomplete")
+
+    if type(maintenance.get("enabled")) is not bool or (
+        maintenance.get("intervalSeconds") != 900
+        or maintenance.get("batchLimit") != 50
+        or maintenance.get("minimumIdleMinutes") != 65
+        or maintenance.get("lastRunAtUTC") is not None
+        or maintenance.get("lastRunSource") != "NOT_COLLECTED"
+    ):
+        raise ValueError("monitoring reconciler policy invalid")
+
+    return {
+        "availability": "AVAILABLE",
+        "source": "RIGGSDATAHUB_AGGREGATE",
+        "observedAtUTC": observed,
+        "usage": {**counts, "activeDefinitionSeconds": 120},
+        "queues": [seen[key] for key in _QUEUE_LANES],
+        "reconciliation": {
+            "enabled": maintenance["enabled"],
+            "intervalSeconds": 900,
+            "batchLimit": 50,
+            "minimumIdleMinutes": 65,
+            "lastRunAtUTC": None,
+            "lastRunSource": "NOT_COLLECTED",
+        },
+    }
+
+def get_administration_overview(*, owner_eid: int, owner_oid: str) -> dict:
     """Read current, independently observed status, never historical statistics."""
     cfg = get_settings()
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -168,10 +250,10 @@ def get_administration_overview() -> dict:
             "availability": "UNVERIFIED", "source": "BRIDGE_PROCESS_CACHE",
             "refresh": None, "policy": None, "datasets": None,
         },
+        "monitoring": {"availability": "UNVERIFIED", "source": "RIGGSDATAHUB_AGGREGATE"},
         "notCollected": [
             "Cache hit/miss history", "Historical rebuild timings",
-            "Historical request latency", "Worker process health",
-            "Usage session summaries",
+            "Historical request latency", "Worker process liveness",
         ],
     }
 
@@ -194,6 +276,16 @@ def get_administration_overview() -> dict:
         result["cache"] = _sanitize_cache(get_shared_dashboard_cache_status())
     except Exception as exc:
         result["cache"].update({
+            "availability": "UNAVAILABLE", "reasonCode": _unavailability_code(exc),
+        })
+
+    try:
+        raw = get_bid_log_administration_monitoring(
+            actor_eid=owner_eid, entra_object_id=owner_oid,
+        )
+        result["monitoring"] = _sanitize_monitoring(raw)
+    except Exception as exc:
+        result["monitoring"].update({
             "availability": "UNAVAILABLE", "reasonCode": _unavailability_code(exc),
         })
 

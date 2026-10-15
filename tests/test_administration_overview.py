@@ -50,6 +50,41 @@ class AdministrationOverviewTests(unittest.TestCase):
         self.owner.setUp()
         self.addCleanup(self.owner.doCleanups)
         self.client = self.owner.client
+        self.monitoring_patch = patch.object(
+            administration, 'get_bid_log_administration_monitoring',
+            return_value=self.monitoring_fixture(),
+        )
+        self.monitoring_patch.start()
+        self.addCleanup(self.monitoring_patch.stop)
+
+    @staticmethod
+    def monitoring_fixture():
+        lanes = (
+            'accounting_tickets', 'cognito_staffing', 'job_cognito',
+            'job_sharepoint', 'ordering_center', 'project_forecast',
+        )
+        return {
+            'source': 'RIGGSDATAHUB_AGGREGATE',
+            'observedAtUTC': '2026-10-15T19:49:00Z',
+            'usage': {
+                'totalSessions': 420, 'openSessions': 205,
+                'recentlyActiveSessions': 1, 'eligibleForCloseout': 202,
+                'endedSessions': 215, 'heartbeatExpiredSessions': 0,
+                'endedLast24Hours': 9, 'activeDefinitionSeconds': 120,
+            },
+            'queues': [{
+                'laneKey': key, 'pendingCount': 0, 'processingCount': 0,
+                'failedCount': 0, 'oldestPendingAtUTC': None,
+                'latestProcessedAtUTC': None,
+                'processHealth': 'NOT_COLLECTED',
+                'rawSecret': 'never expose',
+            } for key in lanes],
+            'reconciliation': {
+                'enabled': False, 'intervalSeconds': 900, 'batchLimit': 50,
+                'minimumIdleMinutes': 65, 'lastRunAtUTC': None,
+                'lastRunSource': 'NOT_COLLECTED',
+            },
+        }
 
     def _patch_sources(self):
         return (
@@ -76,6 +111,9 @@ class AdministrationOverviewTests(unittest.TestCase):
         self.assertEqual(payload['cache']['policy']['maxStaleSeconds'], 601.0)
         self.assertEqual(len(payload['cache']['datasets']), 6)
         self.assertIn('notCollected', payload)
+        self.assertEqual(payload['monitoring']['availability'], 'AVAILABLE')
+        self.assertEqual(payload['monitoring']['usage']['eligibleForCloseout'], 202)
+        self.assertEqual(len(payload['monitoring']['queues']), 6)
         self.assertNotIn('never expose', response.text)
         self.assertNotIn(self.owner.cfg.admin_owner_entra_object_id, response.text)
         a.assert_called_once_with()

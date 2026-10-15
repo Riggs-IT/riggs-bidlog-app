@@ -30,7 +30,24 @@ const fixture = {
         updatedAtUTC: '2026-10-15T16:27:00Z', errorType: null,
       })),
   },
-  notCollected: ['Worker process health', 'Cache hit/miss history'],
+  monitoring: {
+    availability: 'AVAILABLE', observedAtUTC: '2026-10-15T19:49:00Z',
+    usage: {
+      totalSessions: 420, openSessions: 205, recentlyActiveSessions: 1,
+      eligibleForCloseout: 202, endedSessions: 215,
+      heartbeatExpiredSessions: 0, endedLast24Hours: 9, activeDefinitionSeconds: 120,
+    },
+    queues: ['accounting_tickets', 'cognito_staffing', 'job_cognito',
+      'job_sharepoint', 'ordering_center', 'project_forecast'].map(laneKey => ({
+      laneKey, pendingCount: 0, processingCount: 0, failedCount: 0,
+      oldestPendingAtUTC: null, latestProcessedAtUTC: null, processHealth: 'NOT_COLLECTED',
+    })),
+    reconciliation: {
+      enabled: false, intervalSeconds: 900, batchLimit: 50,
+      minimumIdleMinutes: 65, lastRunAtUTC: null, lastRunSource: 'NOT_COLLECTED',
+    },
+  },
+  notCollected: ['Worker process liveness', 'Cache hit/miss history'],
 };
 
 test('Administration status renders real sampled fields with stale and unknown not zero', async t => {
@@ -41,9 +58,11 @@ test('Administration status renders real sampled fields with stale and unknown n
   t.after(async () => {await vite.close();});
   const {AdministrationView} = await vite.ssrLoadModule('/src/AdministrationDashboard.jsx');
   const html = renderToString(React.createElement(AdministrationView, {overview: fixture}));
+  const renderedHtml = html.replaceAll('<!-- -->', '');
   for (const marker of ['System health', 'Shared dashboard cache', 'STALE', 'RUNNING',
-    '601 sec', 'Worker process health', 'Not connected', 'Not recorded']) {
-    assert.ok(html.includes(marker), marker);
+    '601 sec', 'Worker process liveness', 'Not connected', 'Not recorded',
+    'Usage and session closeout', 'Worker queues', '202', '65 minutes', 'Cognito', 'Accounting']) {
+    assert.ok(renderedHtml.includes(marker), marker);
   }
   assert.doesNotMatch(html, /sql passwords|secret token/i);
 
@@ -54,6 +73,12 @@ test('Administration status renders real sampled fields with stale and unknown n
   assert.match(failed, /UNVERIFIED/);
   assert.match(failed, /Cache status could not be verified/);
   assert.doesNotMatch(failed, /Datasets completed/);
+
+  const unverified = structuredClone(fixture);
+  unverified.monitoring = {availability: 'UNAVAILABLE', reasonCode: 'UPSTREAM_UNAVAILABLE'};
+  const monitoringDown = renderToString(React.createElement(AdministrationView, {overview: unverified}));
+  assert.match(monitoringDown, /Usage status unavailable/);
+  assert.doesNotMatch(monitoringDown, /202<\//);
 });
 
 test('Administration nav respects exact capability and never calls refresh POST', () => {

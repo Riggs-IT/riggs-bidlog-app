@@ -1257,7 +1257,10 @@ def administration_overview(
     # No generic SQL/worker access and no refresh POST. The signed session
     # is checked before any bridge status reads.
     return JSONResponse(
-        get_administration_overview(),
+        get_administration_overview(
+            owner_eid=current_user.eid,
+            owner_oid=current_user.entra_object_id,
+        ),
         headers={"Cache-Control": "no-store, private"},
     )
 
