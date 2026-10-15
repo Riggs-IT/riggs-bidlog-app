@@ -1,4 +1,5 @@
-import {useMemo, useState} from 'react';
+import {Fragment, useMemo, useState} from 'react';
+import {groupPresenceSessions} from './administrationPresenceGrouping.mjs';
 import './AdministrationPresence.css';
 
 const APPS = {
@@ -33,6 +34,54 @@ function lastSeen(last, observed) {
   return ageLabel(last, observed);
 }
 
+function PresenceState({status}) {
+  return <span className={`administration-state ${status === 'RECENT_ACTIVITY' ? 'administration-state-good' : 'administration-state-neutral'}`}>
+    {STATUSES[status] || status}
+  </span>;
+}
+
+function GroupRow({group, observedAt, truncated}) {
+  const [expanded, setExpanded] = useState(false);
+  const latest = group.latest;
+  const count = group.sessions.length;
+  const detailId = `administration-presence-sessions-${group.appCode}-${group.eid}`;
+  const appName = APPS[group.appCode] || group.appCode;
+
+  return <Fragment>
+    <tr>
+      <td><strong>{latest.displayName}</strong><small className="administration-presence-secondary">EID {latest.eid} · {latest.appRole}</small></td>
+      <td>{appName}</td>
+      <td>{latest.currentPage || 'Not recorded'}</td>
+      <td><PresenceState status={latest.status}/></td>
+      <td>{ageLabel(latest.lastHeartbeatAtUTC, observedAt)}</td>
+      <td>
+        <button className="administration-presence-expand" type="button"
+          aria-expanded={expanded} aria-controls={expanded ? detailId : undefined}
+          aria-label={`${expanded ? 'Hide' : 'Show'} ${count} reported session${count === 1 ? '' : 's'} for ${latest.displayName} in ${appName}`}
+          onClick={() => setExpanded(value => !value)}>
+          {count} session{count === 1 ? '' : 's'} <span aria-hidden="true">{expanded ? '▴' : '▾'}</span>
+        </button>
+        {truncated && <small className="administration-presence-secondary">Showing returned records only</small>}
+      </td>
+    </tr>
+    {expanded && <tr className="administration-presence-details-row" id={detailId}>
+      <td colSpan="6" className="administration-presence-details-cell">
+        <strong>{count} session report{count === 1 ? '' : 's'} for {latest.displayName} in {appName}</strong>
+        <p>Most recent first. Individual browser sessions may be abandoned; these reports do not prove an active Microsoft login.</p>
+        <ul className="administration-presence-session-list">
+          {group.sessions.map((item, index) => <li key={index}>
+            <span className="administration-presence-session-number">{index === 0 ? 'Latest' : `Earlier ${index + 1}`}</span>
+            <span><small>Reported page</small><strong>{item.currentPage || 'Not recorded'}</strong></span>
+            <span><small>Activity</small><PresenceState status={item.status}/></span>
+            <span><small>Last signal</small><strong>{ageLabel(item.lastHeartbeatAtUTC, observedAt)}</strong></span>
+            <span><small>Started</small><strong>{new Date(item.startedAtUTC).toLocaleString()}</strong></span>
+          </li>)}
+        </ul>
+      </td>
+    </tr>}
+  </Fragment>;
+}
+
 export default function AdministrationPresence({presence}) {
   const [selectedApp, setSelectedApp] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
@@ -42,12 +91,16 @@ export default function AdministrationPresence({presence}) {
   const apps = Array.isArray(presence?.apps) ? presence.apps : [];
   const observedAt = presence?.observedAtUTC;
 
-  const rows = useMemo(() => sessions.filter(item =>
-    (selectedApp === 'ALL' || item.appCode === selectedApp) &&
-    (selectedStatus === 'ALL' || item.status === selectedStatus) &&
-    `${item.displayName} ${item.eid} ${item.currentPage || ''} ${APPS[item.appCode] || ''}`
-      .toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()),
-  ), [sessions, selectedApp, selectedStatus, search]);
+  // Filters apply to the latest reported session for each employee/app.
+  const rows = useMemo(() => groupPresenceSessions(sessions).filter(group => {
+    const latest = group.latest;
+    return (selectedApp === 'ALL' || latest.appCode === selectedApp) &&
+      (selectedStatus === 'ALL' || latest.status === selectedStatus) &&
+      `${latest.displayName} ${latest.eid} ${latest.currentPage || ''} ${APPS[latest.appCode] || ''}`
+        .toLocaleLowerCase().includes(search.trim().toLocaleLowerCase());
+  }), [sessions, selectedApp, selectedStatus, search]);
+
+  const truncatedApps = new Set(apps.filter(item => item.truncated).map(item => item.appCode));
 
   return <section className="administration-section" aria-label="Live users">
     <div className="administration-section-heading">
@@ -75,6 +128,10 @@ export default function AdministrationPresence({presence}) {
           {app.truncated && <small className="administration-presence-warning">Only the 50 most recent sessions are shown.</small>}
         </article>)}
       </div>
+      <p className="administration-detail administration-presence-group-description">
+        One row per employee per app, using the latest heartbeat. Activity and search filters apply to that latest report.
+        Expand the session count to inspect individual browser reports. Counts describe returned records, not confirmed open logins.
+      </p>
       <div className="administration-presence-controls">
         <label>Application
           <select value={selectedApp} onChange={event => setSelectedApp(event.target.value)}>
@@ -94,15 +151,10 @@ export default function AdministrationPresence({presence}) {
         </label>
       </div>
       <div className="administration-table-scroller">
-        <table className="administration-table">
-          <thead><tr><th>Employee</th><th>Application</th><th>Current page</th><th>Activity</th><th>Last signal</th></tr></thead>
-          <tbody>{rows.length ? rows.map((item,index) => <tr key={`${item.appCode}-${item.eid}-${item.lastHeartbeatAtUTC}-${index}`}>
-            <td><strong>{item.displayName}</strong><small className="administration-presence-secondary">EID {item.eid} · {item.appRole}</small></td>
-            <td>{APPS[item.appCode] || item.appCode}</td>
-            <td>{item.currentPage || 'Not recorded'}</td>
-            <td><span className={`administration-state ${item.status === 'RECENT_ACTIVITY' ? 'administration-state-good' : 'administration-state-neutral'}`}>{STATUSES[item.status] || item.status}</span></td>
-            <td>{ageLabel(item.lastHeartbeatAtUTC, observedAt)}</td>
-          </tr>) : <tr><td colSpan="5" className="administration-presence-empty">No recently reporting sessions match these filters.</td></tr>}</tbody>
+        <table className="administration-table administration-presence-grouped-table">
+          <thead><tr><th>Employee</th><th>Application</th><th>Current page</th><th>Activity</th><th>Last signal</th><th>Sessions shown</th></tr></thead>
+          <tbody>{rows.length ? rows.map(group => <GroupRow key={group.key} group={group} observedAt={observedAt}
+            truncated={truncatedApps.has(group.appCode)}/>) : <tr><td colSpan="6" className="administration-presence-empty">No recently reporting employees match these filters.</td></tr>}</tbody>
         </table>
       </div>
     </>}

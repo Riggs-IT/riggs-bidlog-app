@@ -14,3 +14,20 @@
 .administration-presence-empty { text-align: center; color: var(--text-soft) !important; padding: 20px !important; }
 @media(max-width: 950px) { .administration-presence-apps { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media(max-width: 600px) { .administration-presence-apps { grid-template-columns: 1fr; } .administration-presence-controls label { width: 100%; } }
+
+/* Collapsed, employee/app-level presence. Expanded rows retain sanitized session evidence. */
+.administration-presence-group-description { margin: 12px 0 4px; }
+.administration-presence-grouped-table { min-width: 820px; }
+.administration-presence-expand { appearance: none; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-strong); border-radius: 6px; padding: 6px 9px; font: inherit; font-size: 11px; font-weight: 650; cursor: pointer; white-space: nowrap; }
+.administration-presence-expand:hover { background: var(--surface-3); }
+.administration-presence-expand:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.administration-presence-details-row { background: var(--surface-2) !important; }
+.administration-presence-details-cell { padding: 14px 17px !important; }
+.administration-presence-details-cell > strong { color: var(--text-strong); font-size: 12px; }
+.administration-presence-details-cell > p { margin: 5px 0 10px; color: var(--muted); font-size: 11px; }
+.administration-presence-session-list { list-style: none; margin: 0; padding: 0; }
+.administration-presence-session-list li { display: grid; grid-template-columns: minmax(70px,.7fr) minmax(150px,2fr) minmax(120px,1.2fr) minmax(95px,1fr) minmax(150px,1.6fr); align-items: center; gap: 12px; border-top: 1px solid var(--row-divider); padding: 10px 3px; font-size: 11px; }
+.administration-presence-session-list li > span { min-width: 0; overflow-wrap: anywhere; }
+.administration-presence-session-list li span > small { display: block; color: var(--muted); font-size: 10px; margin-bottom: 5px; }
+.administration-presence-session-list li span > strong { color: var(--text-strong); font-weight: 600; }
+.administration-presence-session-number { font-weight: 650; color: var(--text-soft); }
