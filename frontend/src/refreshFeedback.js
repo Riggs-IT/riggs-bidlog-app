@@ -2,6 +2,16 @@
 export const DATA_UPDATED_MESSAGE = 'Data is updated.';
 export const DATA_UPDATING_MESSAGE = 'Updating data…';
 
+// Soft-stale snapshots are normal while the bridge performs a singleflight
+// rebuild. Show an operational warning only for failed/invalid cache state.
+export function hasCacheReadProblem(status) {
+  if (!status || !status.datasets || typeof status.datasets !== 'object') return false;
+  if (status.status === 'FAILED' || status.status === 'PARTIAL') return true;
+  return Object.values(status.datasets).some(item =>
+    !item || item.state === 'MISSING' || item.state === 'EXPIRED'
+      || Boolean(item.lastErrorType));
+}
+
 export function isRefreshCooldown(error) {
   return error?.status === 429
     && error?.detail === 'shared_dashboard_refresh_rate_limited';

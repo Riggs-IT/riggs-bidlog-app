@@ -47,7 +47,10 @@ export default function useScheduleReviewAttention(options) {
   }, [owner]);
   useEffect(() => {
     if (!options.enabled) return undefined;
-    return watchVisibleReads(owner.load, {allowed: owner.usable});
+    return watchVisibleReads(owner.load, {
+      allowed: owner.usable,
+      lastHumanActivityAt: () => latest.current.lastHumanActivityAt?.(),
+    });
   }, [owner, options.enabled]);
   return {items, loading, error,
     refresh: ({passive = false} = {}) => owner.load({replace: true, passive})};

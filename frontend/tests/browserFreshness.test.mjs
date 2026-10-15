@@ -83,6 +83,24 @@ test('hidden tabs send no interval/focus reads and returning visible revalidates
  const e=targets(),calls=[];e.d.visibilityState='hidden';const stop=watchVisibleReads(c=>calls.push(c),{windowTarget:e.w,documentTarget:e.d});
  e.tick();e.w.dispatchEvent(new Event('focus'));assert.equal(calls.length,0);e.d.visibilityState='visible';e.d.dispatchEvent(new Event('visibilitychange'));assert.equal(calls.length,1);stop();
 });
+test('unattended visible tabs stop polling, but focus and visibility revalidate', () => {
+ const e=targets(),calls=[];let now=0,last=0;
+ const stop=watchVisibleReads(c=>calls.push(c),{
+   windowTarget:e.w,documentTarget:e.d,lastHumanActivityAt:()=>last,now:()=>now,
+ });
+ assert.equal(calls.length,1);now=60_000;e.tick();assert.equal(calls.length,2);
+ now=120_000;e.tick();assert.equal(calls.length,2); // idle at threshold
+ now=420_000;e.tick();assert.equal(calls.length,2);
+ // Returning to a still-visible tab is a deliberate revalidation even after idle.
+ e.w.dispatchEvent(new Event('focus'));assert.equal(calls.length,3);
+ e.d.visibilityState='hidden';e.tick();assert.equal(calls.length,3);
+ e.d.visibilityState='visible';e.d.dispatchEvent(new Event('visibilitychange'));
+ assert.equal(calls.length,4);
+ // App's actual human activity tracker now reports interaction.
+ last=420_000;now=480_000;e.tick();assert.equal(calls.length,5);
+ stop();
+});
+
 test('cleanup removes timers and event listeners', () => {
  const e=targets(),calls=[];const stop=watchVisibleReads(c=>calls.push(c),{windowTarget:e.w,documentTarget:e.d});stop();
  e.tick();e.w.dispatchEvent(new Event('focus'));e.d.dispatchEvent(new Event('visibilitychange'));assert.equal(calls.length,1);assert.equal(e.clears(),1);

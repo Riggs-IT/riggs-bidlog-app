@@ -1,10 +1,13 @@
-import {DATA_UPDATING_MESSAGE} from './refreshFeedback.js';
+import {DATA_UPDATING_MESSAGE, hasCacheReadProblem} from './refreshFeedback.js';
+import {PASSIVE_IDLE_WINDOW_MS} from './browserFreshness.js';
 import {FilterToggleGroup, RefreshButton} from './ViewControls.jsx';
 import { resolveSessionIdleTimeoutMs } from './sessionPolicy.js';
+import { isTerminalUsageHeartbeat } from './usageSessionFeedback.js';
 import {facetRows, hasMonthlyValues, isCompleted} from './viewFilters.js';
 import {resolveSignedInPmOption} from './pmScope.js';
 import {indexedBalanceReviews} from './portfolioBalance.js';
 import ForecastBalanceFlag from './ForecastBalanceFlag.jsx';
+import AdministrationDashboard from './AdministrationDashboard.jsx';
 import {indexScheduleReview} from './scheduleReview.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey} from './gcReference.js';
@@ -2328,6 +2331,9 @@ export default function App() {
       .canViewCompletedBillings
     === true;
 
+  // Server-created, exact-owner capability; never derive this from ADMIN.
+  const canViewAdministration = user?.canViewAdministration === true;
+
 
   function handleReadSessionError(error) {
     if (error?.status !== 401 || logoutInProgressRef.current) return;
@@ -2342,6 +2348,7 @@ export default function App() {
     userKey: user ? `${user.eid}:${user.appRole}` : null,
     enabled: Boolean(user && canViewProjectedBillings),
     active: activePage === 'projected',
+    lastHumanActivityAt: () => lastHumanActivityAtRef.current,
     fetchJson,
     isEnding: () => logoutInProgressRef.current,
     onSessionError: handleReadSessionError,
@@ -2392,6 +2399,7 @@ export default function App() {
   const scheduleReviewAttention = useScheduleReviewAttention({
     userKey: user ? `${user.eid}:${user.appRole}` : null,
     enabled: Boolean(user && (canViewProjectedBillings || canViewBidLog)),
+    lastHumanActivityAt: () => lastHumanActivityAtRef.current,
     fetchJson,
     isEnding: () => logoutInProgressRef.current,
     onSessionError: handleReadSessionError,
@@ -2402,6 +2410,7 @@ export default function App() {
       ? `${user.eid}:${user.appRole}:${user.employeeTrade || ''}`
       : null,
     enabled: Boolean(user && canViewBidLog),
+    lastHumanActivityAt: () => lastHumanActivityAtRef.current,
     fetchJson,
     isEnding: () => logoutInProgressRef.current,
     onSessionError: handleReadSessionError,
@@ -2632,6 +2641,9 @@ export default function App() {
 
 
     let stopped = false;
+    // Visibility changes and the 60-second timer may overlap; never POST
+    // the same tracking heartbeat concurrently from this tab.
+    let heartbeatInFlight = false;
 
 
     let usageSessionId = null;
@@ -2803,101 +2815,123 @@ export default function App() {
     async function heartbeat() {
       if (
         stopped
-        || document.visibilityState
-           !== 'visible'
+        || logoutInProgressRef.current
+        || heartbeatInFlight
+        || document.visibilityState !== 'visible'
       ) {
         return;
       }
 
-
-      if (
-        idleMilliseconds()
-        >= inactivityTimeoutMs
-      ) {
+      const idleMs = idleMilliseconds();
+      if (idleMs >= inactivityTimeoutMs) {
         await finishTimeout();
         return;
       }
+      // A visible-but-unattended tab must not extend the server idle window.
+      if (idleMs >= PASSIVE_IDLE_WINDOW_MS) return;
 
-
+      heartbeatInFlight = true;
       try {
-        const response =
-          await window.fetch(
+        // The new bridge returns sessionEnded=true when SQL has already
+        // finalized this UUID. Renew once, then immediately register the
+        // replacement so the usage record does not remain missing.
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          if (
+            stopped
+            || logoutInProgressRef.current
+            || document.visibilityState !== 'visible'
+            || idleMilliseconds() >= PASSIVE_IDLE_WINDOW_MS
+          ) {
+            return;
+          }
+
+          const submittedSessionId = usageSessionIdRef.current;
+          if (!submittedSessionId) return;
+
+          const response = await window.fetch(
             '/api/usage/heartbeat',
             {
               method: 'POST',
-
-              credentials:
-                'same-origin',
-
+              credentials: 'same-origin',
               headers: {
-                'Content-Type':
-                  'application/json',
+                'Content-Type': 'application/json',
               },
-
-              body:
-                JSON.stringify({
-                  usageSessionId:
-                    usageSessionIdRef
-                      .current,
-
-                  currentPage:
-                    currentPageLabel(),
-
-                  clientActive:
-                    true,
-                }),
+              body: JSON.stringify({
+                usageSessionId: submittedSessionId,
+                currentPage: currentPageLabel(),
+                clientActive: true,
+              }),
             },
           );
 
+          if (stopped || logoutInProgressRef.current) return;
 
-        if (
-          response.status === 401
-        ) {
-          let detail =
-            'authentication_required';
+          if (response.status === 401) {
+            let detail = 'authentication_required';
+            try {
+              const payload = await response.json();
+              detail = payload?.detail || detail;
+            } catch {
+              // Keep default.
+            }
+
+            stopped = true;
+            clearUsageSessionId();
+            usageSessionIdRef.current = null;
+
+            if (detail === 'application_updated') {
+              window.location.replace('/?auth_error=application_updated');
+            } else {
+              window.location.replace('/?signed_out=timeout');
+            }
+            return;
+          }
+
+          // A transient API error never creates a new usage session.
+          if (!response.ok) return;
+
+          let result;
+          try {
+            result = await response.json();
+          } catch {
+            // Rolling response compatibility: tracking is best-effort.
+            return;
+          }
+
+          // Reject stale/mismatched terminal responses and ordinary older
+          // bridge responses that do not include the new terminal marker.
+          if (
+            !isTerminalUsageHeartbeat(
+              result,
+              submittedSessionId,
+              usageSessionIdRef.current,
+            )
+          ) {
+            return;
+          }
+
+          if (stopped || logoutInProgressRef.current) return;
+
+          const nextSessionId = createUsageSessionId();
+          usageSessionIdRef.current = nextSessionId;
 
           try {
-            const payload =
-              await response.json();
-
-            detail =
-              payload?.detail
-              || detail;
-
+            window.sessionStorage.setItem(
+              USAGE_SESSION_STORAGE_KEY,
+              nextSessionId,
+            );
           } catch {
-            // Keep default.
+            // The in-memory ID remains valid if storage is unavailable.
           }
-
-          stopped = true;
-
-          clearUsageSessionId();
-
-          usageSessionIdRef.current =
-            null;
-
-
-          if (
-            detail === 'application_updated'
-          ) {
-            window.location.replace(
-              '/?auth_error=application_updated',
-            );
-          } else {
-            window.location.replace(
-              '/?signed_out=timeout',
-            );
-          }
+          // At most one additional request is issued in this invocation;
+          // there is no unbounded retry when the bridge is unavailable.
         }
-
       } catch {
-        /*
-          Usage tracking is additive.
-          A temporary tracking/API issue
-          must not interrupt the Bid Log.
-        */
+        // Usage tracking is additive: failure does not interrupt Bid Log.
+      } finally {
+        heartbeatInFlight = false;
       }
     }
-
 
     function checkInactivity() {
       if (
@@ -3136,6 +3170,9 @@ export default function App() {
 
         accountability:
           canViewCompletedBillings,
+
+        administration:
+          canViewAdministration,
       };
 
       if (
@@ -3173,6 +3210,7 @@ export default function App() {
       canViewCompletedBillings,
       canViewProjectedBillings,
       canViewProjects,
+      canViewAdministration,
       user,
     ],
   );
@@ -5496,6 +5534,15 @@ export default function App() {
                 Completed Billings
               </button>
             )}
+            {canViewAdministration && (
+              <button
+                type="button"
+                className={activePage === 'administration' ? 'active' : ''}
+                onClick={() => setActivePage('administration')}
+              >
+                Administration
+              </button>
+            )}
           </nav>
         </div>
 
@@ -5750,10 +5797,7 @@ export default function App() {
         )}
 
 
-        {!dataError && portfolioFreshness.cacheStatus &&
-          Object.values(portfolioFreshness.cacheStatus.datasets || {}).some(
-            item => item.state !== 'FRESH' || item.lastErrorType,
-          ) && (
+        {!dataError && hasCacheReadProblem(portfolioFreshness.cacheStatus) && (
             <div className="page-alert" role="status">
               Some data may be out of date. Please try again later.
             </div>
@@ -7923,6 +7967,11 @@ export default function App() {
             ...activeBids,
           ]}
         />
+      ) : (
+        activePage === 'administration'
+        && canViewAdministration
+      ) ? (
+        <AdministrationDashboard onSessionError={handleReadSessionError} />
       ) : null}
 
       {activePage === 'projected' && refreshFeedback && (

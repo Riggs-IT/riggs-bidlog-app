@@ -30,3 +30,10 @@ test('authenticated backend response supplies its actual inactivity setting', ()
   assert.match(main, /payload\["sessionIdleTimeoutSeconds"\] = settings\.session_idle_timeout_seconds/);
   assert.match(config, /session_idle_timeout_seconds: int = 3600/);
 });
+
+test('unattended visible page does not extend the session with automatic usage heartbeat', () => {
+  const app = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+  assert.match(app, /if \(idleMs >= inactivityTimeoutMs\) \{\s*await finishTimeout\(\);/);
+  assert.match(app, /if \(idleMs >= PASSIVE_IDLE_WINDOW_MS\) return;/);
+  assert.match(app, /lastHumanActivityAt: \(\) => lastHumanActivityAtRef\.current/);
+});

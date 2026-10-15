@@ -1,0 +1,179 @@
+import {useCallback, useEffect, useRef, useState} from 'react';
+import './AdministrationDashboard.css';
+
+const LABELS = {
+  current_project_summary: 'Current projects · summary',
+  current_project_monthly_bulk: 'Current projects · monthly',
+  current_project_primary_projection: 'Primary PM projection',
+  active_bid_dashboard: 'Active bids',
+  portfolio_balance: 'Portfolio review',
+  schedule_review: 'Schedule review',
+};
+
+export function displayUTC(value) {
+  if (!value) return 'Not recorded';
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date.toLocaleString() : 'Not recorded';
+}
+
+const humanSeconds = value =>
+  typeof value === 'number' && Number.isFinite(value)
+    ? `${value.toLocaleString()} sec` : 'Not recorded';
+
+function State({value}) {
+  const status = String(value || 'UNVERIFIED').toUpperCase();
+  const tone = ['AVAILABLE', 'CONNECTED', 'FRESH', 'COMPLETE'].includes(status)
+    ? 'good'
+    : ['STALE', 'RUNNING', 'IDLE', 'UNVERIFIED'].includes(status)
+      ? 'neutral' : 'attention';
+  return <span className={`administration-state administration-state-${tone}`}>{status.replaceAll('_', ' ')}</span>;
+}
+
+function HealthCard({name, service, detail}) {
+  return (
+    <article className="administration-tile">
+      <div className="administration-tile-head"><h3>{name}</h3><State value={service?.state}/></div>
+      <p className="administration-tile-detail">{detail}</p>
+      {service?.reasonCode && <small>Check: {service.reasonCode}</small>}
+    </article>
+  );
+}
+
+export function AdministrationView({overview}) {
+  const services = overview?.services || {};
+  const cache = overview?.cache || {};
+  const refresh = cache.refresh || {};
+  const policy = cache.policy || {};
+  const datasets = Array.isArray(cache.datasets) ? cache.datasets : [];
+  const started = refresh.startedAtUTC ? Date.parse(refresh.startedAtUTC) : NaN;
+  const finished = refresh.finishedAtUTC ? Date.parse(refresh.finishedAtUTC) : NaN;
+  const elapsed = Number.isFinite(started) && Number.isFinite(finished) && finished >= started
+    ? `${((finished - started) / 1000).toFixed(0)} sec (timestamp resolution)` : 'Not recorded';
+
+  return <>
+    <section className="administration-section" aria-label="System health">
+      <div className="administration-section-heading"><h2>System health</h2><span>Readiness observations, not uptime history</span></div>
+      <div className="administration-tiles">
+        <HealthCard name="Bid Log" service={services.bidLog} detail="This application responded to the owner-only request." />
+        <HealthCard name="Data API" service={services.dataApi} detail="Cloudflare-protected bridge readiness check." />
+        <HealthCard name="SQL Server" service={services.sql} detail="SQL readiness reported by the bridge; not a full query audit." />
+      </div>
+      <p className="administration-detail">Cloud Run revision: <strong>{services.bidLog?.cloudRunRevision || 'Not available locally'}</strong>. App version: {services.bidLog?.appVersion || 'Unknown'}.</p>
+    </section>
+
+    <section className="administration-section" aria-label="Shared dashboard cache">
+      <div className="administration-section-heading"><h2>Shared dashboard cache</h2><span>Current process-local snapshot · no historical ledger</span></div>
+      {cache.availability === 'AVAILABLE' ? <>
+        <div className="administration-tiles administration-tiles-two">
+          <article className="administration-tile">
+            <div className="administration-tile-head"><h3>Last coordinated rebuild</h3><State value={refresh.status}/></div>
+            <dl className="administration-facts">
+              <div><dt>Datasets completed</dt><dd>{refresh.completedDatasets ?? 'Unknown'} / {refresh.totalDatasets ?? 'Unknown'}</dd></div>
+              <div><dt>Started</dt><dd>{displayUTC(refresh.startedAtUTC)}</dd></div>
+              <div><dt>Finished</dt><dd>{displayUTC(refresh.finishedAtUTC)}</dd></div>
+              <div><dt>Measured from timestamps</dt><dd>{elapsed}</dd></div>
+              <div><dt>Failed datasets</dt><dd>{refresh.failedDatasetKeys?.length ?? 'Unknown'}</dd></div>
+              <div><dt>Run ID</dt><dd className="administration-mono">{refresh.runId || 'Not recorded'}</dd></div>
+            </dl>
+          </article>
+          <article className="administration-tile">
+            <div className="administration-tile-head"><h3>Cache policy</h3><span className="administration-state administration-state-neutral">READ ONLY</span></div>
+            <dl className="administration-facts">
+              <div><dt>Soft TTL</dt><dd>{humanSeconds(policy.ttlSeconds)}</dd></div>
+              <div><dt>Hard stale limit</dt><dd>{humanSeconds(policy.maxStaleSeconds)}</dd></div>
+              <div><dt>Global manual cooldown</dt><dd>{humanSeconds(policy.manualCooldownSeconds)}</dd></div>
+              <div><dt>Per-user cooldown</dt><dd>{humanSeconds(policy.perUserCooldownSeconds)}</dd></div>
+            </dl>
+          </article>
+        </div>
+        <div className="administration-table-scroller">
+          <table className="administration-table">
+            <thead><tr><th>Dataset</th><th>Current state</th><th>Age</th><th>Last updated</th><th>Last error type</th></tr></thead>
+            <tbody>{datasets.map(item => <tr key={item.key}>
+              <td><strong>{LABELS[item.key] || item.key}</strong></td>
+              <td><State value={item.state}/></td>
+              <td>{humanSeconds(item.ageSeconds)}</td>
+              <td>{displayUTC(item.updatedAtUTC)}</td>
+              <td>{item.errorType || '—'}</td>
+            </tr>)}</tbody>
+          </table>
+        </div>
+      </> : <div className="administration-message administration-message-warning" role="status">
+        Cache status could not be verified. {cache.reasonCode ? `Reason: ${cache.reasonCode}` : 'No current snapshot is available.'}
+      </div>}
+    </section>
+
+    <section className="administration-section" aria-label="Instrumentation not yet collected">
+      <div className="administration-section-heading"><h2>Coming in a later monitoring stage</h2><span>Not connected · not zero</span></div>
+      <div className="administration-pending">
+        {(overview.notCollected || []).map(item => <div key={item}>
+          <span>{item}</span><small>Not connected</small>
+        </div>)}
+      </div>
+    </section>
+  </>;
+}
+
+export default function AdministrationDashboard({onSessionError}) {
+  const [overview, setOverview] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const pending = useRef(null);
+  const sessionCallback = useRef(onSessionError);
+  useEffect(() => { sessionCallback.current = onSessionError; }, [onSessionError]);
+
+  const checkStatus = useCallback(async () => {
+    pending.current?.abort();
+    const controller = new AbortController();
+    pending.current = controller;
+    setBusy(true);
+    setError('');
+    try {
+      const response = await fetch('/api/admin/overview', {
+        method: 'GET', credentials: 'same-origin', cache: 'no-store',
+        headers: {'Accept': 'application/json', 'X-Riggs-Passive-Read': '1'},
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        if (response.status === 401) sessionCallback.current?.({status: 401, detail: 'authentication_required'});
+        if (response.status === 403) throw new Error('Administration access was denied.');
+        throw new Error('Unable to check the monitoring services. Try again.');
+      }
+      const payload = await response.json();
+      if (payload?.readOnly !== true || !payload?.services || !payload?.cache) {
+        throw new Error('The monitoring service returned an invalid response.');
+      }
+      if (!controller.signal.aborted) setOverview(payload);
+    } catch (exc) {
+      if (!controller.signal.aborted) {
+        setOverview(null);
+        setError(exc.message || 'Unable to check monitoring status.');
+      }
+    } finally {
+      if (!controller.signal.aborted) setBusy(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void checkStatus();
+    return () => {pending.current?.abort();};
+  }, [checkStatus]);
+
+  return <main className="page-shell administration-page">
+    <div className="administration-heading">
+      <div>
+        <p className="administration-eyebrow">PRIVATE · READ ONLY</p>
+        <h1>Administration</h1>
+        <p className="administration-subtitle">Current Riggs services and shared dashboard cache.</p>
+      </div>
+      <button className="administration-check" type="button" disabled={busy} onClick={() => {void checkStatus();}}>
+        {busy ? 'Checking…' : 'Check status'}
+      </button>
+    </div>
+    {error && <div className="administration-message administration-message-warning" role="alert">{error}</div>}
+    {overview ? <>
+      <p className="administration-observed">Observed {displayUTC(overview.observedAtUTC)} · Data reflects this check only; no automatic polling.</p>
+      <AdministrationView overview={overview}/>
+    </> : !error && <div className="administration-message">Checking current status…</div>}
+  </main>;
+}

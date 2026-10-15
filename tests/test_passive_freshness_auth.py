@@ -36,7 +36,7 @@ class PassiveFreshnessAuthTests(unittest.TestCase):
             if request.query_params.get('extra'):response.set_cookie('other','kept')
             if request.query_params.get('mutate'):request.session['changed']='test'
             return response
-        for p in [PATH,'/api/projected-billings/current-projects/primary-projection','/api/projected-billings/current-projects/monthly','/api/projected-billings/active-bids/dashboard',
+        for p in [PATH,'/api/projected-billings/current-projects/primary-projection','/api/projected-billings/current-projects/monthly','/api/projected-billings/dashboard-cache/status','/api/projected-billings/active-bids/dashboard','/api/pm-forecast/portfolio-balance',
                   '/api/pm-forecast/attention','/api/pm-forecast/schedule-review','/api/pm-forecast/schedule-review/attention','/api/originating-bid/attention','/api/current-projects/24/pm-forecast','/api/current-projects/24/pm-forecast/history',
                   '/api/current-projects/24/pm-forecast/history/1','/api/current-projects/24/pm-forecast/policy',
                   '/api/other','/api/current-projects/0/pm-forecast','/api/current-projects/24/pm-forecast/admin-correction']:
@@ -49,6 +49,16 @@ class PassiveFreshnessAuthTests(unittest.TestCase):
         r=self.client.get('/api/projected-billings/current-projects/primary-projection?fresh=true',headers=HEADER)
         self.assertEqual(r.status_code,200);self.assertEqual(r.json()['last_activity_at'],1000)
         self.assertNotIn('set-cookie',r.headers)
+    def test_shared_cache_status_and_portfolio_balance_are_passive(self):
+        for path in ['/api/projected-billings/dashboard-cache/status', '/api/pm-forecast/portfolio-balance']:
+            with self.subTest(path=path):
+                self.client.get('/seed')  # Each case starts from the known idle baseline.
+                result=self.client.get(path,headers=HEADER)
+                self.assertEqual(result.status_code,200)
+                self.assertEqual(result.json()['last_activity_at'],1000)
+                self.assertNotIn('set-cookie',result.headers)
+                ordinary=self.client.get(path)
+                self.assertEqual(ordinary.json()['last_activity_at'],1100)
     def test_normal_read_marks_activity(self):
         r=self.client.get(PATH);self.assertEqual(r.json()['last_activity_at'],1100);self.assertIn(COOKIE,r.headers['set-cookie'])
     def test_passive_success_does_not_reissue_cookie(self):

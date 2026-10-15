@@ -331,7 +331,10 @@ _PASSIVE_READ_PATHS = frozenset({
     "/api/projected-billings/current-projects",
     "/api/projected-billings/current-projects/monthly",
     "/api/projected-billings/current-projects/primary-projection",
+    "/api/projected-billings/dashboard-cache/status",
+    "/api/admin/overview",
     "/api/projected-billings/active-bids/dashboard",
+    "/api/pm-forecast/portfolio-balance",
     "/api/pm-forecast/attention",
     "/api/pm-forecast/schedule-review",
     "/api/pm-forecast/schedule-review/attention",
@@ -420,3 +423,61 @@ AuthenticatedUser = Annotated[
     CurrentUser,
     Depends(get_current_user),
 ]
+
+
+# Deliberately separate from the business ADMIN / MANAGEMENT_ADMIN profiles.
+# A server-pinned OID is required in addition to current RiggsDataHub EID
+# resolution, the signed Entra session, tenant, and active BID_LOG role.
+def _uuid_or_none(value: object) -> UUID | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        parsed = UUID(value.strip())
+        return parsed if parsed.int else None
+    except (ValueError, TypeError, AttributeError):
+        return None
+
+
+def can_view_administration(
+    user: CurrentUser,
+    signed_entra_identity: object,
+) -> bool:
+    if settings.auth_mode != "entra" or not settings.entra_configured:
+        return False
+
+    if user.eid != 2021 or user.app_role.strip().upper() != "ADMIN":
+        return False
+
+    if not isinstance(signed_entra_identity, dict):
+        return False
+
+    configured_owner = _uuid_or_none(settings.admin_owner_entra_object_id)
+    configured_tenant = _uuid_or_none(settings.entra_tenant_id)
+    current_oid = _uuid_or_none(user.entra_object_id)
+    session_oid = _uuid_or_none(signed_entra_identity.get("oid"))
+    current_tenant = _uuid_or_none(user.tenant_id)
+    session_tenant = _uuid_or_none(signed_entra_identity.get("tid"))
+
+    # Missing/invalid configuration, any identity disagreement, and a
+    # different tenant all deny. The regular get_current_user() resolver
+    # independently requires SQL's Entra OID to equal the validated OID.
+    return bool(
+        configured_owner is not None
+        and configured_tenant is not None
+        and configured_owner == current_oid == session_oid
+        and configured_tenant == current_tenant == session_tenant
+    )
+
+
+def require_administration_owner(
+    request: Request,
+    current_user: CurrentUser = Depends(get_current_user),
+) -> CurrentUser:
+    if not can_view_administration(
+        current_user, request.session.get("entra_identity")
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="administration_not_authorized",
+        )
+    return current_user

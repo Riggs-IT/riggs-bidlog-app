@@ -269,12 +269,16 @@ export default function useProjectedBillingsFreshness(options) {
     if (!options.enabled || !options.active) return undefined;
     return watchVisibleReads(reads.batch, {
       allowed: () => reads.usable() && !reads.state.manualRefreshInProgress,
+      lastHumanActivityAt: () => latest.current.lastHumanActivityAt?.(),
     });
   }, [reads, options.enabled, options.active]);
 
   useEffect(() => {
     if (!options.enabled) return undefined;
-    return watchVisibleReads(reads.attentionLoad, { allowed: reads.usable });
+    return watchVisibleReads(reads.attentionLoad, {
+      allowed: reads.usable,
+      lastHumanActivityAt: () => latest.current.lastHumanActivityAt?.(),
+    });
   }, [reads, options.enabled]);
 
   return {

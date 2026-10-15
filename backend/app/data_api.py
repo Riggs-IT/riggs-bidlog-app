@@ -3,6 +3,9 @@ from __future__ import annotations
 import json
 import atexit
 from dataclasses import dataclass
+import logging
+from time import perf_counter
+from typing import Callable
 from uuid import UUID, uuid4
 
 import httpx
@@ -11,6 +14,41 @@ from .config import get_settings
 
 
 settings = get_settings()
+
+# Deliberately log only a controlled operation name, timing, status, and
+# exception type. Never log actor IDs, bearer tokens, Cloudflare headers,
+# cookies, request JSON, or whole URLs/query strings.
+_UPSTREAM_LOG = logging.getLogger("riggs_bid_log.upstream")
+_SLOW_UPSTREAM_MS = 1000.0
+
+
+def _timed_data_api_request(
+    operation: str,
+    send: Callable[[], httpx.Response],
+) -> httpx.Response:
+    started = perf_counter()
+    try:
+        response = send()
+    except (httpx.TimeoutException, httpx.RequestError) as exc:
+        elapsed_ms = (perf_counter() - started) * 1000.0
+        _UPSTREAM_LOG.warning(
+            "data_api_upstream operation=%s outcome=%s exception=%s elapsed_ms=%.1f",
+            operation,
+            "timeout" if isinstance(exc, httpx.TimeoutException) else "transport_error",
+            type(exc).__name__,
+            elapsed_ms,
+        )
+        raise
+
+    elapsed_ms = (perf_counter() - started) * 1000.0
+    if elapsed_ms >= _SLOW_UPSTREAM_MS or response.status_code >= 500:
+        _UPSTREAM_LOG.warning(
+            "data_api_upstream operation=%s outcome=response http_status=%s elapsed_ms=%.1f",
+            operation,
+            response.status_code,
+            elapsed_ms,
+        )
+    return response
 
 
 class DataAPIError(Exception):
@@ -380,13 +418,16 @@ def _get_service_response(
 ) -> httpx.Response:
 
     try:
-        response = _get_http_client().get(
-            path,
-            params=params,
-            headers=_request_headers(
-                include_service_auth=True,
+        response = _timed_data_api_request(
+            operation,
+            lambda: _get_http_client().get(
+                path,
+                params=params,
+                headers=_request_headers(
+                    include_service_auth=True,
+                ),
+                **({"timeout": timeout} if timeout is not None else {}),
             ),
-            **({"timeout": timeout} if timeout is not None else {}),
         )
 
     except httpx.TimeoutException as exc:
@@ -486,14 +527,16 @@ def resolve_bid_log_user(
         ) from exc
 
     try:
-        response = _get_http_client().post(
-            "/v1/access/bid-log/resolve",
-            json={
-                "entraObjectId":
-                    normalized_oid,
-            },
-            headers=_request_headers(
-                include_service_auth=True,
+        response = _timed_data_api_request(
+            "Bid Log identity resolution",
+            lambda: _get_http_client().post(
+                "/v1/access/bid-log/resolve",
+                json={
+                    "entraObjectId": normalized_oid,
+                },
+                headers=_request_headers(
+                    include_service_auth=True,
+                ),
             ),
         )
 
@@ -1991,13 +2034,16 @@ def _bid_log_usage_request(
 ) -> dict:
 
     try:
-        response = _get_http_client().post(
-            path,
-            json=payload,
-            headers=_request_headers(
-                include_service_auth=True,
-                request_id=request_id,
-                actor_eid=actor_eid,
+        response = _timed_data_api_request(
+            operation,
+            lambda: _get_http_client().post(
+                path,
+                json=payload,
+                headers=_request_headers(
+                    include_service_auth=True,
+                    request_id=request_id,
+                    actor_eid=actor_eid,
+                ),
             ),
         )
 
@@ -2390,9 +2436,12 @@ def get_pm_forecast_schedule_review_attention(actor_eid: int) -> list[dict]:
     """Recipient-scoped schedule notifications for the authenticated EID."""
     operation = "PM Forecast schedule review attention"
     try:
-        response = _get_http_client().get(
-            "/v1/bid-log/pm-forecast/schedule-review/attention",
-            headers=_request_headers(include_service_auth=True, actor_eid=actor_eid),
+        response = _timed_data_api_request(
+            operation,
+            lambda: _get_http_client().get(
+                "/v1/bid-log/pm-forecast/schedule-review/attention",
+                headers=_request_headers(include_service_auth=True, actor_eid=actor_eid),
+            ),
         )
     except httpx.TimeoutException as exc:
         raise DataAPIUnavailable(f"Riggs Data API timed out during {operation}.") from exc
@@ -2416,11 +2465,14 @@ def get_pm_forecast_attention(
     )
 
     try:
-        response = _get_http_client().get(
-            "/v1/bid-log/pm-forecast/attention",
-            headers=_request_headers(
-                include_service_auth=True,
-                actor_eid=actor_eid,
+        response = _timed_data_api_request(
+            operation,
+            lambda: _get_http_client().get(
+                "/v1/bid-log/pm-forecast/attention",
+                headers=_request_headers(
+                    include_service_auth=True,
+                    actor_eid=actor_eid,
+                ),
             ),
         )
 

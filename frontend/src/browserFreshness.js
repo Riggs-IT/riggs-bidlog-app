@@ -2,6 +2,7 @@
 // No localStorage, business calculations, cache of response bodies, or writes.
 export const FRESHNESS_MAX_AGE_MS = 30_000;
 export const VISIBLE_REFRESH_INTERVAL_MS = 60_000;
+export const PASSIVE_IDLE_WINDOW_MS = 120_000;
 export const PASSIVE_READ_HEADER = 'X-Riggs-Passive-Read';
 
 export function freshReadPath(path, fresh = false) {
@@ -74,23 +75,34 @@ export function watchVisibleReads(refresh, {
   documentTarget = document,
   intervalMs = VISIBLE_REFRESH_INTERVAL_MS,
   allowed = () => true,
+  lastHumanActivityAt = null,
+  idleAfterMs = PASSIVE_IDLE_WINDOW_MS,
+  now = Date.now,
 } = {}) {
   let stopped = false;
-  const check = () => {
-    if (!stopped && documentTarget.visibilityState === 'visible' && allowed()) {
-      void refresh({ passive: true, maxAgeMs: FRESHNESS_MAX_AGE_MS });
+  const check = ({ interval = false } = {}) => {
+    if (stopped || documentTarget.visibilityState !== 'visible' || !allowed()) return;
+    // A foreground tab is not proof that anyone is using the app. Pause timer
+    // reads after human inactivity; returning via focus/visibility still reads.
+    if (interval && typeof lastHumanActivityAt === 'function') {
+      const at = lastHumanActivityAt();
+      if (!Number.isFinite(at) || now() - at >= idleAfterMs) return;
     }
+    void refresh({ passive: true, maxAgeMs: FRESHNESS_MAX_AGE_MS });
   };
-  const timer = windowTarget.setInterval(check, intervalMs);
-  windowTarget.addEventListener('focus', check);
-  windowTarget.addEventListener('pageshow', check);
-  documentTarget.addEventListener('visibilitychange', check);
+  const timer = windowTarget.setInterval(() => check({ interval: true }), intervalMs);
+  const onFocus = () => check();
+  const onPageShow = () => check();
+  const onVisibilityChange = () => check();
+  windowTarget.addEventListener('focus', onFocus);
+  windowTarget.addEventListener('pageshow', onPageShow);
+  documentTarget.addEventListener('visibilitychange', onVisibilityChange);
   check();
   return () => {
     stopped = true;
     windowTarget.clearInterval(timer);
-    windowTarget.removeEventListener('focus', check);
-    windowTarget.removeEventListener('pageshow', check);
-    documentTarget.removeEventListener('visibilitychange', check);
+    windowTarget.removeEventListener('focus', onFocus);
+    windowTarget.removeEventListener('pageshow', onPageShow);
+    documentTarget.removeEventListener('visibilitychange', onVisibilityChange);
   };
 }

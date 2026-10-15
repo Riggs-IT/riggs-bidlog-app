@@ -146,6 +146,7 @@ export default function useOriginatingBidAttention(options) {
       owner.load,
       {
         allowed: owner.usable,
+        lastHumanActivityAt: () => latest.current.lastHumanActivityAt?.(),
       },
     );
   }, [owner, options.enabled]);

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   DATA_UPDATED_MESSAGE, DATA_UPDATING_MESSAGE,
   isRefreshCooldown,
-  hasFreshPortfolioSnapshot,
+  hasFreshPortfolioSnapshot, hasCacheReadProblem,
 } from '../src/refreshFeedback.js';
 
 const results = (state = 'FRESH', lastErrorType = null) => [
@@ -15,6 +15,19 @@ const results = (state = 'FRESH', lastErrorType = null) => [
     ])),
   },
 ];
+
+test('ordinary soft-stale snapshots during a rebuild do not show outage banner', () => {
+ const running = {...results('STALE')[4], status: 'RUNNING'};
+ assert.equal(hasCacheReadProblem(running), false);
+ assert.equal(hasCacheReadProblem({...running,status:'COMPLETE'}), false);
+ assert.equal(hasCacheReadProblem({...running,status:'PARTIAL'}), true);
+ assert.equal(hasCacheReadProblem({...running,status:'FAILED'}), true);
+ for (const state of ['MISSING','EXPIRED']) {
+   assert.equal(hasCacheReadProblem({...running,datasets:{dataset:{state}}}), true);
+ }
+ assert.equal(hasCacheReadProblem({...running,datasets:{dataset:{state:'FRESH',lastErrorType:'SQLCapacityError'}}}), true);
+ assert.equal(hasCacheReadProblem(null), false);
+});
 
 test('refresh cooldown classification is exact; SQL and network failures remain errors', () => {
   assert.equal(isRefreshCooldown({status: 429, detail: 'shared_dashboard_refresh_rate_limited'}), true);

@@ -31,6 +31,9 @@ class Settings(BaseSettings):
 
     dev_auth_entra_object_id: str = ""
 
+    # Optional until provisioned. Missing means ALL private Admin routes deny.
+    admin_owner_entra_object_id: str = ""
+
     data_api_base_url: str = "https://api.riggsdata.net"
     data_api_client_token: str = ""
 
@@ -201,6 +204,21 @@ class Settings(BaseSettings):
                 "SESSION_IDLE_TIMEOUT_SECONDS cannot exceed "
                 "SESSION_MAX_AGE_SECONDS."
             )
+
+        # Fail closed on malformed pins; never infer the Administration
+        # owner from ADMIN/MANAGEMENT_ADMIN or a browser-supplied EID.
+        owner_oid = self.admin_owner_entra_object_id.strip()
+        if owner_oid:
+            try:
+                parsed_owner_oid = UUID(owner_oid)
+            except (ValueError, TypeError, AttributeError) as exc:
+                raise ValueError(
+                    "ADMIN_OWNER_ENTRA_OBJECT_ID must be a valid UUID."
+                ) from exc
+            if parsed_owner_oid.int == 0:
+                raise ValueError(
+                    "ADMIN_OWNER_ENTRA_OBJECT_ID cannot be the zero UUID."
+                )
 
         if self.auth_mode == "dev":
             if self.is_production_runtime:

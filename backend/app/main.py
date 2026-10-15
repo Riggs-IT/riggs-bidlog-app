@@ -26,11 +26,15 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import (
     SessionMiddleware,
 )
+from starlette.concurrency import run_in_threadpool
 
+from .administration import get_administration_overview
 from .auth import (
     CurrentUser,
     get_current_user,
     resolve_entra_user,
+    can_view_administration,
+    require_administration_owner,
     suppress_unchanged_passive_cookie,
 )
 from .config import get_settings
@@ -1238,7 +1242,36 @@ def auth_me(
     )
 
     payload["sessionIdleTimeoutSeconds"] = settings.session_idle_timeout_seconds
+    # Capability is server-derived; a browser flag or ordinary ADMIN role
+    # alone is never enough to make this true.
+    payload["canViewAdministration"] = can_view_administration(
+        current_user, request.session.get("entra_identity")
+    )
     return payload
+
+
+@app.get("/api/admin/overview")
+def administration_overview(
+    current_user: CurrentUser = Depends(require_administration_owner),
+):
+    # No generic SQL/worker access and no refresh POST. The signed session
+    # is checked before any bridge status reads.
+    return JSONResponse(
+        get_administration_overview(),
+        headers={"Cache-Control": "no-store, private"},
+    )
+
+
+@app.get("/api/admin/access")
+def administration_access(
+    current_user: CurrentUser = Depends(require_administration_owner),
+):
+    # Bootstrap / authorization probe only. No general SQL, logs, or
+    # dashboard data until the next separately reviewed read-only stage.
+    return JSONResponse(
+        {"canViewAdministration": True, "readOnly": True},
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @app.post(
@@ -1327,7 +1360,10 @@ async def bid_log_usage_heartbeat_proxy(
 
 
     try:
-        return record_bid_log_usage_heartbeat(
+        # The bridge client is synchronous. Do not run its potentially slow
+        # HTTP request on Uvicorn's single asyncio event-loop thread.
+        return await run_in_threadpool(
+            record_bid_log_usage_heartbeat,
             usage_session_id=
                 usage_session_id,
 
@@ -1432,7 +1468,9 @@ async def bid_log_usage_end_proxy(
 
 
     try:
-        return end_bid_log_usage_session(
+        # Use the same safe threadpool boundary for the usage end write.
+        return await run_in_threadpool(
+            end_bid_log_usage_session,
             usage_session_id=
                 usage_session_id,
 
