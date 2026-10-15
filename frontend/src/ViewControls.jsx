@@ -5,7 +5,7 @@ export function RefreshIcon() {
 export function RefreshButton({onClick, busy=false, disabled=false, label='Refresh', title, className=''}) {
   return <button type="button" className={`refresh-icon-button ${busy ? 'is-refreshing' : ''} ${className}`}
     onClick={onClick} disabled={disabled || busy} aria-label={label} aria-busy={busy}
-    title={title || label}><RefreshIcon /></button>;
+    title={title === null ? undefined : (title || label)}><RefreshIcon /></button>;
 }
 export function InfoButton({onClick, expanded=false, label='More information', className=''}) {
   return <button type="button" className={`info-icon-button ${className}`}

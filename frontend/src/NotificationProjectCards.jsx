@@ -1,5 +1,6 @@
 import React from 'react';
 import {scheduleReviewText} from './scheduleReview.js';
+import {PENDING_FOUNDATION} from './portfolioBalance.js';
 
 // Keep one list and one scroll owner. Each alert is an independent, accessible
 // action; do not put buttons inside buttons or make a second scrolling group.
@@ -24,7 +25,7 @@ export default function NotificationProjectCards({
         >
           <span className="notification-item-heading">
             <span className="notification-card-heading-copy">
-              <span>{item.jobNumber} · NEEDS REBALANCE</span>
+              <span>{item.jobNumber} · {item.reviewStatus === PENDING_FOUNDATION ? 'PENDING FOUNDATION' : 'NEEDS REBALANCE'}</span>
               <strong>{item.jobName || 'Current Project'}</strong>
             </span>
             <span className={`notification-variance ${Number(item.rebalanceVarianceAmount) < 0 ? 'variance-negative' : ''}`}>
@@ -32,9 +33,11 @@ export default function NotificationProjectCards({
             </span>
           </span>
           <span className="notification-card-description">
-            {item.attentionSource === 'ADMIN_CORRECTION'
-              ? `${item.submittedByName || 'An administrator'} changed the projection total. Operations needs to bring the PM Projection back to the remaining contract.`
-              : 'This PM Projection no longer covers the remaining contract and needs to be rebalanced.'}
+            {item.reviewStatus === PENDING_FOUNDATION
+              ? 'A recently locked billing month has not fully reconciled with Foundation. The balance gap remains tracked; review again as billings settle.'
+              : item.attentionSource === 'ADMIN_CORRECTION'
+                ? `${item.submittedByName || 'An administrator'} changed the projection total. Operations needs to bring the PM Projection back to the remaining contract.`
+                : 'This PM Projection no longer covers the remaining contract and needs to be rebalanced.'}
           </span>
           {item.correctionReason && (
             <span className="notification-reason notification-card-reason">

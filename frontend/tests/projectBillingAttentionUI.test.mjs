@@ -77,8 +77,8 @@ test('project pivot renders the compact Contract label and Needs Rebalance with 
   assert.match(html, /Needs Rebalance/);
   const sticky = html.match(/class="project-pivot-sticky-coverage[^"]*"[\s\S]*?<\/div>/)?.[0];
   assert.ok(sticky, 'The floating header must include source filters.');
-  assert.match(sticky, /1(?:<!-- -->)? Need Rebalance/);
-  assert.match(sticky, /aria-pressed="true"[\s\S]*?1(?:<!-- -->)? Need Rebalance/);
+  assert.match(sticky, /1(?:<!-- -->)? Balance Reviews/);
+  assert.match(sticky, /aria-pressed="true"[\s\S]*?1(?:<!-- -->)? Balance Reviews/);
   assert.doesNotMatch(sticky, /disabled=""/);
   assert.match(html, /<small>Contract<\/small>/);
   assert.match(html, /9,157,300/);
@@ -113,7 +113,7 @@ test('sticky Need Rebalance is unavailable rather than falsely zero before the p
   }));
   const sticky = html.match(/class="project-pivot-sticky-coverage[^"]*"[\s\S]*?<\/div>/)?.[0];
   assert.ok(sticky);
-  assert.match(sticky, /—(?:<!-- -->)? Need Rebalance/);
+  assert.match(sticky, /—(?:<!-- -->)? Balance Reviews/);
   assert.match(sticky, /disabled=""/);
   assert.match(sticky, /Portfolio balance statuses are loading or unavailable/);
 });
@@ -128,7 +128,7 @@ test('contract values, warning filter and Billing vs Projection are wired withou
   for (const label of ['Billed More', 'Billed Less', 'On Target']) assert.match(app, new RegExp(label));
   assert.match(app, /value==='rebalance'/);
   assert.match(app, /rebalanceByJobId\.has\(String\(row\.jobListId\)\)/);
-  assert.match(app, /indexPortfolioRebalance\(portfolioBalance \|\| \[\]\)/);
+  assert.match(app, /indexedBalanceReviews\(portfolioBalance \|\| \[\], currentProjects, currentMonthly, varianceAsOfUTC\)/);
   assert.doesNotMatch(app, /forecastAttention\.map\(item => \[String\(item\.jobListId\)/);
   assert.match(app, /onOpenForecast=\{openAttentionProject\}/);
   assert.match(app, /portfolioBalanceAvailable=\{portfolioBalance !== null\}/);

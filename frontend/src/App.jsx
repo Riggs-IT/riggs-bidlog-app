@@ -1,8 +1,10 @@
+import {DATA_UPDATING_MESSAGE} from './refreshFeedback.js';
 import {FilterToggleGroup, RefreshButton} from './ViewControls.jsx';
 import { resolveSessionIdleTimeoutMs } from './sessionPolicy.js';
 import {facetRows, hasMonthlyValues, isCompleted} from './viewFilters.js';
 import {resolveSignedInPmOption} from './pmScope.js';
-import {indexPortfolioRebalance} from './portfolioBalance.js';
+import {indexedBalanceReviews} from './portfolioBalance.js';
+import ForecastBalanceFlag from './ForecastBalanceFlag.jsx';
 import {indexScheduleReview} from './scheduleReview.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey} from './gcReference.js';
@@ -297,7 +299,7 @@ function friendlyError(detail) {
       'Bid Log could not reach Riggs data services. Check your connection and try again.',
 
     shared_dashboard_refresh_rate_limited:
-      'Someone refreshed the shared dashboard recently. You can keep viewing current cached data; try Refresh again after the cooldown.',
+      'Data is updated.',
 
     data_api_not_configured:
       'Bid Log services are temporarily unavailable.',
@@ -1055,13 +1057,6 @@ async function fetchJson(
     error.status =
       response.status;
 
-    if (detail === 'shared_dashboard_refresh_rate_limited') {
-      const seconds = Number(response.headers.get('Retry-After'));
-      if (Number.isFinite(seconds) && seconds > 0) {
-        error.message = `Shared dashboard Refresh is limited. Try again in ${Math.ceil(seconds)} seconds; existing cached data remains available.`;
-      }
-    }
-
     throw error;
   }
 
@@ -1726,6 +1721,40 @@ export default function App() {
   ] = useState(null);
 
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [refreshFeedback, setRefreshFeedback] = useState(null);
+  const bidLogRefreshRef = useRef(null);
+  const projectsRefreshRef = useRef(null);
+  const completedRefreshRef = useRef(null);
+  const [refreshingWorkspace, setRefreshingWorkspace] = useState(null);
+  const activeRefreshPagesRef = useRef(new Set());
+
+  // Header refresh is page-scoped; switching tabs cannot send a refresh to
+  // another page or leave a spinner on the newly selected page.
+  async function refreshWorkspacePage(page) {
+    if (activeRefreshPagesRef.current.has(page)) return;
+    const ref = page === 'bid-log' ? bidLogRefreshRef
+      : page === 'active-projects' ? projectsRefreshRef
+        : page === 'accountability' ? completedRefreshRef : null;
+    if (!ref?.current?.refresh) return;
+    activeRefreshPagesRef.current.add(page);
+    setRefreshingWorkspace(page);
+    try {
+      await ref.current.refresh();
+    } finally {
+      activeRefreshPagesRef.current.delete(page);
+      setRefreshingWorkspace(current => current === page ? null : current);
+    }
+  }
+
+  useEffect(() => {
+    setRefreshFeedback(null);
+  }, [activePage]);
+
+  useEffect(() => {
+    if (!refreshFeedback || refreshFeedback === DATA_UPDATING_MESSAGE) return undefined;
+    const timeout = window.setTimeout(() => setRefreshFeedback(null), 3500);
+    return () => window.clearTimeout(timeout);
+  }, [refreshFeedback]);
 
   const [
     currentProjects,
@@ -2317,6 +2346,7 @@ export default function App() {
     isEnding: () => logoutInProgressRef.current,
     onSessionError: handleReadSessionError,
     onError: setDataError,
+    onRefreshNotice: setRefreshFeedback,
     onInitialLoading: setDataLoading,
     onAttention: setForecastAttention,
     onPortfolioBalance: setPortfolioBalance,
@@ -2383,9 +2413,12 @@ export default function App() {
   const originatingBidAttentionItems =
     originatingBidAttentionData.items || [];
 
+  // Presentation follows the existing SQL rebalance result; only classify a
+  // recently locked month's isolated shortfall when the same forecast version
+  // and real Foundation month are in the loaded primary portfolio snapshot.
   const rebalanceByJobId = useMemo(
-    () => indexPortfolioRebalance(portfolioBalance || []),
-    [portfolioBalance],
+    () => indexedBalanceReviews(portfolioBalance || [], currentProjects, currentMonthly, varianceAsOfUTC),
+    [portfolioBalance, currentProjects, currentMonthly, varianceAsOfUTC],
   );
   const scheduleReviewByJobId = useMemo(
     () => indexScheduleReview(scheduleReview || []),
@@ -3589,6 +3622,7 @@ export default function App() {
       const m = aggregateCurrentMonthly(currentMonthly.get(row.jobListId), fromMonth, throughMonth, varianceAsOfUTC);
       return {...row,
         needsRebalance: rebalanceByJobId.has(String(row.jobListId)),
+        reviewStatus: rebalanceByJobId.get(String(row.jobListId))?.reviewStatus,
         scheduleReview: scheduleReviewByJobId.get(String(row.jobListId)) || null,
         rebalanceVarianceAmount: rebalanceByJobId.get(String(row.jobListId))?.rebalanceVarianceAmount,
         selectedActualValueCount:m.actualValueCount, selectedBaseline:m.baseline,
@@ -5468,20 +5502,22 @@ export default function App() {
         <div className="topbar-actions">
           {activePage === 'projected' && canViewProjectedBillings && <RefreshButton
             label="Refresh projected billings" busy={portfolioFreshness.refreshing}
-            title="Rebuild shared projected billings for everyone and refresh notifications" onClick={() => {
+            title={null} onClick={() => {
               void portfolioFreshness.refreshAll(); void loadNotifications();
               if (canReadGcReference(user)) void gcDirectory.refresh();
-            }} /> }
-          {activePage === 'projected' && canViewProjectedBillings &&
-            portfolioFreshness.cacheStatus &&
-            Object.values(portfolioFreshness.cacheStatus.datasets || {}).some(
-              item => item.state !== 'FRESH' || item.lastErrorType,
-            ) &&
-            <span className="dashboard-cache-warning" role="status"
-              title="At least one shared dashboard dataset is rebuilding or delayed; older financial values may be shown.">
-              {portfolioFreshness.cacheStatus.status === 'RUNNING'
-                ? 'Updating shared data' : 'Shared data may be stale'}
-            </span>}
+            }} />}
+          {((activePage === 'bid-log' && canViewBidLog)
+            || (activePage === 'active-projects' && canViewProjects)
+            || (activePage === 'accountability' && canViewCompletedBillings)) && (
+            <RefreshButton
+              label={activePage === 'bid-log' ? 'Refresh bids'
+                : activePage === 'active-projects' ? 'Refresh projects'
+                  : 'Refresh completed billings'}
+              busy={refreshingWorkspace === activePage}
+              title={null}
+              onClick={() => { void refreshWorkspacePage(activePage); }}
+            />
+          )}
           <div
             ref={notificationCenterRef}
             className="notification-center"
@@ -5579,7 +5615,11 @@ export default function App() {
                 {notificationCount > 0 && (
                   <div className="notification-list">
                     <NotificationProjectCards
-                      forecastItems={forecastAttention}
+                      forecastItems={forecastAttention.map(item => {
+                        const review = rebalanceByJobId.get(String(item.jobListId));
+                        return {...item, reviewStatus: review?.forecastVersionId === item.forecastVersionId
+                          ? review.reviewStatus : undefined};
+                      })}
                       originatingItems={originatingBidAttentionItems}
                       scheduleItems={scheduleReviewAttention.items}
                       onOpenSchedule={openScheduleReviewProject}
@@ -5709,6 +5749,15 @@ export default function App() {
           </div>
         )}
 
+
+        {!dataError && portfolioFreshness.cacheStatus &&
+          Object.values(portfolioFreshness.cacheStatus.datasets || {}).some(
+            item => item.state !== 'FRESH' || item.lastErrorType,
+          ) && (
+            <div className="page-alert" role="status">
+              Some data may be out of date. Please try again later.
+            </div>
+          )}
 
         {gcDirectory.error && canReadGcReference(user) && <div className="page-alert" role="status">
           General Contractor directory is unavailable. Source names are shown; use the header refresh to retry.
@@ -6743,11 +6792,11 @@ export default function App() {
                         aria-pressed={projectionSourceFilter === 'rebalance'}
                         title={portfolioBalance === null
                           ? 'Portfolio balance statuses are loading or unavailable'
-                          : 'PM projections that do not cover the remaining contract'}
+                          : 'Review flagged projections, including those pending Foundation billing'}
                         disabled={portfolioBalance === null}
                         onClick={() => setProjectionSourceFilter(value => value === 'rebalance' ? ALL : 'rebalance')}
                       >
-                        {portfolioBalance === null ? '—' : projectionCoverage.rebalance} Need Rebalance
+                        {portfolioBalance === null ? '—' : projectionCoverage.rebalance} Balance Reviews
                       </button>
                       {projectionCoverage.historical > 0 && (
                         <span>{projectionCoverage.historical} historical billing</span>
@@ -7180,8 +7229,7 @@ export default function App() {
                                                   </strong>
 
                                                   {detail.source === 'Current Project' && !isCompleted(detail.raw) && detail.raw?.needsRebalance && (
-                                                    <span className="needs-rebalance-flag" data-needs-rebalance
-                                                      title="PM Projection Out of Balance — review billing projections">Needs Rebalance</span>
+                                                    <ForecastBalanceFlag review={rebalanceByJobId.get(String(detail.raw?.jobListId))} />
                                                   )}
                                                   {detail.source === 'Current Project' && !isCompleted(detail.raw) && (
                                                     <ScheduleReviewFlag review={detail.raw?.scheduleReview} />
@@ -7673,8 +7721,7 @@ export default function App() {
                           </strong>
 
                           {row.source === 'Current Project' && !isCompleted(row.raw) && row.raw?.needsRebalance && (
-                            <span className="needs-rebalance-flag" data-needs-rebalance
-                              title="PM Projection Out of Balance — review billing projections">Needs Rebalance</span>
+                            <ForecastBalanceFlag review={rebalanceByJobId.get(String(row.raw?.jobListId))} />
                           )}
                           {row.source === 'Current Project' && !isCompleted(row.raw) && (
                             <ScheduleReviewFlag review={row.raw?.scheduleReview} />
@@ -7843,6 +7890,7 @@ export default function App() {
       ) ? (
         <BidLogWorkspace
           user={user}
+          refreshApiRef={bidLogRefreshRef}
           pmDirectory={[
             ...currentProjects,
             ...activeBids,
@@ -7857,6 +7905,7 @@ export default function App() {
       ) ? (
         <ActiveProjectsWorkspace
           user={user}
+          refreshApiRef={projectsRefreshRef}
           rebalanceByJobId={rebalanceByJobId}
           scheduleReviewByJobId={scheduleReviewByJobId}
           onOpenBillingProject={canViewProjectedBillings ? openBillingProjectFromDirectory : null}
@@ -7868,12 +7917,19 @@ export default function App() {
       ) ? (
         <ProjectAccountability
           user={user}
+          refreshApiRef={completedRefreshRef}
           pmDirectory={[
             ...currentProjects,
             ...activeBids,
           ]}
         />
       ) : null}
+
+      {activePage === 'projected' && refreshFeedback && (
+        <div className="action-toast refresh-feedback" role="status">
+          {refreshFeedback}
+        </div>
+      )}
 
       <CsvExportDialog
         open={exportDialogOpen}

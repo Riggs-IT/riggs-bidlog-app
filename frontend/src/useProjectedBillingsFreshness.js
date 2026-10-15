@@ -3,6 +3,8 @@ import { mergePrimaryPortfolio } from './primaryProjection.js';
 import {indexPortfolioRebalance} from './portfolioBalance.js';
 import {indexScheduleReview} from './scheduleReview.js';
 import { createLatestRead, freshReadPath, readOptions, watchVisibleReads } from './browserFreshness.js';
+import {DATA_UPDATED_MESSAGE, DATA_UPDATING_MESSAGE, hasFreshPortfolioSnapshot, isRefreshCooldown} from './refreshFeedback.js';
+import {createProgressiveDashboardReads} from './dashboardRefreshStages.js';
 
 // One owner publishes metadata, primary projections and historical-margin reads
 // together. Existing baseline API contracts remain unchanged for other callers.
@@ -15,7 +17,7 @@ export default function useProjectedBillingsFreshness(options) {
   const scope = `${options.userKey ?? ''}:${Boolean(options.enabled)}`;
 
   const reads = useMemo(() => {
-    const state = { alive: false, busy: 0, failures: new Map() };
+    const state = { alive: false, busy: 0, failures: new Map(), manualRefreshInProgress: false };
     const usable = () => state.alive && latest.current.enabled && !latest.current.isEnding();
     const request = (path, config) => latest.current.fetchJson(
       freshReadPath(path, config.fresh), readOptions(config),
@@ -110,7 +112,11 @@ export default function useProjectedBillingsFreshness(options) {
           '/api/projected-billings/dashboard-cache/status',
           readOptions({ passive: true }),
         );
-        if (usable() && result?.datasets) setCacheStatus(result);
+        if (usable() && result?.datasets) {
+          setCacheStatus(result);
+          return result;
+        }
+        return null;
       } catch {
         if (usable()) setCacheStatus(null);
       }
@@ -118,8 +124,13 @@ export default function useProjectedBillingsFreshness(options) {
 
     const batch = async config => {
       if (!usable()) return [];
-      state.busy += 1;
-      setRefreshing(true);
+      // Passive 60-second polling must not turn on the visible Refresh spinner.
+      // Existing rows stay interactive while background data arrives.
+      const showSpinner = !config?.passive;
+      if (showSpinner) {
+        state.busy += 1;
+        setRefreshing(true);
+      }
       try {
         const result = await Promise.all([
           current.load(config), bids.load(config),
@@ -131,8 +142,10 @@ export default function useProjectedBillingsFreshness(options) {
         }
         return result;
       } finally {
-        state.busy -= 1;
-        if (usable() && state.busy === 0) setRefreshing(false);
+        if (showSpinner) {
+          state.busy -= 1;
+          if (usable() && state.busy === 0) setRefreshing(false);
+        }
       }
     };
     const attentionLoad = async config => {
@@ -142,9 +155,11 @@ export default function useProjectedBillingsFreshness(options) {
       finally { if (usable() && !attention.pending) latest.current.onAttentionLoading(false); }
     };
     const refreshAll = async () => {
-      if (!usable()) return;
+      if (!usable() || state.manualRefreshInProgress) return;
+      state.manualRefreshInProgress = true;
       state.busy += 1;
       setRefreshing(true);
+      latest.current.onRefreshNotice?.(null);
       try {
         // Exactly one POST asks the bridge to rebuild its shared snapshot.
         // Polling below only checks metadata, never launches SQL reads.
@@ -152,8 +167,18 @@ export default function useProjectedBillingsFreshness(options) {
           '/api/projected-billings/dashboard-cache/refresh',
           { method: 'POST', credentials: 'same-origin', cache: 'no-store' },
         );
-        if (!receipt?.refreshId) throw new Error('Shared refresh returned no request ID.');
+        if (!receipt?.refreshId) throw new Error('Unable to refresh data. Please try again.');
+        // Acknowledge immediately. Current values stay visible and editable;
+        // the button only starts a background rebuild, not a blocking page load.
+        latest.current.onRefreshNotice?.(DATA_UPDATING_MESSAGE);
+        const progressive = createProgressiveDashboardReads({
+          current: config => current.load(config),
+          bids: config => bids.load(config),
+          portfolioBalance: config => portfolioBalance.load(config),
+          scheduleReview: config => scheduleReview.load(config),
+        }, receipt.refreshId);
         let status = receipt;
+        progressive.startReady(status);
         const deadline = Date.now() + 90_000;
         while (usable() && status.status === 'RUNNING' && Date.now() < deadline) {
           await new Promise(resolve => setTimeout(resolve, 900));
@@ -162,27 +187,59 @@ export default function useProjectedBillingsFreshness(options) {
             '/api/projected-billings/dashboard-cache/status',
             readOptions({ passive: true }),
           );
-          // If a different authorized request supersedes the status, wait
-          // for that run rather than treating the wrong ID as success.
+          // Update an independent dataset as soon as that refresh succeeds.
+          // The four primary financial datasets are one consistency group:
+          // do not mix new project amounts with old potential-bid amounts.
+          progressive.startReady(status);
         }
         if (!usable()) return;
         if (status.status === 'RUNNING') {
-          throw new Error('Shared dashboard rebuild has not finished yet.');
+          throw new Error('Data is still updating. Please try again.');
         }
         setCacheStatus(status);
-        // Reads below DO NOT append fresh=true: the POST already rebuilt
-        // once for everyone, and another set of forced GETs would duplicate SQL.
-        await batch({ replace: true, passive: false });
+        // No fresh=true SQL bypass and no duplicate final full batch. Each
+        // stage fetched once, as soon as its snapshot became available.
+        const results = await progressive.finish(status, updateCacheStatus);
+        if (current.lastSuccessAt !== null && bids.lastSuccessAt !== null) {
+          latest.current.onReady();
+        }
         if (status.status !== 'COMPLETE') {
-          const error = new Error('Shared dashboard refresh was incomplete; some previous values were retained.');
+          const error = new Error('Data could not be refreshed. Last available values are shown.');
+          latest.current.onRefreshNotice?.(null);
           reportError('sharedRefresh', error);
         } else {
           state.failures.delete('sharedRefresh');
           latest.current.onError([...state.failures.values()].join(' ') || null);
+          if (hasFreshPortfolioSnapshot(results)) {
+            latest.current.onRefreshNotice?.(DATA_UPDATED_MESSAGE);
+          } else {
+            latest.current.onRefreshNotice?.(null);
+          }
         }
       } catch (error) {
-        reportError('sharedRefresh', error);
+        if (isRefreshCooldown(error)) {
+          // The shared server has already enforced its limits. Re-read the
+          // available data rather than turning a harmless repeat click into a
+          // red dashboard outage. Never display the cooldown or cache details.
+          state.failures.delete('sharedRefresh');
+          latest.current.onError([...state.failures.values()].join(' ') || null);
+          try {
+            const results = await batch({ replace: true, passive: false });
+            if (hasFreshPortfolioSnapshot(results)) {
+              latest.current.onRefreshNotice?.(DATA_UPDATED_MESSAGE);
+            } else {
+              latest.current.onRefreshNotice?.(null);
+            }
+          } catch (readError) {
+            latest.current.onRefreshNotice?.(null);
+            reportError('sharedRefresh', readError);
+          }
+        } else {
+          latest.current.onRefreshNotice?.(null);
+          reportError('sharedRefresh', error);
+        }
       } finally {
+        state.manualRefreshInProgress = false;
         state.busy -= 1;
         if (usable() && state.busy === 0) setRefreshing(false);
       }
@@ -210,7 +267,9 @@ export default function useProjectedBillingsFreshness(options) {
 
   useEffect(() => {
     if (!options.enabled || !options.active) return undefined;
-    return watchVisibleReads(reads.batch, { allowed: reads.usable });
+    return watchVisibleReads(reads.batch, {
+      allowed: () => reads.usable() && !reads.state.manualRefreshInProgress,
+    });
   }, [reads, options.enabled, options.active]);
 
   useEffect(() => {

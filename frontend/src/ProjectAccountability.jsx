@@ -3,7 +3,9 @@ import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey} from './gcReference.js';
 import useGcReference, { canReadGcReference } from './useGcReference.js';
 import {
+  useCallback,
   useEffect,
+  useImperativeHandle,
   useMemo,
   useRef,
   useState,
@@ -591,6 +593,7 @@ function dataStateLabel(value) {
 export default function ProjectAccountability({
   user,
   pmDirectory = [],
+  refreshApiRef,
 }) {
   const gcDirectory = useGcReference(canReadGcReference(user));
   const [rows, setRows] =
@@ -614,6 +617,7 @@ export default function ProjectAccountability({
 
   const [completedRefreshVersion, setCompletedRefreshVersion] =
     useState(0);
+  const completedLoadGenerationRef = useRef(0);
 
   const [search, setSearch] =
     useState('');
@@ -830,61 +834,48 @@ export default function ProjectAccountability({
   );
 
 
+  const loadCompletedProjects = useCallback(async ({
+    forceRefresh = false,
+    cancelled = () => false,
+  } = {}) => {
+    if (!forceRefresh && completedProjectCacheIsFresh()) return;
+
+    const generation = ++completedLoadGenerationRef.current;
+    const isCurrent = () => !cancelled()
+      && generation === completedLoadGenerationRef.current;
+    const hasCachedRows = Array.isArray(completedProjectListCache.items);
+    if (!hasCachedRows) setLoading(true);
+    setError(null);
+
+    try {
+      const payload = await fetchJson(
+        forceRefresh ? '/api/completed-projects?fresh=true' : '/api/completed-projects',
+      );
+      if (isCurrent() && Array.isArray(payload)) {
+        writeCompletedProjectCache(payload);
+        setRows(payload);
+      }
+    } catch (loadError) {
+      if (isCurrent()) {
+        setError(loadError?.message || 'Unable to load completed projects.');
+      }
+    } finally {
+      if (isCurrent() && !hasCachedRows) setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
+    void loadCompletedProjects({
+      forceRefresh: completedRefreshVersion > 0,
+      cancelled: () => cancelled,
+    });
+    return () => { cancelled = true; };
+  }, [completedRefreshVersion, loadCompletedProjects]);
 
-    const hasCachedRows = Array.isArray(
-      completedProjectListCache.items,
-    );
-    const forceRefresh = completedRefreshVersion > 0;
-
-    if (
-      !forceRefresh
-      && completedProjectCacheIsFresh()
-    ) {
-      return undefined;
-    }
-
-    async function loadCompletedProjects() {
-      if (!hasCachedRows) {
-        setLoading(true);
-      }
-
-      setError(null);
-
-      try {
-        const payload =
-          await fetchJson(
-            forceRefresh ? '/api/completed-projects?fresh=true' : '/api/completed-projects',
-          );
-
-        if (
-          !cancelled
-          && Array.isArray(payload)
-        ) {
-          writeCompletedProjectCache(payload);
-          setRows(payload);
-        }
-      } catch (loadError) {
-        if (!cancelled) {
-          setError(
-            loadError.message
-            || 'Unable to load completed projects.',
-          );
-        }
-      } finally {
-        if (!cancelled && !hasCachedRows) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadCompletedProjects();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [completedRefreshVersion]);
+  useImperativeHandle(refreshApiRef, () => ({
+    refresh: () => loadCompletedProjects({ forceRefresh: true }),
+  }), [loadCompletedProjects]);
 
 
   const filters={pm:pmFilter,pe:peFilter,super:superintendentFilter,apm:apmFilter,gc:gcFilter,

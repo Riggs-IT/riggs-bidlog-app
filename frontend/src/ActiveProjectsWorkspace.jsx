@@ -1,11 +1,11 @@
 import {facetRows, projectDirectoryRows, isCompleted} from './viewFilters.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey, contractorFilterOptions, contractorFilterMatch} from './gcReference.js';
-import {RefreshButton} from './ViewControls.jsx';
 import useGcReference, { canReadGcReference } from './useGcReference.js';
 import {
   useCallback,
   useEffect,
+  useImperativeHandle,
   useMemo,
   useState,
 } from 'react';
@@ -20,6 +20,7 @@ import {
 } from './BillingDisplay.jsx';
 import ActiveProjectEditDrawer from './ActiveProjectEditDrawer.jsx';
 import ScheduleReviewFlag from './ScheduleReviewFlag.jsx';
+import ForecastBalanceFlag from './ForecastBalanceFlag.jsx';
 
 
 const ALL = '__ALL__';
@@ -568,6 +569,7 @@ export default function ActiveProjectsWorkspace({
   onOpenBillingProject = null,
   user,
   onProjectDataChanged,
+  refreshApiRef,
 }) {
   const gcDirectory = useGcReference(canReadGcReference(user));
   const [activeItems, setActiveItems] = useState(
@@ -661,6 +663,18 @@ export default function ActiveProjectsWorkspace({
     },
     [],
   );
+
+  // One page-level Refresh control lives in the common app header.
+  // The Completed toggle still determines whether completed rows are reloaded.
+  useImperativeHandle(refreshApiRef, () => ({
+    refresh: async () => {
+      await Promise.all([
+        loadProjects({ quiet: false }),
+        ...(showCompleted ? [loadCompletedProjects({ quiet: false })] : []),
+        ...(canReadGcReference(user) ? [gcDirectory.refresh()] : []),
+      ]);
+    },
+  }));
 
   useEffect(
     () => {
@@ -1045,12 +1059,6 @@ export default function ActiveProjectsWorkspace({
           </button>
 
           <div className="active-project-filter-actions">
-            <RefreshButton label="Refresh projects" busy={loading || completedLoading} onClick={() => {
-              void loadProjects({quiet:false});
-              if(showCompleted) void loadCompletedProjects({quiet:false});
-              if(canReadGcReference(user)) void gcDirectory.refresh();
-            }} />
-
             <button
               type="button"
               className="secondary-button"
@@ -1361,14 +1369,12 @@ export default function ActiveProjectsWorkspace({
                         {displayValue(project.jobName)}
                       </strong>
                       {!project.projectCompleted && rebalanceByJobId.has(String(project.jobListId)) && (
-                        onOpenBillingProject ? (
-                          <button type="button" className="needs-rebalance-flag needs-rebalance-action"
-                            title="PM Projection Out of Balance — review billing projections"
-                            onClick={event => {event.stopPropagation(); onOpenBillingProject(project.jobListId);}}
-                            onKeyDown={event => event.stopPropagation()}>
-                            Needs Rebalance
-                          </button>
-                        ) : <span className="needs-rebalance-flag">Needs Rebalance</span>
+                        <ForecastBalanceFlag
+                          review={rebalanceByJobId.get(String(project.jobListId))}
+                          onClick={onOpenBillingProject
+                            ? event => {event.stopPropagation(); onOpenBillingProject(project.jobListId);}
+                            : null}
+                        />
                       )}
                       {!project.projectCompleted && (
                         <ScheduleReviewFlag

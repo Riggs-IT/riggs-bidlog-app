@@ -3,11 +3,11 @@ import {hasMissingEstimate, isOverdueForDays} from './bidLogOverdue.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey} from './gcReference.js';
 import {resolveSignedInPmOption} from './pmScope.js';
-import {RefreshButton} from './ViewControls.jsx';
 import useGcReference, { canReadGcReference } from './useGcReference.js';
 import {
   Fragment,
   useEffect,
+  useImperativeHandle,
   useMemo,
   useRef,
   useState,
@@ -806,6 +806,7 @@ export default function BidLogWorkspace({
   user,
   pmDirectory = [],
   onBidDataChanged,
+  refreshApiRef,
 }) {
   const gcDirectory = useGcReference(canReadGcReference(user));
   const [pmBadgeDirectory, setPmBadgeDirectory] = useState([]);
@@ -1803,6 +1804,16 @@ export default function BidLogWorkspace({
   }
 
 
+  // Expose the existing per-view refresh to the common app header. The
+  // active/awarded/lost/unpursued selection remains owned by this workspace.
+  useImperativeHandle(refreshApiRef, () => ({
+    refresh: async () => {
+      if (loading) return;
+      await refreshCurrentBidView();
+      if (canReadGcReference(user)) await gcDirectory.refresh();
+    },
+  }));
+
   function rowIdentity(row) {
     return activeView
       ? Number(row?.sharePointItemId)
@@ -2320,9 +2331,6 @@ export default function BidLogWorkspace({
           )}
 
           <div className="bid-log-filter-actions">
-            <RefreshButton label="Refresh bids" className="bid-log-refresh-button" busy={loading}
-              onClick={()=>{void refreshCurrentBidView(); if(canReadGcReference(user))void gcDirectory.refresh();}} />
-
             <button
               type="button"
               className="secondary-button"

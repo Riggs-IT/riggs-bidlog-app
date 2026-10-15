@@ -13004,6 +13004,16 @@ td.pivot-project-column {
 /* Floating action feedback                                                   */
 /* ========================================================================== */
 
+/* One-line acknowledgment, never a persistent note next to the header icon. */
+.action-toast.refresh-feedback {
+  width: auto;
+  min-height: 0;
+  padding: 11px 15px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .action-toast {
   position: fixed;
   right: 24px;
@@ -14079,6 +14089,20 @@ tbody > tr:nth-child(
   color: var(--warning);
 }
 
+/* Pending Foundation is a provisional billing-timing review, not a red/amber
+   instruction to redistribute the PM plan. The original SQL flag is retained. */
+.needs-rebalance-flag.pending-foundation-flag,
+:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line)
+  > .needs-rebalance-flag.pending-foundation-flag {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 36%, var(--border));
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+}
+.needs-rebalance-action.pending-foundation-flag:hover,
+.needs-rebalance-action.pending-foundation-flag:focus-visible {
+  background: color-mix(in srgb, var(--accent) 17%, var(--surface));
+}
+
 /* Selection is a filled state, not just amber text on a neutral pill.
    This applies to the regular controls and their floating sticky copies. */
 .projection-source-count-toggle.rebalance-count.active {
@@ -14511,15 +14535,4 @@ tbody > tr:nth-child(
   margin-left: 3px;
   vertical-align: super;
   line-height: 0;
-}
-
-/* The shared financial snapshot can serve last-good data during a refresh.
-   Do not silently present an expired or failed refresh as current. */
-.dashboard-cache-warning {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--topbar-text);
-  opacity: .86;
-  max-width: 130px;
-  line-height: 1.25;
 }

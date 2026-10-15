@@ -1,4 +1,5 @@
 import ScheduleReviewFlag from './ScheduleReviewFlag.jsx';
+import ForecastBalanceFlag from './ForecastBalanceFlag.jsx';
 import {
   useEffect,
   useRef,
@@ -476,14 +477,7 @@ export default function CurrentProjectBillingDrawer({
               <span>Job {text(project.jobNumber)}</span>
 
               {!projectIsCompleted && rebalanceAttention && (
-                <button
-                  type="button"
-                  className="needs-rebalance-flag needs-rebalance-action"
-                  title="PM Projection Out of Balance — review billing projections"
-                  onClick={jumpToBillingProjections}
-                >
-                  Needs Rebalance
-                </button>
+                <ForecastBalanceFlag review={rebalanceAttention} onClick={jumpToBillingProjections} />
               )}
 
               {!projectIsCompleted && (

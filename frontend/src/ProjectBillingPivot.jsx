@@ -1,6 +1,7 @@
 import { completedProjectPivotCell, pivotCurrentCell, pivotTotals, nullableAmount, varianceTooltipText } from './primaryProjection.js';
 import { ProjectionEstimateMarker, ProjectionAmount } from './ProjectionDisplay.jsx';
 import ScheduleReviewFlag from './ScheduleReviewFlag.jsx';
+import ForecastBalanceFlag from './ForecastBalanceFlag.jsx';
 import {
   useCallback,
   useEffect,
@@ -522,13 +523,7 @@ function ProjectMeta({
         </strong>
 
         {row.source === 'current' && row.raw?.needsRebalance && !isCompleted(row.raw) && (
-          <span
-            className="needs-rebalance-flag pivot-needs-rebalance"
-            data-needs-rebalance
-            title="PM Projection Out of Balance — click to review Billing projections"
-          >
-            Needs Rebalance
-          </span>
+          <ForecastBalanceFlag review={row.raw} className="pivot-needs-rebalance" />
         )}
 
         {row.source === 'current' && !isCompleted(row.raw) && (
@@ -1759,7 +1754,7 @@ export default function ProjectBillingPivot({
                 className={`projection-source-count-toggle ${projectionSourceFilter === 'rebalance' ? 'active' : ''} ${projectionCoverage.rebalance ? 'rebalance-count' : ''}`}
                 aria-pressed={projectionSourceFilter === 'rebalance'}
                 title={portfolioBalanceAvailable
-                  ? 'Show PM projections that do not cover the remaining contract'
+                  ? 'Show balance reviews, including projects pending Foundation billing'
                   : 'Portfolio balance statuses are loading or unavailable'}
                 disabled={!portfolioBalanceAvailable}
                 onClick={() => onProjectionSourceFilterChange(
@@ -1768,7 +1763,7 @@ export default function ProjectBillingPivot({
                     : 'rebalance'
                 )}
               >
-                {portfolioBalanceAvailable ? projectionCoverage.rebalance : '—'} Need Rebalance
+                {portfolioBalanceAvailable ? projectionCoverage.rebalance : '—'} Balance Reviews
               </button>
             </div>
           )}

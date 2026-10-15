@@ -16,9 +16,12 @@ test('browser never chooses a refresh actor; authenticated backend passes its ow
   assert.match(route, /Retry-After/);
 });
 
-test('manual cooldown is displayed as a limited request, not an outage', () => {
+test('manual cooldown does not expose timing or system internals to users', () => {
   const app = source('../src/App.jsx');
+  const freshness = source('../src/useProjectedBillingsFreshness.js');
   assert.match(app, /shared_dashboard_refresh_rate_limited/);
-  assert.match(app, /Retry-After/);
-  assert.match(app, /existing cached data remains available/);
+  assert.doesNotMatch(app, /Retry-After|cooldown|Shared dashboard Refresh is limited/);
+  assert.match(freshness, /isRefreshCooldown\(error\)/);
+  assert.match(freshness, /onRefreshNotice/);
+  assert.doesNotMatch(app, /dashboard-cache-warning/);
 });
