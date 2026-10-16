@@ -4,6 +4,7 @@ import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey} from './gcReference.js';
 import {resolveSignedInPmOption} from './pmScope.js';
 import useGcReference, { canReadGcReference } from './useGcReference.js';
+import {shouldRevalidateOnReturn} from './pageReturnRefresh.js';
 import {
   Fragment,
   useEffect,
@@ -572,10 +573,10 @@ function normalizeOutcomeListPayload(payload) {
 }
 
 
-async function loadBidView(viewKey, signal) {
+async function loadBidView(viewKey, signal, {fresh = false, passive = false} = {}) {
   const view = BID_VIEWS[viewKey] || BID_VIEWS.active;
   const path = view.key === 'active'
-    ? '/api/bid-log/active?limit=500&offset=0&fresh=true'
+    ? `/api/bid-log/active?limit=500&offset=0${fresh ? '&fresh=true' : ''}`
     : `/api/bid-log/outcomes?status=${encodeURIComponent(view.status)}`;
 
   const response = await window.fetch(
@@ -584,6 +585,7 @@ async function loadBidView(viewKey, signal) {
       credentials: 'same-origin',
       cache: 'no-store',
       signal,
+      ...(passive ? {headers: {'X-Riggs-Passive-Read': '1'}} : {}),
     },
   );
 
@@ -626,7 +628,7 @@ export async function prefetchBidLogWorkspace(
     }
 
     try {
-      const payload = await loadBidView(viewKey);
+      const payload = await loadBidView(viewKey, undefined, {passive: true});
 
       writeBidLogCache(
         viewKey,
@@ -821,6 +823,7 @@ export default function BidLogWorkspace({
       try {
         const response = await window.fetch('/api/bid-log/reference/pm-badges', {
           credentials: 'same-origin', cache: 'no-store', signal: controller.signal,
+          headers: {'X-Riggs-Passive-Read': '1'},
         });
         if (!response.ok) throw new Error(`PM badge read failed: ${response.status}`);
         const payload = await response.json();
@@ -1061,13 +1064,16 @@ export default function BidLogWorkspace({
       setNotesBidId(null);
       setEditSelection(null);
 
-      if (bidLogCacheIsFresh(requestedViewKey)) {
+      if (!shouldRevalidateOnReturn({
+        loadedAt: cacheEntry?.loadedAt,
+        hasData: hasCachedPayload,
+      })) {
         return undefined;
       }
 
       const controller = new AbortController();
 
-      loadBidView(requestedViewKey, controller.signal)
+      loadBidView(requestedViewKey, controller.signal, {passive: true})
         .then(nextPayload => {
           if (
             controller.signal.aborted
@@ -1717,6 +1723,7 @@ export default function BidLogWorkspace({
       const nextPayload = await loadBidView(
         viewKey,
         undefined,
+        {fresh: true},
       );
 
       writeBidLogCache(
@@ -1752,6 +1759,7 @@ export default function BidLogWorkspace({
       const nextPayload = await loadBidView(
         bidView,
         undefined,
+        {fresh: true},
       );
 
       writeBidLogCache(

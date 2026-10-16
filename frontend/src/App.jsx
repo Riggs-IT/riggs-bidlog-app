@@ -1728,6 +1728,8 @@ export default function App() {
   const bidLogRefreshRef = useRef(null);
   const projectsRefreshRef = useRef(null);
   const completedRefreshRef = useRef(null);
+  const administrationRefreshRef = useRef(null);
+  const [administrationBusy, setAdministrationBusy] = useState(false);
   const [refreshingWorkspace, setRefreshingWorkspace] = useState(null);
   const activeRefreshPagesRef = useRef(new Set());
 
@@ -1737,7 +1739,8 @@ export default function App() {
     if (activeRefreshPagesRef.current.has(page)) return;
     const ref = page === 'bid-log' ? bidLogRefreshRef
       : page === 'active-projects' ? projectsRefreshRef
-        : page === 'accountability' ? completedRefreshRef : null;
+        : page === 'accountability' ? completedRefreshRef
+        : page === 'administration' ? administrationRefreshRef : null;
     if (!ref?.current?.refresh) return;
     activeRefreshPagesRef.current.add(page);
     setRefreshingWorkspace(page);
@@ -5565,6 +5568,14 @@ export default function App() {
               onClick={() => { void refreshWorkspacePage(activePage); }}
             />
           )}
+          {activePage === 'administration' && canViewAdministration && (
+            <RefreshButton
+              label="Refresh administration"
+              busy={refreshingWorkspace === 'administration' || administrationBusy}
+              title={null}
+              onClick={() => { void refreshWorkspacePage('administration'); }}
+            />
+          )}
           <div
             ref={notificationCenterRef}
             className="notification-center"
@@ -7971,7 +7982,11 @@ export default function App() {
         activePage === 'administration'
         && canViewAdministration
       ) ? (
-        <AdministrationDashboard onSessionError={handleReadSessionError} />
+        <AdministrationDashboard
+          onSessionError={handleReadSessionError}
+          refreshApiRef={administrationRefreshRef}
+          onBusyChange={setAdministrationBusy}
+        />
       ) : null}
 
       {activePage === 'projected' && refreshFeedback && (

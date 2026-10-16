@@ -177,7 +177,8 @@ export function createGcReferenceStore({ fetcher, now = Date.now, ttl = GC_REFER
     current.promise = Promise.resolve().then(async () => {
       const response = await (fetcher || ((...args) => window.fetch(...args)))(
         '/api/bid-log/reference/general-contractors', { method: 'GET', credentials: 'same-origin',
-          cache: 'no-store', signal: controller.signal });
+          cache: 'no-store', signal: controller.signal,
+          headers: {'X-Riggs-Passive-Read': '1'} });
       if (!response.ok) throw new Error(`General Contractor directory unavailable (HTTP ${response.status}).`);
       const payload = await response.json();
       const directory = canonicalDirectory(payload?.items);

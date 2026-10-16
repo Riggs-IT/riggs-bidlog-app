@@ -2,11 +2,13 @@ import {facetRows, projectDirectoryRows, isCompleted} from './viewFilters.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey, contractorFilterOptions, contractorFilterMatch} from './gcReference.js';
 import useGcReference, { canReadGcReference } from './useGcReference.js';
+import {shouldRevalidateOnReturn} from './pageReturnRefresh.js';
 import {
   useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -471,12 +473,14 @@ function SortHeader({
 }
 
 
-async function fetchProjectList(path, signal, label) {
+async function fetchProjectList(path, signal, label, {passive = false} = {}) {
   const response = await window.fetch(
     path,
     {
       credentials: 'same-origin',
+      cache: 'no-store',
       signal,
+      ...(passive ? {headers: {'X-Riggs-Passive-Read': '1'}} : {}),
     },
   );
 
@@ -505,20 +509,22 @@ async function fetchProjectList(path, signal, label) {
 }
 
 
-function fetchActiveProjects(signal) {
+function fetchActiveProjects(signal, {fresh = false, passive = false} = {}) {
   return fetchProjectList(
-    '/api/active-projects?fresh=true',
+    `/api/active-projects${fresh ? '?fresh=true' : ''}`,
     signal,
     'active projects',
+    {passive},
   );
 }
 
 
-function fetchCompletedProjects(signal) {
+function fetchCompletedProjects(signal, {fresh = false, passive = false} = {}) {
   return fetchProjectList(
-    '/api/projects/completed-directory?fresh=true',
+    `/api/projects/completed-directory${fresh ? '?fresh=true' : ''}`,
     signal,
     'completed projects',
+    {passive},
   );
 }
 
@@ -533,7 +539,7 @@ export async function prefetchProjectsWorkspace({
   ) {
     try {
       const payload =
-        await fetchActiveProjects();
+        await fetchActiveProjects(undefined, {passive: true});
 
       writeDirectoryCache(
         'active',
@@ -550,7 +556,7 @@ export async function prefetchProjectsWorkspace({
   ) {
     try {
       const payload =
-        await fetchCompletedProjects();
+        await fetchCompletedProjects(undefined, {passive: true});
 
       writeDirectoryCache(
         'completed',
@@ -600,69 +606,77 @@ export default function ActiveProjectsWorkspace({
     type: 'text',
   });
 
-  const loadProjects = useCallback(
-    async ({ quiet = false } = {}) => {
-      const controller = new AbortController();
+  const activeReadRef = useRef(null);
+  const completedReadRef = useRef(null);
 
-      if (!quiet) {
-        setLoading(true);
-      }
-
-      setError(null);
-
+  const loadProjects = useCallback(async ({quiet = false, passive = false} = {}) => {
+    if (passive && activeReadRef.current && !activeReadRef.current.controller.signal.aborted) {
+      return activeReadRef.current.promise;
+    }
+    activeReadRef.current?.controller.abort();
+    const controller = new AbortController();
+    if (!quiet) setLoading(true);
+    setError(null);
+    const task = (async () => {
       try {
-        const payload = await fetchActiveProjects(
-          controller.signal,
-        );
-        writeDirectoryCache('active', payload);
-        setActiveItems(payload);
+        const payload = await fetchActiveProjects(controller.signal, {
+          fresh: !passive, passive,
+        });
+        if (!controller.signal.aborted) {
+          writeDirectoryCache('active', payload);
+          setActiveItems(payload);
+        }
       } catch (loadError) {
-        if (loadError?.name !== 'AbortError') {
-          setError(
-            loadError?.message
-            || 'Unable to load active projects.',
-          );
+        if (!controller.signal.aborted && loadError?.name !== 'AbortError') {
+          setError(loadError?.message || 'Unable to load active projects.');
         }
       } finally {
-        if (!quiet) {
-          setLoading(false);
+        if (activeReadRef.current?.controller === controller) {
+          activeReadRef.current = null;
+          if (!quiet) setLoading(false);
         }
       }
-    },
-    [],
-  );
+    })();
+    activeReadRef.current = {controller, promise: task};
+    return task;
+  }, []);
 
-  const loadCompletedProjects = useCallback(
-    async ({ quiet = false } = {}) => {
-      const controller = new AbortController();
-
-      if (!quiet) {
-        setCompletedLoading(true);
-      }
-
-      setCompletedError(null);
-
+  const loadCompletedProjects = useCallback(async ({quiet = false, passive = false} = {}) => {
+    if (passive && completedReadRef.current && !completedReadRef.current.controller.signal.aborted) {
+      return completedReadRef.current.promise;
+    }
+    completedReadRef.current?.controller.abort();
+    const controller = new AbortController();
+    if (!quiet) setCompletedLoading(true);
+    setCompletedError(null);
+    const task = (async () => {
       try {
-        const payload = await fetchCompletedProjects(
-          controller.signal,
-        );
-        writeDirectoryCache('completed', payload);
-        setCompletedItems(payload);
+        const payload = await fetchCompletedProjects(controller.signal, {
+          fresh: !passive, passive,
+        });
+        if (!controller.signal.aborted) {
+          writeDirectoryCache('completed', payload);
+          setCompletedItems(payload);
+        }
       } catch (loadError) {
-        if (loadError?.name !== 'AbortError') {
-          setCompletedError(
-            loadError?.message
-            || 'Unable to load completed projects.',
-          );
+        if (!controller.signal.aborted && loadError?.name !== 'AbortError') {
+          setCompletedError(loadError?.message || 'Unable to load completed projects.');
         }
       } finally {
-        if (!quiet) {
-          setCompletedLoading(false);
+        if (completedReadRef.current?.controller === controller) {
+          completedReadRef.current = null;
+          if (!quiet) setCompletedLoading(false);
         }
       }
-    },
-    [],
-  );
+    })();
+    completedReadRef.current = {controller, promise: task};
+    return task;
+  }, []);
+
+  useEffect(() => () => {
+    activeReadRef.current?.controller.abort();
+    completedReadRef.current?.controller.abort();
+  }, []);
 
   // One page-level Refresh control lives in the common app header.
   // The Completed toggle still determines whether completed rows are reloaded.
@@ -678,12 +692,14 @@ export default function ActiveProjectsWorkspace({
 
   useEffect(
     () => {
-      if (cacheIsFresh(activeProjectsCache)) {
-        return undefined;
-      }
+      if (!shouldRevalidateOnReturn({
+        loadedAt: activeProjectsCache.loadedAt,
+        hasData: Array.isArray(activeProjectsCache.items),
+      })) return undefined;
 
       void loadProjects({
         quiet: Array.isArray(activeProjectsCache.items),
+        passive: true,
       });
 
       return undefined;
@@ -697,12 +713,14 @@ export default function ActiveProjectsWorkspace({
         return undefined;
       }
 
-      if (cacheIsFresh(completedProjectsCache)) {
-        return undefined;
-      }
+      if (!shouldRevalidateOnReturn({
+        loadedAt: completedProjectsCache.loadedAt,
+        hasData: Array.isArray(completedProjectsCache.items),
+      })) return undefined;
 
       void loadCompletedProjects({
         quiet: Array.isArray(completedProjectsCache.items),
+        passive: true,
       });
 
       return undefined;

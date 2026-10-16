@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useImperativeHandle, useRef, useState} from 'react';
 import './AdministrationDashboard.css';
 import AdministrationPresence from './AdministrationPresence.jsx';
 
@@ -184,7 +184,7 @@ export function AdministrationView({overview, presence}) {
   </>;
 }
 
-export default function AdministrationDashboard({onSessionError}) {
+export default function AdministrationDashboard({onSessionError, refreshApiRef, onBusyChange}) {
   const [overview, setOverview] = useState(null);
   const [presence, setPresence] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -192,6 +192,10 @@ export default function AdministrationDashboard({onSessionError}) {
   const pending = useRef(null);
   const sessionCallback = useRef(onSessionError);
   useEffect(() => { sessionCallback.current = onSessionError; }, [onSessionError]);
+  useEffect(() => {
+    onBusyChange?.(busy);
+    return () => onBusyChange?.(false);
+  }, [busy, onBusyChange]);
 
   const checkStatus = useCallback(async () => {
     pending.current?.abort();
@@ -243,6 +247,8 @@ export default function AdministrationDashboard({onSessionError}) {
     }
   }, []);
 
+  useImperativeHandle(refreshApiRef, () => ({refresh: checkStatus}), [checkStatus]);
+
   useEffect(() => {
     void checkStatus();
     return () => {pending.current?.abort();};
@@ -255,9 +261,6 @@ export default function AdministrationDashboard({onSessionError}) {
         <h1>Administration</h1>
         <p className="administration-subtitle">Current Riggs services, cache, usage sessions, and queue evidence.</p>
       </div>
-      <button className="administration-check" type="button" disabled={busy} onClick={() => {void checkStatus();}}>
-        {busy ? 'Checking…' : 'Check status'}
-      </button>
     </div>
     {error && <div className="administration-message administration-message-warning" role="alert">{error}</div>}
     {overview ? <>

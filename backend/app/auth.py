@@ -334,6 +334,15 @@ _PASSIVE_READ_PATHS = frozenset({
     "/api/projected-billings/dashboard-cache/status",
     "/api/admin/overview",
     "/api/admin/presence",
+    # Navigation revalidation never counts as human activity. Exact GET paths
+    # only; capabilities, signed identity and idle expiry are still enforced.
+    "/api/bid-log/active",
+    "/api/bid-log/outcomes",
+    "/api/bid-log/reference/general-contractors",
+    "/api/bid-log/reference/pm-badges",
+    "/api/active-projects",
+    "/api/projects/completed-directory",
+    "/api/completed-projects",
     "/api/projected-billings/active-bids/dashboard",
     "/api/pm-forecast/portfolio-balance",
     "/api/pm-forecast/attention",

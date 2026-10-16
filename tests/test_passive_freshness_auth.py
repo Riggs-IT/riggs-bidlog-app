@@ -39,6 +39,10 @@ class PassiveFreshnessAuthTests(unittest.TestCase):
         for p in [PATH,'/api/projected-billings/current-projects/primary-projection','/api/projected-billings/current-projects/monthly','/api/projected-billings/dashboard-cache/status','/api/projected-billings/active-bids/dashboard','/api/pm-forecast/portfolio-balance',
                   '/api/pm-forecast/attention','/api/pm-forecast/schedule-review','/api/pm-forecast/schedule-review/attention','/api/originating-bid/attention','/api/current-projects/24/pm-forecast','/api/current-projects/24/pm-forecast/history',
                   '/api/current-projects/24/pm-forecast/history/1','/api/current-projects/24/pm-forecast/policy',
+                  '/api/bid-log/active','/api/bid-log/outcomes',
+                  '/api/bid-log/reference/general-contractors','/api/bid-log/reference/pm-badges',
+                  '/api/active-projects','/api/projects/completed-directory', '/api/completed-projects',
+                  '/api/bid-log/active/123', '/api/completed-projects/22/monthly',
                   '/api/other','/api/current-projects/0/pm-forecast','/api/current-projects/24/pm-forecast/admin-correction']:
             self.app.add_api_route(p,endpoint,methods=['GET','POST','PUT'])
         self.client=TestClient(self.app);self.addCleanup(self.client.close)
@@ -59,6 +63,26 @@ class PassiveFreshnessAuthTests(unittest.TestCase):
                 self.assertNotIn('set-cookie',result.headers)
                 ordinary=self.client.get(path)
                 self.assertEqual(ordinary.json()['last_activity_at'],1100)
+    def test_navigation_list_reads_never_touch_cookie_or_idle_clock(self):
+        paths = ['/api/bid-log/active?fresh=true', '/api/bid-log/outcomes?status=Lost',
+                 '/api/bid-log/reference/general-contractors',
+                 '/api/bid-log/reference/pm-badges', '/api/active-projects?fresh=true',
+                 '/api/projects/completed-directory', '/api/completed-projects']
+        for path in paths:
+            with self.subTest(path=path):
+                self.client.get('/seed')
+                passive = self.client.get(path, headers=HEADER)
+                self.assertEqual(passive.status_code, 200)
+                self.assertEqual(passive.json()['last_activity_at'], 1000)
+                self.assertNotIn('set-cookie', passive.headers)
+                active = self.client.get(path)
+                self.assertEqual(active.json()['last_activity_at'], 1100)
+        detail = self.client.get('/api/bid-log/active/123', headers=HEADER)
+        self.assertEqual(detail.status_code, 200)
+        self.assertEqual(detail.json()['last_activity_at'], 1100)  # no wildcard exemption
+        monthly = self.client.get('/api/completed-projects/22/monthly', headers=HEADER)
+        self.assertEqual(monthly.json()['last_activity_at'], 1100)
+
     def test_normal_read_marks_activity(self):
         r=self.client.get(PATH);self.assertEqual(r.json()['last_activity_at'],1100);self.assertIn(COOKIE,r.headers['set-cookie'])
     def test_passive_success_does_not_reissue_cookie(self):

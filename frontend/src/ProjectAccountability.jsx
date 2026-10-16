@@ -2,6 +2,7 @@ import {facetRows} from './viewFilters.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey} from './gcReference.js';
 import useGcReference, { canReadGcReference } from './useGcReference.js';
+import {shouldRevalidateOnReturn} from './pageReturnRefresh.js';
 import {
   useCallback,
   useEffect,
@@ -380,11 +381,14 @@ function sourceShortLabel(value) {
 }
 
 
-async function fetchJson(path) {
+async function fetchJson(path, {signal, passive = false} = {}) {
   const response = await window.fetch(
     path,
     {
       credentials: 'same-origin',
+      cache: 'no-store',
+      signal,
+      ...(passive ? {headers: {'X-Riggs-Passive-Read': '1'}} : {}),
     },
   );
 
@@ -445,6 +449,7 @@ export async function prefetchCompletedBillings() {
   try {
     const payload = await fetchJson(
       '/api/completed-projects',
+      {passive: true},
     );
 
     if (Array.isArray(payload)) {
@@ -834,14 +839,22 @@ export default function ProjectAccountability({
   );
 
 
+  const completedListControllerRef = useRef(null);
   const loadCompletedProjects = useCallback(async ({
     forceRefresh = false,
+    passive = !forceRefresh,
     cancelled = () => false,
   } = {}) => {
-    if (!forceRefresh && completedProjectCacheIsFresh()) return;
+    if (!forceRefresh && !shouldRevalidateOnReturn({
+      loadedAt: completedProjectListCache.loadedAt,
+      hasData: Array.isArray(completedProjectListCache.items),
+    })) return;
 
+    completedListControllerRef.current?.abort();
+    const controller = new AbortController();
+    completedListControllerRef.current = controller;
     const generation = ++completedLoadGenerationRef.current;
-    const isCurrent = () => !cancelled()
+    const isCurrent = () => !cancelled() && !controller.signal.aborted
       && generation === completedLoadGenerationRef.current;
     const hasCachedRows = Array.isArray(completedProjectListCache.items);
     if (!hasCachedRows) setLoading(true);
@@ -850,17 +863,21 @@ export default function ProjectAccountability({
     try {
       const payload = await fetchJson(
         forceRefresh ? '/api/completed-projects?fresh=true' : '/api/completed-projects',
+        {signal: controller.signal, passive},
       );
       if (isCurrent() && Array.isArray(payload)) {
         writeCompletedProjectCache(payload);
         setRows(payload);
       }
     } catch (loadError) {
-      if (isCurrent()) {
+      if (isCurrent() && loadError?.name !== 'AbortError') {
         setError(loadError?.message || 'Unable to load completed projects.');
       }
     } finally {
       if (isCurrent() && !hasCachedRows) setLoading(false);
+      if (completedListControllerRef.current === controller) {
+        completedListControllerRef.current = null;
+      }
     }
   }, []);
 
@@ -870,7 +887,10 @@ export default function ProjectAccountability({
       forceRefresh: completedRefreshVersion > 0,
       cancelled: () => cancelled,
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      completedListControllerRef.current?.abort();
+    };
   }, [completedRefreshVersion, loadCompletedProjects]);
 
   useImperativeHandle(refreshApiRef, () => ({
