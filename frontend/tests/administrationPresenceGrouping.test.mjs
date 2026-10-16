@@ -69,7 +69,7 @@ test('grouping preserves SQL response array and objects, including privacy contr
   assert.deepEqual(groupPresenceSessions(null), []);
 });
 
-test('grouping UI offers expandable sessions without adding presence polling or writes', () => {
+test('grouping UI stays read-only while Administration owns visible-only refresh', () => {
   const source = readFileSync(new URL('../src/AdministrationPresence.jsx',import.meta.url),'utf8');
   const dashboard = readFileSync(new URL('../src/AdministrationDashboard.jsx',import.meta.url),'utf8');
   assert.match(source, /groupPresenceSessions\(sessions\)/);
@@ -79,5 +79,9 @@ test('grouping UI offers expandable sessions without adding presence polling or 
   assert.match(source, /selectedStatus === 'ALL' \|\| latest.status === selectedStatus/);
   assert.doesNotMatch(source, /setInterval\(|fetch\(/);
   assert.match(dashboard, /fetch\('\/api\/admin\/presence'/);
-  assert.doesNotMatch(dashboard, /setInterval\(/);
+  // The presence component has no network/timer. Its owning dashboard
+  // now intentionally refreshes on a visible, passive 60-second cadence.
+  assert.match(dashboard, /setInterval\(refreshVisible, 60_000\)/);
+  assert.match(dashboard, /document\.visibilityState !== 'visible'/);
+  assert.match(dashboard, /window\.clearInterval\(timer\)/);
 });

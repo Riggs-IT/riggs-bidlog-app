@@ -3495,7 +3495,7 @@ def get_bid_log_administration_leaderboard(
             raise ValueError("empty UUID")
     except (ValueError, TypeError, AttributeError) as exc:
         raise DataAPIConfigurationError("Administration identity unavailable") from exc
-    if type(days) is not int or days not in (7, 30, 90) or app_code not in (
+    if type(days) is not int or days not in (0, 7, 30, 90) or app_code not in (
         "ALL", "BID_LOG", "ACCOUNTING", "OPERATIONS",
     ):
         raise ValueError("Invalid leaderboard filters")

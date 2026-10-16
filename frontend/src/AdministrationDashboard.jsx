@@ -141,7 +141,7 @@ export function AdministrationView({
           <article className="administration-tile administration-metric"><span>Eligible for closeout</span><strong>{displayCount(usage.eligibleForCloseout)}</strong><small>65-minute cutoff, timestamp checks</small></article>
           <article className="administration-tile administration-metric"><span>Already finalized</span><strong>{displayCount(usage.endedSessions)}</strong><small>{displayCount(usage.heartbeatExpiredSessions)} heartbeat expired · {displayCount(usage.endedLast24Hours)} ended within 24 hours</small></article>
         </div>
-        <div className="administration-tiles administration-tiles-two administration-reconciler">
+        <div className="administration-tiles administration-reconciler">
           <article className="administration-tile">
             <div className="administration-tile-head"><h3>Automatic closeout</h3><State value={reconciler.enabled ? 'ENABLED' : 'DISABLED'}/></div>
             <dl className="administration-facts">
@@ -151,11 +151,7 @@ export function AdministrationView({
               <div><dt>Last successful scheduler run</dt><dd>Not collected</dd></div>
             </dl>
           </article>
-          <article className="administration-tile">
-            <div className="administration-tile-head"><h3>Session interpretation</h3><span className="administration-state administration-state-neutral">READ ONLY</span></div>
-            <p className="administration-tile-detail">A missing heartbeat may mean a closed tab, disconnected network, or sleeping computer. Reconciliation uses <strong>heartbeat_expired</strong>, not a confirmed browser-close reason.</p>
-            <p className="administration-tile-detail">Totals reflect current SQL rows. They are not a per-user performance report.</p>
-          </article>
+
         </div>
       </> : <div className="administration-message administration-message-warning" role="status">
         Usage status unavailable. {monitoring.reasonCode ? `Reason: ${monitoring.reasonCode}` : 'No verified SQL aggregate.'}
@@ -204,6 +200,9 @@ export default function AdministrationDashboard({onSessionError, refreshApiRef, 
   const [usageBusy, setUsageBusy] = useState(false);
   const [error, setError] = useState('');
   const pending = useRef(null);
+  const overviewInFlight = useRef(false);
+  const usageInFlight = useRef(false);
+  const lastAutoAt = useRef(Date.now());
   const usagePending = useRef(null);
   const selection = useRef({mode: 'LIVE', days: 30, appCode: 'ALL'});
   const sessionCallback = useRef(onSessionError);
@@ -213,13 +212,17 @@ export default function AdministrationDashboard({onSessionError, refreshApiRef, 
     return () => onBusyChange?.(false);
   }, [busy, usageBusy, onBusyChange]);
 
-  const loadUsage = useCallback(async ({mode, days, appCode}) => {
+  const loadUsage = useCallback(async ({mode, days, appCode}, {quiet = false} = {}) => {
+    if (quiet && usageInFlight.current) return;
     usagePending.current?.abort();
     const controller = new AbortController();
     usagePending.current = controller;
-    setUsageBusy(true);
-    if (mode === 'LIVE') setPresence(null);
-    else setLeaderboard(null);
+    usageInFlight.current = true;
+    if (!quiet) {
+      setUsageBusy(true);
+      if (mode === 'LIVE') setPresence(null);
+      else setLeaderboard(null);
+    }
     const isLive = mode === 'LIVE';
     try {
       const options = {
@@ -243,24 +246,34 @@ export default function AdministrationDashboard({onSessionError, refreshApiRef, 
       if (!controller.signal.aborted) {
         if (isLive) setPresence(result);
         else setLeaderboard(result);
+        setError('');
       }
     } catch (exc) {
-      // Never convert an unavailable / denied read into an empty success.
+      // Background network errors preserve the last verified scoreboard.
       if (!controller.signal.aborted) {
-        const unavailable = {availability: 'UNAVAILABLE', readOnly: true};
-        if (isLive) setPresence(unavailable);
-        else setLeaderboard(unavailable);
+        if (quiet) setError('Automatic usage update failed; showing the last result.');
+        else {
+          const unavailable = {availability: 'UNAVAILABLE', readOnly: true};
+          if (isLive) setPresence(unavailable);
+          else setLeaderboard(unavailable);
+        }
       }
     } finally {
-      if (!controller.signal.aborted) setUsageBusy(false);
+      if (usagePending.current === controller) {
+        usagePending.current = null;
+        usageInFlight.current = false;
+        setUsageBusy(false);
+      }
     }
   }, []);
 
-  const checkStatus = useCallback(async () => {
+  const checkStatus = useCallback(async ({automatic = false} = {}) => {
+    if (automatic && overviewInFlight.current) return;
     pending.current?.abort();
     const controller = new AbortController();
     pending.current = controller;
-    setBusy(true);
+    overviewInFlight.current = true;
+    if (!automatic) setBusy(true);
     setError('');
     try {
       const response = await fetch('/api/admin/overview', {
@@ -279,15 +292,19 @@ export default function AdministrationDashboard({onSessionError, refreshApiRef, 
       }
       if (!controller.signal.aborted) {
         setOverview(payload);
-        await loadUsage(selection.current);
+        await loadUsage(selection.current, {quiet: automatic});
       }
     } catch (exc) {
       if (!controller.signal.aborted) {
-        setOverview(null);
+        if (!automatic) setOverview(null);
         setError(exc.message || 'Unable to check monitoring status.');
       }
     } finally {
-      if (!controller.signal.aborted) setBusy(false);
+      if (pending.current === controller) {
+        pending.current = null;
+        overviewInFlight.current = false;
+        setBusy(false);
+      }
     }
   }, [loadUsage]);
 
@@ -299,7 +316,7 @@ export default function AdministrationDashboard({onSessionError, refreshApiRef, 
   }, [loadUsage]);
 
   const changeLeaderboardDays = useCallback(days => {
-    if (![7, 30, 90].includes(days) || selection.current.days === days) return;
+    if (![0, 7, 30, 90].includes(days) || selection.current.days === days) return;
     selection.current = {...selection.current, days};
     setLeaderboardDays(days);
     if (selection.current.mode === 'LEADERBOARD') void loadUsage(selection.current);
@@ -320,6 +337,26 @@ export default function AdministrationDashboard({onSessionError, refreshApiRef, 
     return () => { pending.current?.abort(); usagePending.current?.abort(); };
   }, [checkStatus]);
 
+  // Owner-only monitoring while the Administration page is mounted and visible.
+  // Every request is an existing protected passive GET: never renew idle sessions.
+  useEffect(() => {
+    const refreshVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      const now = Date.now();
+      if (now - lastAutoAt.current < 60_000) return;
+      lastAutoAt.current = now;
+      void checkStatus({automatic: true});
+    };
+    const timer = window.setInterval(refreshVisible, 60_000);
+    document.addEventListener('visibilitychange', refreshVisible);
+    window.addEventListener('focus', refreshVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', refreshVisible);
+      window.removeEventListener('focus', refreshVisible);
+    };
+  }, [checkStatus]);
+
   return <main className="page-shell administration-page">
     <div className="administration-heading">
       <div>
@@ -330,7 +367,7 @@ export default function AdministrationDashboard({onSessionError, refreshApiRef, 
     </div>
     {error && <div className="administration-message administration-message-warning" role="alert">{error}</div>}
     {overview ? <>
-      <p className="administration-observed">Observed {displayUTC(overview.observedAtUTC)} · Data reflects this check only; no automatic polling.</p>
+      <p className="administration-observed">Updated {displayUTC(overview.observedAtUTC)} · Automatically checks once a minute while this page is visible.</p>
       <AdministrationView overview={overview} presence={presence} leaderboard={leaderboard}
         usageMode={usageMode} leaderboardDays={leaderboardDays} leaderboardApp={leaderboardApp}
         usageLoading={usageBusy} onUsageModeChange={changeUsageMode}

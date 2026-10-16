@@ -10,7 +10,7 @@ export default function AdministrationUsagePanel({
   return <section className="administration-section" aria-label="Riggs application usage">
     <div className="administration-section-heading">
       <h2>Who's using Riggs apps</h2>
-      <span>Private · owner-only · SQL-backed records</span>
+      <span>Private · auto-updates</span>
     </div>
     <div className="administration-usage-tabs" role="tablist" aria-label="Usage view">
       <button type="button" role="tab" id="administration-usage-live-tab"

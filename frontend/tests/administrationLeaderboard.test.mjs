@@ -35,17 +35,21 @@ async function withComponents(t) {
   return {Leaderboard,Usage};
 }
 
-test('leaderboard shows recorded hours, overlap warning, dates and apps without asserting work hours', async t => {
+test('leaderboard shows medal podium, rest below and All Time selector', async t => {
   const {Leaderboard}=await withComponents(t);
+  const data={...fixture, totalEmployees:4, totalSessions:7, totalRecordedActiveSeconds:7200,
+    totalPossibleOverlapSessions:2, employees:[...fixture.employees,
+      {rank:3, eid:400,displayName:'Synthetic Gamma',recordedActiveSeconds:1200,sessionCount:1,appsUsed:1,possibleOverlapSessions:0},
+      {rank:4,eid:500,displayName:'Synthetic Delta',recordedActiveSeconds:600,sessionCount:1,appsUsed:1,possibleOverlapSessions:0}]};
   const html=renderToString(React.createElement(Leaderboard,{
-    leaderboard:fixture, days:30, appCode:'ALL', loading:false,
-    onDaysChange:()=>{}, onAppChange:()=>{},
+    leaderboard:data, days:30,appCode:'ALL',loading:false,
+    onDaysChange:()=>{},onAppChange:()=>{},
   })).replaceAll('<!-- -->','');
-  for (const label of ['Synthetic Alpha','Synthetic Beta','5','1.50', '1.00',
-    '2 possible overlaps','Last 30 Arizona days','All applications',
-    'not deduplicated','not employee productivity or hours worked','2026-09-17']) {
+  for (const label of ['Synthetic Alpha','Synthetic Beta','Synthetic Gamma','Synthetic Delta',
+    '🥇','🥈','🥉','1st','2nd','3rd','Everyone else','All Time', 'All applications']) {
     assert.ok(html.includes(label),label);
   }
+  assert.doesNotMatch(html,/Last 30 Arizona days|Session interpretation|not deduplicated|employee productivity/i);
   assert.doesNotMatch(html,/email@|microsoftUsername|oid|UsageSessionID|password/i);
 });
 
@@ -55,12 +59,12 @@ test('unavailable and loading states cannot impersonate a genuine zero', async t
   const unavailable=renderToString(React.createElement(Leaderboard,{
     ...props,leaderboard:{availability:'UNAVAILABLE'},loading:false,
   }));
-  assert.match(unavailable,/could not be verified/);
+  assert.match(unavailable,/temporarily unavailable/);
   assert.doesNotMatch(unavailable,/No recorded sessions|Synthetic Alpha/);
   const loading=renderToString(React.createElement(Leaderboard,{
     ...props,leaderboard:null,loading:true,
   }));
-  assert.match(loading,/Checking recorded activity/);
+  assert.match(loading,/Updating scores/);
   assert.doesNotMatch(loading,/No recorded sessions/);
 });
 
@@ -78,7 +82,7 @@ test('owner toggle uses only one active panel and no large employee history on l
   assert.doesNotMatch(html,/Sessions shown|Recent heartbeat/);
 });
 
-test('client wiring only reads selected tab, filters requests and does not poll',()=>{
+test('selected-only reads and visible minute updates are passive and bounded',()=>{
   const dashboard=readFileSync(new URL('../src/AdministrationDashboard.jsx',import.meta.url),'utf8');
   const backend=readFileSync(new URL('../../backend/app/main.py',import.meta.url),'utf8');
   const auth=readFileSync(new URL('../../backend/app/auth.py',import.meta.url),'utf8');
@@ -88,7 +92,11 @@ test('client wiring only reads selected tab, filters requests and does not poll'
   assert.match(dashboard,/X-Riggs-Passive-Read/);
   assert.match(dashboard,/usagePending\.current\?\.abort\(\)/);
   assert.match(dashboard,/useImperativeHandle\(refreshApiRef/);
-  assert.doesNotMatch(dashboard,/setInterval\(|setTimeout\(|dashboard-cache\/refresh/);
+  assert.match(dashboard,/setInterval\(refreshVisible, 60_000\)/);
+  assert.match(dashboard,/document.visibilityState !== 'visible'/);
+  assert.match(dashboard,/window.clearInterval\(timer\)/);
+  assert.match(dashboard,/lastAutoAt.current/);
+  assert.doesNotMatch(dashboard,/dashboard-cache\/refresh/);
   assert.match(backend,/@app.get\("\/api\/admin\/leaderboard"\)/);
   assert.match(backend,/Depends\(require_administration_owner\)/);
   assert.match(auth,/"\/api\/admin\/leaderboard"/);

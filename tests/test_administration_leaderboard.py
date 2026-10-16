@@ -68,7 +68,7 @@ class LeaderboardBffTests(unittest.TestCase):
         upstream.assert_called_once_with(actor_eid=2021, entra_object_id=auth_test.OWNER_OID, days=30, app_code="ALL")
 
     def test_filters_7_30_90_and_one_app(self):
-        for days, app in [(7, "ACCOUNTING"), (30, "BID_LOG"), (90, "OPERATIONS")]:
+        for days, app in [(0, "ALL"), (7, "ACCOUNTING"), (30, "BID_LOG"), (90, "OPERATIONS")]:
             with self.subTest(days=days, app=app):
                 with patch.object(administration, "get_bid_log_administration_leaderboard", return_value=fixture(days, app)):
                     result = self.client.get(f"/api/admin/leaderboard?days={days}&app={app}")
@@ -77,7 +77,7 @@ class LeaderboardBffTests(unittest.TestCase):
                 self.assertEqual(result.json()["appCode"], app)
 
     def test_invalid_filters_fail_before_upstream(self):
-        for query in ("days=0&app=ALL", "days=14&app=ALL", "days=90&app=all",
+        for query in ("days=-1&app=ALL", "days=14&app=ALL", "days=90&app=all",
                       "days=30&app=SQL", "days=no&app=BID_LOG"):
             with self.subTest(query=query), patch.object(administration, "get_bid_log_administration_leaderboard") as upstream:
                 response = self.client.get("/api/admin/leaderboard?" + query)
@@ -173,6 +173,8 @@ class LeaderboardBffTests(unittest.TestCase):
             data_api.get_bid_log_administration_leaderboard(actor_eid=415, entra_object_id=auth_test.OWNER_OID)
         with self.assertRaises(ValueError):
             data_api.get_bid_log_administration_leaderboard(actor_eid=2021, entra_object_id=auth_test.OWNER_OID, days=1)
+        # The zero value is the deliberate All Time selection, never an empty period.
+        self.assertEqual(administration._sanitize_leaderboard(fixture(0, "ALL"), days=0, app_code="ALL")["windowDays"], 0)
 
 
 if __name__ == "__main__":

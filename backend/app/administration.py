@@ -408,7 +408,7 @@ def get_administration_presence(*, owner_eid: int, owner_oid: str) -> dict:
 # Arizona calendar period. It is not login duration and cannot be reliably
 # deduplicated across tabs/apps from cumulative session totals.
 _LEADERBOARD_APPLICATIONS = frozenset({"ALL", "BID_LOG", "ACCOUNTING", "OPERATIONS"})
-_LEADERBOARD_DAYS = frozenset({7, 30, 90})
+_LEADERBOARD_DAYS = frozenset({0, 7, 30, 90})
 _LEADERBOARD_LIMIT = 200
 
 

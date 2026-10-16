@@ -49,12 +49,18 @@ test('three-app presence renders person only from bounded owner-only source',asy
   assert.doesNotMatch(unavailable,/Synthetic Employee/);
 });
 
-test('presence is owner-only GET and dashboard never polls or posts session details',()=>{
+test('presence is owner-only passive GET; visible-only updates never POST session details',()=>{
   const src=readFileSync(new URL('../src/AdministrationDashboard.jsx',import.meta.url),'utf8');
   const backend=readFileSync(new URL('../../backend/app/main.py',import.meta.url),'utf8');
   assert.match(src,/fetch\('\/api\/admin\/presence'/);
   assert.match(src,/method: 'GET'/);
   assert.match(backend,/@app.get\("\/api\/admin\/presence"\)/);
   assert.match(backend,/Depends\(require_administration_owner\)/);
-  assert.doesNotMatch(src,/setInterval\(|fetch\('\/api\/admin\/presence',[\s\S]{0,190}POST/);
+  // Stage 2D deliberately refreshes Administration only while visible, at most once a minute.
+  assert.match(src,/setInterval\(refreshVisible, 60_000\)/);
+  assert.match(src,/document\.visibilityState !== 'visible'/);
+  assert.match(src,/window\.clearInterval\(timer\)/);
+  assert.match(src,/'X-Riggs-Passive-Read': '1'/);
+  // Presence remains a protected GET; automation never POSTs usage or session details.
+  assert.doesNotMatch(src,/fetch\('\/api\/admin\/presence',[\s\S]{0,190}POST/);
 });

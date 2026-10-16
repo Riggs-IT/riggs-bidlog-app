@@ -1287,7 +1287,7 @@ def administration_leaderboard(
 ):
     # The browser cannot nominate an employee/owner identity. The signed
     # Entra session supplies both actor fields; SQL independently verifies.
-    if days not in (7, 30, 90) or app not in (
+    if days not in (0, 7, 30, 90) or app not in (
         "ALL", "BID_LOG", "ACCOUNTING", "OPERATIONS",
     ):
         raise HTTPException(status_code=422, detail="administration_leaderboard_invalid_filter")
