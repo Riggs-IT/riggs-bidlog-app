@@ -6,7 +6,7 @@ user records, raw exception messages, tokens, or request headers here.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 import math
 import os
 import re
@@ -25,6 +25,7 @@ from .data_api import (
     get_shared_dashboard_cache_status,
     get_bid_log_administration_monitoring,
     get_bid_log_administration_presence,
+    get_bid_log_administration_leaderboard,
 )
 
 _DATASETS = (
@@ -401,3 +402,132 @@ def get_administration_presence(*, owner_eid: int, owner_oid: str) -> dict:
     except Exception as exc:
         result.update({"availability": "UNAVAILABLE", "reasonCode": _unavailability_code(exc)})
     return result
+
+
+# Historic use is heartbeat-credited time for sessions STARTED in the selected
+# Arizona calendar period. It is not login duration and cannot be reliably
+# deduplicated across tabs/apps from cumulative session totals.
+_LEADERBOARD_APPLICATIONS = frozenset({"ALL", "BID_LOG", "ACCOUNTING", "OPERATIONS"})
+_LEADERBOARD_DAYS = frozenset({7, 30, 90})
+_LEADERBOARD_LIMIT = 200
+
+
+def _leaderboard_nonnegative(value: object) -> int:
+    # JavaScript must be able to represent every returned second/count exactly.
+    if type(value) is not int or not 0 <= value <= 9_000_000_000_000:
+        raise ValueError("Leaderboard integer invalid")
+    return value
+
+
+def _sanitize_leaderboard(payload: object, *, days: int, app_code: str) -> dict:
+    if not isinstance(payload, dict):
+        raise ValueError("Leaderboard data invalid")
+    if (payload.get("source") != "RIGGSDATAHUB_USAGE_SESSIONS"
+            or payload.get("metric") != "HEARTBEAT_CREDITED_ACTIVE_SECONDS"
+            or payload.get("windowRule") != "SESSION_STARTED_IN_ARIZONA_WINDOW"
+            or payload.get("overlapRule") != "SESSION_WINDOW_OVERLAP_WARNING_NOT_DEDUPED"
+            or payload.get("readOnly") is not True
+            or payload.get("windowDays") != days or payload.get("appCode") != app_code
+            or payload.get("employeeLimit") != _LEADERBOARD_LIMIT
+            or type(payload.get("employeesTruncated")) is not bool):
+        raise ValueError("Leaderboard contract or filters invalid")
+    observed = _timestamp(payload.get("observedAtUTC"))
+    start = _timestamp(payload.get("windowStartUTC"))
+    local_date = payload.get("windowStartArizonaDate")
+    if not isinstance(local_date, str) or len(local_date) != 10:
+        raise ValueError("Leaderboard Arizona start date invalid")
+    try:
+        if date.fromisoformat(local_date).isoformat() != local_date:
+            raise ValueError("Bad local date")
+    except ValueError as exc:
+        raise ValueError("Leaderboard date invalid") from exc
+    if not observed or not start or start > observed:
+        raise ValueError("Leaderboard read instant invalid")
+    count_fields = (
+        "totalEmployees", "totalSessions", "totalRecordedActiveSeconds",
+        "totalPossibleOverlapSessions", "carryInSessions", "excludedInvalidSessions",
+    )
+    totals = {key: _leaderboard_nonnegative(payload.get(key)) for key in count_fields}
+    if (totals["totalPossibleOverlapSessions"] > totals["totalSessions"]
+            or payload["employeesTruncated"] != (totals["totalEmployees"] > _LEADERBOARD_LIMIT)):
+        raise ValueError("Leaderboard aggregate count invalid")
+    incoming = payload.get("employees")
+    if (not isinstance(incoming, list) or len(incoming) > _LEADERBOARD_LIMIT
+            or len(incoming) != min(totals["totalEmployees"], _LEADERBOARD_LIMIT)):
+        raise ValueError("Leaderboard employee cap invalid")
+    employees = []
+    seen = set()
+    previous_seconds = previous_eid = None
+    previous_rank = 0
+    for row in incoming:
+        if not isinstance(row, dict):
+            raise ValueError("Leaderboard employee invalid")
+        rank = _leaderboard_nonnegative(row.get("rank"))
+        eid = _leaderboard_nonnegative(row.get("eid"))
+        seconds = _leaderboard_nonnegative(row.get("recordedActiveSeconds"))
+        sessions = _leaderboard_nonnegative(row.get("sessionCount"))
+        apps = _leaderboard_nonnegative(row.get("appsUsed"))
+        overlaps = _leaderboard_nonnegative(row.get("possibleOverlapSessions"))
+        name = row.get("displayName")
+        if (eid <= 0 or eid in seen or sessions <= 0 or not 1 <= apps <= 3
+                or overlaps > sessions or rank <= 0
+                or (name is not None and (not isinstance(name, str)
+                    or not name.strip() or len(name) > 200))):
+            raise ValueError("Leaderboard employee values invalid")
+        next_rank = previous_rank + (1 if previous_seconds is None or seconds < previous_seconds else 0)
+        if (rank != next_rank
+                or (previous_seconds is not None and (seconds > previous_seconds
+                    or (seconds == previous_seconds and eid <= previous_eid)))):
+            raise ValueError("Leaderboard ranking invalid")
+        employees.append({
+            "rank": rank, "eid": eid,
+            "displayName": name.strip() if name is not None else None,
+            "recordedActiveSeconds": seconds, "sessionCount": sessions,
+            "appsUsed": apps, "possibleOverlapSessions": overlaps,
+        })
+        seen.add(eid)
+        previous_seconds, previous_eid, previous_rank = seconds, eid, rank
+    if totals["totalEmployees"] <= _LEADERBOARD_LIMIT:
+        for key, employee_key in (
+            ("totalSessions", "sessionCount"),
+            ("totalRecordedActiveSeconds", "recordedActiveSeconds"),
+            ("totalPossibleOverlapSessions", "possibleOverlapSessions"),
+        ):
+            if totals[key] != sum(row[employee_key] for row in employees):
+                raise ValueError("Leaderboard totals disagree")
+    return {
+        "readOnly": True, "availability": "AVAILABLE",
+        "source": "RIGGSDATAHUB_USAGE_SESSIONS",
+        "metric": "HEARTBEAT_CREDITED_ACTIVE_SECONDS",
+        "windowRule": "SESSION_STARTED_IN_ARIZONA_WINDOW",
+        "overlapRule": "SESSION_WINDOW_OVERLAP_WARNING_NOT_DEDUPED",
+        "observedAtUTC": observed, "windowStartUTC": start,
+        "windowStartArizonaDate": local_date, "windowDays": days, "appCode": app_code,
+        "employeeLimit": _LEADERBOARD_LIMIT,
+        "employeesTruncated": payload["employeesTruncated"],
+        **totals, "employees": employees,
+    }
+
+
+def get_administration_leaderboard(
+    *, owner_eid: int, owner_oid: str, days: int, app_code: str,
+) -> dict:
+    # The route already proves the signed owner; still fail closed on invalid
+    # selectors, and never publish fake empty result sets after an outage.
+    if type(days) is not int or days not in _LEADERBOARD_DAYS or app_code not in _LEADERBOARD_APPLICATIONS:
+        raise ValueError("Leaderboard selection invalid")
+    unavailable = {
+        "readOnly": True, "availability": "UNAVAILABLE",
+        "source": "RIGGSDATAHUB_USAGE_SESSIONS",
+        "windowDays": days, "appCode": app_code,
+    }
+    try:
+        raw = get_bid_log_administration_leaderboard(
+            actor_eid=owner_eid, entra_object_id=owner_oid,
+            days=days, app_code=app_code,
+        )
+        return _sanitize_leaderboard(raw, days=days, app_code=app_code)
+    except ValueError:
+        return {**unavailable, "reasonCode": "INVALID_RESPONSE"}
+    except Exception as exc:
+        return {**unavailable, "reasonCode": _unavailability_code(exc)}

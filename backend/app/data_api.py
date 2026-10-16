@@ -3481,6 +3481,52 @@ def get_bid_log_administration_presence(*, actor_eid: int, entra_object_id: str)
     return _json_object(response, operation=operation)
 
 
+# Session history is a bounded, owner-only aggregate, not raw tracking rows.
+# Use the existing dashboard read timeout rather than the ordinary 5-second
+# limit: the SQL procedure reads three history sources with an explicit cap.
+def get_bid_log_administration_leaderboard(
+    *, actor_eid: int, entra_object_id: str, days: int = 30, app_code: str = "ALL",
+) -> dict:
+    if type(actor_eid) is not int or actor_eid != 2021:
+        raise DataAPIConfigurationError("Administration actor unavailable")
+    try:
+        oid = UUID(entra_object_id)
+        if oid.int == 0:
+            raise ValueError("empty UUID")
+    except (ValueError, TypeError, AttributeError) as exc:
+        raise DataAPIConfigurationError("Administration identity unavailable") from exc
+    if type(days) is not int or days not in (7, 30, 90) or app_code not in (
+        "ALL", "BID_LOG", "ACCOUNTING", "OPERATIONS",
+    ):
+        raise ValueError("Invalid leaderboard filters")
+
+    headers = _request_headers(include_service_auth=True, actor_eid=actor_eid)
+    headers["X-Riggs-Actor-Entra-OID"] = str(oid)
+    operation = "Bid Log Administration usage leaderboard"
+    try:
+        response = _timed_data_api_request(
+            "admin_leaderboard",
+            lambda: _get_http_client().get(
+                "/v1/bid-log/admin/leaderboard",
+                params={"days": days, "app": app_code},
+                headers=headers,
+                timeout=httpx.Timeout(
+                    connect=settings.data_api_connect_timeout_seconds,
+                    read=settings.data_api_dashboard_read_timeout_seconds,
+                    write=settings.data_api_read_timeout_seconds,
+                    pool=settings.data_api_connect_timeout_seconds,
+                ),
+            ),
+        )
+    except (httpx.TimeoutException, httpx.RequestError) as exc:
+        raise DataAPIUnavailable("Administration leaderboard upstream unavailable") from exc
+
+    _raise_common_failure(response, operation=operation)
+    if response.status_code != 200:
+        raise DataAPIInvalidResponse("Unexpected Administration leaderboard status")
+    return _json_object(response, operation=operation)
+
+
 # Private Administration metrics: owner identity originates exclusively from
 # the signed Entra session after require_administration_owner in main.py.
 def get_bid_log_administration_monitoring(*, actor_eid: int, entra_object_id: str) -> dict:

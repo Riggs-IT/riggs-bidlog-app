@@ -1,0 +1,21 @@
+/* Compact owner-only view switch, honoring existing Bid Log theme tokens. */
+.administration-usage-tabs { display: inline-flex; max-width: 100%; flex-wrap: wrap; gap: 3px; border: 1px solid var(--border); border-radius: 9px; padding: 3px; background: var(--surface-2); margin: 1px 0 13px; }
+.administration-usage-tab { font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; border: 1px solid transparent; border-radius: 6px; color: var(--text-soft); background: transparent; padding: 9px 15px; }
+.administration-usage-tab:hover { color: var(--text-strong); background: var(--surface-3); }
+.administration-usage-tab.is-active { background: var(--surface); border-color: var(--border); color: var(--text-strong); box-shadow: 0 1px 3px #00000010; }
+.administration-usage-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.administration-leaderboard-controls { display: flex; align-items: end; flex-wrap: wrap; gap: 11px; margin-bottom: 9px; }
+.administration-leaderboard-controls label { display: grid; gap: 5px; font-size: 11px; font-weight: 650; color: var(--text-soft); }
+.administration-leaderboard-controls select { min-height: 36px; min-width: 160px; border: 1px solid var(--border); border-radius: 7px; color: var(--text-strong); background: var(--surface); font: inherit; font-size: 12px; padding: 7px 10px; }
+.administration-leaderboard-explanation { margin: 6px 0 14px; line-height: 1.6; max-width: 900px; }
+.administration-leaderboard-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 13px 0; }
+.administration-leaderboard-metric { display: grid; gap: 7px; }
+.administration-leaderboard-metric > span { color: var(--text-soft); font-size: 11px; }
+.administration-leaderboard-metric > strong { color: var(--text-strong); font-size: 24px; font-variant-numeric: tabular-nums; }
+.administration-leaderboard-metric > small { color: var(--muted); }
+.administration-leaderboard-caveat { border-left: 3px solid var(--warning); background: var(--warning-soft); color: var(--text-soft); font-size: 11px; padding: 10px 12px; border-radius: 0 6px 6px 0; line-height: 1.6; }
+.administration-leaderboard-table { min-width: 700px; }
+.administration-leaderboard-hours,.administration-leaderboard-rank { font-variant-numeric: tabular-nums; font-weight: 750; color: var(--text-strong) !important; }
+.administration-leaderboard-secondary { display: block; margin-top: 4px; font-size: 10px; color: var(--muted); }
+@media (max-width: 1000px) { .administration-leaderboard-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .administration-leaderboard-metrics { grid-template-columns: 1fr; } .administration-leaderboard-controls label { flex: 1 1 100%; } }

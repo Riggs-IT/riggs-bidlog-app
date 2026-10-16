@@ -82,7 +82,7 @@ function GroupRow({group, observedAt, truncated}) {
   </Fragment>;
 }
 
-export default function AdministrationPresence({presence}) {
+export default function AdministrationPresence({presence, embedded = false}) {
   const [selectedApp, setSelectedApp] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [search, setSearch] = useState('');
@@ -102,11 +102,13 @@ export default function AdministrationPresence({presence}) {
 
   const truncatedApps = new Set(apps.filter(item => item.truncated).map(item => item.appCode));
 
-  return <section className="administration-section" aria-label="Live users">
-    <div className="administration-section-heading">
+  const Wrapper = embedded ? 'div' : 'section';
+  return <Wrapper className={embedded ? 'administration-presence-inline' : 'administration-section'}
+    aria-label={embedded ? undefined : 'Live users'}>
+    {!embedded && <div className="administration-section-heading">
       <h2>Who's using Riggs apps</h2>
       <span>Owner-only · live SQL session evidence</span>
-    </div>
+    </div>}
     {!available ? <div className="administration-message administration-message-warning" role="status">
       {presence?.availability === 'UNAVAILABLE'
         ? 'User presence could not be verified. Other monitoring remains available.'
@@ -158,5 +160,5 @@ export default function AdministrationPresence({presence}) {
         </table>
       </div>
     </>}
-  </section>;
+  </Wrapper>;
 }

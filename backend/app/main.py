@@ -28,7 +28,7 @@ from starlette.middleware.sessions import (
 )
 from starlette.concurrency import run_in_threadpool
 
-from .administration import get_administration_overview, get_administration_presence
+from .administration import get_administration_overview, get_administration_presence, get_administration_leaderboard
 from .auth import (
     CurrentUser,
     get_current_user,
@@ -1274,6 +1274,28 @@ def administration_presence(
         get_administration_presence(
             owner_eid=current_user.eid,
             owner_oid=current_user.entra_object_id,
+        ),
+        headers={"Cache-Control": "no-store, private"},
+    )
+
+
+@app.get("/api/admin/leaderboard")
+def administration_leaderboard(
+    days: int = FastAPIQuery(default=30),
+    app: str = FastAPIQuery(default="ALL"),
+    current_user: CurrentUser = Depends(require_administration_owner),
+):
+    # The browser cannot nominate an employee/owner identity. The signed
+    # Entra session supplies both actor fields; SQL independently verifies.
+    if days not in (7, 30, 90) or app not in (
+        "ALL", "BID_LOG", "ACCOUNTING", "OPERATIONS",
+    ):
+        raise HTTPException(status_code=422, detail="administration_leaderboard_invalid_filter")
+    return JSONResponse(
+        get_administration_leaderboard(
+            owner_eid=current_user.eid,
+            owner_oid=current_user.entra_object_id,
+            days=days, app_code=app,
         ),
         headers={"Cache-Control": "no-store, private"},
     )
