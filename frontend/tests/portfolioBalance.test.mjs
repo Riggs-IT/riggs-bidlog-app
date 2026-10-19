@@ -15,7 +15,7 @@ test('portfolio imbalance belongs to project, not signed-in notification recipie
   assert.equal(index.get('435').rebalanceVarianceAmount, 2755610);
   assert.equal(index.get('483').rebalanceVarianceAmount, -21237.01);
   assert.match(source('useProjectedBillingsFreshness.js'), /pm-forecast\/portfolio-balance/);
-  assert.match(source('App.jsx'), /indexedBalanceReviews\(\s*portfolioBalance \|\| \[\], currentProjects, currentMonthly, varianceAsOfUTC, primarySnapshotId,\s*\)/);
+  assert.match(source('App.jsx'), /resolveVisiblePortfolioReviews\(acceptedReviewPair, \{/);
   assert.doesNotMatch(source('App.jsx'), /forecastAttention\.map\(item => \[String\(item\.jobListId\)/);
 });
 

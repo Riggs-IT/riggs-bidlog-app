@@ -128,7 +128,7 @@ test('contract values, warning filter and Billing vs Projection are wired withou
   for (const label of ['Billed More', 'Billed Less', 'On Target']) assert.match(app, new RegExp(label));
   assert.match(app, /value==='rebalance'/);
   assert.match(app, /rebalanceByJobId\.has\(String\(row\.jobListId\)\)/);
-  assert.match(app, /indexedBalanceReviews\(\s*portfolioBalance \|\| \[\], currentProjects, currentMonthly, varianceAsOfUTC, primarySnapshotId,\s*\)/);
+  assert.match(app, /resolveVisiblePortfolioReviews\(acceptedReviewPair, \{/);
   assert.doesNotMatch(app, /forecastAttention\.map\(item => \[String\(item\.jobListId\)/);
   assert.match(app, /onOpenForecast=\{openAttentionProject\}/);
   assert.match(app, /portfolioBalanceAvailable=\{portfolioBalance !== null\}/);
@@ -176,4 +176,28 @@ test('project drawer renders the rebalance jump without granting edit access', a
   assert.match(html, /pm-forecast-jump-target/);
   assert.match(html, /Billing projections/);
   assert.doesNotMatch(html, />Edit Project</);
+});
+
+test('uncertified SQL fallback keeps a visible Needs Rebalance badge with an explanatory tooltip', async t => {
+  const vite = await createServer({
+    root: fileURLToPath(new URL('../', import.meta.url)),
+    server: {middlewareMode: true},
+    appType: 'custom',
+    logLevel: 'silent',
+  });
+  t.after(() => vite.close());
+  const {default: ForecastBalanceFlag} = await vite.ssrLoadModule('/src/ForecastBalanceFlag.jsx');
+  const fallback = renderToString(React.createElement(ForecastBalanceFlag, {
+    review: {jobListId: 531, needsRebalance: true, rebalanceVarianceAmount: -2840349,
+      reviewStatus: 'NEEDS_REBALANCE', reviewStatusSource: 'SQL_REBALANCE_FALLBACK'},
+  }));
+  const verified = renderToString(React.createElement(ForecastBalanceFlag, {
+    review: {jobListId: 531, needsRebalance: true, rebalanceVarianceAmount: -2840349,
+      reviewStatus: 'PENDING_FOUNDATION', reviewStatusSource: 'VERIFIED_SERVER'},
+  }));
+  assert.match(fallback, /Needs Rebalance/);
+  assert.match(fallback, /Foundation timing could not yet be verified/);
+  assert.doesNotMatch(fallback, /pending-foundation-flag/);
+  assert.match(verified, /Pending Foundation/);
+  assert.match(verified, /pending-foundation-flag/);
 });

@@ -5,7 +5,7 @@ import { resolveSessionIdleTimeoutMs } from './sessionPolicy.js';
 import { isTerminalUsageHeartbeat } from './usageSessionFeedback.js';
 import {facetRows, hasMonthlyValues, isCompleted} from './viewFilters.js';
 import {resolveSignedInPmOption} from './pmScope.js';
-import {indexedBalanceReviews} from './portfolioBalance.js';
+import {resolveVisiblePortfolioReviews, VISIBLE_REVIEW_SOURCE} from './acceptedReviewPair.js';
 import ForecastBalanceFlag from './ForecastBalanceFlag.jsx';
 import AdministrationDashboard from './AdministrationDashboard.jsx';
 import {indexScheduleReview} from './scheduleReview.js';
@@ -1808,8 +1808,8 @@ export default function App() {
   // Exactly the primary-projection response used for the CURRENT displayed
   // project/month rows. A refresh of the balance alone cannot change it.
   const [primarySnapshotId, setPrimarySnapshotId] = useState(null);
-  // Atomic certification bundle for the later server-status cutover.
-  // NEVER use this to change visible badges in Stage 3G5.
+  // A verified financial response pair. Stage 3G6 checks exact displayed
+  // object identity and current Arizona lock month before using its labels.
   const [acceptedReviewPair, setAcceptedReviewPair] = useState(null);
   const [scheduleReview, setScheduleReview] = useState(null);
   const [selectedScheduleInfo, setSelectedScheduleInfo] = useState(null);
@@ -2437,15 +2437,18 @@ export default function App() {
   const originatingBidAttentionItems =
     originatingBidAttentionData.items || [];
 
-  // Presentation follows the existing SQL rebalance result; only classify a
-  // recently locked month's isolated shortfall when the same forecast version
-  // and real Foundation month are in the loaded primary portfolio snapshot.
-  const rebalanceByJobId = useMemo(
-    () => indexedBalanceReviews(
-      portfolioBalance || [], currentProjects, currentMonthly, varianceAsOfUTC, primarySnapshotId,
-    ),
-    [portfolioBalance, currentProjects, currentMonthly, varianceAsOfUTC, primarySnapshotId],
+  // Stage 3G6: the server owns the provisional financial review label only
+  // when its certified response pair is STILL exactly what this screen shows.
+  // During a cache mismatch/refresh/rollover, SQL NeedsRebalance and the
+  // original variance amounts remain visible; never infer Pending in React.
+  const visibleReview = useMemo(
+    () => resolveVisiblePortfolioReviews(acceptedReviewPair, {
+      portfolioBalance, currentProjects, currentMonthly, primarySnapshotId,
+    }, varianceAsOfUTC),
+    [acceptedReviewPair, portfolioBalance, currentProjects, currentMonthly,
+      primarySnapshotId, varianceAsOfUTC],
   );
+  const rebalanceByJobId = visibleReview.rows;
   const scheduleReviewByJobId = useMemo(
     () => indexScheduleReview(scheduleReview || []),
     [scheduleReview],
@@ -6861,7 +6864,9 @@ export default function App() {
                         aria-pressed={projectionSourceFilter === 'rebalance'}
                         title={portfolioBalance === null
                           ? 'Portfolio balance statuses are loading or unavailable'
-                          : 'Review flagged projections, including those pending Foundation billing'}
+                          : visibleReview.source === VISIBLE_REVIEW_SOURCE.SQL_REBALANCE_FALLBACK
+                            ? 'SQL balance reviews are available. Foundation timing classification is being verified; unverified projects show Needs Rebalance.'
+                            : 'Review flagged projections, including those pending Foundation billing'}
                         disabled={portfolioBalance === null}
                         onClick={() => setProjectionSourceFilter(value => value === 'rebalance' ? ALL : 'rebalance')}
                       >

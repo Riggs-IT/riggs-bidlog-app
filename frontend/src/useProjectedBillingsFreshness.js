@@ -5,7 +5,7 @@ import {indexScheduleReview} from './scheduleReview.js';
 import { createLatestRead, freshReadPath, readOptions, watchVisibleReads } from './browserFreshness.js';
 import {DATA_UPDATED_MESSAGE, DATA_UPDATING_MESSAGE, hasFreshPortfolioSnapshot, isRefreshCooldown} from './refreshFeedback.js';
 import {createProgressiveDashboardReads} from './dashboardRefreshStages.js';
-import {createReviewPairCoordinator} from './reviewPairCoordinator.js';
+import {createReviewPairCoordinator, canReuseVerifiedReviewPair, coalesceReviewBatches} from './reviewPairCoordinator.js';
 
 // One owner publishes metadata, primary projections and historical-margin reads
 // together. Existing baseline API contracts remain unchanged for other callers.
@@ -15,7 +15,8 @@ export default function useProjectedBillingsFreshness(options) {
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
   const [cacheStatus, setCacheStatus] = useState(null);
-  // Observational Stage 3G4 gate only: NEVER drive visible status from this.
+  // Diagnostic state for the paired read; only an exact accepted pair may
+  // drive server financial review labels in Stage 3G6.
   const [reviewPairEvidence, setReviewPairEvidence] = useState(null);
   const scope = `${options.userKey ?? ''}:${Boolean(options.enabled)}`;
 
@@ -26,7 +27,16 @@ export default function useProjectedBillingsFreshness(options) {
       onChange: (evidence, acceptedPair) => {
         if (!usable()) return;
         setReviewPairEvidence(evidence);
-        latest.current.onAcceptedReviewPair?.(acceptedPair);
+        // The previous certificate still belongs to the PREVIOUS displayed
+        // rows while an ordinary background refresh is in flight. Keep it
+        // only during WAITING to avoid a periodic Pending -> Rebalance flicker.
+        // The display helper revalidates exact project/month/balance refs and
+        // the Arizona lock month on every render. Publishing either new half
+        // immediately makes that old certificate ineligible. Every terminal
+        // failure, reset, independent read or completed cycle revokes/replaces.
+        if (evidence.state !== 'WAITING') {
+          latest.current.onAcceptedReviewPair?.(acceptedPair);
+        }
       },
     });
     const request = (path, config) => latest.current.fetchJson(
@@ -142,10 +152,16 @@ export default function useProjectedBillingsFreshness(options) {
       }
     };
 
-    const batch = async config => {
+    const batch = coalesceReviewBatches(async config => {
       if (!usable()) return [];
-      const reviewEpoch = reviewPair.begin('BATCH');
-      const cohortConfig = {...config, reviewEpoch};
+      // A rapid focus check often returns `recent` for BOTH financial reads.
+      // Keep the previously accepted pair while those exact rows remain shown;
+      // a genuine changed read will invalidate it through its publish callback.
+      const pairAlreadyRecent = canReuseVerifiedReviewPair(
+        reviewPair.evidence, current, portfolioBalance, config,
+      );
+      const reviewEpoch = pairAlreadyRecent ? null : reviewPair.begin('BATCH');
+      const cohortConfig = pairAlreadyRecent ? config : {...config, reviewEpoch};
       let pairedSuccess = false;
       // Passive 60-second polling must not turn on the visible Refresh spinner.
       // Existing rows stay interactive while background data arrives.
@@ -166,13 +182,13 @@ export default function useProjectedBillingsFreshness(options) {
         }
         return result;
       } finally {
-        reviewPair.finish(reviewEpoch, {successful: pairedSuccess});
+        if (reviewEpoch !== null) reviewPair.finish(reviewEpoch, {successful: pairedSuccess});
         if (showSpinner) {
           state.busy -= 1;
           if (usable() && state.busy === 0) setRefreshing(false);
         }
       }
-    };
+    });
     const attentionLoad = async config => {
       if (!usable()) return;
       latest.current.onAttentionLoading(true);
@@ -296,6 +312,7 @@ export default function useProjectedBillingsFreshness(options) {
     }
     return () => {
       reads.state.alive = false;
+      reads.batch.reset();
       reads.current.cancel(); reads.bids.cancel(); reads.portfolioBalance.cancel(); reads.scheduleReview.cancel(); reads.attention.cancel();
     };
   }, [reads]);

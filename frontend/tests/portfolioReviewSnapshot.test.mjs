@@ -44,9 +44,9 @@ function derive(row = classified, options = {}) {
   return {row: result.get('10'), input};
 }
 
-// Only observational audit state changes. Even a matching snapshot can never
-// change React's calculation until a later, explicitly tested cutover.
-test('matching same-response snapshot IDs establish classified parity without changing visible badge', () => {
+// Legacy React classifier remains available for provenance regression tests.
+// Visible review ownership moves to the verified server pair in Stage 3G6.
+test('matching same-response snapshot IDs establish classified audit parity', () => {
   const {row} = derive();
   assert.equal(row.reviewEvidenceAudit, AUDIT.SNAPSHOT_PARITY);
   assert.equal(row.reviewStatus, PENDING_FOUNDATION);
@@ -66,7 +66,7 @@ test('case-insensitive canonical UUID comparison identifies identical primary ev
     AUDIT.SNAPSHOT_PARITY);
 });
 
-test('server claims Needs Rebalance on matching snapshot; React still shows Pending and flags disagreement', () => {
+test('disagreement blocks server certification even if the legacy parity probe says Pending', () => {
   const {row} = derive({...classified, reviewStatus: NEEDS_REBALANCE});
   assert.equal(row.reviewEvidenceAudit, AUDIT.DISAGREEMENT);
   assert.equal(row.reviewStatus, PENDING_FOUNDATION);
@@ -109,7 +109,7 @@ test('malformed client UUID prevents certification even if server ID is valid', 
   assert.equal(derive(classified, {snapshot: 'bad'}).row.reviewEvidenceAudit, AUDIT.SNAPSHOT_UNAVAILABLE);
 });
 
-test('server UNAVAILABLE with null ID preserves React badge and reports unavailable', () => {
+test('server UNAVAILABLE with null ID reports unavailable in legacy parity probe', () => {
   const {row} = derive({...classified,
     reviewStatus: null, reviewEvidenceState: 'UNAVAILABLE', reviewPrimarySnapshotId: null});
   assert.equal(row.reviewEvidenceAudit, AUDIT.UNAVAILABLE);
@@ -147,14 +147,14 @@ test('matching snapshot with absent PM month cannot certify Pending Foundation',
   assert.equal(derive(classified, {months: []}).row.reviewEvidenceAudit, AUDIT.STALE_MONTH);
 });
 
-test('unavailable review never becomes a false Needs Rebalance badge', () => {
+test('legacy classifier remains separate from the fail-closed server display owner', () => {
   const {row} = derive({...classified,
     reviewStatus: null, reviewEvidenceState: 'UNAVAILABLE', reviewPrimarySnapshotId: null});
   assert.equal(row.reviewStatus, PENDING_FOUNDATION);
   assert.equal(row.reviewEvidenceAudit, AUDIT.UNAVAILABLE);
 });
 
-test('no server review fields leaves the old React-only display and NOT_PROVIDED audit', () => {
+test('no server review fields reports NOT_PROVIDED to the parity auditor', () => {
   const {row} = derive(base);
   assert.equal(row.reviewEvidenceAudit, AUDIT.NOT_PROVIDED);
   assert.equal(row.reviewStatus, PENDING_FOUNDATION);
@@ -186,8 +186,8 @@ test('refresh pipeline publishes one primary snapshot ID with corresponding proj
   assert.match(app, /onCurrent: \(\{ projects, monthly, primarySnapshotId: nextSnapshotId \}\)/);
   assert.match(app, /setPrimarySnapshotId\(nextSnapshotId\)/);
   assert.match(app, /setPrimarySnapshotId\(null\)/);
-  assert.match(app, /varianceAsOfUTC, primarySnapshotId/);
-  assert.match(app, /\[portfolioBalance, currentProjects, currentMonthly, varianceAsOfUTC, primarySnapshotId\]/);
+  assert.match(app, /portfolioBalance, currentProjects, currentMonthly, primarySnapshotId/);
+  assert.match(app, /primarySnapshotId, varianceAsOfUTC\]/);
   assert.doesNotMatch(hook, /reviewPrimarySnapshotId/);
 });
 

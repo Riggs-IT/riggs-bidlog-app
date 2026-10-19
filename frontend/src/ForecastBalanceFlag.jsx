@@ -8,7 +8,9 @@ export default function ForecastBalanceFlag({review, className = '', onClick}) {
   const label = balanceReviewLabel(review);
   const title = pending
     ? 'Recently locked billing is awaiting Foundation reconciliation. The underlying balance gap is still tracked.'
-    : 'PM Projection Out of Balance — review billing projections';
+    : review.reviewStatusSource === 'SQL_REBALANCE_FALLBACK'
+      ? 'SQL reports an out-of-balance PM Projection. Foundation timing could not yet be verified for the displayed data.'
+      : 'PM Projection Out of Balance — review billing projections';
   const classes = [
     'needs-rebalance-flag',
     pending && 'pending-foundation-flag',

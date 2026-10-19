@@ -68,7 +68,7 @@ test('presentation has one consistent status across all surfaces; cache and SQL 
   const drawer = source('CurrentProjectBillingDrawer.jsx');
   const notif = source('NotificationProjectCards.jsx');
   const flag = source('ForecastBalanceFlag.jsx');
-  assert.match(app, /indexedBalanceReviews\(\s*portfolioBalance \|\| \[\], currentProjects, currentMonthly, varianceAsOfUTC, primarySnapshotId,\s*\)/);
+  assert.match(app, /resolveVisiblePortfolioReviews\(acceptedReviewPair, \{/);
   for (const text of [app, pivot, directory, drawer]) assert.match(text, /ForecastBalanceFlag/);
   assert.match(notif, /PENDING FOUNDATION/);
   assert.match(notif, /NEEDS REBALANCE/);

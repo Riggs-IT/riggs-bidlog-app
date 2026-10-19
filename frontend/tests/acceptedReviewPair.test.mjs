@@ -144,13 +144,14 @@ test('superseded epoch must not publish an accepted response pair',()=>{
   assert.equal(accepted.length,3);
   assert.ok(accepted[2]);
 });
-test('App stores certificate separately and leaves the existing visible React review map in place',()=>{
+test('App uses the exact accepted pair as its verified server presentation source',()=>{
   const app=readFileSync(new URL('../src/App.jsx',import.meta.url),'utf8');
   const hook=readFileSync(new URL('../src/useProjectedBillingsFreshness.js',import.meta.url),'utf8');
   assert.match(app,/const \[acceptedReviewPair, setAcceptedReviewPair\] = useState\(null\)/);
   assert.match(app,/onAcceptedReviewPair: setAcceptedReviewPair/);
   assert.match(app,/setAcceptedReviewPair\(null\)/);
-  assert.match(app,/indexedBalanceReviews\(\s*portfolioBalance \|\| \[\], currentProjects, currentMonthly, varianceAsOfUTC, primarySnapshotId,/);
-  assert.doesNotMatch(app,/acceptedServerReviewIndex\(/);
+  assert.match(app,/resolveVisiblePortfolioReviews\(acceptedReviewPair, \{/);
+  assert.match(app,/const rebalanceByJobId = visibleReview\.rows/);
+  assert.match(hook,/evidence\.state !== 'WAITING'/);
   assert.match(hook,/latest\.current\.onAcceptedReviewPair\?\.\(acceptedPair\)/);
 });

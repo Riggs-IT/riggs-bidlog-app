@@ -148,7 +148,7 @@ test('invalid datetime does not certify review evidence', () => {
   gate.offerCurrent(token,current);gate.offerBalance(token,balance);
   assert.notEqual(gate.finish(token,{successful:true}).state,'VERIFIED');
 });
-test('snapshot audit is observability-only and never used as the visible status owner', () => {
+test('review coordinator still validates both network reads before the server display owner can certify', () => {
   const hook=readFileSync(new URL('../src/useProjectedBillingsFreshness.js',import.meta.url),'utf8');
   assert.match(hook,/reviewPair\.begin\('MANUAL'\)/);
   assert.match(hook,/reviewPair\.finish\(reviewEpoch, \{successful: status\.status === 'COMPLETE'/);
@@ -160,5 +160,5 @@ test('snapshot audit is observability-only and never used as the visible status 
   assert.match(hook,/reviewPair\.offerBalance/);
   const app=readFileSync(new URL('../src/App.jsx',import.meta.url),'utf8');
   assert.doesNotMatch(app,/reviewPairEvidence/);
-  assert.match(app,/indexedBalanceReviews\(/);
+  assert.match(app,/resolveVisiblePortfolioReviews\(/);
 });
