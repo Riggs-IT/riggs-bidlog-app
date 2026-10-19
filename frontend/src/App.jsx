@@ -1808,6 +1808,9 @@ export default function App() {
   // Exactly the primary-projection response used for the CURRENT displayed
   // project/month rows. A refresh of the balance alone cannot change it.
   const [primarySnapshotId, setPrimarySnapshotId] = useState(null);
+  // Atomic certification bundle for the later server-status cutover.
+  // NEVER use this to change visible badges in Stage 3G5.
+  const [acceptedReviewPair, setAcceptedReviewPair] = useState(null);
   const [scheduleReview, setScheduleReview] = useState(null);
   const [selectedScheduleInfo, setSelectedScheduleInfo] = useState(null);
 
@@ -2363,6 +2366,7 @@ export default function App() {
     onInitialLoading: setDataLoading,
     onAttention: setForecastAttention,
     onPortfolioBalance: setPortfolioBalance,
+    onAcceptedReviewPair: setAcceptedReviewPair,
     onScheduleReview: setScheduleReview,
     onAttentionError: setAttentionError,
     onAttentionLoading: setAttentionLoading,
@@ -2379,6 +2383,7 @@ export default function App() {
       setActiveBids([]);
       setCurrentMonthly(new Map());
       setPrimarySnapshotId(null);
+      setAcceptedReviewPair(null);
       setBidMonthly(new Map());
       setForecastAttention([]);
       setPortfolioBalance(null);

@@ -57,9 +57,11 @@ export function createReviewPairCoordinator({onChange = () => {}, now = () => ne
   let epoch = 0;
   let stage = null;
   let published = {state: REVIEW_PAIR_STATE.UNAVAILABLE, reason: 'NOT_LOADED'};
-  const report = data => {
+  // One callback publishes BOTH the certificate and the exact response pair.
+  // A WAITING/UNAVAILABLE/SUPERSEDED epoch publishes no paired financial data.
+  const report = (data, acceptedPair = null) => {
     published = Object.freeze({...data});
-    onChange(published);
+    onChange(published, acceptedPair);
     return published;
   };
 
@@ -89,8 +91,15 @@ export function createReviewPairCoordinator({onChange = () => {}, now = () => ne
       if (!successful || !stage.current || !stage.balance) {
         return report({state: REVIEW_PAIR_STATE.UNAVAILABLE, reason: 'PARTIAL_REFRESH'});
       }
-      const verdict = verifyReviewPair(stage.current, stage.balance, now());
-      return report(verdict);
+      const asOfUTC = now();
+      const verdict = verifyReviewPair(stage.current, stage.balance, asOfUTC);
+      if (verdict.state !== REVIEW_PAIR_STATE.VERIFIED) return report(verdict);
+      // Keep exact object references, not an independently refreshed copy.
+      // React can reject the pair if either displayed dataset changes.
+      return report(verdict, Object.freeze({
+        current: stage.current, balance: stage.balance,
+        primarySnapshotId: verdict.primarySnapshotId, verifiedAtUTC: asOfUTC,
+      }));
     },
     invalidate(reason = 'UNPAIRED_READ') {
       ++epoch;

@@ -23,7 +23,11 @@ export default function useProjectedBillingsFreshness(options) {
     const state = { alive: false, busy: 0, failures: new Map(), manualRefreshInProgress: false };
     const usable = () => state.alive && latest.current.enabled && !latest.current.isEnding();
     const reviewPair = createReviewPairCoordinator({
-      onChange: evidence => { if (usable()) setReviewPairEvidence(evidence); },
+      onChange: (evidence, acceptedPair) => {
+        if (!usable()) return;
+        setReviewPairEvidence(evidence);
+        latest.current.onAcceptedReviewPair?.(acceptedPair);
+      },
     });
     const request = (path, config) => latest.current.fetchJson(
       freshReadPath(path, config.fresh), readOptions(config),
