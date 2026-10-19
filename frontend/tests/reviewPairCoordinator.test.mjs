@@ -69,8 +69,9 @@ test('different forecast version fails even with the same UUID', () => {
 test('missing locked-month row fails closed', () => {
   unavailable('STALE_MONTH', (p) => {p.monthly.items[0].items=[];});
 });
-test('server classification disagreement fails closed', () => {
-  unavailable('DISAGREEMENT', (_p,b) => {b[0].reviewStatus='NEEDS_REBALANCE';});
+test('API controls Needs Rebalance even when PM shortfall resembles Pending', () => {
+  assert.equal(verify((_p,b) => {b[0].reviewStatus='NEEDS_REBALANCE';}).state,
+    REVIEW_PAIR_STATE.VERIFIED);
 });
 test('duplicate balance rows are rejected', () => {
   unavailable('INVALID_REVIEW_RESPONSE', (_p,b) => {b.push({...b[0]});});

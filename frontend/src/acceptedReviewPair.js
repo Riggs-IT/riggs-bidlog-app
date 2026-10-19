@@ -1,7 +1,7 @@
 import {indexPortfolioRebalance, NEEDS_REBALANCE} from './portfolioBalance.js';
-import {verifyReviewPair, REVIEW_PAIR_STATE} from './reviewPairCoordinator.js';
+import {verifyReviewPair, reviewPairFingerprint, REVIEW_PAIR_STATE} from './reviewPairCoordinator.js';
 
-// Stage 3G5 supplies the accepted response certificate; Stage 3G6 consumes
+// The coordinator supplies the accepted response certificate; the UI consumes
 // it as the sole path for server-owned visible financial review labels.
 // The accepted certificate is a single immutable container of exact response
 // references. It is usable only while the screen still displays those same
@@ -31,6 +31,14 @@ export function acceptedServerReviewIndex(pair, visible, asOfUTC) {
     seen.add(id);
   }
 
+  // A certified pair cannot be mutated in place to borrow its old identity.
+  // This covers review status, amounts, and month evidence without duplicating
+  // the server's Pending Foundation financial classifier in React.
+  try {
+    if (typeof pair.fingerprint !== 'string'
+        || reviewPairFingerprint(pair.current, pair.balance) !== pair.fingerprint) return null;
+  } catch { return null; }
+
   // Recheck with the CURRENT clock, not the clock at original acceptance.
   // A day-15 rollover, changed row, PM version or review snapshot revokes it.
   if (verifyReviewPair(pair.current, pair.balance, asOfUTC).state !== REVIEW_PAIR_STATE.VERIFIED) {
@@ -48,7 +56,7 @@ export function acceptedServerReviewIndex(pair, visible, asOfUTC) {
 }
 
 
-// Stage 3G6 display owner: use the server's classification ONLY with the
+// Server-owned review display: use the classification ONLY with the
 // accepted exact financial response pair. Otherwise retain SQL's authoritative
 // needsRebalance flag and amounts, with a conservative Needs Rebalance label.
 // Never borrow a provisional Pending Foundation value from an unverified API

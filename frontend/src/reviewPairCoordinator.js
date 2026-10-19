@@ -1,7 +1,7 @@
-import { indexedBalanceReviews, SERVER_REVIEW_AUDIT } from './portfolioBalance.js';
+import {indexPortfolioRebalance, verifyServerReviewRow, SERVER_REVIEW_VALIDATION} from './portfolioBalance.js';
 
-// Stage 3G4/3G6: in-memory acceptance of a COORDINATED pair of reads.
-// Stage 3G6 can display verified server labels through this gate. This does
+// In-memory acceptance of a coordinated pair of reads.
+// Visible labels can use server statuses only through this gate. This does
 // not trigger SQL reads or provide transactional isolation from Foundation.
 // A manual refresh cannot certify a pairing before the entire refresh succeeds.
 export const REVIEW_PAIR_STATE = Object.freeze({
@@ -14,9 +14,8 @@ export const REVIEW_PAIR_STATE = Object.freeze({
 const isSnapshotId = value => typeof value === 'string'
   && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
-// Validate the SAME React reconciliation contract used in the visible screen,
-// not only equality of UUIDs. A missing/invalid/unavailable row prevents
-// certification of the whole cohort; no status can silently become "Pending".
+// Verify server-owned status against the exact displayed snapshot and PM-month
+// identity. No client-side amount arithmetic or duplicate financial classifier.
 export function verifyReviewPair(current, balance, asOfUTC) {
   if (!current || !Array.isArray(current.projects)
       || !Array.isArray(current.monthly?.items) || !Array.isArray(balance)
@@ -32,25 +31,40 @@ export function verifyReviewPair(current, balance, asOfUTC) {
     months.set(item.jobListId, item.items);
   }
   try {
-    const audited = indexedBalanceReviews(balance, current.projects, months,
-      asOfUTC, current.primarySnapshotId);
-    if (!audited.size) {
-      // An empty balance response has no row-level review snapshot identity;
-      // do not certify it as belonging to this primary read.
+    const indexed = indexPortfolioRebalance(balance);
+    if (!indexed.size) {
+      // No row-level snapshot identity is available for an empty cohort.
       return {state: REVIEW_PAIR_STATE.UNAVAILABLE, reason: 'NO_REVIEW_ROWS'};
     }
-    for (const row of audited.values()) {
-      if (row.reviewEvidenceAudit !== SERVER_REVIEW_AUDIT.SNAPSHOT_PARITY) {
-        return {state: REVIEW_PAIR_STATE.UNAVAILABLE,
-          reason: row.reviewEvidenceAudit};
+    const projects = new Map();
+    for (const item of current.projects) {
+      const id = item?.jobListId;
+      if (!Number.isSafeInteger(id) || id <= 0 || projects.has(String(id))) {
+        return {state: REVIEW_PAIR_STATE.UNAVAILABLE, reason: 'INVALID_PROJECTS'};
+      }
+      projects.set(String(id), item);
+    }
+    for (const [key, row] of indexed) {
+      const verdict = verifyServerReviewRow(row, projects.get(key),
+        months.get(Number(key)), asOfUTC, current.primarySnapshotId);
+      if (verdict !== SERVER_REVIEW_VALIDATION.VERIFIED) {
+        return {state: REVIEW_PAIR_STATE.UNAVAILABLE, reason: verdict};
       }
     }
     return {state: REVIEW_PAIR_STATE.VERIFIED,
       primarySnapshotId: current.primarySnapshotId.toLowerCase(),
-      flaggedCount: audited.size};
+      flaggedCount: indexed.size};
   } catch {
     return {state: REVIEW_PAIR_STATE.UNAVAILABLE, reason: 'INVALID_REVIEW_RESPONSE'};
   }
+}
+
+// Capture the exact accepted read contents as well as array identities.
+// Existing responses are JSON-serializable; any in-place mutation of status,
+// PM evidence or financial amounts revokes certification. This is provenance
+// guarding, NOT a financial recomputation or an extra API/SQL read.
+export function reviewPairFingerprint(current, balance) {
+  return JSON.stringify([current.projects, current.monthly.items, balance]);
 }
 
 export function createReviewPairCoordinator({onChange = () => {}, now = () => new Date().toISOString()} = {}) {
@@ -96,9 +110,15 @@ export function createReviewPairCoordinator({onChange = () => {}, now = () => ne
       if (verdict.state !== REVIEW_PAIR_STATE.VERIFIED) return report(verdict);
       // Keep exact object references, not an independently refreshed copy.
       // React can reject the pair if either displayed dataset changes.
+      // Preserve a byte-stable JSON fingerprint of the certified contents;
+      // object references alone cannot detect in-place record mutation.
+      let fingerprint;
+      try { fingerprint = reviewPairFingerprint(stage.current, stage.balance); }
+      catch { return report({state: REVIEW_PAIR_STATE.UNAVAILABLE, reason: 'INVALID_PAIR_DATA'}); }
       return report(verdict, Object.freeze({
         current: stage.current, balance: stage.balance,
         primarySnapshotId: verdict.primarySnapshotId, verifiedAtUTC: asOfUTC,
+        fingerprint,
       }));
     },
     invalidate(reason = 'UNPAIRED_READ') {

@@ -339,7 +339,7 @@ export default function useProjectedBillingsFreshness(options) {
     refreshCurrent: () => {
       if (!reads.usable()) return Promise.resolve();
       // Project-specific fresh=true SQL reads are NOT a coordinated refresh.
-      // Preserve the visible data flow, but revoke shadow certification.
+      // Preserve the visible data flow, but revoke stale paired evidence.
       reads.reviewPair.invalidate('INDEPENDENT_FRESH_READ');
       return Promise.all([
         reads.current.load({ replace: true, fresh: true, passive: true }),

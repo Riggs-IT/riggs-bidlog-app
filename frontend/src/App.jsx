@@ -1808,7 +1808,7 @@ export default function App() {
   // Exactly the primary-projection response used for the CURRENT displayed
   // project/month rows. A refresh of the balance alone cannot change it.
   const [primarySnapshotId, setPrimarySnapshotId] = useState(null);
-  // A verified financial response pair. Stage 3G6 checks exact displayed
+  // A verified financial response pair. The review gate checks exact displayed
   // object identity and current Arizona lock month before using its labels.
   const [acceptedReviewPair, setAcceptedReviewPair] = useState(null);
   const [scheduleReview, setScheduleReview] = useState(null);
@@ -2437,7 +2437,7 @@ export default function App() {
   const originatingBidAttentionItems =
     originatingBidAttentionData.items || [];
 
-  // Stage 3G6: the server owns the provisional financial review label only
+  // The server owns the provisional financial review label only
   // when its certified response pair is STILL exactly what this screen shows.
   // During a cache mismatch/refresh/rollover, SQL NeedsRebalance and the
   // original variance amounts remain visible; never infer Pending in React.

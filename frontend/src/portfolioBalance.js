@@ -20,21 +20,13 @@ export function indexPortfolioRebalance(items) {
   return index;
 }
 
-// Presentation-only distinction. SQL still owns NeedsRebalance and its amount.
-// This is an inferred recent lock/billing timing state, NOT proof that a
-// Foundation invoice is scheduled or that accounting has closed the month.
+// The Data API owns Pending Foundation classification. React only checks
+// snapshot provenance and the original SQL needsRebalance financial flags.
+// A Pending status is provisional billing timing, not proof of an invoice.
 export const PENDING_FOUNDATION = 'PENDING_FOUNDATION';
 export const NEEDS_REBALANCE = 'NEEDS_REBALANCE';
 
-function cents(value) {
-  if (value === null || value === undefined || value === '') return null;
-  const n = Number(value);
-  return Number.isFinite(n) && Number.isSafeInteger(Math.round(n * 100))
-    ? Math.round(n * 100) : null;
-}
-
-// The month locked at the last day-15 boundary is eligible until the next
-// day-15 boundary. At that point an unresolved gap goes back to Rebalance.
+// Never certify an old lock-month result across the Arizona day-15 cutoff.
 function mostRecentLockMonth(asOfUTC) {
   const d = new Date(asOfUTC);
   if (Number.isNaN(d.getTime())) return null;
@@ -48,54 +40,20 @@ function mostRecentLockMonth(asOfUTC) {
   return locked.toISOString().slice(0, 10);
 }
 
-export function balanceReviewStatus(attention, project, monthlyRows, asOfUTC) {
-  if (!attention?.needsRebalance) return null;
-  const fallback = NEEDS_REBALANCE;
-  if (!project || project.projectCompleted || project.hasPmForecast !== true
-      || project.latestForecastVersionType === 'ADMIN_CORRECTION'
-      || Number(attention.forecastVersionId) !== Number(project.latestForecastVersionId)
-      || !Array.isArray(monthlyRows)) return fallback;
-
-  const lockedMonth = mostRecentLockMonth(asOfUTC);
-  const month = monthlyRows.find(row => row.monthStart === lockedMonth);
-  if (!month || Number(month.latestForecastVersionId) !== Number(attention.forecastVersionId)
-      || month.primaryProjectionSource !== 'PM_FORECAST'
-      || month.hasPmForecast !== true || month.isEditable !== false
-      || !['LOCKED_CURRENT', 'LOCKED_PAST'].includes(month.monthEditState)
-      || month.pmForecastAmount === null || month.pmForecastAmount === undefined
-      || !Object.hasOwn(month, 'foundationActualAmount')) return fallback;
-
-  const pm = cents(month.pmForecastAmount);
-  const actual = month.foundationActualAmount === null ? 0 : cents(month.foundationActualAmount);
-  const gap = cents(attention.rebalanceVarianceAmount);
-  // A pre-existing or unrelated imbalance must never be hidden as 'Pending'.
-  // Only the shortfall of this ONE recently locked month can qualify.
-  if (pm === null || pm <= 0 || actual === null || actual < 0 || actual >= pm
-      || gap === null || gap >= 0 || Math.abs(gap - (actual - pm)) > 1) return fallback;
-  return PENDING_FOUNDATION;
-}
-
-// Stage 3G1 is SHADOW observation only. Do not use this audit state to
-// change a visible badge or to infer that Foundation has posted an invoice.
-// The bridge may return no review fields (prior release), or an intentionally
-// unknown classification from an unpaired/fresh cache read. Preserve both.
-export const SERVER_REVIEW_AUDIT = Object.freeze({
+export const SERVER_REVIEW_VALIDATION = Object.freeze({
   NOT_PROVIDED: 'NOT_PROVIDED',
   UNAVAILABLE: 'UNAVAILABLE',
   INVALID_CONTRACT: 'INVALID_CONTRACT',
   STALE_LOCK_MONTH: 'STALE_LOCK_MONTH',
   STALE_PROJECT: 'STALE_PROJECT',
   STALE_MONTH: 'STALE_MONTH',
-  DISAGREEMENT: 'DISAGREEMENT',
-  CONTENT_PARITY_ONLY: 'CONTENT_PARITY_ONLY',
   SNAPSHOT_UNAVAILABLE: 'SNAPSHOT_UNAVAILABLE',
   SNAPSHOT_MISMATCH: 'SNAPSHOT_MISMATCH',
-  SNAPSHOT_PARITY: 'SNAPSHOT_PARITY',
+  VERIFIED: 'VERIFIED',
 });
 
-// Snapshot IDs are non-secret, server-generated UUIDs. Require complete,
-// canonical UUIDs and compare their normalized values; never treat an absent
-// ID or a matching PM version alone as proof of shared cache provenance.
+// UUID equality proves primary-snapshot provenance, not an atomic SQL billing
+// transaction. The server computes the classification; this code never does.
 function snapshotId(value) {
   if (typeof value !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) {
     return null;
@@ -103,44 +61,35 @@ function snapshotId(value) {
   return value.toLowerCase();
 }
 
-export function auditServerReview(attention, project, monthlyRows, asOfUTC, derivedStatus, primarySnapshotId = null) {
+export function verifyServerReviewRow(attention, project, monthlyRows, asOfUTC, primarySnapshotId) {
+  const V = SERVER_REVIEW_VALIDATION;
   const fields = ['reviewStatus', 'reviewLockMonth', 'reviewEvidenceState'];
-  const has = fields.map(field => Object.hasOwn(attention || {}, field));
-  if (has.every(value => !value)) return SERVER_REVIEW_AUDIT.NOT_PROVIDED;
-  if (!has.every(Boolean)) return SERVER_REVIEW_AUDIT.INVALID_CONTRACT;
+  const present = fields.map(field => Object.hasOwn(attention || {}, field));
+  if (present.every(value => !value)) return V.NOT_PROVIDED;
+  if (!present.every(Boolean)) return V.INVALID_CONTRACT;
+
   const locked = mostRecentLockMonth(asOfUTC);
   if (typeof attention.reviewLockMonth !== 'string'
       || !/^\d{4}-(0[1-9]|1[0-2])-01$/.test(attention.reviewLockMonth)) {
-    return SERVER_REVIEW_AUDIT.INVALID_CONTRACT;
+    return V.INVALID_CONTRACT;
   }
-  if (!locked || attention.reviewLockMonth !== locked) {
-    return SERVER_REVIEW_AUDIT.STALE_LOCK_MONTH;
-  }
-  const serverSnapshot = attention.reviewPrimarySnapshotId;
-  if (serverSnapshot !== undefined && serverSnapshot !== null && !snapshotId(serverSnapshot)) {
-    return SERVER_REVIEW_AUDIT.INVALID_CONTRACT;
-  }
+  if (!locked || attention.reviewLockMonth !== locked) return V.STALE_LOCK_MONTH;
+
+  const rawServerSnapshot = attention.reviewPrimarySnapshotId;
+  if (rawServerSnapshot != null && !snapshotId(rawServerSnapshot)) return V.INVALID_CONTRACT;
   if (attention.reviewEvidenceState === 'UNAVAILABLE' && attention.reviewStatus === null) {
-    // A server may not attach a trusted snapshot ID to unknown evidence.
-    return serverSnapshot == null ? SERVER_REVIEW_AUDIT.UNAVAILABLE
-      : SERVER_REVIEW_AUDIT.INVALID_CONTRACT;
+    return rawServerSnapshot == null ? V.UNAVAILABLE : V.INVALID_CONTRACT;
   }
   if (attention.reviewEvidenceState !== 'MATCHED_REFRESH'
       || ![PENDING_FOUNDATION, NEEDS_REBALANCE].includes(attention.reviewStatus)) {
-    return SERVER_REVIEW_AUDIT.INVALID_CONTRACT;
+    return V.INVALID_CONTRACT;
   }
-  // A partially rolled-out bridge/client can establish content parity, but
-  // only two valid, identical IDs establish same-primary-response provenance.
-  // Independent fresh reads intentionally produce unavailable/mismatched IDs.
-  const serverId = snapshotId(serverSnapshot);
+
+  const serverId = snapshotId(rawServerSnapshot);
   const clientId = snapshotId(primarySnapshotId);
-  const hasSnapshotPair = Boolean(serverId && clientId);
-  if ((serverSnapshot != null || primarySnapshotId != null) && !hasSnapshotPair) {
-    return SERVER_REVIEW_AUDIT.SNAPSHOT_UNAVAILABLE;
-  }
-  if (hasSnapshotPair && serverId !== clientId) {
-    return SERVER_REVIEW_AUDIT.SNAPSHOT_MISMATCH;
-  }
+  if (!serverId || !clientId) return V.SNAPSHOT_UNAVAILABLE;
+  if (serverId !== clientId) return V.SNAPSHOT_MISMATCH;
+
   const job = Number(attention.jobListId);
   const version = Number(attention.forecastVersionId);
   if (!Number.isSafeInteger(job) || job <= 0
@@ -149,40 +98,22 @@ export function auditServerReview(attention, project, monthlyRows, asOfUTC, deri
       || project.jobNumber !== attention.jobNumber
       || project.hasPmForecast !== true || project.projectCompleted === true
       || Number(project.latestForecastVersionId) !== version
-      || !Array.isArray(monthlyRows)) {
-    return SERVER_REVIEW_AUDIT.STALE_PROJECT;
-  }
+      || !Array.isArray(monthlyRows)) return V.STALE_PROJECT;
+
   const lockedRows = monthlyRows.filter(month => month?.monthStart === locked);
   if (lockedRows.length > 1 || lockedRows.some(month =>
-    Number(month.latestForecastVersionId) !== version)) {
-    return SERVER_REVIEW_AUDIT.STALE_MONTH;
+    Number(month.latestForecastVersionId) !== version)) return V.STALE_MONTH;
+  if (attention.reviewStatus === PENDING_FOUNDATION) {
+    if (project.latestForecastVersionType === 'ADMIN_CORRECTION'
+        || lockedRows.length !== 1
+        || lockedRows[0].primaryProjectionSource !== 'PM_FORECAST'
+        || lockedRows[0].hasPmForecast !== true
+        || lockedRows[0].isEditable !== false
+        || !['LOCKED_CURRENT', 'LOCKED_PAST'].includes(lockedRows[0].monthEditState)) {
+      return V.STALE_MONTH;
+    }
   }
-  if (attention.reviewStatus === PENDING_FOUNDATION
-      && (lockedRows.length !== 1 || lockedRows[0].primaryProjectionSource !== 'PM_FORECAST'
-        || lockedRows[0].hasPmForecast !== true)) {
-    return SERVER_REVIEW_AUDIT.STALE_MONTH;
-  }
-  return attention.reviewStatus === derivedStatus
-    ? (hasSnapshotPair ? SERVER_REVIEW_AUDIT.SNAPSHOT_PARITY : SERVER_REVIEW_AUDIT.CONTENT_PARITY_ONLY)
-    : SERVER_REVIEW_AUDIT.DISAGREEMENT;
-}
-
-export function indexedBalanceReviews(rows, projects, monthsByProject, asOfUTC, primarySnapshotId = null) {
-  const index = indexPortfolioRebalance(rows);
-  const projectsById = new Map((projects || []).map(project => [String(project.jobListId), project]));
-  for (const [key, item] of index) {
-    const status = balanceReviewStatus(
-      item, projectsById.get(key), monthsByProject?.get(Number(key)), asOfUTC,
-    );
-    const audit = auditServerReview(
-      item, projectsById.get(key), monthsByProject?.get(Number(key)), asOfUTC, status,
-      primarySnapshotId,
-    );
-    // The existing React status remains the ONLY visible status in 3G1.
-    // This property is diagnostic provenance, not a second financial result.
-    index.set(key, { ...item, reviewStatus: status, reviewEvidenceAudit: audit });
-  }
-  return index;
+  return V.VERIFIED;
 }
 
 export function balanceReviewLabel(item) {
