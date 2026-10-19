@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import FloatingEditorShell from './FloatingEditorShell.jsx';
 import BidLogConfirmDialog from './BidLogConfirmDialog.jsx';
+import {reconnectMicrosoft, checkMicrosoftReconnect} from './delegatedReconnect.js';
 import {
   calculateBidMergePreview,
   MAX_BID_MERGE_SOURCES,
@@ -59,6 +60,8 @@ export default function BidLogMergeDialog({ bids, targetBid, onClose, onMerged }
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [reconnectNeeded, setReconnectNeeded] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
   const [needsReconciliation, setNeedsReconciliation] = useState(false);
   const mounted = useRef(true);
   const inFlight = useRef(false);
@@ -136,6 +139,11 @@ export default function BidLogMergeDialog({ bids, targetBid, onClose, onMerged }
       const result = await response.json();
       if (!response.ok) {
         const detail = result?.detail;
+        if (response.status === 401 && ['delegated_session_expired', 'delegated_session_required'].includes(detail)) {
+          setReconnectNeeded(true);
+          setError('Microsoft editing access expired. Reconnect before attempting this merge again.');
+          return;
+        }
         const requiresReview = detail?.requiresReview === true || response.status >= 500;
         if (requiresReview) setNeedsReconciliation(true);
         setError(responseError(response.status, detail));
@@ -156,6 +164,35 @@ export default function BidLogMergeDialog({ bids, targetBid, onClose, onMerged }
     } finally {
       inFlight.current = false;
       if (mounted.current) setSaving(false);
+    }
+  }
+
+  async function reconnectForMerge() {
+    if (reconnecting) return;
+    setReconnecting(true);
+    try {
+      await reconnectMicrosoft();
+      setReconnectNeeded(false);
+      // Force a new ETag/preview review after reconnect. Never retry merge.
+      resetReview();
+    } catch (exc) {
+      setError(exc.message || 'Microsoft access could not be restored.');
+    } finally {
+      setReconnecting(false);
+    }
+  }
+
+  async function checkMergeMicrosoft() {
+    if (reconnecting) return;
+    setReconnecting(true);
+    try {
+      await checkMicrosoftReconnect();
+      setReconnectNeeded(false);
+      resetReview();
+    } catch (exc) {
+      setError(exc.message || 'Microsoft access is not connected yet.');
+    } finally {
+      setReconnecting(false);
     }
   }
 
@@ -246,6 +283,17 @@ export default function BidLogMergeDialog({ bids, targetBid, onClose, onMerged }
           )}
         </div>
         {error && <div className="page-alert bid-merge-error" role="alert"><strong>{needsReconciliation ? 'Manual reconciliation required' : 'Merge not completed'}</strong><span>{error}</span></div>}
+        {reconnectNeeded && (
+          <div className="page-alert bid-merge-error" role="alert">
+            <span>Your selection is retained. Reconnect Microsoft, then review the bids again before merging.</span>
+            <button type="button" className="secondary-button" disabled={saving || reconnecting}
+              onClick={() => { void reconnectForMerge(); }}>
+              {reconnecting ? 'Connecting…' : 'Reconnect Microsoft'}
+            </button>
+            <button type="button" className="secondary-button" disabled={saving || reconnecting}
+              onClick={() => { void checkMergeMicrosoft(); }}>Check connection</button>
+          </div>
+        )}
       </FloatingEditorShell>
 
       <BidLogConfirmDialog

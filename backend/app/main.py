@@ -19,6 +19,7 @@ from fastapi import (
 )
 from fastapi.responses import (
     FileResponse,
+    HTMLResponse,
     JSONResponse,
     RedirectResponse,
 )
@@ -992,6 +993,136 @@ async def auth_login(
     )
 
 
+def _reconnect_result(success: bool) -> HTMLResponse:
+    # Intentionally script-free: CSP forbids inline JavaScript, and no
+    # access token, session ID, or user identity is rendered in HTML.
+    headline = (
+        "Microsoft connection restored"
+        if success else "Microsoft connection was not restored"
+    )
+    detail = (
+        "Close this window, return to Bid Log, and review your changes "
+        "before selecting Save again."
+        if success else
+        "Close this window and try Reconnect Microsoft again from Bid Log. "
+        "Your unsaved edits remain in the original window."
+    )
+    return HTMLResponse(
+        content=(
+            "<!doctype html><html lang='en'><head><meta charset='utf-8'>"
+            "<title>Riggs Microsoft connection</title></head><body>"
+            f"<h2>{headline}</h2><p>{detail}</p></body></html>"
+        ),
+        headers={"Cache-Control": "no-store, private"},
+    )
+
+
+def _forget_delegated_reconnect_intent(request: Request) -> None:
+    request.session.pop("delegated_reconnect_oid", None)
+    request.session.pop("delegated_reconnect_eid", None)
+
+
+@app.get(
+    "/api/auth/delegated/reconnect",
+    include_in_schema=False,
+)
+async def auth_delegated_reconnect(
+    request: Request,
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    if (
+        settings.auth_mode != "entra"
+        or not settings.entra_configured
+        or not settings.bid_log_delegated_auth_enabled
+        or not settings.bid_log_delegated_writes_enabled
+    ):
+        raise HTTPException(
+            status_code=403, detail="delegated_reconnect_unavailable"
+        )
+
+    _require_bid_log_workspace_access(current_user)
+    _require_bid_log_editor(current_user)
+
+    # Authlib adds its normal PKCE/CSRF OAuth state to the signed session.
+    # Unlike a full login, deliberately DO NOT clear the browser session.
+    request.session["delegated_reconnect_oid"] = current_user.entra_object_id
+    request.session["delegated_reconnect_eid"] = current_user.eid
+
+    try:
+        return await oauth.entra.authorize_redirect(
+            request, settings.entra_redirect_uri, prompt="select_account",
+        )
+    except Exception:
+        _forget_delegated_reconnect_intent(request)
+        return _reconnect_result(False)
+
+
+@app.get(
+    "/api/auth/delegated/reconnect-status",
+    include_in_schema=False,
+)
+def auth_delegated_reconnect_status(
+    request: Request,
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    _require_bid_log_workspace_access(current_user)
+    _require_bid_log_editor(current_user)
+    # A non-secret revision signal, never the opaque delegated session ID.
+    return JSONResponse(
+        {"revision": str(request.session.get("delegated_reconnect_revision") or "")},
+        headers={"Cache-Control": "no-store, private"},
+    )
+
+
+async def _complete_delegated_reconnect(request: Request) -> HTMLResponse:
+    pinned_oid = str(request.session.get("delegated_reconnect_oid") or "").lower()
+    pinned_eid = request.session.get("delegated_reconnect_eid")
+    try:
+        # The old login/session must still be valid; reconnect does not
+        # revive an expired full application session.
+        existing_user = get_current_user(request)
+        if (
+            existing_user.entra_object_id.lower() != pinned_oid
+            or existing_user.eid != pinned_eid
+        ):
+            raise ValueError("reconnect_actor_mismatch")
+
+        token = await oauth.entra.authorize_access_token(request)
+        userinfo = token.get("userinfo")
+        if not userinfo or not callable(getattr(userinfo, "get", None)):
+            raise ValueError("no_microsoft_identity")
+        new_user = resolve_entra_user(userinfo)
+        if (
+            new_user.eid != existing_user.eid
+            or new_user.entra_object_id.lower() != pinned_oid
+            or new_user.tenant_id.lower() != existing_user.tenant_id.lower()
+        ):
+            raise ValueError("reconnect_identity_mismatch")
+        assertion = str(token.get("access_token") or "").strip()
+        if not assertion:
+            raise ValueError("missing_delegated_assertion")
+        delegated = create_bid_log_delegated_session(
+            user_assertion=assertion,
+            actor_eid=existing_user.eid,
+            request_id=str(uuid4()),
+        )
+        session_id = str(delegated.get("sessionId") or "").strip()
+        if not session_id:
+            raise ValueError("missing_delegated_session_id")
+    except Exception:
+        # A rejected/mismatched OAuth attempt never signs out the original
+        # account or replaces its old delegated identity. The write is NOT
+        # retried here. No tokens or credentials are logged.
+        _forget_delegated_reconnect_intent(request)
+        return _reconnect_result(False)
+
+    _forget_delegated_reconnect_intent(request)
+    request.session["delegated_session_id"] = session_id
+    request.session["delegated_actor_eid"] = existing_user.eid
+    request.session["delegated_reconnect_revision"] = uuid4().hex
+    return _reconnect_result(True)
+
+
 @app.get(
     "/api/auth/callback",
     include_in_schema=False,
@@ -1007,6 +1138,12 @@ async def auth_callback(
         return _auth_error_redirect(
             "entra_not_configured"
         )
+
+    # Reconnecting delegated Microsoft access is separate from a new
+    # application login. Never clear the signed-in browser session or
+    # open editor drafts while this OAuth flow is in progress.
+    if request.session.get("delegated_reconnect_oid"):
+        return await _complete_delegated_reconnect(request)
 
     try:
         token = await (

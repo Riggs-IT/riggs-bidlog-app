@@ -13,6 +13,7 @@ import BidLogStateSelect, {
 } from './BidLogStateSelect.jsx';
 import FloatingEditorShell from './FloatingEditorShell.jsx';
 import ActionToast from './ActionToast.jsx';
+import {reconnectMicrosoft, checkMicrosoftReconnect} from './delegatedReconnect.js';
 import BidLogConfirmDialog from './BidLogConfirmDialog.jsx';
 import './BidLogLifecyclePolish.css';
 import {
@@ -288,6 +289,10 @@ function errorMessage(error, fallback) {
 
   const detail = String(error?.message || '').trim();
 
+  if (detail === 'delegated_session_expired' || detail === 'delegated_session_required') {
+    return 'Microsoft editing access expired. Reconnect Microsoft before saving. Your edits are preserved.';
+  }
+
   if (detail === 'active_bid_changed') {
     return 'This bid changed after you opened it. Reload the latest version before saving.';
   }
@@ -451,6 +456,8 @@ export default function BidLogEditDrawer({
   const [loadError, setLoadError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [reconnectNeeded, setReconnectNeeded] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
   const [saveMessage, setSaveMessage] = useState(null);
   const [forecastProject, setForecastProject] = useState(null);
   const [forecastError, setForecastError] = useState(null);
@@ -1313,6 +1320,9 @@ export default function BidLogEditDrawer({
         onSaved?.(completedDetail);
       }
 
+      if (error?.status === 401 && ['delegated_session_expired', 'delegated_session_required'].includes(error?.message)) {
+        setReconnectNeeded(true);
+      }
       setSaveError(
         errorMessage(error, 'Unable to save this bid.'),
       );
@@ -1337,6 +1347,37 @@ export default function BidLogEditDrawer({
     )
   );
 
+
+  async function reconnectEditorMicrosoft() {
+    if (reconnecting) return;
+    setReconnecting(true);
+    try {
+      await reconnectMicrosoft();
+      setReconnectNeeded(false);
+      setSaveError(null);
+      setSaveMessage('Microsoft access restored. Review your changes, then click Save again.');
+      // Never replay a previously rejected or uncertain write automatically.
+    } catch (error) {
+      setSaveError(error.message || 'Microsoft access could not be restored.');
+    } finally {
+      setReconnecting(false);
+    }
+  }
+
+  async function checkEditorMicrosoft() {
+    if (reconnecting) return;
+    setReconnecting(true);
+    try {
+      await checkMicrosoftReconnect();
+      setReconnectNeeded(false);
+      setSaveError(null);
+      setSaveMessage('Microsoft access restored. Review your changes, then click Save again.');
+    } catch (error) {
+      setSaveError(error.message || 'Microsoft access is not connected yet.');
+    } finally {
+      setReconnecting(false);
+    }
+  }
 
   if (!sharePointItemId) {
     return null;
@@ -1430,6 +1471,22 @@ export default function BidLogEditDrawer({
                 </div>
               )}
 
+              {reconnectNeeded && (
+                <div className="bid-edit-message warning" role="alert">
+                  Microsoft editing access expired. Your unsaved changes are still here.
+                  <button type="button" className="secondary-button"
+                    disabled={saving || reconnecting}
+                    onClick={() => { void reconnectEditorMicrosoft(); }}>
+                    {reconnecting ? 'Connecting…' : 'Reconnect Microsoft'}
+                  </button>
+                  <button type="button" className="secondary-button"
+                    disabled={saving || reconnecting}
+                    onClick={() => { void checkEditorMicrosoft(); }}>
+                    Check connection
+                  </button>
+                  <small>Close the Microsoft window when finished. Review your edits and Save again.</small>
+                </div>
+              )}
               <ActionToast
                 message={saveError || saveMessage}
                 type={saveError ? 'error' : 'success'}
