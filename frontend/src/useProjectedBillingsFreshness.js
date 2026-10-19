@@ -5,6 +5,7 @@ import {indexScheduleReview} from './scheduleReview.js';
 import { createLatestRead, freshReadPath, readOptions, watchVisibleReads } from './browserFreshness.js';
 import {DATA_UPDATED_MESSAGE, DATA_UPDATING_MESSAGE, hasFreshPortfolioSnapshot, isRefreshCooldown} from './refreshFeedback.js';
 import {createProgressiveDashboardReads} from './dashboardRefreshStages.js';
+import {createReviewPairCoordinator} from './reviewPairCoordinator.js';
 
 // One owner publishes metadata, primary projections and historical-margin reads
 // together. Existing baseline API contracts remain unchanged for other callers.
@@ -14,11 +15,16 @@ export default function useProjectedBillingsFreshness(options) {
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
   const [cacheStatus, setCacheStatus] = useState(null);
+  // Observational Stage 3G4 gate only: NEVER drive visible status from this.
+  const [reviewPairEvidence, setReviewPairEvidence] = useState(null);
   const scope = `${options.userKey ?? ''}:${Boolean(options.enabled)}`;
 
   const reads = useMemo(() => {
     const state = { alive: false, busy: 0, failures: new Map(), manualRefreshInProgress: false };
     const usable = () => state.alive && latest.current.enabled && !latest.current.isEnding();
+    const reviewPair = createReviewPairCoordinator({
+      onChange: evidence => { if (usable()) setReviewPairEvidence(evidence); },
+    });
     const request = (path, config) => latest.current.fetchJson(
       freshReadPath(path, config.fresh), readOptions(config),
     );
@@ -40,9 +46,14 @@ export default function useProjectedBillingsFreshness(options) {
         }
         return mergePrimaryPortfolio(projects, monthly, primary);
       },
-      publish: data => {
+      publish: (data, config) => {
         if (!usable()) return false;
         latest.current.onCurrent(data);
+        if (config.reviewEpoch !== undefined) {
+          reviewPair.offerCurrent(config.reviewEpoch, data);
+        } else {
+          reviewPair.invalidate('UNPAIRED_PRIMARY_READ');
+        }
         state.failures.delete('current');
         latest.current.onError([...state.failures.values()].join(' ') || null);
         setLastUpdatedAt(Date.now());
@@ -69,10 +80,15 @@ export default function useProjectedBillingsFreshness(options) {
     // current-project and bid rows from loading, or claim that 0 need review.
     const portfolioBalance = createLatestRead({
       read: config => request('/api/pm-forecast/portfolio-balance', config),
-      publish: data => {
+      publish: (data, config) => {
         if (!usable()) return false;
         indexPortfolioRebalance(data); // validate before publication
         latest.current.onPortfolioBalance(data);
+        if (config.reviewEpoch !== undefined) {
+          reviewPair.offerBalance(config.reviewEpoch, data);
+        } else {
+          reviewPair.invalidate('UNPAIRED_BALANCE_READ');
+        }
         state.failures.delete('portfolioBalance');
         latest.current.onError([...state.failures.values()].join(' ') || null);
       },
@@ -124,6 +140,9 @@ export default function useProjectedBillingsFreshness(options) {
 
     const batch = async config => {
       if (!usable()) return [];
+      const reviewEpoch = reviewPair.begin('BATCH');
+      const cohortConfig = {...config, reviewEpoch};
+      let pairedSuccess = false;
       // Passive 60-second polling must not turn on the visible Refresh spinner.
       // Existing rows stay interactive while background data arrives.
       const showSpinner = !config?.passive;
@@ -133,15 +152,17 @@ export default function useProjectedBillingsFreshness(options) {
       }
       try {
         const result = await Promise.all([
-          current.load(config), bids.load(config),
-          portfolioBalance.load(config), scheduleReview.load(config),
+          current.load(cohortConfig), bids.load(config),
+          portfolioBalance.load(cohortConfig), scheduleReview.load(config),
           updateCacheStatus(),
         ]);
+        pairedSuccess = result[0]?.status === 'published' && result[2]?.status === 'published';
         if (usable() && current.lastSuccessAt !== null && bids.lastSuccessAt !== null) {
           latest.current.onReady();
         }
         return result;
       } finally {
+        reviewPair.finish(reviewEpoch, {successful: pairedSuccess});
         if (showSpinner) {
           state.busy -= 1;
           if (usable() && state.busy === 0) setRefreshing(false);
@@ -156,6 +177,7 @@ export default function useProjectedBillingsFreshness(options) {
     };
     const refreshAll = async () => {
       if (!usable() || state.manualRefreshInProgress) return;
+      let reviewEpoch = null;
       state.manualRefreshInProgress = true;
       state.busy += 1;
       setRefreshing(true);
@@ -171,12 +193,13 @@ export default function useProjectedBillingsFreshness(options) {
         // Acknowledge immediately. Current values stay visible and editable;
         // the button only starts a background rebuild, not a blocking page load.
         latest.current.onRefreshNotice?.(DATA_UPDATING_MESSAGE);
+        reviewEpoch = reviewPair.begin('MANUAL');
         const progressive = createProgressiveDashboardReads({
           current: config => current.load(config),
           bids: config => bids.load(config),
           portfolioBalance: config => portfolioBalance.load(config),
           scheduleReview: config => scheduleReview.load(config),
-        }, receipt.refreshId);
+        }, receipt.refreshId, {reviewEpoch});
         let status = receipt;
         progressive.startReady(status);
         const deadline = Date.now() + 90_000;
@@ -200,6 +223,11 @@ export default function useProjectedBillingsFreshness(options) {
         // No fresh=true SQL bypass and no duplicate final full batch. Each
         // stage fetched once, as soon as its snapshot became available.
         const results = await progressive.finish(status, updateCacheStatus);
+        // A partially completed rebuild must not certify two cached reads,
+        // even if their UUIDs happen to match; fail closed until COMPLETE.
+        reviewPair.finish(reviewEpoch, {successful: status.status === 'COMPLETE'
+          && results[0]?.status === 'published'
+          && results[2]?.status === 'published'});
         if (current.lastSuccessAt !== null && bids.lastSuccessAt !== null) {
           latest.current.onReady();
         }
@@ -217,6 +245,7 @@ export default function useProjectedBillingsFreshness(options) {
           }
         }
       } catch (error) {
+        if (reviewEpoch !== null) reviewPair.finish(reviewEpoch, {successful: false});
         if (isRefreshCooldown(error)) {
           // The shared server has already enforced its limits. Re-read the
           // available data rather than turning a harmless repeat click into a
@@ -244,7 +273,8 @@ export default function useProjectedBillingsFreshness(options) {
         if (usable() && state.busy === 0) setRefreshing(false);
       }
     };
-    return { state, usable, current, bids, portfolioBalance, scheduleReview, attention, batch, attentionLoad, refreshAll };
+    return { state, usable, reviewPair, current, bids, portfolioBalance,
+      scheduleReview, attention, batch, attentionLoad, refreshAll };
   }, [scope]);
 
   useEffect(() => {
@@ -252,6 +282,7 @@ export default function useProjectedBillingsFreshness(options) {
     setLastUpdatedAt(null);
     setRefreshing(false);
     setCacheStatus(null);
+    reads.reviewPair.invalidate('SCREEN_RESET');
     latest.current.onReset();
     if (options.enabled) {
       latest.current.onInitialLoading(true);
@@ -282,14 +313,19 @@ export default function useProjectedBillingsFreshness(options) {
   }, [reads, options.enabled]);
 
   return {
-    refreshing, lastUpdatedAt, cacheStatus,
+    refreshing, lastUpdatedAt, cacheStatus, reviewPairEvidence,
     refreshAll: () => reads.refreshAll(),
-    refreshCurrent: () => reads.usable()
-      ? Promise.all([
-          reads.current.load({ replace: true, fresh: true, passive: true }),
-          reads.portfolioBalance.load({ replace: true, fresh: true, passive: true }),
-          reads.scheduleReview.load({ replace: true, fresh: true, passive: true }),
-        ]) : Promise.resolve(),
+    refreshCurrent: () => {
+      if (!reads.usable()) return Promise.resolve();
+      // Project-specific fresh=true SQL reads are NOT a coordinated refresh.
+      // Preserve the visible data flow, but revoke shadow certification.
+      reads.reviewPair.invalidate('INDEPENDENT_FRESH_READ');
+      return Promise.all([
+        reads.current.load({ replace: true, fresh: true, passive: true }),
+        reads.portfolioBalance.load({ replace: true, fresh: true, passive: true }),
+        reads.scheduleReview.load({ replace: true, fresh: true, passive: true }),
+      ]);
+    },
     refreshBids: () => reads.usable()
       ? reads.bids.load({ replace: true, fresh: true, passive: true }) : Promise.resolve(),
     refreshAttention: ({ passive = true } = {}) => reads.attentionLoad({ replace: true, passive }),

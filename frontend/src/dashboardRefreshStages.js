@@ -20,10 +20,12 @@ export const DASHBOARD_STAGES = [
   ['scheduleReview', ['schedule_review']],
 ];
 
-export function createProgressiveDashboardReads(readers, refreshId) {
+export function createProgressiveDashboardReads(readers, refreshId, {reviewEpoch = null} = {}) {
   if (!refreshId) throw new Error('Missing refresh identifier');
   const started = new Map();
-  const options = {replace: true, passive: false};
+  // An opaque, local-only cohort marker; NOT a SQL version, auth token or
+  // HTTP query parameter. Both readers must retain this same marker.
+  const options = {replace: true, passive: false, ...(reviewEpoch === null ? {} : {reviewEpoch})};
 
   function startReady(status) {
     if (status?.refreshId !== refreshId) {

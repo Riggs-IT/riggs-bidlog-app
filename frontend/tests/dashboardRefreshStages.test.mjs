@@ -80,3 +80,19 @@ test('real read failure stays a failed result and never reports a synthetic succ
   const result = await p.finish(complete(all, 'COMPLETE'), async () => ({datasets:{}}));
   assert.equal(result[1].status, 'failed');
 });
+
+test('coordinated refresh carries the same local review cohort to current and balance', async () => {
+  const observed = [];
+  const {handlers} = readers();
+  for (const key of ['current', 'portfolioBalance']) {
+    handlers[key] = options => {
+      observed.push([key, options.reviewEpoch]);
+      return Promise.resolve({status: 'published'});
+    };
+  }
+  const p = createProgressiveDashboardReads(handlers, RUN, {reviewEpoch: 77});
+  const all = DASHBOARD_STAGES.flatMap(([, keys]) => keys);
+  p.startReady(complete(all,'COMPLETE'));
+  await p.finish(complete(all,'COMPLETE'),async()=>({datasets:{}}));
+  assert.deepEqual(observed.sort(), [['current',77],['portfolioBalance',77]]);
+});
