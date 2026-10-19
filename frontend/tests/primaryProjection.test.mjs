@@ -27,6 +27,25 @@ function fixture() {
 }
 function merged(f=fixture()) { const out=mergePrimaryPortfolio(f.summary,f.monthly,f.primary);return {...out,map:new Map(out.monthly.items.map(p=>[p.jobListId,p.items]))}; }
 
+test('merge carries the precise primary snapshot ID without changing project/month data', () => {
+  const f = fixture();
+  const snap = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  f.primary.primarySnapshotId = snap;
+  const before = clone(f);
+  const out = merged(f);
+  assert.equal(out.primarySnapshotId, snap);
+  assert.equal(out.projects[0].primarySnapshotId, undefined);
+  assert.equal(out.map.get(1)[0].primarySnapshotId, undefined);
+  assert.deepEqual(f, before);
+});
+test('old bridge or superseded primary snapshot retains rows but has no identity', () => {
+  const old = fixture();
+  assert.equal(merged(old).primarySnapshotId, null);
+  const replaced = fixture();
+  replaced.primary.primarySnapshotId = null;
+  assert.equal(merged(replaced).primarySnapshotId, null);
+});
+
 test('PM source is selected by version, not by a nonzero monthly value',()=>{ const r=merged();assert.equal(r.map.get(1)[0].projectedAmount,0);assert.equal(r.projects[0].primaryProjectionSource,'PM_FORECAST'); });
 test('blank PM does not borrow baseline or become zero',()=>{const r=merged();const m=r.map.get(1)[1];assert.equal(m.projectedAmount,null);assert.equal(m.systemBaselineAmount,100);assert.equal(m.missingPmMonths,1);});
 test('unsubmitted project has no projection even with a zero System Estimate',()=>{const f=fixture();f.primary.items[3].primaryProjectedAmount=0;f.primary.items[3].systemBaselineAmount=0;const r=merged(f);assert.equal(r.map.get(2)[0].projectedAmount,null);assert.equal(r.map.get(2)[0].systemBaselineAmount,0);assert.equal(projectionSourceLabel(r.projects[1]),'No PM Projection');assert.equal(r.projects[1].projectedTotal,null);});

@@ -75,14 +75,112 @@ export function balanceReviewStatus(attention, project, monthlyRows, asOfUTC) {
   return PENDING_FOUNDATION;
 }
 
-export function indexedBalanceReviews(rows, projects, monthsByProject, asOfUTC) {
+// Stage 3G1 is SHADOW observation only. Do not use this audit state to
+// change a visible badge or to infer that Foundation has posted an invoice.
+// The bridge may return no review fields (prior release), or an intentionally
+// unknown classification from an unpaired/fresh cache read. Preserve both.
+export const SERVER_REVIEW_AUDIT = Object.freeze({
+  NOT_PROVIDED: 'NOT_PROVIDED',
+  UNAVAILABLE: 'UNAVAILABLE',
+  INVALID_CONTRACT: 'INVALID_CONTRACT',
+  STALE_LOCK_MONTH: 'STALE_LOCK_MONTH',
+  STALE_PROJECT: 'STALE_PROJECT',
+  STALE_MONTH: 'STALE_MONTH',
+  DISAGREEMENT: 'DISAGREEMENT',
+  CONTENT_PARITY_ONLY: 'CONTENT_PARITY_ONLY',
+  SNAPSHOT_UNAVAILABLE: 'SNAPSHOT_UNAVAILABLE',
+  SNAPSHOT_MISMATCH: 'SNAPSHOT_MISMATCH',
+  SNAPSHOT_PARITY: 'SNAPSHOT_PARITY',
+});
+
+// Snapshot IDs are non-secret, server-generated UUIDs. Require complete,
+// canonical UUIDs and compare their normalized values; never treat an absent
+// ID or a matching PM version alone as proof of shared cache provenance.
+function snapshotId(value) {
+  if (typeof value !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) {
+    return null;
+  }
+  return value.toLowerCase();
+}
+
+export function auditServerReview(attention, project, monthlyRows, asOfUTC, derivedStatus, primarySnapshotId = null) {
+  const fields = ['reviewStatus', 'reviewLockMonth', 'reviewEvidenceState'];
+  const has = fields.map(field => Object.hasOwn(attention || {}, field));
+  if (has.every(value => !value)) return SERVER_REVIEW_AUDIT.NOT_PROVIDED;
+  if (!has.every(Boolean)) return SERVER_REVIEW_AUDIT.INVALID_CONTRACT;
+  const locked = mostRecentLockMonth(asOfUTC);
+  if (typeof attention.reviewLockMonth !== 'string'
+      || !/^\d{4}-(0[1-9]|1[0-2])-01$/.test(attention.reviewLockMonth)) {
+    return SERVER_REVIEW_AUDIT.INVALID_CONTRACT;
+  }
+  if (!locked || attention.reviewLockMonth !== locked) {
+    return SERVER_REVIEW_AUDIT.STALE_LOCK_MONTH;
+  }
+  const serverSnapshot = attention.reviewPrimarySnapshotId;
+  if (serverSnapshot !== undefined && serverSnapshot !== null && !snapshotId(serverSnapshot)) {
+    return SERVER_REVIEW_AUDIT.INVALID_CONTRACT;
+  }
+  if (attention.reviewEvidenceState === 'UNAVAILABLE' && attention.reviewStatus === null) {
+    // A server may not attach a trusted snapshot ID to unknown evidence.
+    return serverSnapshot == null ? SERVER_REVIEW_AUDIT.UNAVAILABLE
+      : SERVER_REVIEW_AUDIT.INVALID_CONTRACT;
+  }
+  if (attention.reviewEvidenceState !== 'MATCHED_REFRESH'
+      || ![PENDING_FOUNDATION, NEEDS_REBALANCE].includes(attention.reviewStatus)) {
+    return SERVER_REVIEW_AUDIT.INVALID_CONTRACT;
+  }
+  // A partially rolled-out bridge/client can establish content parity, but
+  // only two valid, identical IDs establish same-primary-response provenance.
+  // Independent fresh reads intentionally produce unavailable/mismatched IDs.
+  const serverId = snapshotId(serverSnapshot);
+  const clientId = snapshotId(primarySnapshotId);
+  const hasSnapshotPair = Boolean(serverId && clientId);
+  if ((serverSnapshot != null || primarySnapshotId != null) && !hasSnapshotPair) {
+    return SERVER_REVIEW_AUDIT.SNAPSHOT_UNAVAILABLE;
+  }
+  if (hasSnapshotPair && serverId !== clientId) {
+    return SERVER_REVIEW_AUDIT.SNAPSHOT_MISMATCH;
+  }
+  const job = Number(attention.jobListId);
+  const version = Number(attention.forecastVersionId);
+  if (!Number.isSafeInteger(job) || job <= 0
+      || !Number.isSafeInteger(version) || version <= 0
+      || !project || Number(project.jobListId) !== job
+      || project.jobNumber !== attention.jobNumber
+      || project.hasPmForecast !== true || project.projectCompleted === true
+      || Number(project.latestForecastVersionId) !== version
+      || !Array.isArray(monthlyRows)) {
+    return SERVER_REVIEW_AUDIT.STALE_PROJECT;
+  }
+  const lockedRows = monthlyRows.filter(month => month?.monthStart === locked);
+  if (lockedRows.length > 1 || lockedRows.some(month =>
+    Number(month.latestForecastVersionId) !== version)) {
+    return SERVER_REVIEW_AUDIT.STALE_MONTH;
+  }
+  if (attention.reviewStatus === PENDING_FOUNDATION
+      && (lockedRows.length !== 1 || lockedRows[0].primaryProjectionSource !== 'PM_FORECAST'
+        || lockedRows[0].hasPmForecast !== true)) {
+    return SERVER_REVIEW_AUDIT.STALE_MONTH;
+  }
+  return attention.reviewStatus === derivedStatus
+    ? (hasSnapshotPair ? SERVER_REVIEW_AUDIT.SNAPSHOT_PARITY : SERVER_REVIEW_AUDIT.CONTENT_PARITY_ONLY)
+    : SERVER_REVIEW_AUDIT.DISAGREEMENT;
+}
+
+export function indexedBalanceReviews(rows, projects, monthsByProject, asOfUTC, primarySnapshotId = null) {
   const index = indexPortfolioRebalance(rows);
   const projectsById = new Map((projects || []).map(project => [String(project.jobListId), project]));
   for (const [key, item] of index) {
     const status = balanceReviewStatus(
       item, projectsById.get(key), monthsByProject?.get(Number(key)), asOfUTC,
     );
-    index.set(key, { ...item, reviewStatus: status });
+    const audit = auditServerReview(
+      item, projectsById.get(key), monthsByProject?.get(Number(key)), asOfUTC, status,
+      primarySnapshotId,
+    );
+    // The existing React status remains the ONLY visible status in 3G1.
+    // This property is diagnostic provenance, not a second financial result.
+    index.set(key, { ...item, reviewStatus: status, reviewEvidenceAudit: audit });
   }
   return index;
 }

@@ -128,7 +128,7 @@ test('contract values, warning filter and Billing vs Projection are wired withou
   for (const label of ['Billed More', 'Billed Less', 'On Target']) assert.match(app, new RegExp(label));
   assert.match(app, /value==='rebalance'/);
   assert.match(app, /rebalanceByJobId\.has\(String\(row\.jobListId\)\)/);
-  assert.match(app, /indexedBalanceReviews\(portfolioBalance \|\| \[\], currentProjects, currentMonthly, varianceAsOfUTC\)/);
+  assert.match(app, /indexedBalanceReviews\(\s*portfolioBalance \|\| \[\], currentProjects, currentMonthly, varianceAsOfUTC, primarySnapshotId,\s*\)/);
   assert.doesNotMatch(app, /forecastAttention\.map\(item => \[String\(item\.jobListId\)/);
   assert.match(app, /onOpenForecast=\{openAttentionProject\}/);
   assert.match(app, /portfolioBalanceAvailable=\{portfolioBalance !== null\}/);

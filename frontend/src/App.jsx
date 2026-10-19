@@ -1805,6 +1805,9 @@ export default function App() {
   // NULL means no successful portfolio-wide balance read yet. A failed read
   // must never be displayed as "0 Need Rebalance".
   const [portfolioBalance, setPortfolioBalance] = useState(null);
+  // Exactly the primary-projection response used for the CURRENT displayed
+  // project/month rows. A refresh of the balance alone cannot change it.
+  const [primarySnapshotId, setPrimarySnapshotId] = useState(null);
   const [scheduleReview, setScheduleReview] = useState(null);
   const [selectedScheduleInfo, setSelectedScheduleInfo] = useState(null);
 
@@ -2375,6 +2378,7 @@ export default function App() {
       setCurrentProjects([]);
       setActiveBids([]);
       setCurrentMonthly(new Map());
+      setPrimarySnapshotId(null);
       setBidMonthly(new Map());
       setForecastAttention([]);
       setPortfolioBalance(null);
@@ -2385,9 +2389,12 @@ export default function App() {
       setAttentionOpen(false);
       setMonthlyProgress({ loaded: 0, total: 4 });
     },
-    onCurrent: ({ projects, monthly }) => {
+    onCurrent: ({ projects, monthly, primarySnapshotId: nextSnapshotId }) => {
+      // Publish all three pieces of one merged primary read together.
+      // A failed/superseded refresh retains the previous complete trio.
       setCurrentProjects(projects);
       setCurrentMonthly(new Map(monthly.items.map(row => [row.jobListId, row.items || []])));
+      setPrimarySnapshotId(nextSnapshotId);
       // Refresh summary fields without remounting the open PM editor.
       setSelectedCurrentProject(current => current
         ? projects.find(row => Number(row.jobListId) === Number(current.jobListId)) || current
@@ -2429,8 +2436,10 @@ export default function App() {
   // recently locked month's isolated shortfall when the same forecast version
   // and real Foundation month are in the loaded primary portfolio snapshot.
   const rebalanceByJobId = useMemo(
-    () => indexedBalanceReviews(portfolioBalance || [], currentProjects, currentMonthly, varianceAsOfUTC),
-    [portfolioBalance, currentProjects, currentMonthly, varianceAsOfUTC],
+    () => indexedBalanceReviews(
+      portfolioBalance || [], currentProjects, currentMonthly, varianceAsOfUTC, primarySnapshotId,
+    ),
+    [portfolioBalance, currentProjects, currentMonthly, varianceAsOfUTC, primarySnapshotId],
   );
   const scheduleReviewByJobId = useMemo(
     () => indexScheduleReview(scheduleReview || []),

@@ -225,7 +225,11 @@ export function mergePrimaryPortfolio(summary, legacyMonthly, primary) {
     });
     items.push({ ...old, jobListId: p.jobListId, items: rows });
   }
-  return { projects, monthly: { ...legacyMonthly, items }, asOfMonth };
+  // Preserve the identity of the EXACT primary projection response merged
+  // above. This is read-only provenance; never mix it into project data or
+  // calculate another financial amount from it. Older API releases omit it.
+  return { projects, monthly: { ...legacyMonthly, items }, asOfMonth,
+    primarySnapshotId: primary.primarySnapshotId ?? null };
 }
 function nextMonth(month) { const [y, m] = month.split('-').map(Number); return `${m === 12 ? y + 1 : y}-${String(m === 12 ? 1 : m + 1).padStart(2, '0')}`; }
 
