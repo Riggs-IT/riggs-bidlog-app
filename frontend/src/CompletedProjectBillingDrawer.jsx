@@ -4,6 +4,8 @@ import {
   useState,
 } from 'react';
 
+import {completedAmount, completedContractSourceLabel} from './completedCommercial.js';
+import {billingQuantityLabel, completedQuantitySourceNote} from './billingQuantities.js';
 import {
   commercialSourceLabel,
   ComparisonDetails,
@@ -248,6 +250,7 @@ function DetailValue({
   moneyValue,
   subtext,
   source,
+  children,
 }) {
   return (
     <div className="completed-detail-value">
@@ -284,6 +287,8 @@ function DetailValue({
           {subtext}
         </small>
       )}
+
+      {children}
     </div>
   );
 }
@@ -461,6 +466,12 @@ export default function CompletedProjectBillingDrawer({
     || String(user?.appRole || '').trim().toUpperCase() === 'MANAGEMENT_ADMIN';
 
 
+  // A genuine Foundation $0 is not missing. Flag the source conflict
+  // without substituting Cognito for the financial contract.
+  const zeroOriginalWithCognito =
+    completedAmount(project.foundationOriginalContractAmount) === 0
+    && completedAmount(project.cognitoContractAmount) > 0;
+
   const foundationVsCognito =
     moneyDifference(
       project.foundationOriginalContractAmount,
@@ -569,7 +580,7 @@ export default function CompletedProjectBillingDrawer({
             <strong>
               {displayValue(
                 project.projectManager,
-                'TBD',
+                'No PM assigned',
               )}
             </strong>
           </article>
@@ -582,7 +593,7 @@ export default function CompletedProjectBillingDrawer({
 
             <strong>
               {estimatorNames
-                || 'TBD'}
+                || (project.missingEstimatorBidLink ? 'No linked bid' : 'Not recorded')}
             </strong>
           </article>
 
@@ -607,7 +618,7 @@ export default function CompletedProjectBillingDrawer({
 
             <GeneralContractorDisplay
               value={project.generalContractor}
-              fallback="TBD"
+              fallback="Not recorded"
               compact
             />
           </article>
@@ -621,7 +632,7 @@ export default function CompletedProjectBillingDrawer({
             <strong>
               {displayValue(
                 project.streetAddress,
-                'TBD',
+                'Not recorded',
               )}
             </strong>
 
@@ -643,7 +654,8 @@ export default function CompletedProjectBillingDrawer({
 
               <strong>
                 {retentionLabel(
-                  project.retention
+                  project.retention,
+                  'Not recorded'
                 )}
               </strong>
 
@@ -739,9 +751,13 @@ export default function CompletedProjectBillingDrawer({
                 CY
               </span>
 
-              <strong className="drawer-tbd-value">
-                TBD
+              <strong>
+                {billingQuantityLabel(project.cubicYards)}
               </strong>
+
+              <small className="commercial-source-note">
+                {completedQuantitySourceNote(project.cubicYards, project.missingEstimatorBidLink)}
+              </small>
             </article>
 
 
@@ -750,9 +766,13 @@ export default function CompletedProjectBillingDrawer({
                 SF
               </span>
 
-              <strong className="drawer-tbd-value">
-                TBD
+              <strong>
+                {billingQuantityLabel(project.squareFootage)}
               </strong>
+
+              <small className="commercial-source-note">
+                {completedQuantitySourceNote(project.squareFootage, project.missingEstimatorBidLink)}
+              </small>
             </article>
           </section>
           <section className="completed-kpi-grid completed-commercial-grid">
@@ -779,10 +799,11 @@ export default function CompletedProjectBillingDrawer({
 
               {isAdmin && (
                 <ComparisonDetails
+                  showZeroAmounts
                   rows={[
                     {
                       label:
-                        'Foundation',
+                        'Foundation Original',
 
                       value:
                         project.foundationOriginalContractAmount,
@@ -797,7 +818,7 @@ export default function CompletedProjectBillingDrawer({
 
                     {
                       label:
-                        'Cognito',
+                        'Cognito Job Contract',
 
                       value:
                         project.cognitoContractAmount,
@@ -812,7 +833,7 @@ export default function CompletedProjectBillingDrawer({
 
                     {
                       label:
-                        'Historical Estimate',
+                        'Historical Bid Estimate',
 
                       value:
                         project.estimatorEstimatedAmount,
@@ -827,7 +848,7 @@ export default function CompletedProjectBillingDrawer({
 
                     {
                       label:
-                        'Foundation vs Cognito',
+                        'Foundation Original vs Cognito',
 
                       value:
                         foundationVsCognito,
@@ -842,7 +863,7 @@ export default function CompletedProjectBillingDrawer({
 
                     {
                       label:
-                        'Foundation vs Estimate',
+                        'Foundation Original vs Estimate',
 
                       value:
                         foundationVsEstimator,
@@ -857,79 +878,115 @@ export default function CompletedProjectBillingDrawer({
                   ]}
                 />
               )}
+
+              {isAdmin && zeroOriginalWithCognito && (
+                <DataPill tone="warning">
+                  Foundation original is $0 · verify against Cognito
+                </DataPill>
+              )}
             </div>
 
 
             <DetailValue
               label="Approved Change Orders"
-              value="TBD"
+              moneyValue={project.approvedChangeOrderAmount}
+              subtext={project.approvedChangeOrderAmount === null || project.approvedChangeOrderAmount === undefined
+                ? 'Foundation CO evidence unavailable'
+                : `Foundation · ${project.approvedChangeOrderCount ?? 0} approved CO${project.approvedChangeOrderCount === 1 ? '' : 's'}`}
             />
 
+            <DetailValue
+              label="Total Contract"
+              moneyValue={project.totalContractAmount}
+              subtext={completedContractSourceLabel(project.totalContractSource)}
+            >
+              {isAdmin && (
+                <ComparisonDetails
+                  showZeroAmounts
+                  rows={[
+                    {
+                      label: 'Foundation Original',
+                      value: project.foundationOriginalContractAmount,
+                      money: true,
+                      display: currency(project.foundationOriginalContractAmount),
+                    },
+                    {
+                      label: 'Approved CO Income',
+                      value: project.approvedChangeOrderAmount,
+                      money: project.approvedChangeOrderAmount != null,
+                      display: project.approvedChangeOrderAmount == null
+                        ? 'Unavailable · no Foundation CO evidence'
+                        : currency(project.approvedChangeOrderAmount),
+                    },
+                    {
+                      label: 'Foundation Revised',
+                      value: project.foundationRevisedContractAmount,
+                      money: project.foundationRevisedContractAmount != null,
+                      display: project.foundationRevisedContractAmount == null
+                        ? 'Unavailable · no Foundation revised contract'
+                        : currency(project.foundationRevisedContractAmount),
+                    },
+                    {
+                      label: 'Cognito Job Contract',
+                      value: project.cognitoContractAmount,
+                      money: true,
+                      display: currency(project.cognitoContractAmount),
+                    },
+                    {
+                      label: 'Selected Total Contract',
+                      value: project.totalContractAmount,
+                      money: true,
+                      display: currency(project.totalContractAmount),
+                    },
+                    {
+                      label: 'Selected Source',
+                      display: completedContractSourceLabel(project.totalContractSource),
+                    },
+                  ]}
+                />
+              )}
+            </DetailValue>
+
+            <DetailValue
+              label="Contract Remaining"
+              moneyValue={project.contractRemainingAmount}
+              subtext="Total Contract − lifetime Actual Billings"
+            />
 
             <DetailValue
               label="Actual Billings"
-              moneyValue={
-                project.foundationActualTotal
-              }
-              subtext={
-                (
-                  project.foundationBillingMonthCount
-                  || 0
-                )
-                + ' billing months'
-              }
+              moneyValue={project.foundationActualTotal}
+              subtext={`${project.foundationBillingMonthCount || 0} billing months · Foundation`}
             />
+          </section>
 
-
+          <section className="completed-kpi-grid completed-financial-secondary-grid">
             {isAdmin && (
               <div className="completed-detail-value">
-                <span>
-                  Margin Collected
-                </span>
-
+                <span>Margin Collected</span>
                 <strong>
-                  <MoneyValue
-                    value={
-                      project.marginCollectedTotal
-                    }
-                  />
+                  <MoneyValue value={project.marginCollectedTotal} />
                 </strong>
-
                 {project.marginDataComplete ? (
                   <small>
-                    {retentionLabel(
-                      project.weightedHistoricalMarginPercent
-                    )} weighted historical margin
+                    {retentionLabel(project.weightedHistoricalMarginPercent)} weighted historical margin
                   </small>
                 ) : (
-                  <DataPill tone="warning">
-                    Margin incomplete
-                  </DataPill>
+                  <DataPill tone="warning">Margin incomplete</DataPill>
                 )}
               </div>
             )}
 
-
             <DetailValue
-              label="Actual vs Original Contract"
-              moneyValue={
-                project.contractVsActualVariance
-              }
-              subtext={
-                (
-                  toNumber(
-                    project.contractVsActualVariance
-                  ) > 0
-                )
-                  ? 'Actual billings above original contract'
-                  : (
-                    toNumber(
-                      project.contractVsActualVariance
-                    ) < 0
-                  )
-                    ? 'Actual billings below original contract'
-                    : 'Actual equals original contract'
-              }
+              label="Actual vs Total Contract"
+              moneyValue={project.actualVsTotalContractVariance}
+              subtext={project.actualVsTotalContractVariance === null || project.actualVsTotalContractVariance === undefined
+                ? 'Revised-contract comparison unavailable'
+                : toNumber(project.actualVsTotalContractVariance) > 0
+                ? 'Actual billings above Total Contract'
+                : toNumber(project.actualVsTotalContractVariance) < 0
+                ? 'Actual billings below Total Contract'
+                : 'Actual equals Total Contract'}
             />
           </section>
 

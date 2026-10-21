@@ -18,6 +18,7 @@ import {
 import PMForecastPanel from './PMForecastPanel.jsx';
 import OriginatingBidPanel from './OriginatingBidPanel.jsx';
 import { GeneralContractorDisplay } from './GeneralContractors.jsx';
+import { billingQuantityLabel } from './billingQuantities.js';
 import ChangeOrdersPanel from './ChangeOrdersPanel.jsx';
 import { amountDifference, pmProjectionForVariance } from './primaryProjection.js';
 import { isCompleted } from './viewFilters.js';
@@ -134,30 +135,6 @@ function drawerBidEstimatorLabel(bid) {
   return names.length
     ? names.join(' / ')
     : '—';
-}
-
-
-function drawerQuantityLabel(value) {
-  if (
-    value === null
-    || value === undefined
-    || value === ''
-  ) {
-    return '—';
-  }
-
-  const number = Number(value);
-
-  if (!Number.isFinite(number)) {
-    return '—';
-  }
-
-  return new Intl.NumberFormat(
-    'en-US',
-    {
-      maximumFractionDigits: 0,
-    },
-  ).format(number);
 }
 
 
@@ -533,7 +510,7 @@ export default function CurrentProjectBillingDrawer({
               <strong>
                 {text(
                   project.pm,
-                  'TBD',
+                  'No PM assigned',
                 )}
               </strong>
             </article>
@@ -557,8 +534,8 @@ export default function CurrentProjectBillingDrawer({
                   </small>
                 </>
               ) : (
-                <strong className="drawer-tbd-value">
-                  TBD
+                <strong className="muted-value">
+                  —
                 </strong>
               )}
             </article>
@@ -616,7 +593,8 @@ export default function CurrentProjectBillingDrawer({
 
               <strong>
                 {retentionLabel(
-                  project.retention
+                  project.retention,
+                  'Not recorded'
                 )}
               </strong>
 
@@ -687,7 +665,8 @@ export default function CurrentProjectBillingDrawer({
 
                 <strong>
                   {retentionLabel(
-                    project.estimatedMarginPercent
+                    project.estimatedMarginPercent,
+                    'Not recorded'
                   )}
                 </strong>
 
@@ -706,7 +685,7 @@ export default function CurrentProjectBillingDrawer({
               {originatingBidDetail ? (
                 <>
                   <strong>
-                    {drawerQuantityLabel(
+                    {billingQuantityLabel(
                       originatingBidDetail.cubicYards
                     )}
                   </strong>
@@ -716,8 +695,8 @@ export default function CurrentProjectBillingDrawer({
                   </small>
                 </>
               ) : (
-                <strong className="drawer-tbd-value">
-                  TBD
+                <strong className="muted-value">
+                  —
                 </strong>
               )}
             </article>
@@ -731,7 +710,7 @@ export default function CurrentProjectBillingDrawer({
               {originatingBidDetail ? (
                 <>
                   <strong>
-                    {drawerQuantityLabel(
+                    {billingQuantityLabel(
                       originatingBidDetail.squareFootage
                     )}
                   </strong>
@@ -741,8 +720,8 @@ export default function CurrentProjectBillingDrawer({
                   </small>
                 </>
               ) : (
-                <strong className="drawer-tbd-value">
-                  TBD
+                <strong className="muted-value">
+                  —
                 </strong>
               )}
             </article>
@@ -773,10 +752,11 @@ export default function CurrentProjectBillingDrawer({
 
               {isAdmin && (
                 <ComparisonDetails
+                  showZeroAmounts
                   rows={[
                     {
                       label:
-                        'Foundation',
+                        'Foundation Original',
 
                       value:
                         project.foundationOriginalContractAmount,
@@ -791,7 +771,7 @@ export default function CurrentProjectBillingDrawer({
 
                     {
                       label:
-                        'Cognito',
+                        'Cognito Job Contract',
 
                       value:
                         project.cognitoContractAmount,
@@ -836,7 +816,7 @@ export default function CurrentProjectBillingDrawer({
 
                     {
                       label:
-                        'Foundation vs Cognito',
+                        'Foundation Original vs Cognito',
 
                       value:
                         foundationVsCognito,
@@ -851,7 +831,7 @@ export default function CurrentProjectBillingDrawer({
 
                     {
                       label:
-                        'Foundation vs Bid',
+                        'Foundation Original vs Bid',
 
                       value:
                         foundationVsBid,
@@ -866,7 +846,7 @@ export default function CurrentProjectBillingDrawer({
 
                     {
                       label:
-                        'Foundation vs Projection',
+                        'Foundation Original vs Projection',
 
                       value:
                         foundationVsProjection,

@@ -3,6 +3,7 @@ import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey} from './gcReference.js';
 import useGcReference, { canReadGcReference } from './useGcReference.js';
 import {shouldRevalidateOnReturn} from './pageReturnRefresh.js';
+import {completedContractSourceLabel, summarizeCompletedCommercial} from './completedCommercial.js';
 import {
   useCallback,
   useEffect,
@@ -977,63 +978,6 @@ export default function ProjectAccountability({
   const typeOptions=facets.options.type;
   const purposeOptions=facets.options.purpose;
 
-  const metrics = useMemo(
-    () => {
-      const contract =
-        rows.reduce(
-          (
-            total,
-            row,
-          ) => (
-            total
-            + toNumber(
-                row.contractAmount
-              )
-          ),
-          0,
-        );
-
-      const billed =
-        rows.reduce(
-          (
-            total,
-            row,
-          ) => (
-            total
-            + toNumber(
-                row.foundationActualTotal
-              )
-          ),
-          0,
-        );
-
-      const historicalEstimates =
-        rows.filter(
-          row => (
-            row.estimatorEstimatedAmount
-              !== null
-            && row.estimatorEstimatedAmount
-              !== undefined
-          ),
-        ).length;
-
-      return {
-        total:
-          rows.length,
-
-        contract,
-        billed,
-
-        actualVsContract:
-          billed - contract,
-
-        historicalEstimates,
-      };
-    },
-    [rows],
-  );
-
-
   const filteredRows = useMemo(
     () => [...facets.rows]
         .sort(
@@ -1068,6 +1012,13 @@ export default function ProjectAccountability({
     ],
   );
 
+
+  // All financial cards use the exact same selected project population as the
+  // table. Individual contract and variance values are provided by the API.
+  const metrics = useMemo(
+    () => summarizeCompletedCommercial(filteredRows),
+    [filteredRows],
+  );
 
   const sortedRows =
     useMemo(
@@ -1249,8 +1200,8 @@ export default function ProjectAccountability({
               case 'contract':
                 comparison =
                   compareNumber(
-                    a.contractAmount,
-                    b.contractAmount,
+                    a.totalContractAmount,
+                    b.totalContractAmount,
                   );
                 break;
 
@@ -1276,8 +1227,8 @@ export default function ProjectAccountability({
               case 'variance':
                 comparison =
                   compareNumber(
-                    a.contractVsActualVariance,
-                    b.contractVsActualVariance,
+                    a.actualVsTotalContractVariance,
+                    b.actualVsTotalContractVariance,
                   );
                 break;
 
@@ -1400,9 +1351,9 @@ export default function ProjectAccountability({
           </h1>
 
           <p>
-            Review original contract values, actual billings,
-            completed-project performance, and available
-            historical estimating information.
+            Review original contracts, approved change orders,
+            total contracts, actual billings, and historical
+            completed-project performance.
           </p>
         </div>
 
@@ -1444,59 +1395,43 @@ export default function ProjectAccountability({
       <section className="stats-grid completed-project-stats">
         <StatCard
           label="Completed Projects"
-          value={
-            metrics.total.toLocaleString(
-              'en-US'
-            )
-          }
-          detail="Completed non-side projects"
+          value={metrics.total.toLocaleString('en-US')}
+          detail={`${metrics.total.toLocaleString('en-US')} of ${rows.length.toLocaleString('en-US')} completed non-side projects`}
           emphasis
         />
-
         <StatCard
-          label="Original Contract Value"
-          value={
-            <MoneyValue
-              value={
-                metrics.contract
-              }
-            />
-          }
-          detail="Foundation original contract"
+          label="Original Contract"
+          value={<MoneyValue value={metrics.originalContract} />}
+          detail="Foundation original contract · Cognito fallback when unavailable"
         />
-
+        <StatCard
+          label="Approved Change Orders"
+          value={<MoneyValue value={metrics.approvedChangeOrders} />}
+          detail={`${metrics.approvedChangeOrderCount.toLocaleString('en-US')} approved COs${metrics.missingApprovedChangeOrderEvidence ? ` · ${metrics.missingApprovedChangeOrderEvidence} project(s) without Foundation CO evidence` : ''}`}
+        />
+        <StatCard
+          label="Total Contract"
+          value={<MoneyValue value={metrics.totalContract} />}
+          detail="Original contract + approved CO income"
+        />
         <StatCard
           label="Actual Billings"
-          value={
-            <MoneyValue
-              value={
-                metrics.billed
-              }
-            />
-          }
-          detail="Posted Foundation billings"
+          value={<MoneyValue value={metrics.actualBillings} />}
+          detail="Foundation billings · not cash collected"
         />
-
         <StatCard
-          label="Actual vs Original Contract"
-          value={
-            <MoneyValue
-              value={
-                metrics.actualVsContract
-              }
-            />
-          }
-          detail="Actual billings less original contract"
+          label="Contract Remaining"
+          value={<MoneyValue value={metrics.contractRemaining} />}
+          detail="Total Contract − lifetime Actual Billings"
         />
-
+        <StatCard
+          label="Actual vs Total Contract"
+          value={<MoneyValue value={metrics.actualVsTotalContract} />}
+          detail="Actual Billings − Total Contract"
+        />
         <StatCard
           label="Historical Estimates"
-          value={
-            metrics.historicalEstimates
-              .toLocaleString(
-                'en-US'
-              )
-          }
+          value={metrics.historicalEstimates.toLocaleString('en-US')}
           detail="Projects with historical estimate amount"
         />
       </section>
@@ -2469,7 +2404,7 @@ export default function ProjectAccountability({
                 />
 
                 <CompletedSortHeader
-                  label="Original Contract"
+                  label="Total Contract"
                   sortKey="contract"
                   sortState={sortState}
                   onSort={toggleSort}
@@ -2498,7 +2433,7 @@ export default function ProjectAccountability({
                 )}
 
                 <CompletedSortHeader
-                  label="Actual vs Contract"
+                  label="Actual vs Total Contract"
                   sortKey="variance"
                   sortState={sortState}
                   onSort={toggleSort}
@@ -2625,18 +2560,13 @@ export default function ProjectAccountability({
                     </td>
 
                     <td className="numeric">
-                      <MoneyValue
-                        value={
-                          row.contractAmount
-                        }
-                      />
-
+                      <MoneyValue value={row.totalContractAmount} />
                       <small className="cell-subtext commercial-source-note">
-                        {
-                          commercialSourceLabel(
-                            row.contractAmountSource
-                          )
-                        }
+                        {completedContractSourceLabel(row.totalContractSource)}
+                      </small>
+                      <small className="cell-subtext commercial-source-note">
+                        Original: <MoneyValue value={row.contractAmount} />
+                        {' · '}Approved COs: <MoneyValue value={row.approvedChangeOrderAmount} />
                       </small>
 
                       {isAdmin
@@ -2700,7 +2630,7 @@ export default function ProjectAccountability({
                     <td className="numeric">
                       <MoneyValue
                         value={
-                          row.contractVsActualVariance
+                          row.actualVsTotalContractVariance
                         }
                       />
                     </td>
@@ -2708,7 +2638,8 @@ export default function ProjectAccountability({
                     <td>
                       <strong>
                         {retentionLabel(
-                          row.retention
+                          row.retention,
+                          'Not recorded'
                         )}
                       </strong>
 

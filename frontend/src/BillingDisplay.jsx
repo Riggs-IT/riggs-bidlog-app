@@ -327,11 +327,11 @@ export function retentionNumber(value) {
 }
 
 
-export function retentionLabel(value) {
+export function retentionLabel(value, fallback = 'TBD') {
   const number = retentionNumber(value);
 
   if (number === null) {
-    return 'TBD';
+    return fallback;
   }
 
   return `${
@@ -402,6 +402,12 @@ export function commercialSourceLabel(value) {
 
 
 function comparisonRowHasValue(row) {
+  // Money fields cannot represent boolean values; false must not surface as
+  // a literal source-comparison row just because String(false) is nonempty.
+  if (row?.money === true && typeof row.value === 'boolean') {
+    return false;
+  }
+
   const candidate =
     row?.value
     ?? row?.display;
@@ -445,11 +451,21 @@ function comparisonRowHasValue(row) {
 
 export function ComparisonDetails({
   rows,
+  showZeroAmounts = false,
 }) {
-  const visibleRows =
-    rows.filter(
-      comparisonRowHasValue
-    );
+  const visibleRows = rows.filter(row => (
+    comparisonRowHasValue(row)
+    || (
+      showZeroAmounts
+      && row?.money === true
+      && row.value !== null
+      && row.value !== undefined
+      && String(row.value).trim() !== ''
+      && typeof row.value !== 'boolean'
+      && Number.isFinite(Number(row.value))
+      && Number(row.value) === 0
+    )
+  ));
 
   if (!visibleRows.length) {
     return null;
