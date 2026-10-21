@@ -197,7 +197,7 @@ test('no network calls or SQL arithmetic in the display owner', () => {
   assert.match(app, /resolveVisiblePortfolioReviews\(acceptedReviewPair, \{/);
   assert.match(app, /const rebalanceByJobId = visibleReview\.rows/);
   assert.doesNotMatch(app, /indexedBalanceReviews\(/);
-  assert.match(hook, /evidence\.state !== 'WAITING'/);
+  assert.match(hook, /publisher\.verified\(acceptedPair\)/);
   assert.match(hook, /reviewPair\.invalidate\('INDEPENDENT_FRESH_READ'\)/);
 });
 
@@ -244,7 +244,7 @@ test('current and balance batch only skips recertification for a genuinely recen
   const hook = readFileSync(new URL('../src/useProjectedBillingsFreshness.js', import.meta.url), 'utf8');
   assert.match(hook, /pairAlreadyRecent = canReuseVerifiedReviewPair/);
   assert.match(hook, /pairAlreadyRecent \? null : reviewPair\.begin\('BATCH'\)/);
-  assert.match(hook, /if \(reviewEpoch !== null\) reviewPair\.finish/);
+  assert.match(hook, /const verdict = reviewPair\.finish\(reviewEpoch/);
   assert.match(hook, /reviewPair\.invalidate\('INDEPENDENT_FRESH_READ'\)/);
 });
 

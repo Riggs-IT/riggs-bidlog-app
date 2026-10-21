@@ -2,6 +2,7 @@ import { completedProjectPivotCell, pivotCurrentCell, pivotTotals, nullableAmoun
 import { ProjectionEstimateMarker, ProjectionAmount } from './ProjectionDisplay.jsx';
 import ScheduleReviewFlag from './ScheduleReviewFlag.jsx';
 import ForecastBalanceFlag from './ForecastBalanceFlag.jsx';
+import {isBalanceReviewFilter} from './balanceReviewQuickFilter.js';
 import {
   useCallback,
   useEffect,
@@ -510,6 +511,9 @@ function bidPivotRow(
 
 function ProjectMeta({
   row,
+  onOpenBalanceReview,
+  onBalanceReviewQuickFilter,
+  selectedQuickFilter,
 }) {
   return (
     <div className="pivot-project-info">
@@ -523,7 +527,10 @@ function ProjectMeta({
         </strong>
 
         {row.source === 'current' && row.raw?.needsRebalance && !isCompleted(row.raw) && (
-          <ForecastBalanceFlag review={row.raw} className="pivot-needs-rebalance" />
+          <ForecastBalanceFlag review={row.raw} className="pivot-needs-rebalance"
+            onClick={onOpenBalanceReview}
+            onQuickFilter={onBalanceReviewQuickFilter}
+            selectedQuickFilter={selectedQuickFilter} />
         )}
 
         {row.source === 'current' && !isCompleted(row.raw) && (
@@ -1243,6 +1250,7 @@ export default function ProjectBillingPivot({
   portfolioBalanceAvailable = false,
   onProjectionSourceFilterChange = null,
   projectionSourceAllValue = '__ALL__',
+  onBalanceReviewQuickFilter = null,
 }) {
   const [
     billingMetric,
@@ -1751,8 +1759,8 @@ export default function ProjectBillingPivot({
 
               <button
                 type="button"
-                className={`projection-source-count-toggle ${projectionSourceFilter === 'rebalance' ? 'active' : ''} ${projectionCoverage.rebalance ? 'rebalance-count' : ''}`}
-                aria-pressed={projectionSourceFilter === 'rebalance'}
+                className={`projection-source-count-toggle ${isBalanceReviewFilter(projectionSourceFilter) ? 'active' : ''} ${projectionCoverage.rebalance ? 'rebalance-count' : ''}`}
+                aria-pressed={isBalanceReviewFilter(projectionSourceFilter)}
                 title={portfolioBalanceAvailable
                   ? 'Show balance reviews, including projects pending Foundation billing'
                   : 'Portfolio balance statuses are loading or unavailable'}
@@ -2159,6 +2167,9 @@ export default function ProjectBillingPivot({
                     <td className="pivot-project-column">
                       <ProjectMeta
                         row={row}
+                        onOpenBalanceReview={() => onSelectCurrentProject(row.raw, 'pm-forecast')}
+                        onBalanceReviewQuickFilter={onBalanceReviewQuickFilter}
+                        selectedQuickFilter={projectionSourceFilter}
                       />
                     </td>
 

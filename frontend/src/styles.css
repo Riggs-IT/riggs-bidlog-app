@@ -14089,6 +14089,11 @@ tbody > tr:nth-child(
   color: var(--warning);
 }
 
+/* Clearly indicate an exclusive Balance Reviews selection on its status badge. */
+.needs-rebalance-flag.balance-review-quick-selected {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 58%, transparent);
+}
+
 /* Pending Foundation is a provisional billing-timing review, not a red/amber
    instruction to redistribute the PM plan. The original SQL flag is retained. */
 .needs-rebalance-flag.pending-foundation-flag,
@@ -14228,6 +14233,20 @@ tbody > tr:nth-child(
   color: var(--warning);
   border-color: color-mix(in srgb, var(--warning) 50%, var(--border));
   background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+}
+
+/* When no exact review pair is certified, distinguish verification from an
+   actual Needs Rebalance status, in both dark and light themes. */
+.needs-rebalance-flag.review-verifying-flag,
+:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line)
+  > .needs-rebalance-flag.review-verifying-flag {
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--surface-2);
+}
+.needs-rebalance-action.review-verifying-flag:hover,
+.needs-rebalance-action.review-verifying-flag:focus-visible {
+  background: var(--surface-3);
 }
 
 /* The same generic table span selector must not mute schedule warnings. */

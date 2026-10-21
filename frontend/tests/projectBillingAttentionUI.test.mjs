@@ -126,7 +126,8 @@ test('contract values, warning filter and Billing vs Projection are wired withou
   const cards = source('NotificationProjectCards.jsx');
   assert.equal((app.match(/label="Billing vs Projection"/g) || []).length, 2);
   for (const label of ['Billed More', 'Billed Less', 'On Target']) assert.match(app, new RegExp(label));
-  assert.match(app, /value==='rebalance'/);
+  assert.match(app, /isBalanceReviewFilter\(value\)/);
+  assert.match(app, /matchesBalanceReviewFacet\(e\.row, value\)/);
   assert.match(app, /rebalanceByJobId\.has\(String\(row\.jobListId\)\)/);
   assert.match(app, /resolveVisiblePortfolioReviews\(acceptedReviewPair, \{/);
   assert.doesNotMatch(app, /forecastAttention\.map\(item => \[String\(item\.jobListId\)/);
@@ -178,7 +179,7 @@ test('project drawer renders the rebalance jump without granting edit access', a
   assert.doesNotMatch(html, />Edit Project</);
 });
 
-test('uncertified SQL fallback keeps a visible Needs Rebalance badge with an explanatory tooltip', async t => {
+test('unverified balance shows neutral status while verified Needs and Pending remain distinct', async t => {
   const vite = await createServer({
     root: fileURLToPath(new URL('../', import.meta.url)),
     server: {middlewareMode: true},
@@ -195,9 +196,17 @@ test('uncertified SQL fallback keeps a visible Needs Rebalance badge with an exp
     review: {jobListId: 531, needsRebalance: true, rebalanceVarianceAmount: -2840349,
       reviewStatus: 'PENDING_FOUNDATION', reviewStatusSource: 'VERIFIED_SERVER'},
   }));
-  assert.match(fallback, /Needs Rebalance/);
+  assert.match(fallback, />Verifying Balance</);
+  assert.match(fallback, /review-verifying-flag/);
+  assert.doesNotMatch(fallback, />Needs Rebalance</);
   assert.match(fallback, /Foundation timing could not yet be verified/);
   assert.doesNotMatch(fallback, /pending-foundation-flag/);
+  const verifiedNeeds = renderToString(React.createElement(ForecastBalanceFlag, {
+    review: {jobListId: 531, needsRebalance: true, rebalanceVarianceAmount: -2840349,
+      reviewStatus: 'NEEDS_REBALANCE', reviewStatusSource: 'VERIFIED_SERVER'},
+  }));
+  assert.match(verifiedNeeds, />Needs Rebalance</);
+  assert.doesNotMatch(verifiedNeeds, /review-verifying-flag|pending-foundation-flag/);
   assert.match(verified, /Pending Foundation/);
   assert.match(verified, /pending-foundation-flag/);
 });

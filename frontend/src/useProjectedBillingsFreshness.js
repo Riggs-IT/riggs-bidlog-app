@@ -6,6 +6,8 @@ import { createLatestRead, freshReadPath, readOptions, watchVisibleReads } from 
 import {DATA_UPDATED_MESSAGE, DATA_UPDATING_MESSAGE, hasFreshPortfolioSnapshot, isRefreshCooldown} from './refreshFeedback.js';
 import {createProgressiveDashboardReads} from './dashboardRefreshStages.js';
 import {createReviewPairCoordinator, canReuseVerifiedReviewPair, coalesceReviewBatches} from './reviewPairCoordinator.js';
+import {createReviewCacheRecovery, recoverableReviewReason} from './reviewCacheRecovery.js';
+import {createReviewCohortPublisher} from './reviewCohortPublication.js';
 
 // One owner publishes metadata, primary projections and historical-margin reads
 // together. Existing baseline API contracts remain unchanged for other callers.
@@ -22,23 +24,42 @@ export default function useProjectedBillingsFreshness(options) {
 
   const reads = useMemo(() => {
     const state = { alive: false, busy: 0, failures: new Map(), manualRefreshInProgress: false };
+    const stagedPairs = new Map();
     const usable = () => state.alive && latest.current.enabled && !latest.current.isEnding();
+    const publisher = createReviewCohortPublisher({
+      publish: cohort => {
+        if (usable()) latest.current.onReviewCohort?.(cohort);
+      },
+    });
     const reviewPair = createReviewPairCoordinator({
       onChange: (evidence, acceptedPair) => {
         if (!usable()) return;
         setReviewPairEvidence(evidence);
-        // The previous certificate still belongs to the PREVIOUS displayed
-        // rows while an ordinary background refresh is in flight. Keep it
-        // only during WAITING to avoid a periodic Pending -> Rebalance flicker.
-        // The display helper revalidates exact project/month/balance refs and
-        // the Arizona lock month on every render. Publishing either new half
-        // immediately makes that old certificate ineligible. Every terminal
-        // failure, reset, independent read or completed cycle revokes/replaces.
-        if (evidence.state !== 'WAITING') {
-          latest.current.onAcceptedReviewPair?.(acceptedPair);
+        if (evidence.state === 'VERIFIED' && acceptedPair) {
+          // One synchronous publication of the exact PRIMARY, MONTHLY,
+          // BALANCE and review certificate, never two independent updates.
+          publisher.verified(acceptedPair);
+        } else if (['SCREEN_RESET', 'INDEPENDENT_FRESH_READ',
+          'UNPAIRED_PRIMARY_READ', 'UNPAIRED_BALANCE_READ'].includes(evidence.reason)) {
+          publisher.forget();
+          latest.current.onAcceptedReviewPair?.(null);
         }
       },
     });
+    const staged = epoch => {
+      if (!stagedPairs.has(epoch)) stagedPairs.set(epoch, {current: null, balance: null});
+      return stagedPairs.get(epoch);
+    };
+    function publishUnverified(epoch, verdict, {passive = false} = {}) {
+      if (verdict.state !== 'UNAVAILABLE') return;
+      const pending = stagedPairs.get(epoch);
+      publisher.unavailable({
+        current: pending?.current || null,
+        balance: pending?.balance || null,
+        reason: verdict.reason,
+        passive,
+      });
+    }
     const request = (path, config) => latest.current.fetchJson(
       freshReadPath(path, config.fresh), readOptions(config),
     );
@@ -62,11 +83,13 @@ export default function useProjectedBillingsFreshness(options) {
       },
       publish: (data, config) => {
         if (!usable()) return false;
-        latest.current.onCurrent(data);
         if (config.reviewEpoch !== undefined) {
-          reviewPair.offerCurrent(config.reviewEpoch, data);
+          if (!reviewPair.offerCurrent(config.reviewEpoch, data)) return false;
+          staged(config.reviewEpoch).current = data;
         } else {
+          // Explicit fresh/job reads intentionally revoke old certification.
           reviewPair.invalidate('UNPAIRED_PRIMARY_READ');
+          latest.current.onCurrent(data);
         }
         state.failures.delete('current');
         latest.current.onError([...state.failures.values()].join(' ') || null);
@@ -97,11 +120,12 @@ export default function useProjectedBillingsFreshness(options) {
       publish: (data, config) => {
         if (!usable()) return false;
         indexPortfolioRebalance(data); // validate before publication
-        latest.current.onPortfolioBalance(data);
         if (config.reviewEpoch !== undefined) {
-          reviewPair.offerBalance(config.reviewEpoch, data);
+          if (!reviewPair.offerBalance(config.reviewEpoch, data)) return false;
+          staged(config.reviewEpoch).balance = data;
         } else {
           reviewPair.invalidate('UNPAIRED_BALANCE_READ');
+          latest.current.onPortfolioBalance(data);
         }
         state.failures.delete('portfolioBalance');
         latest.current.onError([...state.failures.values()].join(' ') || null);
@@ -152,6 +176,19 @@ export default function useProjectedBillingsFreshness(options) {
       }
     };
 
+    // A passive GET can land during a shared-cache rebuild and receive
+    // UNAVAILABLE review evidence alongside valid SQL financial rows. Wait for
+    // the EXISTING rebuild to finish using status metadata only; then retry
+    // one ordinary paired GET. Never manufacture a Pending classification.
+    const recovery = createReviewCacheRecovery({
+      readStatus: updateCacheStatus,
+      recertify: () => batch({passive: true, maxAgeMs: 0, cacheRecoveryCheck: true}),
+      allowed: () => usable() && latest.current.active
+        && document.visibilityState === 'visible'
+        && !state.manualRefreshInProgress
+        && reviewPair.evidence.state !== 'VERIFIED',
+    });
+
     const batch = coalesceReviewBatches(async config => {
       if (!usable()) return [];
       // A rapid focus check often returns `recent` for BOTH financial reads.
@@ -161,7 +198,13 @@ export default function useProjectedBillingsFreshness(options) {
         reviewPair.evidence, current, portfolioBalance, config,
       );
       const reviewEpoch = pairAlreadyRecent ? null : reviewPair.begin('BATCH');
-      const cohortConfig = pairAlreadyRecent ? config : {...config, reviewEpoch};
+      if (reviewEpoch !== null) staged(reviewEpoch);
+      // A new certificate requires BOTH financial readers to publish. Their
+      // independent 30-second max-age clocks can otherwise produce one
+      // 'recent' and one 'published' read, revoking a valid Pending label.
+      // This is an ordinary cached GET, never fresh=true or a cache rebuild.
+      const cohortConfig = pairAlreadyRecent ? config
+        : {...config, maxAgeMs: 0, reviewEpoch};
       let pairedSuccess = false;
       // Passive 60-second polling must not turn on the visible Refresh spinner.
       // Existing rows stay interactive while background data arrives.
@@ -182,7 +225,16 @@ export default function useProjectedBillingsFreshness(options) {
         }
         return result;
       } finally {
-        if (reviewEpoch !== null) reviewPair.finish(reviewEpoch, {successful: pairedSuccess});
+        if (reviewEpoch !== null) {
+          const verdict = reviewPair.finish(reviewEpoch, {successful: pairedSuccess});
+          publishUnverified(reviewEpoch, verdict, {passive: config?.passive === true});
+          stagedPairs.delete(reviewEpoch);
+          if (verdict.state === 'VERIFIED') recovery.cancel();
+          else if (!config?.cacheRecoveryCheck && !state.manualRefreshInProgress
+              && recoverableReviewReason(verdict)) {
+            void recovery.start();
+          }
+        }
         if (showSpinner) {
           state.busy -= 1;
           if (usable() && state.busy === 0) setRefreshing(false);
@@ -199,6 +251,7 @@ export default function useProjectedBillingsFreshness(options) {
       if (!usable() || state.manualRefreshInProgress) return;
       let reviewEpoch = null;
       state.manualRefreshInProgress = true;
+      recovery.cancel();
       state.busy += 1;
       setRefreshing(true);
       latest.current.onRefreshNotice?.(null);
@@ -214,6 +267,7 @@ export default function useProjectedBillingsFreshness(options) {
         // the button only starts a background rebuild, not a blocking page load.
         latest.current.onRefreshNotice?.(DATA_UPDATING_MESSAGE);
         reviewEpoch = reviewPair.begin('MANUAL');
+        staged(reviewEpoch);
         const progressive = createProgressiveDashboardReads({
           current: config => current.load(config),
           bids: config => bids.load(config),
@@ -245,9 +299,11 @@ export default function useProjectedBillingsFreshness(options) {
         const results = await progressive.finish(status, updateCacheStatus);
         // A partially completed rebuild must not certify two cached reads,
         // even if their UUIDs happen to match; fail closed until COMPLETE.
-        reviewPair.finish(reviewEpoch, {successful: status.status === 'COMPLETE'
+        const reviewVerdict = reviewPair.finish(reviewEpoch, {successful: status.status === 'COMPLETE'
           && results[0]?.status === 'published'
           && results[2]?.status === 'published'});
+        publishUnverified(reviewEpoch, reviewVerdict);
+        stagedPairs.delete(reviewEpoch);
         if (current.lastSuccessAt !== null && bids.lastSuccessAt !== null) {
           latest.current.onReady();
         }
@@ -265,7 +321,11 @@ export default function useProjectedBillingsFreshness(options) {
           }
         }
       } catch (error) {
-        if (reviewEpoch !== null) reviewPair.finish(reviewEpoch, {successful: false});
+        if (reviewEpoch !== null) {
+          const verdict = reviewPair.finish(reviewEpoch, {successful: false});
+          publishUnverified(reviewEpoch, verdict);
+          stagedPairs.delete(reviewEpoch);
+        }
         if (isRefreshCooldown(error)) {
           // The shared server has already enforced its limits. Re-read the
           // available data rather than turning a harmless repeat click into a
@@ -293,8 +353,8 @@ export default function useProjectedBillingsFreshness(options) {
         if (usable() && state.busy === 0) setRefreshing(false);
       }
     };
-    return { state, usable, reviewPair, current, bids, portfolioBalance,
-      scheduleReview, attention, batch, attentionLoad, refreshAll };
+    return { state, usable, reviewPair, publisher, stagedPairs, current, bids, portfolioBalance,
+      scheduleReview, attention, recovery, batch, attentionLoad, refreshAll };
   }, [scope]);
 
   useEffect(() => {
@@ -313,6 +373,9 @@ export default function useProjectedBillingsFreshness(options) {
     return () => {
       reads.state.alive = false;
       reads.batch.reset();
+      reads.recovery.cancel();
+      reads.publisher.forget();
+      reads.stagedPairs.clear();
       reads.current.cancel(); reads.bids.cancel(); reads.portfolioBalance.cancel(); reads.scheduleReview.cancel(); reads.attention.cancel();
     };
   }, [reads]);
@@ -341,6 +404,7 @@ export default function useProjectedBillingsFreshness(options) {
       // Project-specific fresh=true SQL reads are NOT a coordinated refresh.
       // Preserve the visible data flow, but revoke stale paired evidence.
       reads.reviewPair.invalidate('INDEPENDENT_FRESH_READ');
+      reads.recovery.cancel();
       return Promise.all([
         reads.current.load({ replace: true, fresh: true, passive: true }),
         reads.portfolioBalance.load({ replace: true, fresh: true, passive: true }),

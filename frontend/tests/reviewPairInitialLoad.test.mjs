@@ -5,6 +5,7 @@ import {createLatestRead, watchVisibleReads} from '../src/browserFreshness.js';
 import {
   coalesceReviewBatches,
   createReviewPairCoordinator,
+  canReuseVerifiedReviewPair,
   REVIEW_PAIR_STATE,
 } from '../src/reviewPairCoordinator.js';
 import {acceptedServerReviewIndex} from '../src/acceptedReviewPair.js';
@@ -187,4 +188,96 @@ test('hook uses a single-flight financial batch; no new SQL calls or weakened re
   assert.match(hook, /reads\.batch\.reset\(\)/);
   assert.match(hook, /watchVisibleReads\(reads\.batch/);
   assert.doesNotMatch(hook, /fresh: true.*begin\('BATCH'\)/);
+});
+
+
+test('tab return with skewed 30-second freshness windows never revokes a valid pair from one recent result', async () => {
+  const {current, balance} = example();
+  let time = 1_000;
+  let currentReads = 0;
+  let balanceReads = 0;
+  let accepted = null;
+  const delayedBalance = deferred();
+  const coordinator = createReviewPairCoordinator({
+    now: () => NOW,
+    onChange: (evidence, pair) => {
+      if (evidence.state !== REVIEW_PAIR_STATE.WAITING) accepted = pair;
+    },
+  });
+  const currentReader = createLatestRead({
+    now: () => time,
+    read: async () => {currentReads++; return current;},
+    publish: (value, config) => coordinator.offerCurrent(config.reviewEpoch, value),
+  });
+  const balanceReader = createLatestRead({
+    now: () => time,
+    read: async () => {
+      balanceReads++;
+      return balanceReads === 1 ? delayedBalance.promise : balance;
+    },
+    publish: (value, config) => coordinator.offerBalance(config.reviewEpoch, value),
+  });
+  const first = coordinator.begin('BATCH');
+  const a = currentReader.load({reviewEpoch: first});
+  const b = balanceReader.load({reviewEpoch: first});
+  assert.equal((await a).status, 'published');
+  time = 3_000; // balance finished two seconds after primary
+  delayedBalance.resolve(balance);
+  assert.equal((await b).status, 'published');
+  assert.equal(coordinator.finish(first, {successful: true}).state, REVIEW_PAIR_STATE.VERIFIED);
+
+  const config = {passive: true, maxAgeMs: 30_000};
+  time = 20_000;
+  assert.equal(canReuseVerifiedReviewPair(coordinator.evidence,
+    currentReader, balanceReader, config, time), true);
+  const noOp = await Promise.all([currentReader.load(config), balanceReader.load(config)]);
+  assert.deepEqual(noOp.map(result => result.status), ['recent', 'recent']);
+  assert.equal(currentReads, 1);
+  assert.equal(balanceReads, 1);
+
+  // Previously this exact focus boundary cleared the accepted certificate:
+  // primary age 30.5s (> 30s), balance age 28.5s (< 30s).
+  time = 31_500;
+  assert.equal(canReuseVerifiedReviewPair(coordinator.evidence,
+    currentReader, balanceReader, config, time), false);
+  const old = coordinator.begin('BATCH');
+  const partiallyRead = await Promise.all([
+    currentReader.load({...config, reviewEpoch: old}),
+    balanceReader.load({...config, reviewEpoch: old}),
+  ]);
+  assert.deepEqual(partiallyRead.map(result => result.status), ['published', 'recent']);
+  assert.deepEqual(coordinator.finish(old, {
+    successful: partiallyRead.every(result => result.status === 'published'),
+  }), {state: REVIEW_PAIR_STATE.UNAVAILABLE, reason: 'PARTIAL_REFRESH'});
+  assert.equal(accepted, null);
+
+  // The fixed new-epoch cohort deliberately bypasses only the BROWSER
+  // max-age check so both ordinary cached HTTP reads publish together.
+  time = 32_000;
+  const again = coordinator.begin('BATCH');
+  const coherent = await Promise.all([
+    currentReader.load({...config, maxAgeMs: 0, reviewEpoch: again}),
+    balanceReader.load({...config, maxAgeMs: 0, reviewEpoch: again}),
+  ]);
+  assert.deepEqual(coherent.map(result => result.status), ['published', 'published']);
+  assert.equal(coordinator.finish(again, {
+    successful: coherent.every(result => result.status === 'published'),
+  }).state, REVIEW_PAIR_STATE.VERIFIED);
+  const visible = {
+    currentProjects: current.projects,
+    portfolioBalance: balance,
+    currentMonthly: new Map(current.monthly.items.map(row => [row.jobListId, row.items])),
+    primarySnapshotId: SNAPSHOT,
+  };
+  assert.equal(acceptedServerReviewIndex(accepted, visible, NOW)
+    ?.get('531')?.reviewStatus, 'PENDING_FOUNDATION');
+  assert.equal(currentReads, 3);
+  assert.equal(balanceReads, 2);
+});
+
+test('source uses a paired normal GET without fresh=true when return cohort requires recertification', () => {
+  const hook = readFileSync(new URL('../src/useProjectedBillingsFreshness.js', import.meta.url), 'utf8');
+  assert.match(hook, /const cohortConfig = pairAlreadyRecent \? config\s*: \{\.\.\.config, maxAgeMs: 0, reviewEpoch\}/);
+  assert.match(hook, /reviewPair\.finish\(reviewEpoch, \{successful: pairedSuccess\}\)/);
+  assert.doesNotMatch(hook, /const cohortConfig =[^;]*fresh: true/);
 });

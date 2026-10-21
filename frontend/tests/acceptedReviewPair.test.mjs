@@ -152,6 +152,7 @@ test('App uses the exact accepted pair as its verified server presentation sourc
   assert.match(app,/setAcceptedReviewPair\(null\)/);
   assert.match(app,/resolveVisiblePortfolioReviews\(acceptedReviewPair, \{/);
   assert.match(app,/const rebalanceByJobId = visibleReview\.rows/);
-  assert.match(hook,/evidence\.state !== 'WAITING'/);
-  assert.match(hook,/latest\.current\.onAcceptedReviewPair\?\.\(acceptedPair\)/);
+  assert.match(hook,/onReviewCohort\?\.\(cohort\)/);
+  assert.match(hook,/publisher\.verified\(acceptedPair\)/);
+  assert.match(app,/onReviewCohort: \(\{current, balance, acceptedPair\}\) =>/);
 });

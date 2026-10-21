@@ -7,6 +7,8 @@ import {facetRows, hasMonthlyValues, isCompleted} from './viewFilters.js';
 import {resolveSignedInPmOption} from './pmScope.js';
 import {resolveVisiblePortfolioReviews, VISIBLE_REVIEW_SOURCE} from './acceptedReviewPair.js';
 import ForecastBalanceFlag from './ForecastBalanceFlag.jsx';
+import {balanceReviewFacetValues, isBalanceReviewFilter, matchesBalanceReviewFacet,
+  toggleExclusiveBalanceReview} from './balanceReviewQuickFilter.js';
 import AdministrationDashboard from './AdministrationDashboard.jsx';
 import {indexScheduleReview} from './scheduleReview.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
@@ -2353,6 +2355,17 @@ export default function App() {
       ? '/?auth_error=application_updated' : '/?signed_out=timeout');
   }
 
+  const applyCurrentProjectRead = ({projects, monthly, primarySnapshotId: nextSnapshotId}) => {
+    // One merged primary read: never borrow a month/amount from another source.
+    setCurrentProjects(projects);
+    setCurrentMonthly(new Map(monthly.items.map(row => [row.jobListId, row.items || []])));
+    setPrimarySnapshotId(nextSnapshotId);
+    // Refresh selected summary data without remounting an active PM editor.
+    setSelectedCurrentProject(current => current
+      ? projects.find(row => Number(row.jobListId) === Number(current.jobListId)) || current
+      : null);
+  };
+
   const portfolioFreshness = useProjectedBillingsFreshness({
     userKey: user ? `${user.eid}:${user.appRole}` : null,
     enabled: Boolean(user && canViewProjectedBillings),
@@ -2394,16 +2407,14 @@ export default function App() {
       setAttentionOpen(false);
       setMonthlyProgress({ loaded: 0, total: 4 });
     },
-    onCurrent: ({ projects, monthly, primarySnapshotId: nextSnapshotId }) => {
-      // Publish all three pieces of one merged primary read together.
-      // A failed/superseded refresh retains the previous complete trio.
-      setCurrentProjects(projects);
-      setCurrentMonthly(new Map(monthly.items.map(row => [row.jobListId, row.items || []])));
-      setPrimarySnapshotId(nextSnapshotId);
-      // Refresh summary fields without remounting the open PM editor.
-      setSelectedCurrentProject(current => current
-        ? projects.find(row => Number(row.jobListId) === Number(current.jobListId)) || current
-        : null);
+    onCurrent: applyCurrentProjectRead,
+    onReviewCohort: ({current, balance, acceptedPair}) => {
+      // React batches this synchronous callback: project/month amounts,
+      // balance rows and the reviewed certificate advance together.
+      // A held verified cohort keeps its ORIGINAL exact financial inputs.
+      if (current) applyCurrentProjectRead(current);
+      if (balance) setPortfolioBalance(balance);
+      setAcceptedReviewPair(acceptedPair);
     },
     onBids: dashboard => {
       setActiveBids(dashboard.projects.items);
@@ -3681,6 +3692,7 @@ export default function App() {
       return {...row,
         needsRebalance: rebalanceByJobId.has(String(row.jobListId)),
         reviewStatus: rebalanceByJobId.get(String(row.jobListId))?.reviewStatus,
+        reviewStatusSource: rebalanceByJobId.get(String(row.jobListId))?.reviewStatusSource,
         scheduleReview: scheduleReviewByJobId.get(String(row.jobListId)) || null,
         rebalanceVarianceAmount: rebalanceByJobId.get(String(row.jobListId))?.rebalanceVarianceAmount,
         selectedActualValueCount:m.actualValueCount, selectedBaseline:m.baseline,
@@ -3724,12 +3736,12 @@ export default function App() {
       purpose:shared('purpose'),forecast:shared('forecastState'),
       projectionSource:{
         values:e=>e.kind==='current'
-          ? [e.row.hasPmForecast ? 'pm' : 'missing', ...(e.row.needsRebalance ? ['rebalance'] : [])]
+          ? [e.row.hasPmForecast ? 'pm' : 'missing', ...(e.row.needsRebalance ? balanceReviewFacetValues(e.row) : [])]
           : [],
         matches:(e,value)=>e.kind!=='current'
-          ? value!=='rebalance'
-          : value==='rebalance'
-            ? Boolean(e.row.needsRebalance)
+          ? !isBalanceReviewFilter(value)
+          : isBalanceReviewFilter(value)
+            ? matchesBalanceReviewFacet(e.row, value)
             : value==='pm' ? e.row.hasPmForecast : !e.row.hasPmForecast,
       },
       gc:{values:e=>[...gc(e),...(e.kind==='bid' && generalContractorNames(e.row.generalContractors||e.row.gc).length>1?[MULTIPLE_GCS]:[])],
@@ -6860,12 +6872,12 @@ export default function App() {
                       <span className="projection-source-divider" aria-hidden="true">·</span>
                       <button
                         type="button"
-                        className={`projection-source-count-toggle ${projectionSourceFilter === 'rebalance' ? 'active' : ''} ${projectionCoverage.rebalance ? 'rebalance-count' : ''}`}
-                        aria-pressed={projectionSourceFilter === 'rebalance'}
+                        className={`projection-source-count-toggle ${isBalanceReviewFilter(projectionSourceFilter) ? 'active' : ''} ${projectionCoverage.rebalance ? 'rebalance-count' : ''}`}
+                        aria-pressed={isBalanceReviewFilter(projectionSourceFilter)}
                         title={portfolioBalance === null
                           ? 'Portfolio balance statuses are loading or unavailable'
                           : visibleReview.source === VISIBLE_REVIEW_SOURCE.SQL_REBALANCE_FALLBACK
-                            ? 'SQL balance reviews are available. Foundation timing classification is being verified; unverified projects show Needs Rebalance.'
+                            ? 'SQL balance reviews are available. Foundation timing classification is being verified; unverified projects show Verifying Balance.'
                             : 'Review flagged projections, including those pending Foundation billing'}
                         disabled={portfolioBalance === null}
                         onClick={() => setProjectionSourceFilter(value => value === 'rebalance' ? ALL : 'rebalance')}
@@ -6906,6 +6918,8 @@ export default function App() {
                 portfolioBalanceAvailable={portfolioBalance !== null}
                 onProjectionSourceFilterChange={setProjectionSourceFilter}
                 projectionSourceAllValue={ALL}
+                onBalanceReviewQuickFilter={status => setProjectionSourceFilter(value =>
+                  toggleExclusiveBalanceReview(value, status, ALL))}
               />
             )
             : (
@@ -7303,7 +7317,12 @@ export default function App() {
                                                   </strong>
 
                                                   {detail.source === 'Current Project' && !isCompleted(detail.raw) && detail.raw?.needsRebalance && (
-                                                    <ForecastBalanceFlag review={rebalanceByJobId.get(String(detail.raw?.jobListId))} />
+                                                    <ForecastBalanceFlag review={rebalanceByJobId.get(String(detail.raw?.jobListId))}
+                                                      onClick={() => openCurrentProjectDrawer(detail.raw, 'pm-forecast')}
+                                                      onQuickFilter={status => setProjectionSourceFilter(value =>
+                                                        toggleExclusiveBalanceReview(value, status, ALL))}
+                                                      selectedQuickFilter={projectionSourceFilter}
+                                                    />
                                                   )}
                                                   {detail.source === 'Current Project' && !isCompleted(detail.raw) && (
                                                     <ScheduleReviewFlag review={detail.raw?.scheduleReview} />
@@ -7795,7 +7814,12 @@ export default function App() {
                           </strong>
 
                           {row.source === 'Current Project' && !isCompleted(row.raw) && row.raw?.needsRebalance && (
-                            <ForecastBalanceFlag review={rebalanceByJobId.get(String(row.raw?.jobListId))} />
+                            <ForecastBalanceFlag review={rebalanceByJobId.get(String(row.raw?.jobListId))}
+                                                      onClick={() => openCurrentProjectDrawer(row.raw, 'pm-forecast')}
+                                                      onQuickFilter={status => setProjectionSourceFilter(value =>
+                                                        toggleExclusiveBalanceReview(value, status, ALL))}
+                                                      selectedQuickFilter={projectionSourceFilter}
+                                                    />
                           )}
                           {row.source === 'Current Project' && !isCompleted(row.raw) && (
                             <ScheduleReviewFlag review={row.raw?.scheduleReview} />
