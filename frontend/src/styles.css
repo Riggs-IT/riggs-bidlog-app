@@ -14910,6 +14910,10 @@ tbody > tr:nth-child(
   width: auto;
   height: auto;
   display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  min-width: 0;
   padding: 5px 0;
   border: 0;
   background: transparent;
@@ -14917,6 +14921,13 @@ tbody > tr:nth-child(
   font-size: 12px;
   font-weight: 600;
   border-radius: 0;
+}
+.completed-closeout-evidence .completed-originating-bid-details > summary > .project-setup-tag.linked {
+  flex: 0 0 auto;
+  min-width: max-content;
+  overflow: visible;
+  text-overflow: clip;
+  font-size: 11px;
 }
 .completed-closeout-evidence .completed-originating-bid-details .originating-bid-help-popover {
   position: static;

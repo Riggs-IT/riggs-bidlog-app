@@ -20,6 +20,15 @@ test('completed historical context has the existing originating-bid finder and l
   assert.match(panel, /apiCollection = projectKind === 'completed'/);
   assert.match(panel, /\/api\/' \+ apiCollection \+ '\/'/);
   assert.match(panel, /projectKind === 'completed' \? 'View bid details' : 'ⓘ'/);
+  assert.match(panel, /linkedBid[\s\S]*?projectKind !== 'completed' && \(/);
+  assert.match(panel, /projectKind === 'completed' && \([\s\S]*?<span className="project-setup-tag linked" aria-hidden="true">/);
+  assert.match(panel, /Linked originating bid, view bid details/);
+  assert.match(panel, /disclosure\.closest\('\.completed-drawer-scroll'\)/);
+  assert.match(panel, /projectKind === 'completed' && disclosure\.open/);
+  assert.match(panel, /scrollExpandedCloseoutIntoView\(/);
+  const styles = read('styles.css');
+  assert.match(styles, /completed-originating-bid-details > summary > \.project-setup-tag\.linked/);
+  assert.match(styles, /min-width: max-content;/);
   assert.match(panel, /contractLabel=\{projectKind === 'completed'/);
   assert.match(panel, /projectKind !== 'completed' && \(/);
   assert.match(panel, /Suggestions are evidence only/);

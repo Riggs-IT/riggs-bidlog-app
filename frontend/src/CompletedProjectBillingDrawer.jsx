@@ -1,12 +1,14 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
 import {completedAmount, completedContractSourceLabel} from './completedCommercial.js';
 import CompletedBillingProgressChart from './CompletedBillingProgressChart.jsx';
 import OriginatingBidPanel from './OriginatingBidPanel.jsx';
+import {scrollExpandedCloseoutIntoView} from './completedCloseoutScroll.mjs';
 import {billingQuantityLabel, completedQuantitySourceNote} from './billingQuantities.js';
 import {
   commercialSourceLabel,
@@ -318,6 +320,27 @@ export default function CompletedProjectBillingDrawer({
   // is opened. The closed closeout report makes no additional link request.
   const [historicalContextOpen, setHistoricalContextOpen] = useState(false);
 
+  const closeoutScrollRef = useRef(null);
+  const historicalContextRef = useRef(null);
+
+  // The disclosure can open near the bottom of this drawer. Reveal its
+  // contents within the drawer rather than moving the underlying page.
+  useEffect(() => {
+    if (!historicalContextOpen) {
+      return undefined;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      scrollExpandedCloseoutIntoView(
+        closeoutScrollRef.current,
+        historicalContextRef.current,
+        window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true,
+      );
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [historicalContextOpen]);
+
 
   useEffect(() => {
     if (!project) {
@@ -607,7 +630,7 @@ export default function CompletedProjectBillingDrawer({
           </div>
         </div>
 
-        <div className="completed-drawer-scroll completed-closeout-report">
+        <div ref={closeoutScrollRef} className="completed-drawer-scroll completed-closeout-report">
           <section className="completed-closeout-section completed-closeout-financial" aria-labelledby="closeout-contract-heading">
             <div className="completed-section-heading">
               <div>
@@ -1233,6 +1256,7 @@ export default function CompletedProjectBillingDrawer({
           </section>
 
           <details
+            ref={historicalContextRef}
             className="completed-closeout-evidence"
             onToggle={event => setHistoricalContextOpen(event.currentTarget.open)}
           >

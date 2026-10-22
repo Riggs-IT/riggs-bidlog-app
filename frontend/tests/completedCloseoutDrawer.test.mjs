@@ -63,7 +63,7 @@ test('closeout drawer uses a report hierarchy without adding new financial math 
   assert.ok(order.every((value, idx) => idx === 0 || value > order[idx - 1]));
   assert.doesNotMatch(jsx, /completed-kpi-grid|billing-meta-card|completed-drawer-meta/);
   assert.match(jsx, /<details className="completed-closeout-extra">/);
-  assert.match(jsx, /<details\s+className="completed-closeout-evidence"\s+onToggle=\{event\s*=>\s*setHistoricalContextOpen\(event\.currentTarget\.open\)\}\s*>/);
+  assert.match(jsx, /<details\s+ref=\{historicalContextRef\}\s+className="completed-closeout-evidence"\s+onToggle=\{event\s*=>\s*setHistoricalContextOpen\(event\.currentTarget\.open\)\}\s*>/);
   assert.match(jsx, /moneyValue=\{project\.contractRemainingAmount\}/);
   assert.match(jsx, /moneyValue=\{project\.actualVsTotalContractVariance\}/);
   assert.match(jsx, /moneyValue=\{project\.totalContractAmount\}/);

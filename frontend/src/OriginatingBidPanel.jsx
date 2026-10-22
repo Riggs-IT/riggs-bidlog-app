@@ -3,6 +3,8 @@ import {
   useState,
 } from 'react';
 
+import {scrollExpandedCloseoutIntoView} from './completedCloseoutScroll.mjs';
+
 
 function money(value) {
   if (
@@ -676,7 +678,8 @@ export default function OriginatingBidPanel({
 
           {!relationshipLoading
             && !relationshipError
-            && linkedBid && (
+            && linkedBid
+            && projectKind !== 'completed' && (
               <strong className="project-setup-tag linked">
                 Linked
               </strong>
@@ -718,16 +721,33 @@ export default function OriginatingBidPanel({
               open={projectKind === 'completed' ? undefined : infoOpen}
               onToggle={
                 event => {
-                  onInfoOpenChange?.(
-                    event.currentTarget.open
-                  );
+                  const disclosure = event.currentTarget;
+                  onInfoOpenChange?.(disclosure.open);
+
+                  if (projectKind === 'completed' && disclosure.open) {
+                    const scrollContainer = disclosure.closest('.completed-drawer-scroll');
+                    window.requestAnimationFrame(() => {
+                      scrollExpandedCloseoutIntoView(
+                        scrollContainer,
+                        disclosure,
+                        window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true,
+                      );
+                    });
+                  }
                 }
               }
             >
               <summary
-                aria-label="View originating bid details"
+                aria-label={projectKind === 'completed'
+                  ? 'Linked originating bid, view bid details'
+                  : 'View originating bid details'}
                 title="View originating bid details"
               >
+                {projectKind === 'completed' && (
+                  <span className="project-setup-tag linked" aria-hidden="true">
+                    Linked
+                  </span>
+                )}
                 {projectKind === 'completed' ? 'View bid details' : 'ⓘ'}
               </summary>
 
