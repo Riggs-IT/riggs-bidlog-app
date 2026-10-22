@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from datetime import date
 import json
 from urllib.parse import urlencode, urlparse
 from uuid import UUID, uuid4
@@ -88,6 +89,7 @@ from .data_api import (
     get_current_project_bid_candidates,
     link_current_project_originating_bid,
     get_completed_project_monthly,
+    get_completed_projects_monthly_bulk,
     get_completed_projects,
     end_bid_log_usage_session,
     record_bid_log_usage_heartbeat,
@@ -3801,6 +3803,34 @@ def completed_projects(
         _raise_projected_billings_error(
             exc
         )
+
+
+@app.get("/api/completed-projects/monthly")
+def completed_projects_monthly_bulk(
+    start_month: date = FastAPIQuery(..., alias="startMonth"),
+    end_month: date = FastAPIQuery(..., alias="endMonth"),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    _require_completed_workspace_access(current_user)
+    month_count = (
+        (end_month.year - start_month.year) * 12
+        + end_month.month - start_month.month + 1
+    )
+    if (
+        start_month.day != 1 or end_month.day != 1
+        or not 1 <= month_count <= 36
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail="completed_monthly_range_invalid",
+        )
+    try:
+        return _role_scoped_financial_payload(
+            get_completed_projects_monthly_bulk(start_month, end_month),
+            current_user,
+        )
+    except Exception as exc:
+        _raise_projected_billings_error(exc)
 
 
 @app.get(

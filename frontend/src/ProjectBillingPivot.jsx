@@ -273,7 +273,7 @@ function currentProjectPivotRow(
 
     projectValues: [
       {
-        label: 'Contract',
+        label: completed ? 'Total Contract' : 'Contract',
         value:
           wholeCurrencyLabel(project.totalContractAmount) || '—',
       },
@@ -514,11 +514,12 @@ function ProjectMeta({
   onOpenBalanceReview,
   onBalanceReviewQuickFilter,
   selectedQuickFilter,
+  historicalOnly = false,
 }) {
   return (
     <div className="pivot-project-info">
       <div className="pivot-project-name-line">
-        {row.source === 'current' && <ProjectionEstimateMarker project={row.raw} />}
+        {row.source === 'current' && !historicalOnly && <ProjectionEstimateMarker project={row.raw} />}
         <strong
           className="pivot-project-name"
           title={row.name}
@@ -1251,12 +1252,13 @@ export default function ProjectBillingPivot({
   onProjectionSourceFilterChange = null,
   projectionSourceAllValue = '__ALL__',
   onBalanceReviewQuickFilter = null,
+  completedHistoryMode = false,
 }) {
   const [
     billingMetric,
     setBillingMetric,
   ] = useState(
-    'projected'
+    completedHistoryMode ? 'actual' : 'projected'
   );
 
   const showCombinedSources =
@@ -1279,8 +1281,14 @@ export default function ProjectBillingPivot({
             : 'pivot-source-active'
         );
 
+  // Completed history is actual-only. No editable PM projection, baseline,
+  // or 15th-day variance metrics are offered in this mode.
   const availableBillingMetrics =
-    showPotentialOnly
+    completedHistoryMode
+      ? BILLING_METRICS.filter(metric =>
+          metric.key === 'actual'
+          || (canViewMargin && metric.key === 'marginCollected'))
+      : showPotentialOnly
       ? BILLING_METRICS.filter(
           metric =>
             metric.key === 'projected'
@@ -2170,6 +2178,7 @@ export default function ProjectBillingPivot({
                         onOpenBalanceReview={() => onSelectCurrentProject(row.raw, 'pm-forecast')}
                         onBalanceReviewQuickFilter={onBalanceReviewQuickFilter}
                         selectedQuickFilter={projectionSourceFilter}
+                        historicalOnly={completedHistoryMode}
                       />
                     </td>
 

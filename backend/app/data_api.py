@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import logging
 from time import perf_counter
 from typing import Callable
+from datetime import date
 from uuid import UUID, uuid4
 
 import httpx
@@ -1981,6 +1982,49 @@ def _fetch_completed_projects() -> list[dict]:
         response,
         operation=operation,
     )
+
+
+def get_completed_projects_monthly_bulk(
+    start_month: date,
+    end_month: date,
+) -> dict:
+    """Read bounded historical months through the existing authenticated bridge."""
+    operation = "Completed Projects monthly history"
+    response = _get_service_response(
+        "/v1/bid-log/completed-projects/monthly",
+        operation=operation,
+        params={
+            "startMonth": start_month.isoformat(),
+            "endMonth": end_month.isoformat(),
+        },
+    )
+    payload = _json_object(response, operation=operation)
+    items = payload.get("items")
+    if not isinstance(items, list):
+        raise DataAPIInvalidResponse(
+            "Completed monthly bulk response has no items list."
+        )
+    if payload.get("monthRowCount") != len(items):
+        raise DataAPIInvalidResponse(
+            "Completed monthly bulk count does not match its items."
+        )
+    observed = set()
+    for item in items:
+        if not isinstance(item, dict):
+            raise DataAPIInvalidResponse("Invalid completed monthly item.")
+        job_id = item.get("jobListId")
+        month = item.get("monthStart")
+        if not isinstance(job_id, int) or isinstance(job_id, bool) or job_id < 1:
+            raise DataAPIInvalidResponse("Invalid completed monthly project ID.")
+        if not isinstance(month, str) or len(month) < 10:
+            raise DataAPIInvalidResponse("Invalid completed monthly month.")
+        key = (job_id, month[:10])
+        if key in observed:
+            raise DataAPIInvalidResponse("Duplicate completed monthly project/month.")
+        observed.add(key)
+    if payload.get("projectCount") != len({p for p, _ in observed}):
+        raise DataAPIInvalidResponse("Invalid completed monthly project count.")
+    return payload
 
 
 def get_completed_project_monthly(

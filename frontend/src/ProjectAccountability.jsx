@@ -15,6 +15,7 @@ import {
 
 import CompletedProjectBillingDrawer
   from './CompletedProjectBillingDrawer.jsx';
+import CompletedMonthlyHistory from './CompletedMonthlyHistory.jsx';
 import ActiveProjectEditDrawer from './ActiveProjectEditDrawer.jsx';
 import {
   commercialSourceLabel,
@@ -623,6 +624,7 @@ export default function ProjectAccountability({
 
   const [completedRefreshVersion, setCompletedRefreshVersion] =
     useState(0);
+  const [billingHistoryView, setBillingHistoryView] = useState('directory');
   const completedLoadGenerationRef = useRef(0);
 
   const [search, setSearch] =
@@ -2360,6 +2362,17 @@ export default function ProjectAccountability({
         )}
 
 
+        <CompletedMonthlyHistory
+          view={billingHistoryView}
+          onViewChange={setBillingHistoryView}
+          projects={filteredRows}
+          canViewMargin={isAdmin}
+          pmIdentityByName={pmIdentityByName}
+          onSelectProject={setSelectedProject}
+          refreshVersion={completedRefreshVersion}
+        />
+
+        {billingHistoryView === 'directory' && (
         <div className="detail-table-wrap">
           <table className="detail-table completed-project-table">
             <thead>
@@ -2743,6 +2756,7 @@ export default function ProjectAccountability({
             </tbody>
           </table>
         </div>
+        )}
       </section>
 
 
