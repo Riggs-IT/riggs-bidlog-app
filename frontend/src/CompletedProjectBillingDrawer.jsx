@@ -5,6 +5,8 @@ import {
 } from 'react';
 
 import {completedAmount, completedContractSourceLabel} from './completedCommercial.js';
+import CompletedBillingProgressChart from './CompletedBillingProgressChart.jsx';
+import OriginatingBidPanel from './OriginatingBidPanel.jsx';
 import {billingQuantityLabel, completedQuantitySourceNote} from './billingQuantities.js';
 import {
   commercialSourceLabel,
@@ -17,7 +19,6 @@ import {
 } from './BillingDisplay.jsx';
 import {
   GeneralContractorDisplay,
-  generalContractorDisplayText,
 } from './GeneralContractors.jsx';
 
 
@@ -104,19 +105,19 @@ function displayValue(
 function sourceLabel(value) {
   const labels = {
     OPERATIONS_PLANNED_START:
-      'Operations planned start',
+      'Ops',
 
     OPERATIONS_ANTICIPATED_START:
-      'Operations anticipated start',
+      'Ops',
 
     OPERATIONS_COMPLETION:
-      'Operations completion',
+      'Ops',
 
     FOUNDATION_BILLING_DERIVED:
-      'Foundation-derived',
+      'Foundation',
 
     OPERATIONS:
-      'Operations',
+      'Ops',
 
     MIXED:
       'Mixed source',
@@ -299,15 +300,23 @@ export default function CompletedProjectBillingDrawer({
   user,
   onClose,
   onEditProject,
+  onBidLinked,
 }) {
   const [monthly, setMonthly] =
     useState([]);
+
+  const [monthlyForJobId, setMonthlyForJobId] =
+    useState(null);
 
   const [loading, setLoading] =
     useState(true);
 
   const [error, setError] =
     useState(null);
+
+  // The originating-bid network read is needed only when historical context
+  // is opened. The closed closeout report makes no additional link request.
+  const [historicalContextOpen, setHistoricalContextOpen] = useState(false);
 
 
   useEffect(() => {
@@ -320,6 +329,8 @@ export default function CompletedProjectBillingDrawer({
     async function loadMonthly() {
       setLoading(true);
       setError(null);
+      setMonthlyForJobId(null);
+      setMonthly([]);
 
       try {
         const payload =
@@ -338,6 +349,7 @@ export default function CompletedProjectBillingDrawer({
               ? payload.items
               : [],
           );
+          setMonthlyForJobId(project.jobListId);
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -359,7 +371,7 @@ export default function CompletedProjectBillingDrawer({
       cancelled = true;
     };
   }, [
-    project,
+    project?.jobListId,
   ]);
 
 
@@ -527,7 +539,7 @@ export default function CompletedProjectBillingDrawer({
         <header className="completed-drawer-header">
           <div>
             <span className="section-kicker">
-              COMPLETED PROJECT
+              COMPLETED PROJECT · CLOSEOUT
             </span>
 
             <h2>
@@ -541,10 +553,6 @@ export default function CompletedProjectBillingDrawer({
               Job {displayValue(
                 project.jobNumber
               )}
-
-              {project.generalContractor
-                ? ` · ${generalContractorDisplayText(project.generalContractor)}`
-                : ''}
             </p>
           </div>
 
@@ -571,761 +579,240 @@ export default function CompletedProjectBillingDrawer({
         </header>
 
 
-        <div className="completed-drawer-meta billing-drawer-meta-five">
-          <article className="billing-meta-card">
-            <small className="billing-meta-label">
-              PM
-            </small>
-
-            <strong>
-              {displayValue(
-                project.projectManager,
-                'No PM assigned',
-              )}
-            </strong>
-          </article>
-
-
-          <article className="billing-meta-card">
-            <small className="billing-meta-label">
-              Estimator
-            </small>
-
-            <strong>
-              {estimatorNames
-                || (project.missingEstimatorBidLink ? 'No linked bid' : 'Not recorded')}
-            </strong>
-          </article>
-
-
-          <article className="billing-meta-card">
-            <small className="billing-meta-label">
-              Purpose
-            </small>
-
-            <strong>
-              {displayValue(
-                project.purpose
-              )}
-            </strong>
-          </article>
-
-
-          <article className="billing-meta-card">
-            <small className="billing-meta-label">
-              GC
-            </small>
-
+        <div className="completed-closeout-context" aria-label="Project context">
+          <div>
+            <span>Project manager</span>
+            <strong>{displayValue(project.projectManager, 'No PM assigned')}</strong>
+          </div>
+          <div>
+            <span>Estimator</span>
+            <strong>{estimatorNames || (project.missingEstimatorBidLink ? 'No linked bid' : 'Not recorded')}</strong>
+          </div>
+          <div>
+            <span>Purpose</span>
+            <strong>{displayValue(project.purpose)}</strong>
+          </div>
+          <div>
+            <span>GC</span>
             <GeneralContractorDisplay
               value={project.generalContractor}
               fallback="Not recorded"
               compact
             />
-          </article>
-
-
-          <article className="billing-meta-card billing-location-card">
-            <small className="billing-meta-label">
-              Location
-            </small>
-
-            <strong>
-              {displayValue(
-                project.streetAddress,
-                'Not recorded',
-              )}
-            </strong>
-
-            {project.cityStateZip && (
-              <small>
-                {project.cityStateZip}
-              </small>
-            )}
-          </article>
+          </div>
+          <div className="completed-closeout-location">
+            <span>Location</span>
+            <strong>{displayValue(project.streetAddress, 'Not recorded')}</strong>
+            {project.cityStateZip && <small>{project.cityStateZip}</small>}
+          </div>
         </div>
 
-
-        <div className="completed-drawer-scroll">
-          <section className="billing-characteristics-grid">
-            <article>
-              <span>
-                Retention
-              </span>
-
-              <strong>
-                {retentionLabel(
-                  project.retention,
-                  'Not recorded'
-                )}
-              </strong>
-
-              <small className="commercial-source-note">
-                {
-                  commercialSourceLabel(
-                    project.retentionSource
-                  )
-                }
-              </small>
-
-              {isAdmin && (
-                <ComparisonDetails
-                  rows={[
-                    {
-                      label:
-                        'Foundation',
-
-                      display:
-                        retentionLabel(
-                          project.foundationRetentionPercent
-                        ),
-                    },
-
-                    {
-                      label:
-                        'Cognito',
-
-                      display:
-                        retentionLabel(
-                          project.cognitoRetention
-                        ),
-                    },
-
-                    {
-                      label:
-                        'Difference',
-
-                      display:
-                        (
-                          foundationRetention !== null
-                          && cognitoRetention !== null
-                            ? `${
-                                (
-                                  foundationRetention
-                                  - cognitoRetention
-                                ).toFixed(2)
-                              } pts`
-                            : '—'
-                        ),
-                    },
-                  ]}
-                />
-              )}
-            </article>
-
-
-            {isAdmin && (
-              <article>
-                <span>
-                  Historical Margin
-                </span>
-
-                {project.marginDataComplete ? (
-                  <>
-                    <strong>
-                      {retentionLabel(
-                        project.weightedHistoricalMarginPercent
-                      )}
-                    </strong>
-
-                    <small className="commercial-source-note">
-                      Weighted from Foundation billings
-                    </small>
-                  </>
-                ) : (
-                  <>
-                    <strong className="drawer-tbd-value">
-                      —
-                    </strong>
-
-                    <DataPill tone="warning">
-                      Margin incomplete
-                    </DataPill>
-                  </>
-                )}
-              </article>
-            )}
-
-
-            <article>
-              <span>
-                CY
-              </span>
-
-              <strong>
-                {billingQuantityLabel(project.cubicYards)}
-              </strong>
-
-              <small className="commercial-source-note">
-                {completedQuantitySourceNote(project.cubicYards, project.missingEstimatorBidLink)}
-              </small>
-            </article>
-
-
-            <article>
-              <span>
-                SF
-              </span>
-
-              <strong>
-                {billingQuantityLabel(project.squareFootage)}
-              </strong>
-
-              <small className="commercial-source-note">
-                {completedQuantitySourceNote(project.squareFootage, project.missingEstimatorBidLink)}
-              </small>
-            </article>
-          </section>
-          <section className="completed-kpi-grid completed-commercial-grid">
-            <div className="completed-detail-value">
-              <span>
-                Original Contract
-              </span>
-
-              <strong>
-                <MoneyValue
-                  value={
-                    project.contractAmount
-                  }
-                />
-              </strong>
-
-              <small className="commercial-source-note">
-                {
-                  commercialSourceLabel(
-                    project.contractAmountSource
-                  )
-                }
-              </small>
-
-              {isAdmin && (
-                <ComparisonDetails
-                  showZeroAmounts
-                  rows={[
-                    {
-                      label:
-                        'Foundation Original',
-
-                      value:
-                        project.foundationOriginalContractAmount,
-
-                      money: true,
-
-                      display:
-                        currency(
-                          project.foundationOriginalContractAmount
-                        ),
-                    },
-
-                    {
-                      label:
-                        'Cognito Job Contract',
-
-                      value:
-                        project.cognitoContractAmount,
-
-                      money: true,
-
-                      display:
-                        currency(
-                          project.cognitoContractAmount
-                        ),
-                    },
-
-                    {
-                      label:
-                        'Historical Bid Estimate',
-
-                      value:
-                        project.estimatorEstimatedAmount,
-
-                      money: true,
-
-                      display:
-                        currency(
-                          project.estimatorEstimatedAmount
-                        ),
-                    },
-
-                    {
-                      label:
-                        'Foundation Original vs Cognito',
-
-                      value:
-                        foundationVsCognito,
-
-                      money: true,
-
-                      display:
-                        currency(
-                          foundationVsCognito
-                        ),
-                    },
-
-                    {
-                      label:
-                        'Foundation Original vs Estimate',
-
-                      value:
-                        foundationVsEstimator,
-
-                      money: true,
-
-                      display:
-                        currency(
-                          foundationVsEstimator
-                        ),
-                    },
-                  ]}
-                />
-              )}
-
-              {isAdmin && zeroOriginalWithCognito && (
-                <DataPill tone="warning">
-                  Foundation original is $0 · verify against Cognito
-                </DataPill>
-              )}
+        <div className="completed-drawer-scroll completed-closeout-report">
+          <section className="completed-closeout-section completed-closeout-financial" aria-labelledby="closeout-contract-heading">
+            <div className="completed-section-heading">
+              <div>
+                <span className="section-kicker">FINANCIAL CLOSEOUT</span>
+                <h3 id="closeout-contract-heading">Contract reconciliation</h3>
+              </div>
             </div>
-
-
-            <DetailValue
-              label="Approved Change Orders"
-              moneyValue={project.approvedChangeOrderAmount}
-              subtext={project.approvedChangeOrderAmount === null || project.approvedChangeOrderAmount === undefined
-                ? 'Foundation CO evidence unavailable'
-                : `Foundation · ${project.approvedChangeOrderCount ?? 0} approved CO${project.approvedChangeOrderCount === 1 ? '' : 's'}`}
-            />
-
-            <DetailValue
-              label="Total Contract"
-              moneyValue={project.totalContractAmount}
-              subtext={completedContractSourceLabel(project.totalContractSource)}
-            >
-              {isAdmin && (
-                <ComparisonDetails
-                  showZeroAmounts
-                  rows={[
-                    {
-                      label: 'Foundation Original',
-                      value: project.foundationOriginalContractAmount,
-                      money: true,
-                      display: currency(project.foundationOriginalContractAmount),
-                    },
-                    {
-                      label: 'Approved CO Income',
-                      value: project.approvedChangeOrderAmount,
-                      money: project.approvedChangeOrderAmount != null,
-                      display: project.approvedChangeOrderAmount == null
-                        ? 'Unavailable · no Foundation CO evidence'
-                        : currency(project.approvedChangeOrderAmount),
-                    },
-                    {
-                      label: 'Foundation Revised',
-                      value: project.foundationRevisedContractAmount,
-                      money: project.foundationRevisedContractAmount != null,
-                      display: project.foundationRevisedContractAmount == null
-                        ? 'Unavailable · no Foundation revised contract'
-                        : currency(project.foundationRevisedContractAmount),
-                    },
-                    {
-                      label: 'Cognito Job Contract',
-                      value: project.cognitoContractAmount,
-                      money: true,
-                      display: currency(project.cognitoContractAmount),
-                    },
-                    {
-                      label: 'Selected Total Contract',
-                      value: project.totalContractAmount,
-                      money: true,
-                      display: currency(project.totalContractAmount),
-                    },
-                    {
-                      label: 'Selected Source',
-                      display: completedContractSourceLabel(project.totalContractSource),
-                    },
-                  ]}
-                />
-              )}
-            </DetailValue>
-
-            <DetailValue
-              label="Contract Remaining"
-              moneyValue={project.contractRemainingAmount}
-              subtext="Total Contract − lifetime Actual Billings"
-            />
-
-            <DetailValue
-              label="Actual Billings"
-              moneyValue={project.foundationActualTotal}
-              subtext={`${project.foundationBillingMonthCount || 0} billing months · Foundation`}
-            />
-          </section>
-
-          <section className="completed-kpi-grid completed-financial-secondary-grid">
-            {isAdmin && (
+            <div className="completed-closeout-contract-ledger">
               <div className="completed-detail-value">
-                <span>Margin Collected</span>
+                <span>
+                  Original Contract
+                </span>
+
                 <strong>
-                  <MoneyValue value={project.marginCollectedTotal} />
+                  <MoneyValue
+                    value={
+                      project.contractAmount
+                    }
+                  />
                 </strong>
-                {project.marginDataComplete ? (
-                  <small>
-                    {retentionLabel(project.weightedHistoricalMarginPercent)} weighted historical margin
-                  </small>
-                ) : (
-                  <DataPill tone="warning">Margin incomplete</DataPill>
+
+                <small className="commercial-source-note">
+                  {
+                    project.contractAmountSource === 'COGNITO'
+                      ? 'Ops'
+                      : commercialSourceLabel(project.contractAmountSource)
+                  }
+                </small>
+
+                {isAdmin && (
+                  <ComparisonDetails
+                    showZeroAmounts
+                    rows={[
+                      {
+                        label:
+                          'Foundation Original',
+
+                        value:
+                          project.foundationOriginalContractAmount,
+
+                        money: true,
+
+                        display:
+                          currency(
+                            project.foundationOriginalContractAmount
+                          ),
+                      },
+
+                      {
+                        label:
+                          'Ops Job Contract',
+
+                        value:
+                          project.cognitoContractAmount,
+
+                        money: true,
+
+                        display:
+                          currency(
+                            project.cognitoContractAmount
+                          ),
+                      },
+
+                      {
+                        label:
+                          'Historical Bid Estimate',
+
+                        value:
+                          project.estimatorEstimatedAmount,
+
+                        money: true,
+
+                        display:
+                          currency(
+                            project.estimatorEstimatedAmount
+                          ),
+                      },
+
+                      {
+                        label:
+                          'Foundation Original vs Ops',
+
+                        value:
+                          foundationVsCognito,
+
+                        money: true,
+
+                        display:
+                          currency(
+                            foundationVsCognito
+                          ),
+                      },
+
+                      {
+                        label:
+                          'Foundation Original vs Estimate',
+
+                        value:
+                          foundationVsEstimator,
+
+                        money: true,
+
+                        display:
+                          currency(
+                            foundationVsEstimator
+                          ),
+                      },
+                    ]}
+                  />
+                )}
+
+                {isAdmin && zeroOriginalWithCognito && (
+                  <DataPill tone="warning">
+                    Foundation original is $0 · verify against Ops
+                  </DataPill>
                 )}
               </div>
-            )}
-
-            <DetailValue
-              label="Actual vs Total Contract"
-              moneyValue={project.actualVsTotalContractVariance}
-              subtext={project.actualVsTotalContractVariance === null || project.actualVsTotalContractVariance === undefined
-                ? 'Revised-contract comparison unavailable'
-                : toNumber(project.actualVsTotalContractVariance) > 0
-                ? 'Actual billings above Total Contract'
-                : toNumber(project.actualVsTotalContractVariance) < 0
-                ? 'Actual billings below Total Contract'
-                : 'Actual equals Total Contract'}
-            />
-          </section>
-
-
-          <section className="completed-kpi-grid completed-lifecycle-summary-grid">
-            <DetailValue
-              label="Project Duration"
-              value={
-                project.resolvedDurationDays
-                  ? (
-                    `${project.resolvedDurationDays.toLocaleString(
-                      'en-US'
-                    )} days`
-                  )
-                  : '—'
-              }
-              subtext={
-                project.resolvedDurationMonthsApprox
-                  ? (
-                    `${Number(
-                      project.resolvedDurationMonthsApprox
-                    ).toFixed(1)} months`
-                  )
-                  : null
-              }
-            />
-
-
-            <DetailValue
-              label="Project Start"
-              value={
-                dateLabel(
-                  project.resolvedStartDate
-                )
-              }
-            />
-
-
-            <DetailValue
-              label="Project Completion"
-              value={
-                dateLabel(
-                  project.resolvedEndDate
-                )
-              }
-            />
-
-
-            <DetailValue
-              label="Billing History"
-              value={
-                `${
-                  project.foundationBillingMonthCount
-                  || 0
-                } months`
-              }
-            />
-          </section>
-
-
-          <section className="completed-drawer-section completed-benchmark-section">
-            <div className="completed-section-heading">
-              <div>
-                <span className="section-kicker">
-                  BILLING CURVE
-                </span>
-
-                <h3>
-                  Standard billing benchmark
-                </h3>
-              </div>
-            </div>
-
-
-            <div className="billing-curve-summary completed-curve-summary">
-              <div>
-                <span className="billing-detail-label">
-                  Billing Curve
-                </span>
-
-                <strong className="billing-curve-tag">
-                  {project.benchmarkCurveDisplayName
-                    || 'Not configured'}
-                </strong>
-              </div>
-
-
-              <details className="billing-curve-help">
-                <summary
-                  aria-label="What the completed project billing curve means"
-                  title="What the billing curve means"
-                >
-                  ⓘ
-                </summary>
-
-                <div className="billing-curve-help-popover">
-                  <strong>
-                    What does this curve mean?
-                  </strong>
-
-                  <p>
-                    This is the current Riggs standard used to
-                    compare a completed project's billing shape.
-                    It is a retrospective benchmark, not a claim
-                    about the projection used when this project
-                    was originally estimated.
-                  </p>
-
-                  {project.benchmarkCurveDescription && (
-                    <p>
-                      {project.benchmarkCurveDescription}
-                    </p>
-                  )}
-                </div>
-              </details>
-            </div>
-          </section>
-
-
-          <section className="completed-drawer-section">
-            <div className="completed-section-heading">
-              <div>
-                <span className="section-kicker">
-                  ACTUAL LIFECYCLE
-                </span>
-
-                <h3>
-                  Project dates
-                </h3>
-              </div>
-
-              <span className="section-note">
-                Operations first · Foundation fallback
-              </span>
-            </div>
-
-            <div className="completed-detail-grid">
               <DetailValue
-                label="Resolved Start"
-                value={
-                  dateLabel(
-                    project.resolvedStartDate
-                  )
-                }
-                source={
-                  project.resolvedStartSource
-                }
+                label="Approved Change Orders"
+                moneyValue={project.approvedChangeOrderAmount}
+                subtext={project.approvedChangeOrderAmount === null || project.approvedChangeOrderAmount === undefined
+                  ? 'Foundation CO evidence unavailable'
+                  : `Foundation · ${project.approvedChangeOrderCount ?? 0} approved CO${project.approvedChangeOrderCount === 1 ? '' : 's'}`}
               />
-
               <DetailValue
-                label="Resolved End"
-                value={
-                  dateLabel(
-                    project.resolvedEndDate
-                  )
-                }
-                source={
-                  project.resolvedEndSource
-                }
+                label="Total Contract"
+                moneyValue={project.totalContractAmount}
+                subtext={project.totalContractSource === 'COGNITO_FALLBACK'
+                  ? completedContractSourceLabel(project.totalContractSource)
+                  : null}
+              >
+                {isAdmin && (
+                  <ComparisonDetails
+                    showZeroAmounts
+                    rows={[
+                      {
+                        label: 'Foundation Original',
+                        value: project.foundationOriginalContractAmount,
+                        money: true,
+                        display: currency(project.foundationOriginalContractAmount),
+                      },
+                      {
+                        label: 'Approved CO Income',
+                        value: project.approvedChangeOrderAmount,
+                        money: project.approvedChangeOrderAmount != null,
+                        display: project.approvedChangeOrderAmount == null
+                          ? 'Unavailable · no Foundation CO evidence'
+                          : currency(project.approvedChangeOrderAmount),
+                      },
+                      {
+                        label: 'Foundation Revised',
+                        value: project.foundationRevisedContractAmount,
+                        money: project.foundationRevisedContractAmount != null,
+                        display: project.foundationRevisedContractAmount == null
+                          ? 'Unavailable · no Foundation revised contract'
+                          : currency(project.foundationRevisedContractAmount),
+                      },
+                      {
+                        label: 'Ops Job Contract',
+                        value: project.cognitoContractAmount,
+                        money: true,
+                        display: currency(project.cognitoContractAmount),
+                      },
+                      {
+                        label: 'Selected Total Contract',
+                        value: project.totalContractAmount,
+                        money: true,
+                        display: currency(project.totalContractAmount),
+                      },
+                      {
+                        label: 'Selected Source',
+                        display: completedContractSourceLabel(project.totalContractSource),
+                      },
+                    ]}
+                  />
+                )}
+              </DetailValue>
+            </div>
+            <div className="completed-closeout-financial-outcome">
+              <DetailValue
+                label="Actual Billings"
+                moneyValue={project.foundationActualTotal}
+                subtext={`${project.foundationBillingMonthCount || 0} billing months · Foundation`}
               />
-
               <DetailValue
-                label="First Foundation Billing"
-                value={
-                  dateLabel(
-                    project.firstBillingActivityDate
-                  )
-                }
-              />
-
-              <DetailValue
-                label="Last Foundation Billing"
-                value={
-                  dateLabel(
-                    project.lastBillingActivityDate
-                  )
-                }
+                label="Actual vs Total Contract"
+                moneyValue={project.actualVsTotalContractVariance}
+                subtext={project.actualVsTotalContractVariance === null || project.actualVsTotalContractVariance === undefined
+                  ? 'Revised-contract comparison unavailable'
+                  : toNumber(project.actualVsTotalContractVariance) > 0
+                  ? 'Actual billings above Total Contract'
+                  : toNumber(project.actualVsTotalContractVariance) < 0
+                  ? 'Actual billings below Total Contract'
+                  : 'Actual equals Total Contract'}
               />
             </div>
-
-            {project.invalidResolvedDateRange && (
-              <div className="completed-inline-warning">
-                <strong>
-                  Date review required.
-                </strong>
-
-                <span>
-                  The resolved start occurs after the
-                  recorded completion date. Billing data is
-                  still shown, but duration is not calculated.
-                </span>
-              </div>
-            )}
+            <details className="completed-closeout-extra">
+              <summary>Additional contract measure</summary>
+              <DetailValue
+                label="Contract Remaining"
+                moneyValue={project.contractRemainingAmount}
+                subtext="Total Contract − lifetime Actual Billings"
+              />
+            </details>
           </section>
-
-
-          <section className="completed-drawer-section">
-            <div className="completed-section-heading">
-              <div>
-                <span className="section-kicker">
-                  ESTIMATOR HISTORY
-                </span>
-
-                <h3>
-                  Original estimate
-                </h3>
-              </div>
-
-              <span className="section-note">
-                Available historical Bid Log information
-              </span>
-            </div>
-
-            {hasEstimatorData ? (
-              <>
-                <div className="completed-detail-grid">
-                  <DetailValue
-                    label="Estimator"
-                    value={
-                      estimatorNames
-                      || 'Missing'
-                    }
-                  />
-
-                  <DetailValue
-                    label="Estimated Amount"
-                    moneyValue={
-                      project.estimatorEstimatedAmount
-                    }
-                    source={
-                      project.estimatorAmountSource
-                    }
-                  />
-
-                  <DetailValue
-                    label="Estimator Start"
-                    value={
-                      dateLabel(
-                        project.estimatorAnticipatedStartDate
-                      )
-                    }
-                    source={
-                      project.estimatorStartSource
-                    }
-                  />
-
-                  <DetailValue
-                    label="Estimator Duration"
-                    value={
-                      project.estimatorDurationMonths
-                        ? (
-                          `${project.estimatorDurationMonths} months`
-                        )
-                        : 'Missing'
-                    }
-                  />
-
-                  <DetailValue
-                    label="Actual vs Estimate"
-                    moneyValue={
-                      actualVsEstimate
-                    }
-                  />
-
-                  <DetailValue
-                    label="Awarded Bid"
-                    value={
-                      displayValue(
-                        project.bidName
-                      )
-                    }
-                    subtext={
-                      project.bidDateAwarded
-                        ? (
-                          `Awarded ${dateLabel(
-                            project.bidDateAwarded
-                          )}`
-                        )
-                        : null
-                    }
-                  />
-                </div>
-
-                <div className="completed-estimator-flags">
-                  {project.missingEstimatorIdentity && (
-                    <DataPill tone="warning">
-                      Estimator identity missing
-                    </DataPill>
-                  )}
-
-                  {project.missingEstimatorAmount && (
-                    <DataPill tone="warning">
-                      Estimated amount missing
-                    </DataPill>
-                  )}
-
-                  {project.missingEstimatorStart && (
-                    <DataPill tone="warning">
-                      Estimator start missing
-                    </DataPill>
-                  )}
-
-                  {project.missingEstimatorDuration && (
-                    <DataPill tone="warning">
-                      Estimator duration missing
-                    </DataPill>
-                  )}
-                </div>
-
-                <div className="completed-derived-note">
-                  <strong>
-                    Historical timeline fallback
-                  </strong>
-
-                  <span>
-                    When estimator timing is missing, this
-                    project is ready to use the resolved
-                    Operations/Foundation lifecycle for
-                    comparison. The source remains visibly
-                    labeled as derived.
-                  </span>
-                </div>
-              </>
-            ) : (
-              <div className="completed-empty-panel">
-                <strong>
-                  Historical estimator snapshot unavailable
-                </strong>
-
-                <span>
-                  No confirmed historical Bid Log relationship
-                  exists for this completed project. Foundation
-                  billing and the resolved project lifecycle
-                  remain available for review.
-                </span>
-              </div>
-            )}
-          </section>
-
 
           <section className="completed-drawer-section">
             <div className="completed-section-heading">
@@ -1335,7 +822,7 @@ export default function CompletedProjectBillingDrawer({
                 </span>
 
                 <h3>
-                  Actual Billings
+                  Billing progression
                 </h3>
               </div>
 
@@ -1359,6 +846,14 @@ export default function CompletedProjectBillingDrawer({
                   {error}
                 </span>
               </div>
+            )}
+
+            {monthlyForJobId === project.jobListId && !loading && !error && (
+              <CompletedBillingProgressChart
+                monthly={monthly}
+                totalContract={project.totalContractAmount}
+                expectedActual={project.foundationActualTotal}
+              />
             )}
 
             {loading ? (
@@ -1529,6 +1024,441 @@ export default function CompletedProjectBillingDrawer({
               </div>
             )}
           </section>
+          <section className="completed-closeout-section completed-closeout-timing" aria-labelledby="closeout-timeline-heading">
+            <div className="completed-section-heading">
+              <div>
+                <span className="section-kicker">PROJECT LIFECYCLE</span>
+                <h3 id="closeout-timeline-heading">Timeline and billing dates</h3>
+              </div>
+              <span className="section-note">Ops first · Foundation fallback</span>
+            </div>
+            <div className="completed-closeout-duration">
+              <DetailValue
+                label="Project Duration"
+                value={
+                  project.resolvedDurationDays
+                    ? (
+                      `${project.resolvedDurationDays.toLocaleString(
+                        'en-US'
+                      )} days`
+                    )
+                    : '—'
+                }
+                subtext={
+                  project.resolvedDurationMonthsApprox
+                    ? (
+                      `${Number(
+                        project.resolvedDurationMonthsApprox
+                      ).toFixed(1)} months`
+                    )
+                    : null
+                }
+              />
+            </div>
+            <div className="completed-detail-grid">
+              <DetailValue
+                label="Resolved Start"
+                value={
+                  dateLabel(
+                    project.resolvedStartDate
+                  )
+                }
+                source={
+                  project.resolvedStartSource
+                }
+              />
+
+              <DetailValue
+                label="Resolved End"
+                value={
+                  dateLabel(
+                    project.resolvedEndDate
+                  )
+                }
+                source={
+                  project.resolvedEndSource
+                }
+              />
+
+              <DetailValue
+                label="First Foundation Billing"
+                value={
+                  dateLabel(
+                    project.firstBillingActivityDate
+                  )
+                }
+              />
+
+              <DetailValue
+                label="Last Foundation Billing"
+                value={
+                  dateLabel(
+                    project.lastBillingActivityDate
+                  )
+                }
+              />
+            </div>
+
+            {project.invalidResolvedDateRange && (
+              <div className="completed-inline-warning">
+                <strong>
+                  Date review required.
+                </strong>
+
+                <span>
+                  The resolved start occurs after the
+                  recorded completion date. Billing data is
+                  still shown, but duration is not calculated.
+                </span>
+              </div>
+            )}
+          </section>
+
+          <section className="completed-closeout-section completed-closeout-terms" aria-labelledby="closeout-terms-heading">
+            <div className="completed-section-heading">
+              <div>
+                <span className="section-kicker">TERMS &amp; QUANTITIES</span>
+                <h3 id="closeout-terms-heading">Project reference</h3>
+              </div>
+            </div>
+            <div className="completed-closeout-terms-list">
+              <article>
+                <span>
+                  Retention
+                </span>
+
+                <strong>
+                  {retentionLabel(
+                    project.retention,
+                    'Not recorded'
+                  )}
+                </strong>
+
+                <small className="commercial-source-note">
+                  {
+                    project.retentionSource === 'COGNITO'
+                      ? 'Ops'
+                      : commercialSourceLabel(project.retentionSource)
+                  }
+                </small>
+
+                {isAdmin && (
+                  <ComparisonDetails
+                    rows={[
+                      {
+                        label:
+                          'Foundation',
+
+                        display:
+                          retentionLabel(
+                            project.foundationRetentionPercent
+                          ),
+                      },
+
+                      {
+                        label:
+                          'Ops',
+
+                        display:
+                          retentionLabel(
+                            project.cognitoRetention
+                          ),
+                      },
+
+                      {
+                        label:
+                          'Difference',
+
+                        display:
+                          (
+                            foundationRetention !== null
+                            && cognitoRetention !== null
+                              ? `${
+                                  (
+                                    foundationRetention
+                                    - cognitoRetention
+                                  ).toFixed(2)
+                                } pts`
+                              : '—'
+                          ),
+                      },
+                    ]}
+                  />
+                )}
+              </article>
+              {isAdmin && (
+                <div className="completed-detail-value">
+                  <span>Margin Collected</span>
+                  <strong>
+                    <MoneyValue value={project.marginCollectedTotal} />
+                  </strong>
+                  {project.marginDataComplete ? (
+                    <small>
+                      {retentionLabel(project.weightedHistoricalMarginPercent)} weighted historical margin
+                    </small>
+                  ) : (
+                    <DataPill tone="warning">Margin incomplete</DataPill>
+                  )}
+                </div>
+              )}
+              <article>
+                <span>
+                  CY
+                </span>
+
+                <strong>
+                  {billingQuantityLabel(project.cubicYards)}
+                </strong>
+
+                <small className="commercial-source-note">
+                  {completedQuantitySourceNote(project.cubicYards, project.missingEstimatorBidLink)}
+                </small>
+              </article>
+
+
+              <article>
+                <span>
+                  SF
+                </span>
+
+                <strong>
+                  {billingQuantityLabel(project.squareFootage)}
+                </strong>
+
+                <small className="commercial-source-note">
+                  {completedQuantitySourceNote(project.squareFootage, project.missingEstimatorBidLink)}
+                </small>
+              </article>
+            </div>
+          </section>
+
+          <details
+            className="completed-closeout-evidence"
+            onToggle={event => setHistoricalContextOpen(event.currentTarget.open)}
+          >
+            <summary>
+              <span>
+                <strong>Supporting historical context</strong>
+                <small>Benchmark curve and original bid record</small>
+              </span>
+              <span className="completed-closeout-evidence-caret" aria-hidden="true">⌄</span>
+            </summary>
+            <section className="completed-drawer-section completed-originating-bid-section">
+              <div className="completed-section-heading">
+                <div>
+                  <span className="section-kicker">ORIGINAL BID RECORD</span>
+                  <h3>Originating bid</h3>
+                </div>
+              </div>
+              {historicalContextOpen && (
+                <OriginatingBidPanel
+                  project={project}
+                  user={user}
+                  projectKind="completed"
+                  onLinked={onBidLinked}
+                />
+              )}
+            </section>
+            <section className="completed-drawer-section completed-benchmark-section">
+              <div className="completed-section-heading">
+                <div>
+                  <span className="section-kicker">
+                    BILLING CURVE
+                  </span>
+
+                  <h3>
+                    Standard billing benchmark
+                  </h3>
+                </div>
+              </div>
+
+
+              <div className="billing-curve-summary completed-curve-summary">
+                <div>
+                  <span className="billing-detail-label">
+                    Billing Curve
+                  </span>
+
+                  <strong className="billing-curve-tag">
+                    {project.benchmarkCurveDisplayName
+                      || 'Not configured'}
+                  </strong>
+                </div>
+
+
+                <details className="billing-curve-help">
+                  <summary
+                    aria-label="What the completed project billing curve means"
+                    title="What the billing curve means"
+                  >
+                    ⓘ
+                  </summary>
+
+                  <div className="billing-curve-help-popover">
+                    <strong>
+                      What does this curve mean?
+                    </strong>
+
+                    <p>
+                      This is the current Riggs standard used to
+                      compare a completed project's billing shape.
+                      It is a retrospective benchmark, not a claim
+                      about the projection used when this project
+                      was originally estimated.
+                    </p>
+
+                    {project.benchmarkCurveDescription && (
+                      <p>
+                        {project.benchmarkCurveDescription}
+                      </p>
+                    )}
+                  </div>
+                </details>
+              </div>
+            </section>
+            <section className="completed-drawer-section">
+              <div className="completed-section-heading">
+                <div>
+                  <span className="section-kicker">
+                    ESTIMATOR HISTORY
+                  </span>
+
+                  <h3>
+                    Original estimate
+                  </h3>
+                </div>
+
+                <span className="section-note">
+                  Available historical Bid Log information
+                </span>
+              </div>
+
+              {hasEstimatorData ? (
+                <>
+                  <div className="completed-detail-grid">
+                    <DetailValue
+                      label="Estimator"
+                      value={
+                        estimatorNames
+                        || 'Missing'
+                      }
+                    />
+
+                    <DetailValue
+                      label="Estimated Amount"
+                      moneyValue={
+                        project.estimatorEstimatedAmount
+                      }
+                      source={
+                        project.estimatorAmountSource
+                      }
+                    />
+
+                    <DetailValue
+                      label="Estimator Start"
+                      value={
+                        dateLabel(
+                          project.estimatorAnticipatedStartDate
+                        )
+                      }
+                      source={
+                        project.estimatorStartSource
+                      }
+                    />
+
+                    <DetailValue
+                      label="Estimator Duration"
+                      value={
+                        project.estimatorDurationMonths
+                          ? (
+                            `${project.estimatorDurationMonths} months`
+                          )
+                          : 'Missing'
+                      }
+                    />
+
+                    <DetailValue
+                      label="Actual vs Estimate"
+                      moneyValue={
+                        actualVsEstimate
+                      }
+                    />
+
+                    <DetailValue
+                      label="Awarded Bid"
+                      value={
+                        displayValue(
+                          project.bidName
+                        )
+                      }
+                      subtext={
+                        project.bidDateAwarded
+                          ? (
+                            `Awarded ${dateLabel(
+                              project.bidDateAwarded
+                            )}`
+                          )
+                          : null
+                      }
+                    />
+                  </div>
+
+                  <div className="completed-estimator-flags">
+                    {project.missingEstimatorIdentity && (
+                      <DataPill tone="warning">
+                        Estimator identity missing
+                      </DataPill>
+                    )}
+
+                    {project.missingEstimatorAmount && (
+                      <DataPill tone="warning">
+                        Estimated amount missing
+                      </DataPill>
+                    )}
+
+                    {project.missingEstimatorStart && (
+                      <DataPill tone="warning">
+                        Estimator start missing
+                      </DataPill>
+                    )}
+
+                    {project.missingEstimatorDuration && (
+                      <DataPill tone="warning">
+                        Estimator duration missing
+                      </DataPill>
+                    )}
+                  </div>
+
+                  <div className="completed-derived-note">
+                    <strong>
+                      Historical timeline fallback
+                    </strong>
+
+                    <span>
+                      When estimator timing is missing, this
+                      project is ready to use the resolved
+                      Ops/Foundation lifecycle for
+                      comparison. The source remains visibly
+                      labeled as derived.
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="completed-empty-panel">
+                  <strong>
+                    Historical estimator snapshot unavailable
+                  </strong>
+
+                  <span>
+                    No confirmed historical Bid Log relationship
+                    exists for this completed project. Foundation
+                    billing and the resolved project lifecycle
+                    remain available for review.
+                  </span>
+                </div>
+              )}
+            </section>
+          </details>
         </div>
       </aside>
     </div>

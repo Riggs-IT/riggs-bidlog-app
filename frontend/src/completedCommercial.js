@@ -8,9 +8,53 @@ export function completedAmount(value) {
 }
 
 export function completedContractSourceLabel(source) {
-  if (source === 'FOUNDATION_REVISED') return 'Foundation · revised contract';
-  if (source === 'COGNITO_FALLBACK') return 'Cognito fallback · Foundation CO evidence unavailable';
+  if (source === 'FOUNDATION_REVISED') return 'Foundation';
+  if (source === 'COGNITO_FALLBACK') return 'Ops fallback · Foundation contract/CO data unavailable';
   return 'Contract source unavailable';
+}
+
+// Presentation only: amounts come from the completed-project response, never
+// inferred from another source or recomputed into a revised contract.
+export function completedContractTooltip(row, {includeSources = false} = {}) {
+  const format = value => {
+    const amount = completedAmount(value);
+    return amount === null ? 'Unavailable' : new Intl.NumberFormat('en-US', {
+      style: 'currency', currency: 'USD', maximumFractionDigits: 0,
+    }).format(amount);
+  };
+  const lines = [
+    `Original: ${format(row.contractAmount)}`,
+    `CO: ${format(row.approvedChangeOrderAmount)}`,
+  ];
+  if (row.totalContractSource === 'COGNITO_FALLBACK') {
+    lines.push('Ops fallback · Foundation contract and CO data unavailable');
+  }
+  if (includeSources) {
+    const foundation = completedAmount(row.foundationOriginalContractAmount);
+    const ops = completedAmount(row.cognitoContractAmount);
+    if (foundation !== null && ops !== null && Math.abs(foundation - ops) >= 0.005) {
+      lines.push(`Foundation original: ${format(foundation)}`);
+      lines.push(`Ops original: ${format(ops)}`);
+    }
+  }
+  return lines.join('\n');
+}
+
+export function completedPortfolioContractTooltip(metrics) {
+  const format = value => {
+    const amount = completedAmount(value);
+    return amount === null ? 'Unavailable' : new Intl.NumberFormat('en-US', {
+      style: 'currency', currency: 'USD', maximumFractionDigits: 0,
+    }).format(amount);
+  };
+  const lines = [
+    `Original: ${format(metrics.originalContract)}`,
+    `CO${metrics.missingApprovedChangeOrderEvidence > 0 ? ' (known)' : ''}: ${format(metrics.approvedChangeOrders)}`,
+  ];
+  if (metrics.opsFallbackCount > 0) {
+    lines.push(`${metrics.opsFallbackCount} Ops fallback ${metrics.opsFallbackCount === 1 ? 'project' : 'projects'}`);
+  }
+  return lines.join('\n');
 }
 
 export function summarizeCompletedCommercial(rows) {
@@ -24,6 +68,7 @@ export function summarizeCompletedCommercial(rows) {
     contractRemaining: 0,
     actualVsTotalContract: 0,
     historicalEstimates: 0,
+    opsFallbackCount: 0,
     missingApprovedChangeOrderEvidence: 0,
     missingTotalContracts: 0,
     missingOriginalContracts: 0,
@@ -33,6 +78,7 @@ export function summarizeCompletedCommercial(rows) {
   };
 
   for (const row of rows) {
+    if (row.totalContractSource === 'COGNITO_FALLBACK') result.opsFallbackCount += 1;
     const original = completedAmount(row.contractAmount);
     const approvedCo = completedAmount(row.approvedChangeOrderAmount);
     const total = completedAmount(row.totalContractAmount);

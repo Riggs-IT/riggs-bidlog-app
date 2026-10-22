@@ -2893,6 +2893,14 @@ def get_current_project_originating_bid(
     )
 
 
+def get_completed_project_originating_bid(job_list_id: int) -> dict:
+    return _originating_bid_request(
+        "GET",
+        f"/v1/bid-log/completed-projects/{job_list_id}/originating-bid",
+        operation="Completed Project originating bid",
+    )
+
+
 def get_originating_bid_attention(
     actor_eid: int,
 ) -> dict:
@@ -3118,13 +3126,14 @@ def get_current_project_change_orders(
     return payload
 
 
-def get_current_project_bid_candidates(
+def _get_project_bid_candidates(
     job_list_id: int,
     *,
     actor_eid: int,
     request_id: str,
     search: str | None = None,
     limit: int = 15,
+    completed: bool = False,
 ) -> dict:
     params = {
         "limit":
@@ -3144,11 +3153,13 @@ def get_current_project_bid_candidates(
     payload = _originating_bid_request(
         "GET",
         (
-            "/v1/bid-log/current-projects/"
-            f"{job_list_id}/bid-candidates"
+            "/v1/bid-log/"
+            + ("completed-projects/" if completed else "current-projects/")
+            + f"{job_list_id}/bid-candidates"
         ),
         operation=(
-            "Current Project bid candidates"
+            "Completed Project bid candidates" if completed
+            else "Current Project bid candidates"
         ),
         request_id=request_id,
         actor_eid=actor_eid,
@@ -3218,6 +3229,42 @@ def get_current_project_bid_candidates(
     return payload
 
 
+def get_current_project_bid_candidates(
+    job_list_id: int,
+    *,
+    actor_eid: int,
+    request_id: str,
+    search: str | None = None,
+    limit: int = 15,
+) -> dict:
+    return _get_project_bid_candidates(
+        job_list_id,
+        actor_eid=actor_eid,
+        request_id=request_id,
+        search=search,
+        limit=limit,
+        completed=False,
+    )
+
+
+def get_completed_project_bid_candidates(
+    job_list_id: int,
+    *,
+    actor_eid: int,
+    request_id: str,
+    search: str | None = None,
+    limit: int = 15,
+) -> dict:
+    return _get_project_bid_candidates(
+        job_list_id,
+        actor_eid=actor_eid,
+        request_id=request_id,
+        search=search,
+        limit=limit,
+        completed=True,
+    )
+
+
 def link_current_project_originating_bid(
     job_list_id: int,
     original_bid_log_id: int,
@@ -3246,6 +3293,36 @@ def link_current_project_originating_bid(
     _invalidate_project_dashboard_cache()
     _dashboard_cache_invalidate_key("active_bid_dashboard")
     return result
+
+
+def link_completed_project_originating_bid(
+    job_list_id: int,
+    original_bid_log_id: int,
+    *,
+    actor_eid: int,
+    request_id: str,
+) -> dict:
+    result = _originating_bid_request(
+        "POST",
+        (
+            "/v1/bid-log/completed-projects/"
+            f"{job_list_id}/originating-bid"
+        ),
+        operation=(
+            "Link Completed Project originating bid"
+        ),
+        request_id=request_id,
+        actor_eid=actor_eid,
+        json_payload={
+            "originalBidLogId":
+                original_bid_log_id,
+        },
+    )
+
+
+    _dashboard_cache_invalidate_key("completed_projects")
+    return result
+
 
 
 

@@ -53,7 +53,7 @@ test('source drawers render actual $0 and missing CO as distinct states without 
 
   const validZero = render(BASE_PROJECT, 'ADMIN');
   assert.match(validZero, /Foundation Original/);
-  assert.match(validZero, /Cognito Job Contract/);
+  assert.match(validZero, /Ops Job Contract/);
   assert.match(validZero, /Approved CO Income/);
   assert.match(validZero, /Foundation Revised/);
   assert.match(validZero, /Selected Total Contract/);
@@ -85,7 +85,7 @@ test('source drawers render actual $0 and missing CO as distinct states without 
   }, 'ADMIN');
   assert.match(missing, /Unavailable · no Foundation CO evidence/);
   assert.match(missing, /Unavailable · no Foundation revised contract/);
-  assert.match(missing, /Cognito fallback/);
+  assert.match(missing, /Ops fallback/);
   assert.match(missing, /No linked originating bid/);
   assert.doesNotMatch(missing, /\bTBD\b/);
   assert.doesNotMatch(missing, /Foundation original is \$0/);

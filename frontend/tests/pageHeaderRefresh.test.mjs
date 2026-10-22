@@ -29,7 +29,20 @@ test('each header button delegates to its existing page reader without affecting
   assert.match(projects, /loadProjects\(\{ quiet: false \}\)/);
   assert.match(projects, /showCompleted \? \[loadCompletedProjects/);
   assert.match(completed, /useImperativeHandle\(refreshApiRef/);
-  assert.match(completed, /refresh: \(\) => loadCompletedProjects\(\{ forceRefresh: true \}\)/);
+  // Completed Billings intentionally refreshes its Directory AND its shared
+  // By Month / By Project history from the same top-banner button. This should
+  // not start any Bid Log or Active Projects reader.
+  const completedHookStart = completed.indexOf('useImperativeHandle(refreshApiRef');
+  const completedHookEnd = completed.indexOf('}), [loadCompletedProjects]);', completedHookStart);
+  assert.ok(completedHookStart >= 0 && completedHookEnd > completedHookStart,
+    'Completed Billings must expose a top-banner refresh handler');
+  const completedHeaderRefresh = completed.slice(completedHookStart, completedHookEnd);
+  assert.match(completedHeaderRefresh, /refresh: async \(\) =>/);
+  assert.match(completedHeaderRefresh, /await Promise\.allSettled\(\[/);
+  assert.match(completedHeaderRefresh, /loadCompletedProjects\(\{forceRefresh: true\}\)/);
+  assert.match(completedHeaderRefresh, /completedHistoryRefreshRef\.current\?\.refresh\(\)/);
+  assert.match(completedHeaderRefresh, /if \(monthly\.status === 'rejected'\)/);
+  assert.doesNotMatch(completedHeaderRefresh, /refreshCurrentBidView|loadProjects\(\{ quiet:/);
   assert.match(completed, /generation === completedLoadGenerationRef\.current/);
 });
 

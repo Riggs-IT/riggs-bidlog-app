@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
+import {completedProjectPivotCell, pivotTotals} from '../src/primaryProjection.js';
 import {
   addCompletedMonths,
   completedMonthRange,
@@ -123,7 +124,9 @@ test('shared ProjectBillingPivot provides completed-history mode with only actua
   assert.match(text, /completedHistoryMode\s*=\s*false/);
   assert.match(text, /completedHistoryMode\s*\?\s*'actual'\s*:\s*'projected'/);
   assert.match(text, /metric\.key === 'actual'/);
-  assert.match(text, /canViewMargin\s*&&\s*metric\.key === 'marginCollected'/);
+  assert.match(text, /canViewMargin\s*&&\s*\(metric\.key === 'all'\s*\|\|\s*metric\.key === 'marginCollected'\)/);
+  assert.match(text, /COMPLETED_VALUE_TRACKS/);
+  assert.match(text, /completedHistoryMode=\{completedHistoryMode\}/);
   assert.match(text, /completedProjectPivotCell\(/);
 });
 
@@ -139,4 +142,25 @@ test('Completed Billings retains its directory and uses the existing shared pivo
   assert.doesNotMatch(controller, /fetch\([^)]*current-projects\/monthly/);
   assert.doesNotMatch(controller, /\/api\/pm-forecast/);
   assert.doesNotMatch(controller, /method:\s*['"](?:POST|PUT|PATCH|DELETE)/);
+});
+
+test('All preserves unavailable margin even for recorded zero-billing months', () => {
+  const zeroWithoutMargin = historical(1, '2025-01-01', 0, null);
+  const normalWithMargin = historical(2, '2025-01-01', 200, 40);
+  const byId = map([zeroWithoutMargin, normalWithMargin]);
+  const data = completedHistoryView(projects.slice(0, 2), byId, months, {canViewMargin: true});
+  assert.equal(data.monthlySummary[0].actual, 200);
+  assert.equal(data.monthlySummary[0].marginCollected, null);
+  assert.equal(data.currentProjects[0].selectedMarginDataComplete, false);
+  assert.equal(data.currentProjects[1].selectedMarginCollected, 40);
+  const emptyMargin = completedProjectPivotCell(zeroWithoutMargin, '2025-01');
+  const withMargin = completedProjectPivotCell(normalWithMargin, '2025-01');
+  assert.equal(emptyMargin.marginDataComplete, false);
+  const pivotRows = [
+    {source: 'current', total: emptyMargin, cells: [emptyMargin]},
+    {source: 'current', total: withMargin, cells: [withMargin]},
+  ];
+  const totals = pivotTotals(pivotRows, 0, 'marginCollected', false);
+  assert.equal(totals.actualValue, 200);
+  assert.equal(totals.marginCollectedValue, null);
 });

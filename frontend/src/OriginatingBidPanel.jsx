@@ -234,6 +234,7 @@ async function fetchJson(
 function CandidateFacts({
   candidate,
   comparisonAmount,
+  contractLabel = 'Current Contract',
 }) {
   return (
     <div className="originating-bid-candidate-facts">
@@ -248,7 +249,7 @@ function CandidateFacts({
       </div>
 
       <div>
-        <span>Current Contract</span>
+        <span>{contractLabel}</span>
 
         <strong>
           {money(
@@ -317,6 +318,7 @@ export default function OriginatingBidPanel({
   onLinked,
   infoOpen = false,
   onInfoOpenChange,
+  projectKind = 'current',
 }) {
   const [
     relationship,
@@ -380,10 +382,16 @@ export default function OriginatingBidPanel({
       || ''
     ).toUpperCase();
 
-  const canLink =
-    role === 'ADMIN'
-    || role === 'MANAGEMENT_ADMIN'
-    || role === 'OPERATIONS';
+  // Completed Billings currently admits ADMIN and VIEWER profiles only.
+  // VIEWER stays read-only; app backend and Data API enforce writes separately.
+  const canLink = projectKind === 'completed'
+    ? role === 'ADMIN' || role === 'MANAGEMENT_ADMIN'
+    : role === 'ADMIN' || role === 'MANAGEMENT_ADMIN' || role === 'OPERATIONS';
+
+  // Fixed known domain routes, never a caller-controlled proxy URL.
+  const apiCollection = projectKind === 'completed'
+    ? 'completed-projects'
+    : 'current-projects';
 
 
   useEffect(
@@ -414,7 +422,7 @@ export default function OriginatingBidPanel({
           const payload =
             await fetchJson(
               (
-                '/api/current-projects/'
+                '/api/' + apiCollection + '/'
                 + `${project.jobListId}`
                 + '/originating-bid'
               ),
@@ -470,6 +478,7 @@ export default function OriginatingBidPanel({
     },
     [
       project?.jobListId,
+      apiCollection,
       onBidLoaded,
     ],
   );
@@ -512,7 +521,7 @@ export default function OriginatingBidPanel({
       const payload =
         await fetchJson(
           (
-            '/api/current-projects/'
+            '/api/' + apiCollection + '/'
             + `${project.jobListId}`
             + '/bid-candidates?'
             + params.toString()
@@ -566,7 +575,7 @@ export default function OriginatingBidPanel({
       const payload =
         await fetchJson(
           (
-            '/api/current-projects/'
+            '/api/' + apiCollection + '/'
             + `${project.jobListId}`
             + '/originating-bid'
           ),
@@ -632,10 +641,10 @@ export default function OriginatingBidPanel({
       : [];
 
   const comparisonAmount =
-    candidates
-      ?.project
-      ?.comparisonAmount
-    ?? project?.originalContractAmount
+    candidates?.project?.comparisonAmount
+    ?? (projectKind === 'completed'
+      ? project?.totalContractAmount
+      : project?.originalContractAmount)
     ?? null;
 
 
@@ -702,9 +711,11 @@ export default function OriginatingBidPanel({
 
           {linkedBid && (
             <details
-              className="originating-bid-help"
+              className={projectKind === 'completed'
+                ? 'originating-bid-help completed-originating-bid-details'
+                : 'originating-bid-help'}
               data-project-control="originating-bid"
-              open={infoOpen}
+              open={projectKind === 'completed' ? undefined : infoOpen}
               onToggle={
                 event => {
                   onInfoOpenChange?.(
@@ -717,7 +728,7 @@ export default function OriginatingBidPanel({
                 aria-label="View originating bid details"
                 title="View originating bid details"
               >
-                ⓘ
+                {projectKind === 'completed' ? 'View bid details' : 'ⓘ'}
               </summary>
 
               <div className="originating-bid-help-popover">
@@ -809,7 +820,8 @@ export default function OriginatingBidPanel({
             && !relationshipError
             && relationship
             && !relationship.linked
-            && canLink && (
+            && canLink
+            && projectKind !== 'completed' && (
               <button
                 type="button"
                 className="project-setup-info-button"
@@ -844,7 +856,8 @@ export default function OriginatingBidPanel({
             && !relationshipError
             && relationship
             && !relationship.linked
-            && !canLink && (
+            && !canLink
+            && projectKind !== 'completed' && (
               <span
                 className="project-setup-info-button disabled"
                 aria-label="No originating bid linked"
@@ -1033,6 +1046,7 @@ export default function OriginatingBidPanel({
                         <CandidateFacts
                           candidate={candidate}
                           comparisonAmount={comparisonAmount}
+                          contractLabel={projectKind === 'completed' ? 'Total Contract' : 'Current Contract'}
                         />
 
 

@@ -406,11 +406,13 @@ export function pivotCurrentCell(row, month) {
   };
 }
 export function completedProjectPivotCell(row, month) {
-  if (!row) return { month, hasActivity: false, projected: null, actual: null, variance: null, marginCollected: null, baseline: null, missingPmMonths: 0, isEditable: false, monthEditState: 'LOCKED_PAST', projectCompleted: true };
+  if (!row) return { month, hasActivity: false, projected: null, actual: null, variance: null, marginCollected: null, marginDataComplete: null, baseline: null, missingPmMonths: 0, isEditable: false, monthEditState: 'LOCKED_PAST', projectCompleted: true };
   const actual = nullableAmount(row.actualAmount);
-  const marginCollected = nullableAmount(row.marginCollected);
+  const marginCollected = row.marginDataComplete === false || Number(row.missingMarginRows || 0) > 0
+    ? null : nullableAmount(row.marginCollected);
   return { month, hasActivity: actual !== null || marginCollected !== null,
     projected: null, actual, variance: null, marginCollected,
+    marginDataComplete: row.marginDataComplete === false || Number(row.missingMarginRows || 0) > 0 || marginCollected === null ? false : true,
     baseline: null, missingPmMonths: 0, isSystemEstimate: false,
     isEditable: false, monthEditState: 'LOCKED_PAST', projectCompleted: true,
   };
@@ -493,7 +495,8 @@ export function pivotTotals(rows, index, metric, includeBids, {month = null, mon
   // zero or a partial portfolio total. Use exactly the same result in the
   // Margin-only view and in the P/A/Δ/M All header.
   const marginCollectedValue = current.some(c =>
-    c?.marginCollected == null && c?.actual != null && c.actual !== 0
+    c?.marginDataComplete === false ||
+    (c?.marginCollected == null && c?.actual != null && c.actual !== 0)
   ) ? null : sumAmounts(current.map(c => c?.marginCollected));
   let value = sumAmounts(cells.map(x => x.c?.[metric]));
   if (metric === 'projected') value = totalForecastValue;

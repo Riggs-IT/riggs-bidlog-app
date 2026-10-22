@@ -76,8 +76,7 @@ function approvedMargin(rows, canViewMargin) {
   if (!canViewMargin || !rows.length) return null;
   if (rows.some(row =>
     row.marginDataComplete === false || Number(row.missingMarginRows || 0) > 0 ||
-    (nullableAmount(row.actualAmount) !== null && nullableAmount(row.actualAmount) !== 0
-      && (row.marginCollected === null || row.marginCollected === undefined))
+    row.marginCollected === null || row.marginCollected === undefined
   )) return null;
   return sumAmounts(rows.map(row => row.marginCollected ?? null));
 }
@@ -107,6 +106,10 @@ export function completedHistoryView(projects, byId, months, {canViewMargin = fa
       selectedActual: sumAmounts(actual.map(item => item.actualAmount)),
       selectedActualValueCount: actual.length,
       selectedMarginCollected: approvedMargin(periodRows, canViewMargin),
+      // A missing/partial margin must remain unavailable in All and Margin-only
+      // even when the selected period nets to $0 actual billings.
+      selectedMarginDataComplete: !canViewMargin || !periodRows.length
+        ? null : approvedMargin(periodRows, true) !== null,
     });
   }
 

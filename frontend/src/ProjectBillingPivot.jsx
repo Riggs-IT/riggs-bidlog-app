@@ -308,6 +308,7 @@ function currentProjectPivotRow(
           actual: project.selectedActualValueCount ? nullableAmount(project.selectedActual) : null,
           variance: null,
           marginCollected: nullableAmount(project.selectedMarginCollected),
+          marginDataComplete: project.selectedMarginDataComplete ?? null,
           baseline: null,
           missingPmMonths: 0,
           isSystemEstimate: false,
@@ -669,10 +670,15 @@ const ALL_VALUE_TRACKS = [
 ];
 
 
-function MetricLabels({compact, showMargin = false}) {
+const COMPLETED_VALUE_TRACKS = ALL_VALUE_TRACKS.filter(
+  track => track.key === 'actual' || track.key === 'marginCollected',
+);
+
+function MetricLabels({compact, showMargin = false, completedHistoryMode = false}) {
+  const tracks = completedHistoryMode ? COMPLETED_VALUE_TRACKS : ALL_VALUE_TRACKS;
   return (
     <div className="pivot-metric-label-list">
-      {ALL_VALUE_TRACKS.filter(track => showMargin || track.key !== 'marginCollected').map(({key, label, short}) => (
+      {tracks.filter(track => showMargin || track.key !== 'marginCollected').map(({key, label, short}) => (
         <span
           key={key}
           className="pivot-metric-label"
@@ -692,7 +698,21 @@ function MetricLabels({compact, showMargin = false}) {
 
 // Header and project rows share the same frozen Metric lane in Values -> All.
 // One label per row replaces P/A/Δ/M repeated under every month and Total.
-export function HeaderMetricRail({compact, showMargin, includeProjectProjection, includeBidProjection, showBaseline}) {
+export function HeaderMetricRail({compact, showMargin, includeProjectProjection, includeBidProjection, showBaseline,
+  completedHistoryMode = false}) {
+  if (completedHistoryMode) {
+    return (
+      <div className="pivot-header-total pivot-header-metric-rail" aria-label="Completed billing metric labels">
+        <span className="pivot-header-total-label">Metric</span>
+        <span className="pivot-header-total-values pivot-header-total-values-all">
+          <small className="pivot-header-total-value pivot-header-metric-label">{compact ? 'A' : 'Actual'}</small>
+          {showMargin && <small className="pivot-header-total-value pivot-header-metric-label">
+            {compact ? 'M' : 'Margin Collected'}
+          </small>}
+        </span>
+      </div>
+    );
+  }
   const combined = includeProjectProjection && includeBidProjection;
   const label = (full, short, title = full) => (
     <small className="pivot-header-total-value pivot-header-metric-label" title={title}>
@@ -730,13 +750,14 @@ export function HeaderMetricRail({compact, showMargin, includeProjectProjection,
 }
 
 
-function AllBillingValues({cell, currency, source, showMargin = false}) {
+function AllBillingValues({cell, currency, source, showMargin = false, completedHistoryMode = false}) {
+  const tracks = completedHistoryMode ? COMPLETED_VALUE_TRACKS : ALL_VALUE_TRACKS;
   return (
     <div className="pivot-billing-amounts">
-      {ALL_VALUE_TRACKS.filter(track => showMargin || track.key !== 'marginCollected').map(({key}) => {
-        // A potential bid has no Foundation Actual, Variance, or Margin.
-        // Keep its four rows aligned, without inventing zero-dollar amounts.
-        const unavailable = key !== 'projected'
+      {tracks.filter(track => showMargin || track.key !== 'marginCollected').map(({key}) => {
+        // Completed history has two tracks only: recorded Actual and the
+        // authorized Margin Collected. Never show PM projections or variance.
+        const unavailable = !completedHistoryMode && key !== 'projected'
           && (source === 'bid' || cell?.hasActivity === false);
         const value = cell?.[key] ?? null;
         return (
@@ -868,14 +889,16 @@ function PivotSortHeader({
 }
 
 
-function BillingValue({ cell, metric, currency, source, showBaseline = false, showMargin = false }) {
-  const compare = showBaseline && source === 'current';
+function BillingValue({ cell, metric, currency, source, showBaseline = false, showMargin = false,
+  completedHistoryMode = false }) {
+  const compare = !completedHistoryMode && showBaseline && source === 'current';
   if (metric === 'projected') {
     return <ProjectionAmount value={cell.projected} currency={currency} missing={cell.missingPmMonths}
       baseline={cell.baseline} compare={compare} />;
   }
   if (metric === 'all') {
-    return <div><AllBillingValues cell={cell} currency={currency} source={source} showMargin={showMargin} />
+    return <div><AllBillingValues cell={cell} currency={currency} source={source}
+      showMargin={showMargin} completedHistoryMode={completedHistoryMode} />
 
       {compare && <small className="baseline-reference">System Estimate {cell.baseline == null ? '—' : currency(cell.baseline)}</small>}
     </div>;
@@ -918,6 +941,7 @@ export function HeaderTotal({
   actualValue = null,
   marginCollectedValue = null,
   showMargin = false,
+  completedHistoryMode = false,
   totalForecastValue = null,
   varianceValue = null,
   actualVarianceValue = null,
@@ -1068,6 +1092,25 @@ export function HeaderTotal({
       ? `${activeProjectedCount} active ${activeProjectedCount === 1 ? 'project' : 'projects'} · ${bidProjectedCount} potential ${bidProjectedCount === 1 ? 'bid' : 'bids'}`
       : (projectProjectedText || bidsProjectedText),
   ].filter(Boolean).join('\n') || undefined;
+
+  if (completedHistoryMode && allMode) {
+    return (
+      <span className="pivot-header-total" aria-label={`${label} completed actual${showMargin ? ' and margin' : ''}`}>
+        <span className="pivot-header-total-label">{label}</span>
+        <span className="pivot-header-total-values pivot-header-total-values-all">
+          <small className="pivot-header-total-value pivot-header-total-value-actual"
+            title={`Actual Billings: ${headerCurrency(actualValue)}`}>
+            {headerCurrency(actualValue)}
+          </small>
+          {showMargin && <small className="pivot-header-total-value pivot-header-total-value-margin"
+            title={marginCollectedValue == null ? 'Margin Collected unavailable or incomplete'
+              : `Margin Collected: ${headerCurrency(marginCollectedValue)}`}>
+            {headerCurrency(marginCollectedValue)}
+          </small>}
+        </span>
+      </span>
+    );
+  }
 
   return (
     <span className="pivot-header-total">
@@ -1287,7 +1330,7 @@ export default function ProjectBillingPivot({
     completedHistoryMode
       ? BILLING_METRICS.filter(metric =>
           metric.key === 'actual'
-          || (canViewMargin && metric.key === 'marginCollected'))
+          || (canViewMargin && (metric.key === 'all' || metric.key === 'marginCollected')))
       : showPotentialOnly
       ? BILLING_METRICS.filter(
           metric =>
@@ -1517,10 +1560,7 @@ export default function ProjectBillingPivot({
           cell,
         ) {
           if (billingMetric === 'all') {
-            return (
-              cell?.projected
-              ?? 0
-            );
+            return completedHistoryMode ? (cell?.actual ?? null) : (cell?.projected ?? 0);
           }
 
           return (
@@ -1686,6 +1726,7 @@ export default function ProjectBillingPivot({
         bidMonthly,
         billingMetric,
         sortState,
+        completedHistoryMode,
       ],
     );
 
@@ -1872,7 +1913,7 @@ export default function ProjectBillingPivot({
       >
         <table
           className={
-            `monthly-table project-pivot-table pivot-metric-${billingMetric} ${sourceModeClass} ${canViewMargin ? '' : 'pivot-no-margin'} ${metricLabelsPinned ? 'pivot-metric-labels-pinned' : ''}`
+            `monthly-table project-pivot-table pivot-metric-${billingMetric} ${sourceModeClass} ${canViewMargin ? '' : 'pivot-no-margin'} ${completedHistoryMode ? 'pivot-history-only' : ''} ${metricLabelsPinned ? 'pivot-metric-labels-pinned' : ''}`
           }
         >
           <thead>
@@ -1934,9 +1975,9 @@ export default function ProjectBillingPivot({
               {billingMetric === 'all' && (
                 <th
                   className="pivot-metric-labels-column"
-                  title={canViewMargin
-                    ? 'Projected, Actual, Variance, Margin Collected'
-                    : 'Projected, Actual, Variance'}
+                  title={completedHistoryMode ? 'Actual Billings and Margin Collected'
+                    : canViewMargin ? 'Projected, Actual, Variance, Margin Collected'
+                      : 'Projected, Actual, Variance'}
                   scope="col"
                 >
                   <HeaderMetricRail
@@ -1945,6 +1986,7 @@ export default function ProjectBillingPivot({
                     includeProjectProjection={includeActiveProjects}
                     includeBidProjection={includeBids}
                     showBaseline={showBaseline}
+                    completedHistoryMode={completedHistoryMode}
                   />
                 </th>
               )}
@@ -2020,6 +2062,7 @@ export default function ProjectBillingPivot({
                         activeProjectsProjected={monthTotals[index]?.activeProjectsProjected}
                         includeProjectProjection={includeActiveProjects}
                         includeBidProjection={includeBids}
+                        completedHistoryMode={completedHistoryMode}
                       />
                     }
                     sortKey={`month:${month}`}
@@ -2073,6 +2116,7 @@ export default function ProjectBillingPivot({
                     currency={currency}
                     includeProjectProjection={includeActiveProjects}
                     includeBidProjection={includeBids}
+                    completedHistoryMode={completedHistoryMode}
                     activeProjectsBilled={grandTotals.activeProjectsBilled}
                     activeProjectsProjected={grandTotals.activeProjectsProjected}
                     potentialBidsProjected={grandTotals.potentialBidsProjected}
@@ -2208,7 +2252,8 @@ export default function ProjectBillingPivot({
 
                     {billingMetric === 'all' && (
                       <td className="pivot-metric-labels-column">
-                        <MetricLabels compact={metricLabelsPinned} showMargin={canViewMargin} />
+                        <MetricLabels compact={metricLabelsPinned} showMargin={canViewMargin}
+                          completedHistoryMode={completedHistoryMode} />
                       </td>
                     )}
 
@@ -2225,6 +2270,7 @@ export default function ProjectBillingPivot({
                             source={row.source}
                             showBaseline={showBaseline}
                             showMargin={canViewMargin}
+                            completedHistoryMode={completedHistoryMode}
                           />
                         </td>
                       )
@@ -2238,6 +2284,7 @@ export default function ProjectBillingPivot({
                         source={row.source}
                         showBaseline={showBaseline}
                         showMargin={canViewMargin}
+                        completedHistoryMode={completedHistoryMode}
                       />
                     </td>
                   </tr>

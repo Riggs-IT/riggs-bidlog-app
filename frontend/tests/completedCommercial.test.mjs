@@ -3,7 +3,7 @@ import test from 'node:test';
 import {readFileSync} from 'node:fs';
 import {
   completedAmount,
-  completedContractSourceLabel,
+  completedContractSourceLabel, completedContractTooltip, completedPortfolioContractTooltip,
   summarizeCompletedCommercial,
 } from '../src/completedCommercial.js';
 
@@ -88,4 +88,22 @@ test('Completed Billings table and drawer must render the new API fields directl
   assert.doesNotMatch(drawer, /value="TBD"/);
   assert.match(table, /retentionLabel\(\s*row\.retention,\s*'Not recorded'\s*\)/);
   assert.doesNotMatch(table, /row\.contractVsActualVariance/);
+});
+
+test('contract hover explains original and CO, including real zero and unknown evidence', () => {
+  const normal = row({foundationOriginalContractAmount: 100, cognitoContractAmount: 105});
+  const ordinary = completedContractTooltip(normal);
+  assert.match(ordinary, /Original: \$100/);
+  assert.match(ordinary, /CO: \$20/);
+  assert.doesNotMatch(ordinary, /Ops|fallback|Approved/);
+  assert.match(completedContractTooltip(normal, {includeSources: true}), /Ops original: \$105/);
+  assert.match(completedContractSourceLabel(normal.totalContractSource), /^Foundation$/);
+  const fallback = row({totalContractSource: 'COGNITO_FALLBACK', approvedChangeOrderAmount: null});
+  const unavailable = completedContractTooltip(fallback);
+  assert.match(unavailable, /CO: Unavailable/);
+  assert.match(unavailable, /Ops fallback/);
+  assert.match(completedContractTooltip(row({approvedChangeOrderAmount: 0})), /CO: \$0/);
+  assert.match(completedPortfolioContractTooltip(summarizeCompletedCommercial([normal, fallback])), /CO \(known\)/);
+  assert.match(completedPortfolioContractTooltip(summarizeCompletedCommercial([normal, fallback])), /1 Ops fallback project/);
+  assert.doesNotMatch(completedPortfolioContractTooltip(summarizeCompletedCommercial([normal])), /Ops fallback/);
 });

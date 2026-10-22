@@ -30,7 +30,7 @@ test('completed project Compare Sources uses distinct original and revised API m
   assert.match(drawer, /completedContractSourceLabel\(project\.totalContractSource\)/);
   assert.match(drawer, /Unavailable · no Foundation CO evidence/);
   assert.match(drawer, /Unavailable · no Foundation revised contract/);
-  assert.match(drawer, /Foundation original is \$0 · verify against Cognito/);
+  assert.match(drawer, /Foundation original is \$0 · verify against Ops/);
   assert.match(drawer, /isAdmin && zeroOriginalWithCognito/);
   assert.match(drawer, /completedAmount\(project\.foundationOriginalContractAmount\) === 0/);
   assert.match(drawer, /showZeroAmounts/g);
@@ -39,7 +39,7 @@ test('completed project Compare Sources uses distinct original and revised API m
 test('active project original source menu names its original source explicitly', () => {
   const drawer = read('CurrentProjectBillingDrawer.jsx');
   assert.match(drawer, /'Foundation Original'/);
-  assert.match(drawer, /'Foundation Original vs Cognito'/);
+  assert.match(drawer, /Foundation Original vs Cognito/);
   assert.match(drawer, /'Foundation Original vs Projection'/);
   assert.match(drawer, /showZeroAmounts/);
 });

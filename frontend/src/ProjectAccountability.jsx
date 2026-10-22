@@ -3,7 +3,7 @@ import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey} from './gcReference.js';
 import useGcReference, { canReadGcReference } from './useGcReference.js';
 import {shouldRevalidateOnReturn} from './pageReturnRefresh.js';
-import {completedContractSourceLabel, summarizeCompletedCommercial} from './completedCommercial.js';
+import {completedContractSourceLabel, completedContractTooltip, completedPortfolioContractTooltip, summarizeCompletedCommercial} from './completedCommercial.js';
 import {
   useCallback,
   useEffect,
@@ -363,7 +363,7 @@ function sourceShortLabel(value) {
       'Foundation',
 
     OPERATIONS:
-      'Operations',
+      'Ops',
 
     MIXED:
       'Mixed',
@@ -543,6 +543,7 @@ function StatCard({
   detail,
   emphasis = false,
   tone = '',
+  tooltip = null,
 }) {
   const classes = [
     'stat-card',
@@ -557,7 +558,8 @@ function StatCard({
     .join(' ');
 
   return (
-    <article className={classes}>
+    <article className={classes} title={tooltip ?? undefined}
+      aria-label={tooltip ? `${label}. ${tooltip}` : undefined}>
       <span>
         {label}
       </span>
@@ -566,9 +568,9 @@ function StatCard({
         {value}
       </strong>
 
-      <small>
+      {detail && <small>
         {detail}
-      </small>
+      </small>}
     </article>
   );
 }
@@ -622,8 +624,7 @@ export default function ProjectAccountability({
   const [editProjectId, setEditProjectId] =
     useState(null);
 
-  const [completedRefreshVersion, setCompletedRefreshVersion] =
-    useState(0);
+  const completedHistoryRefreshRef = useRef(null);
   const [billingHistoryView, setBillingHistoryView] = useState('directory');
   const completedLoadGenerationRef = useRef(0);
 
@@ -847,6 +848,7 @@ export default function ProjectAccountability({
     forceRefresh = false,
     passive = !forceRefresh,
     cancelled = () => false,
+    updateSelectedProject = false,
   } = {}) => {
     if (!forceRefresh && !shouldRevalidateOnReturn({
       loadedAt: completedProjectListCache.loadedAt,
@@ -871,6 +873,11 @@ export default function ProjectAccountability({
       if (isCurrent() && Array.isArray(payload)) {
         writeCompletedProjectCache(payload);
         setRows(payload);
+        if (updateSelectedProject) {
+          setSelectedProject(current => current
+            ? payload.find(item => item.jobListId === current.jobListId) || current
+            : current);
+        }
       }
     } catch (loadError) {
       if (isCurrent() && loadError?.name !== 'AbortError') {
@@ -887,17 +894,29 @@ export default function ProjectAccountability({
   useEffect(() => {
     let cancelled = false;
     void loadCompletedProjects({
-      forceRefresh: completedRefreshVersion > 0,
+      forceRefresh: false,
       cancelled: () => cancelled,
     });
     return () => {
       cancelled = true;
       completedListControllerRef.current?.abort();
     };
-  }, [completedRefreshVersion, loadCompletedProjects]);
+  }, [loadCompletedProjects]);
 
   useImperativeHandle(refreshApiRef, () => ({
-    refresh: () => loadCompletedProjects({ forceRefresh: true }),
+    // One top-banner action refreshes both independent authorized readers.
+    // Wait for history as well so the shared header spinner covers the read.
+    refresh: async () => {
+      const [, monthly] = await Promise.allSettled([
+        loadCompletedProjects({forceRefresh: true}),
+        completedHistoryRefreshRef.current?.refresh() ?? Promise.resolve(),
+      ]);
+      if (monthly.status === 'rejected') {
+        // Keep the last good monthly history, but report a failed header refresh
+        // even while the Directory is selected and the history alert is hidden.
+        setError('Unable to refresh completed monthly history. Please try Refresh again.');
+      }
+    },
   }), [loadCompletedProjects]);
 
 
@@ -1348,9 +1367,18 @@ export default function ProjectAccountability({
             HISTORICAL PERFORMANCE
           </div>
 
-          <h1>
-            Completed Projects
-          </h1>
+          <div className="completed-heading-title">
+            <h1>
+              Completed Billings
+            </h1>
+
+            <span
+              className="completed-heading-count"
+              title={`${metrics.total.toLocaleString('en-US')} of ${rows.length.toLocaleString('en-US')} completed non-side projects`}
+            >
+              {metrics.total.toLocaleString('en-US')} {metrics.total === 1 ? 'project' : 'projects'}
+            </span>
+          </div>
 
           <p>
             Review original contracts, approved change orders,
@@ -1394,50 +1422,30 @@ export default function ProjectAccountability({
       )}
 
 
-      <section className="stats-grid completed-project-stats">
-        <StatCard
-          label="Completed Projects"
-          value={metrics.total.toLocaleString('en-US')}
-          detail={`${metrics.total.toLocaleString('en-US')} of ${rows.length.toLocaleString('en-US')} completed non-side projects`}
-          emphasis
-        />
-        <StatCard
-          label="Original Contract"
-          value={<MoneyValue value={metrics.originalContract} />}
-          detail="Foundation original contract · Cognito fallback when unavailable"
-        />
-        <StatCard
-          label="Approved Change Orders"
-          value={<MoneyValue value={metrics.approvedChangeOrders} />}
-          detail={`${metrics.approvedChangeOrderCount.toLocaleString('en-US')} approved COs${metrics.missingApprovedChangeOrderEvidence ? ` · ${metrics.missingApprovedChangeOrderEvidence} project(s) without Foundation CO evidence` : ''}`}
-        />
+      <section
+        className="stats-grid completed-project-stats"
+        aria-label="Completed billing financial totals"
+      >
         <StatCard
           label="Total Contract"
           value={<MoneyValue value={metrics.totalContract} />}
-          detail="Original contract + approved CO income"
+          tooltip={completedPortfolioContractTooltip(metrics)}
+          detail={metrics.opsFallbackCount > 0
+            ? `${metrics.opsFallbackCount} Ops fallback ${metrics.opsFallbackCount === 1 ? 'project' : 'projects'}`
+            : null}
         />
         <StatCard
           label="Actual Billings"
           value={<MoneyValue value={metrics.actualBillings} />}
-          detail="Foundation billings · not cash collected"
-        />
-        <StatCard
-          label="Contract Remaining"
-          value={<MoneyValue value={metrics.contractRemaining} />}
-          detail="Total Contract − lifetime Actual Billings"
+          detail="Lifetime Foundation billings · not cash collected"
         />
         <StatCard
           label="Actual vs Total Contract"
           value={<MoneyValue value={metrics.actualVsTotalContract} />}
           detail="Actual Billings − Total Contract"
-        />
-        <StatCard
-          label="Historical Estimates"
-          value={metrics.historicalEstimates.toLocaleString('en-US')}
-          detail="Projects with historical estimate amount"
+          tone={metrics.actualVsTotalContract < 0 ? 'critical' : ''}
         />
       </section>
-
 
       <section className="content-card completed-project-card">
         <div className="section-heading">
@@ -2363,13 +2371,14 @@ export default function ProjectAccountability({
 
 
         <CompletedMonthlyHistory
+          key={`${user?.eid ?? 'unknown'}:${user?.appRole ?? 'none'}`}
           view={billingHistoryView}
           onViewChange={setBillingHistoryView}
           projects={filteredRows}
           canViewMargin={isAdmin}
           pmIdentityByName={pmIdentityByName}
           onSelectProject={setSelectedProject}
-          refreshVersion={completedRefreshVersion}
+          refreshApiRef={completedHistoryRefreshRef}
         />
 
         {billingHistoryView === 'directory' && (
@@ -2573,39 +2582,18 @@ export default function ProjectAccountability({
                     </td>
 
                     <td className="numeric">
-                      <MoneyValue value={row.totalContractAmount} />
-                      <small className="cell-subtext commercial-source-note">
-                        {completedContractSourceLabel(row.totalContractSource)}
-                      </small>
-                      <small className="cell-subtext commercial-source-note">
-                        Original: <MoneyValue value={row.contractAmount} />
-                        {' · '}Approved COs: <MoneyValue value={row.approvedChangeOrderAmount} />
-                      </small>
-
-                      {isAdmin
-                        && moneyDifference(
-                             row.foundationOriginalContractAmount,
-                             row.cognitoContractAmount
-                           ) !== null
-                        && Math.abs(
-                             moneyDifference(
-                               row.foundationOriginalContractAmount,
-                               row.cognitoContractAmount
-                             )
-                           ) >= 0.005
-                        && (
-                          <small className="cell-subtext admin-source-hint">
-                            Cognito difference:{' '}
-                            <MoneyValue
-                              value={
-                                moneyDifference(
-                                  row.foundationOriginalContractAmount,
-                                  row.cognitoContractAmount
-                                )
-                              }
-                            />
-                          </small>
-                        )}
+                      <span
+                        className="completed-directory-contract-total"
+                        title={completedContractTooltip(row, {includeSources: isAdmin})}
+                        aria-label={`Total Contract. ${completedContractTooltip(row, {includeSources: isAdmin})}`}
+                      >
+                        <MoneyValue value={row.totalContractAmount} />
+                      </span>
+                      {row.totalContractSource === 'COGNITO_FALLBACK' && (
+                        <small className="cell-subtext commercial-source-note">
+                          {completedContractSourceLabel(row.totalContractSource)}
+                        </small>
+                      )}
                     </td>
 
                     <td className="numeric strong-cell">
@@ -2658,9 +2646,9 @@ export default function ProjectAccountability({
 
                       <small className="cell-subtext commercial-source-note">
                         {
-                          commercialSourceLabel(
-                            row.retentionSource
-                          )
+                          row.retentionSource === 'COGNITO'
+                            ? 'Ops'
+                            : commercialSourceLabel(row.retentionSource)
                         }
                       </small>
 
@@ -2673,7 +2661,7 @@ export default function ProjectAccountability({
                            )
                         && (
                           <small className="cell-subtext admin-source-hint">
-                            Cognito:{' '}
+                            Ops:{' '}
                             {retentionLabel(
                               row.cognitoRetention
                             )}
@@ -2761,6 +2749,7 @@ export default function ProjectAccountability({
 
 
       <CompletedProjectBillingDrawer
+        key={selectedProject?.jobListId ?? 'closed'}
         project={
           selectedProject
         }
@@ -2770,6 +2759,10 @@ export default function ProjectAccountability({
             null
           )
         }
+        onBidLinked={() => {
+          invalidateCompletedProjectCache();
+          return loadCompletedProjects({forceRefresh: true, updateSelectedProject: true});
+        }}
         onEditProject={() => {
           if (!selectedProject?.jobListId) {
             return;

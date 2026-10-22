@@ -84,6 +84,9 @@ from .data_api import (
     get_current_projects_monthly_bulk,
     get_current_projects_primary_projection,
     get_current_project_originating_bid,
+    get_completed_project_originating_bid,
+    get_completed_project_bid_candidates,
+    link_completed_project_originating_bid,
     get_originating_bid_attention,
     get_current_project_change_orders,
     get_current_project_bid_candidates,
@@ -3780,6 +3783,73 @@ async def link_current_project_originating_bid_proxy(
             exc
         )
 
+
+
+# Completed-project bid relationships are a distinct authorized action;
+# the financial closeout itself remains read-only.
+@app.get("/api/completed-projects/{job_list_id}/originating-bid")
+def completed_originating_bid_proxy(
+    job_list_id: int = FastAPIPath(..., ge=1),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    _require_completed_workspace_access(current_user)
+    try:
+        return get_completed_project_originating_bid(job_list_id)
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(exc)
+
+
+@app.get("/api/completed-projects/{job_list_id}/bid-candidates")
+def completed_bid_candidates_proxy(
+    request: Request,
+    job_list_id: int = FastAPIPath(..., ge=1),
+    search: str | None = FastAPIQuery(default=None, max_length=100),
+    limit: int = FastAPIQuery(default=15, ge=1, le=50),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    _require_completed_workspace_access(current_user)
+    _require_bid_link_editor(current_user)
+    try:
+        return get_completed_project_bid_candidates(
+            job_list_id,
+            actor_eid=current_user.eid,
+            request_id=_browser_request_id(request),
+            search=search,
+            limit=limit,
+        )
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(exc)
+
+
+@app.post("/api/completed-projects/{job_list_id}/originating-bid")
+async def completed_link_originating_bid_proxy(
+    request: Request,
+    job_list_id: int = FastAPIPath(..., ge=1),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    _require_completed_workspace_access(current_user)
+    _require_bid_link_editor(current_user)
+    try:
+        payload = await request.json()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="invalid_json_body") from exc
+    if (not isinstance(payload, dict)
+        or set(payload.keys()) != {"originalBidLogId"}
+        or not isinstance(payload.get("originalBidLogId"), int)
+        or isinstance(payload["originalBidLogId"], bool)
+        or payload["originalBidLogId"] <= 0):
+        raise HTTPException(
+            status_code=400, detail="invalid_originating_bid_link_payload",
+        )
+    try:
+        return link_completed_project_originating_bid(
+            job_list_id,
+            payload["originalBidLogId"],
+            actor_eid=current_user.eid,
+            request_id=_browser_request_id(request),
+        )
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(exc)
 
 
 @app.get(

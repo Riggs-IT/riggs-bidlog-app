@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react';
 import ProjectBillingPivot from './ProjectBillingPivot.jsx';
 import {
   completedHistoryView,
@@ -32,44 +32,87 @@ async function fetchCompletedHistory(months, signal) {
 
 export default function CompletedMonthlyHistory({
   view, onViewChange, projects, canViewMargin, pmIdentityByName,
-  onSelectProject, refreshVersion = 0,
+  onSelectProject, refreshApiRef,
 }) {
   const [initialRange] = useState(defaultCompletedMonths);
   const [fromMonth, setFromMonth] = useState(initialRange.from);
   const [throughMonth, setThroughMonth] = useState(initialRange.through);
   const [focusedMonth, setFocusedMonth] = useState(null);
-  const [reloadVersion, setReloadVersion] = useState(0);
   const [history, setHistory] = useState({key: null, byId: null, loading: false, error: null});
   const cache = useRef(new Map());
+  const inFlight = useRef(null);
 
   const months = useMemo(
     () => completedMonthRange(fromMonth, throughMonth), [fromMonth, throughMonth],
   );
-  const rangeKey = `${fromMonth}|${throughMonth}|${refreshVersion}|${reloadVersion}`;
+  const rangeKey = `${fromMonth}|${throughMonth}`;
   const historicalView = view !== 'directory';
 
-  useEffect(() => {
-    if (!historicalView || !months.length) return undefined;
+  // Prefetch once when Completed Billings mounts, even in Directory. Both
+  // By Month and By Project reuse this exact normalized 24-month response.
+  // Only an explicit top-banner refresh or date-range change fetches again.
+  const loadRange = useCallback((force = false) => {
+    if (!months.length) return Promise.resolve(null);
     const cached = cache.current.get(rangeKey);
-    if (cached) {
+    if (!force && cached) {
       setHistory({key: rangeKey, byId: cached, loading: false, error: null});
-      return undefined;
+      return Promise.resolve(cached);
     }
+    if (!force && inFlight.current?.key === rangeKey
+      && !inFlight.current.controller.signal.aborted) {
+      return inFlight.current.promise;
+    }
+
+    inFlight.current?.controller.abort();
     const controller = new AbortController();
-    setHistory({key: rangeKey, byId: null, loading: true, error: null});
-    void fetchCompletedHistory(months, controller.signal)
+    const flight = {key: rangeKey, controller, promise: null};
+    const isCurrent = () => !controller.signal.aborted && inFlight.current === flight;
+    setHistory(previous => ({
+      key: rangeKey,
+      byId: cached ?? (previous.key === rangeKey ? previous.byId : null),
+      loading: true, error: null,
+    }));
+
+    flight.promise = fetchCompletedHistory(months, controller.signal)
       .then(byId => {
-        if (controller.signal.aborted) return;
+        if (!isCurrent()) return null;
+        cache.current.delete(rangeKey);
         cache.current.set(rangeKey, byId);
+        // Bound per-mounted-user historical cache; never persist margin in
+        // localStorage or share it across authenticated role changes.
+        if (cache.current.size > 4) {
+          cache.current.delete(cache.current.keys().next().value);
+        }
         setHistory({key: rangeKey, byId, loading: false, error: null});
+        return byId;
       })
       .catch(error => {
-        if (!controller.signal.aborted) {
-          setHistory({key: rangeKey, byId: null, loading: false, error: error.message});
+        if (isCurrent()) {
+          setHistory(previous => ({
+            key: rangeKey,
+            byId: previous.key === rangeKey ? previous.byId : null,
+            loading: false,
+            error: error.message || 'Unable to refresh historical billing.',
+          }));
         }
+        if (error?.name !== 'AbortError') throw error;
+        return null;
+      })
+      .finally(() => {
+        if (inFlight.current === flight) inFlight.current = null;
       });
-    return () => controller.abort();
-  }, [historicalView, rangeKey, months]);
+    inFlight.current = flight;
+    return flight.promise;
+  }, [months, rangeKey]);
+
+  useEffect(() => {
+    void loadRange().catch(() => {}); // Error is rendered in historical views.
+    return () => { inFlight.current?.controller.abort(); };
+  }, [loadRange]);
+
+  useImperativeHandle(refreshApiRef, () => ({
+    refresh: () => loadRange(true),
+  }), [loadRange]);
 
   const byId = history.key === rangeKey ? history.byId : null;
   const prepared = useMemo(() => byId ? completedHistoryView(
@@ -119,10 +162,7 @@ export default function CompletedMonthlyHistory({
                 setThroughMonth(event.target.value); setFocusedMonth(null);
               }} />
             </label>
-            <button type="button" className="secondary-button" onClick={() => {
-              cache.current.clear(); setReloadVersion(n => n + 1);
-            }}>Refresh History</button>
-            <span className="section-note">Actual Foundation billings · historical and read-only</span>
+            <span className="section-note">Foundation actuals · read-only · Refresh from the page header</span>
           </div>
 
           {!months.length && (
