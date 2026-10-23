@@ -1,3 +1,4 @@
+import {resolveTeamBadge, teamBadgeTextColor} from './teamBadgeIdentity.js';
 const currencyFormatter = new Intl.NumberFormat(
     'en-US',
     {
@@ -156,8 +157,7 @@ function teamInitials(name, explicitInitials = null) {
   }
 
   const parts =
-    String(name || '')
-      .trim()
+    String(teamName(name) || '')
       .split(/\s+/)
       .filter(Boolean);
 
@@ -177,38 +177,6 @@ function teamInitials(name, explicitInitials = null) {
 }
 
 
-function teamBadgeTextColor(hexColor) {
-  const match =
-    String(hexColor || '')
-      .trim()
-      .match(/^#?([0-9a-f]{6})$/i);
-
-  if (!match) {
-    return '#ffffff';
-  }
-
-  const value = match[1];
-  const red = parseInt(value.slice(0, 2), 16);
-  const green = parseInt(value.slice(2, 4), 16);
-  const blue = parseInt(value.slice(4, 6), 16);
-  const luminance =
-    (red * 299 + green * 587 + blue * 114) / 1000;
-
-  return luminance > 160
-    ? '#111111'
-    : '#ffffff';
-}
-
-
-function validTeamColor(value, fallback) {
-  const color = String(value || '').trim();
-
-  return /^#[0-9a-f]{6}$/i.test(color)
-    ? color
-    : fallback;
-}
-
-
 export function ProjectTeamBadges({
   pm,
   pmInitials = null,
@@ -223,28 +191,35 @@ export function ProjectTeamBadges({
   superintendentInitials = null,
   superintendentHexColor = null,
   compact = false,
+  teamIdentityByName = null,
 }) {
+  const pmIdentity = resolveTeamBadge(pm, pmInitials, pmHexColor, teamIdentityByName);
+  const peIdentity = resolveTeamBadge(pe, peInitials, peHexColor, teamIdentityByName);
+  const apmIdentity = resolveTeamBadge(apm, apmInitials, apmHexColor, teamIdentityByName);
+  const superintendentIdentity = resolveTeamBadge(
+    superintendent, superintendentInitials, superintendentHexColor, teamIdentityByName,
+  );
   const members = [
     {
       role: 'PM',
       tooltipRole: 'PM',
       name: teamName(pm),
-      initials: teamInitials(pm, pmInitials),
-      color: validTeamColor(pmHexColor, '#4b5563'),
+      initials: teamInitials(pm, pmIdentity.initials),
+      color: pmIdentity.color || '#4b5563',
     },
     {
       role: 'PE',
       tooltipRole: 'PE',
       name: teamName(pe),
-      initials: teamInitials(pe, peInitials),
-      color: validTeamColor(peHexColor, '#486878'),
+      initials: teamInitials(pe, peIdentity.initials),
+      color: peIdentity.color || '#4b5563',
     },
     {
       role: 'APM',
       tooltipRole: 'APM',
       name: teamName(apm),
-      initials: teamInitials(apm, apmInitials),
-      color: validTeamColor(apmHexColor, '#665985'),
+      initials: teamInitials(apm, apmIdentity.initials),
+      color: apmIdentity.color || '#665985',
     },
     {
       role: 'SUP',
@@ -252,12 +227,9 @@ export function ProjectTeamBadges({
       name: teamName(superintendent),
       initials: teamInitials(
         superintendent,
-        superintendentInitials,
+        superintendentIdentity.initials,
       ),
-      color: validTeamColor(
-        superintendentHexColor,
-        '#5a626b',
-      ),
+      color: superintendentIdentity.color || '#5a626b',
     },
   ].filter(
     member => member.name || member.initials

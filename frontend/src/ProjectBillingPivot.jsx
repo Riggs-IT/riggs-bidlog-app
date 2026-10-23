@@ -516,6 +516,7 @@ function ProjectMeta({
   onBalanceReviewQuickFilter,
   selectedQuickFilter,
   historicalOnly = false,
+  teamIdentityByName = null,
 }) {
   return (
     <div className="pivot-project-info">
@@ -547,6 +548,7 @@ function ProjectMeta({
       </div>
 
       <ProjectTeamBadges
+        teamIdentityByName={teamIdentityByName}
         compact
         pm={row.pmName}
         pmInitials={row.pmInitials}
@@ -1296,6 +1298,7 @@ export default function ProjectBillingPivot({
   projectionSourceAllValue = '__ALL__',
   onBalanceReviewQuickFilter = null,
   completedHistoryMode = false,
+  teamIdentityByName = null,
 }) {
   const [
     billingMetric,
@@ -2223,6 +2226,7 @@ export default function ProjectBillingPivot({
                         onBalanceReviewQuickFilter={onBalanceReviewQuickFilter}
                         selectedQuickFilter={projectionSourceFilter}
                         historicalOnly={completedHistoryMode}
+                        teamIdentityByName={teamIdentityByName}
                       />
                     </td>
 

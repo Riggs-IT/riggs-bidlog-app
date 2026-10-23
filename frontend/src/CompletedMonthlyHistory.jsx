@@ -32,6 +32,7 @@ async function fetchCompletedHistory(months, signal) {
 
 export default function CompletedMonthlyHistory({
   view, onViewChange, projects, canViewMargin, pmIdentityByName,
+  teamIdentityByName = null,
   onSelectProject, refreshApiRef,
 }) {
   const [initialRange] = useState(defaultCompletedMonths);
@@ -220,6 +221,7 @@ export default function CompletedMonthlyHistory({
                   </button>}
                   <ProjectBillingPivot
                     key="completed-history-pivot" completedHistoryMode
+                    teamIdentityByName={teamIdentityByName}
                     months={pivotMonths}
                     currentProjects={pivotProjects}
                     currentMonthly={prepared.currentMonthly}

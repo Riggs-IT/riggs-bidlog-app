@@ -1,15 +1,21 @@
 // UI-facing refresh outcomes; no cache timings or implementation terms.
 export const DATA_UPDATED_MESSAGE = 'Data is updated.';
 export const DATA_UPDATING_MESSAGE = 'Updating data…';
+export const DATA_REFRESH_FAILED_MESSAGE = 'Refresh failed. Previous data is still shown.';
 
 // Soft-stale snapshots are normal while the bridge performs a singleflight
 // rebuild. Show an operational warning only for failed/invalid cache state.
 export function hasCacheReadProblem(status) {
-  if (!status || !status.datasets || typeof status.datasets !== 'object') return false;
+  if (!status || typeof status !== 'object') return false;
   if (status.status === 'FAILED' || status.status === 'PARTIAL') return true;
+  if (!status.datasets || typeof status.datasets !== 'object') return false;
+  // Missing/stale datasets while an ordinary rebuild is RUNNING are not
+  // evidence of an outage. A warning is appropriate only for genuine errors.
+  if (status.status === 'RUNNING') return false;
   return Object.values(status.datasets).some(item =>
-    !item || item.state === 'MISSING' || item.state === 'EXPIRED'
-      || Boolean(item.lastErrorType));
+    Boolean(item?.lastErrorType)
+    || (status.status === 'COMPLETE'
+      && (!item || item.state === 'MISSING' || item.state === 'EXPIRED')));
 }
 
 export function isRefreshCooldown(error) {

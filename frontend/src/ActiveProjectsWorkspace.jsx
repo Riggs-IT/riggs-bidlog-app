@@ -1,3 +1,4 @@
+import {teamBadgeTextColor} from './teamBadgeIdentity.js';
 import {facetRows, projectDirectoryRows, isCompleted} from './viewFilters.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey, contractorFilterOptions, contractorFilterMatch} from './gcReference.js';
@@ -306,31 +307,6 @@ function isUnassigned(value) {
 }
 
 
-function pmBadgeTextColor(hexColor) {
-  const match = String(hexColor || '')
-    .trim()
-    .match(/^#?([0-9a-f]{6})$/i);
-
-  if (!match) {
-    return '#ffffff';
-  }
-
-  const value = match[1];
-  const red = parseInt(value.slice(0, 2), 16);
-  const green = parseInt(value.slice(2, 4), 16);
-  const blue = parseInt(value.slice(4, 6), 16);
-  const luminance = (
-    red * 299
-    + green * 587
-    + blue * 114
-  ) / 1000;
-
-  return luminance > 160
-    ? '#111111'
-    : '#ffffff';
-}
-
-
 function initialsFromName(name) {
   return String(name || '')
     .trim()
@@ -366,7 +342,7 @@ function PMBadge({ project }) {
         title={project.pm || 'Project Manager'}
         style={{
           backgroundColor: background,
-          color: pmBadgeTextColor(background),
+          color: teamBadgeTextColor(background),
         }}
       >
         {initials}
@@ -574,6 +550,7 @@ export default function ActiveProjectsWorkspace({
   scheduleReviewByJobId = new Map(),
   onOpenBillingProject = null,
   user,
+  teamIdentityByName = null,
   onProjectDataChanged,
   refreshApiRef,
 }) {
@@ -625,11 +602,14 @@ export default function ActiveProjectsWorkspace({
         if (!controller.signal.aborted) {
           writeDirectoryCache('active', payload);
           setActiveItems(payload);
+          return true;
         }
+        return false;
       } catch (loadError) {
         if (!controller.signal.aborted && loadError?.name !== 'AbortError') {
           setError(loadError?.message || 'Unable to load active projects.');
         }
+        return false;
       } finally {
         if (activeReadRef.current?.controller === controller) {
           activeReadRef.current = null;
@@ -657,11 +637,14 @@ export default function ActiveProjectsWorkspace({
         if (!controller.signal.aborted) {
           writeDirectoryCache('completed', payload);
           setCompletedItems(payload);
+          return true;
         }
+        return false;
       } catch (loadError) {
         if (!controller.signal.aborted && loadError?.name !== 'AbortError') {
           setCompletedError(loadError?.message || 'Unable to load completed projects.');
         }
+        return false;
       } finally {
         if (completedReadRef.current?.controller === controller) {
           completedReadRef.current = null;
@@ -682,11 +665,17 @@ export default function ActiveProjectsWorkspace({
   // The Completed toggle still determines whether completed rows are reloaded.
   useImperativeHandle(refreshApiRef, () => ({
     refresh: async () => {
-      await Promise.all([
+      const results = await Promise.all([
         loadProjects({ quiet: false }),
         ...(showCompleted ? [loadCompletedProjects({ quiet: false })] : []),
         ...(canReadGcReference(user) ? [gcDirectory.refresh()] : []),
       ]);
+      // GC reference is supplemental; both requested job directories must
+      // complete before the header can announce successful project refresh.
+      if (results.slice(0, showCompleted ? 2 : 1).some(result => result !== true)) {
+        throw new Error('Unable to refresh the project directory.');
+      }
+      return true;
     },
   }));
 
@@ -1427,6 +1416,7 @@ export default function ActiveProjectsWorkspace({
 
                   <td className="active-project-team-cell project-team-badge-column">
                     <ProjectTeamBadges
+                      teamIdentityByName={teamIdentityByName}
                       pm={project.pm}
                       pmInitials={project.pmInitials}
                       pmHexColor={project.pmHexColor}

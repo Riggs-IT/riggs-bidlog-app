@@ -219,9 +219,8 @@ export default function AdministrationDashboard({onSessionError, refreshApiRef, 
     usagePending.current = controller;
     usageInFlight.current = true;
     if (!quiet) {
+      // Keep the last reported usage details on screen while revalidating.
       setUsageBusy(true);
-      if (mode === 'LIVE') setPresence(null);
-      else setLeaderboard(null);
     }
     const isLive = mode === 'LIVE';
     try {
@@ -247,17 +246,17 @@ export default function AdministrationDashboard({onSessionError, refreshApiRef, 
         if (isLive) setPresence(result);
         else setLeaderboard(result);
         setError('');
+        return true;
       }
+      return false;
     } catch (exc) {
       // Background network errors preserve the last verified scoreboard.
       if (!controller.signal.aborted) {
-        if (quiet) setError('Automatic usage update failed; showing the last result.');
-        else {
-          const unavailable = {availability: 'UNAVAILABLE', readOnly: true};
-          if (isLive) setPresence(unavailable);
-          else setLeaderboard(unavailable);
-        }
+        setError(quiet
+          ? 'Automatic usage update failed; showing the last result.'
+          : (exc.message || 'Unable to update usage information.'));
       }
+      return false;
     } finally {
       if (usagePending.current === controller) {
         usagePending.current = null;
@@ -292,13 +291,15 @@ export default function AdministrationDashboard({onSessionError, refreshApiRef, 
       }
       if (!controller.signal.aborted) {
         setOverview(payload);
-        await loadUsage(selection.current, {quiet: automatic});
+        return await loadUsage(selection.current, {quiet: automatic});
       }
+      return false;
     } catch (exc) {
       if (!controller.signal.aborted) {
-        if (!automatic) setOverview(null);
+        // A failed read must never erase a previously verified overview.
         setError(exc.message || 'Unable to check monitoring status.');
       }
+      return false;
     } finally {
       if (pending.current === controller) {
         pending.current = null;
@@ -330,7 +331,13 @@ export default function AdministrationDashboard({onSessionError, refreshApiRef, 
     if (selection.current.mode === 'LEADERBOARD') void loadUsage(selection.current);
   }, [loadUsage]);
 
-  useImperativeHandle(refreshApiRef, () => ({refresh: checkStatus}), [checkStatus]);
+  useImperativeHandle(refreshApiRef, () => ({
+    refresh: async () => {
+      const updated = await checkStatus();
+      if (updated !== true) throw new Error('Unable to refresh Administration.');
+      return true;
+    },
+  }), [checkStatus]);
 
   useEffect(() => {
     void checkStatus();

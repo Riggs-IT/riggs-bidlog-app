@@ -30,7 +30,11 @@ class BidLogPMBadgeWiringTests(unittest.TestCase):
 
     def test_viewer_badge_read_does_not_require_billing_datasets(self):
         view = (BASE / 'frontend/src/BidLogWorkspace.jsx').read_text()
-        self.assertIn("/api/bid-log/reference/pm-badges", view)
+        hook = (BASE / 'frontend/src/useTeamBadgeDirectory.js').read_text()
+        app = (BASE / 'frontend/src/App.jsx').read_text()
+        self.assertIn("/api/bid-log/reference/pm-badges", hook)
+        self.assertIn('useTeamBadgeDirectory(user?.eid, canViewBidLog)', app)
+        self.assertIn('pmBadgeDirectory={teamBadgeDirectory}', app)
         self.assertIn('pmBadgeDirectory', view)
         self.assertIn('...pmBadgeDirectory', view)
         self.assertNotIn('canViewProjectedBillings', view)

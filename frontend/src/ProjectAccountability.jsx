@@ -1,3 +1,4 @@
+import {teamBadgeTextColor} from './teamBadgeIdentity.js';
 import {facetRows} from './viewFilters.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey} from './gcReference.js';
@@ -201,31 +202,6 @@ function pmLabel(value) {
 }
 
 
-function pmBadgeTextColor(hexColor) {
-  const match = String(hexColor || '')
-    .trim()
-    .match(/^#?([0-9a-f]{6})$/i);
-
-  if (!match) {
-    return '#ffffff';
-  }
-
-  const value = match[1];
-  const red = parseInt(value.slice(0, 2), 16);
-  const green = parseInt(value.slice(2, 4), 16);
-  const blue = parseInt(value.slice(4, 6), 16);
-  const luminance = (
-    red * 299
-    + green * 587
-    + blue * 114
-  ) / 1000;
-
-  return luminance > 160
-    ? '#111111'
-    : '#ffffff';
-}
-
-
 function initialsFromName(name) {
   const words = String(name || '')
     .trim()
@@ -339,7 +315,7 @@ function PMInitialsBadge({
       title={name || 'Project Manager'}
       style={{
         backgroundColor: background,
-        color: pmBadgeTextColor(background),
+        color: teamBadgeTextColor(background),
       }}
     >
       {value}
@@ -602,6 +578,7 @@ function dataStateLabel(value) {
 export default function ProjectAccountability({
   user,
   pmDirectory = [],
+  teamIdentityByName = null,
   refreshApiRef,
 }) {
   const gcDirectory = useGcReference(canReadGcReference(user));
@@ -753,10 +730,13 @@ export default function ProjectAccountability({
           key,
           {
             name,
+            // Don't promote guessed initials above the authenticated
+            // Cognito employee badge directory. The shared badge component
+            // derives a fallback only after checking the employee identity.
             initials:
               row?.pmInitials
               || current.initials
-              || initialsFromName(name),
+              || null,
             hexColor:
               row?.pmHexColor
               || current.hexColor
@@ -878,11 +858,14 @@ export default function ProjectAccountability({
             ? payload.find(item => item.jobListId === current.jobListId) || current
             : current);
         }
+        return true;
       }
+      return false;
     } catch (loadError) {
       if (isCurrent() && loadError?.name !== 'AbortError') {
         setError(loadError?.message || 'Unable to load completed projects.');
       }
+      return false;
     } finally {
       if (isCurrent() && !hasCachedRows) setLoading(false);
       if (completedListControllerRef.current === controller) {
@@ -907,15 +890,20 @@ export default function ProjectAccountability({
     // One top-banner action refreshes both independent authorized readers.
     // Wait for history as well so the shared header spinner covers the read.
     refresh: async () => {
-      const [, monthly] = await Promise.allSettled([
+      const [directory, monthly] = await Promise.allSettled([
         loadCompletedProjects({forceRefresh: true}),
-        completedHistoryRefreshRef.current?.refresh() ?? Promise.resolve(),
+        completedHistoryRefreshRef.current?.refresh() ?? Promise.resolve(null),
       ]);
-      if (monthly.status === 'rejected') {
-        // Keep the last good monthly history, but report a failed header refresh
-        // even while the Directory is selected and the history alert is hidden.
+      if (monthly.status === 'rejected' || monthly.value == null) {
+        // Keep last good history, but a hidden By Month failure cannot be
+        // silently reported as a successful Directory refresh.
         setError('Unable to refresh completed monthly history. Please try Refresh again.');
       }
+      if (directory.status !== 'fulfilled' || directory.value !== true
+        || monthly.status !== 'fulfilled' || monthly.value == null) {
+        throw new Error('Unable to refresh completed billing data.');
+      }
+      return true;
     },
   }), [loadCompletedProjects]);
 
@@ -2377,6 +2365,7 @@ export default function ProjectAccountability({
           projects={filteredRows}
           canViewMargin={isAdmin}
           pmIdentityByName={pmIdentityByName}
+          teamIdentityByName={teamIdentityByName}
           onSelectProject={setSelectedProject}
           refreshApiRef={completedHistoryRefreshRef}
         />
@@ -2556,6 +2545,7 @@ export default function ProjectAccountability({
 
                         return (
                           <ProjectTeamBadges
+                            teamIdentityByName={teamIdentityByName}
                             pm={pmName}
                             pmInitials={identity?.initials}
                             pmHexColor={identity?.hexColor}

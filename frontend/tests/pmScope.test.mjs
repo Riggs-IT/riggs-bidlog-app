@@ -61,9 +61,11 @@ test('Bid Log gets badge colors from an independent authenticated read, never fr
   const workspace = read('BidLogWorkspace.jsx');
   const main = readFileSync(new URL('../../backend/app/main.py', import.meta.url), 'utf8');
   const client = readFileSync(new URL('../../backend/app/data_api.py', import.meta.url), 'utf8');
-  assert.match(workspace, /fetch\('\/api\/bid-log\/reference\/pm-badges'/);
+  const hook = read('useTeamBadgeDirectory.js');
+  assert.match(hook, /fetch\('\/api\/bid-log\/reference\/pm-badges'/);
+  assert.match(read('App.jsx'), /useTeamBadgeDirectory\(user\?\.eid, canViewBidLog\)/);
   assert.match(workspace, /\[\.\.\.pmDirectory, \.\.\.pmBadgeDirectory\]/);
-  assert.match(workspace, /console\.warn\('Bid Log PM badge directory unavailable'/);
+  assert.match(hook, /console\.warn\('Team badge directory unavailable'/);
   assert.match(main, /def bid_log_pm_badges_proxy\([\s\S]*?_require_bid_log_workspace_access\(current_user\)/);
   assert.doesNotMatch(main.slice(main.indexOf('def bid_log_pm_badges_proxy'), main.indexOf('def bid_log_active_list_proxy')),
     /_require_projected_workspace_access|_require_bid_log_editor/);

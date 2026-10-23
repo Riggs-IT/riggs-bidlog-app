@@ -3,7 +3,7 @@ import { mergePrimaryPortfolio } from './primaryProjection.js';
 import {indexPortfolioRebalance} from './portfolioBalance.js';
 import {indexScheduleReview} from './scheduleReview.js';
 import { createLatestRead, freshReadPath, readOptions, watchVisibleReads } from './browserFreshness.js';
-import {DATA_UPDATED_MESSAGE, DATA_UPDATING_MESSAGE, hasFreshPortfolioSnapshot, isRefreshCooldown} from './refreshFeedback.js';
+import {DATA_UPDATED_MESSAGE, DATA_UPDATING_MESSAGE, DATA_REFRESH_FAILED_MESSAGE, hasFreshPortfolioSnapshot, isRefreshCooldown} from './refreshFeedback.js';
 import {createProgressiveDashboardReads} from './dashboardRefreshStages.js';
 import {createReviewPairCoordinator, canReuseVerifiedReviewPair, coalesceReviewBatches} from './reviewPairCoordinator.js';
 import {createReviewCacheRecovery, recoverableReviewReason} from './reviewCacheRecovery.js';
@@ -254,7 +254,7 @@ export default function useProjectedBillingsFreshness(options) {
       recovery.cancel();
       state.busy += 1;
       setRefreshing(true);
-      latest.current.onRefreshNotice?.(null);
+      latest.current.onRefreshNotice?.(DATA_UPDATING_MESSAGE);
       try {
         // Exactly one POST asks the bridge to rebuild its shared snapshot.
         // Polling below only checks metadata, never launches SQL reads.
@@ -263,9 +263,7 @@ export default function useProjectedBillingsFreshness(options) {
           { method: 'POST', credentials: 'same-origin', cache: 'no-store' },
         );
         if (!receipt?.refreshId) throw new Error('Unable to refresh data. Please try again.');
-        // Acknowledge immediately. Current values stay visible and editable;
-        // the button only starts a background rebuild, not a blocking page load.
-        latest.current.onRefreshNotice?.(DATA_UPDATING_MESSAGE);
+        // Financial rows remain visible during the coordinated rebuild.
         reviewEpoch = reviewPair.begin('MANUAL');
         staged(reviewEpoch);
         const progressive = createProgressiveDashboardReads({
@@ -309,7 +307,7 @@ export default function useProjectedBillingsFreshness(options) {
         }
         if (status.status !== 'COMPLETE') {
           const error = new Error('Data could not be refreshed. Last available values are shown.');
-          latest.current.onRefreshNotice?.(null);
+          latest.current.onRefreshNotice?.(DATA_REFRESH_FAILED_MESSAGE);
           reportError('sharedRefresh', error);
         } else {
           state.failures.delete('sharedRefresh');
@@ -340,11 +338,11 @@ export default function useProjectedBillingsFreshness(options) {
               latest.current.onRefreshNotice?.(null);
             }
           } catch (readError) {
-            latest.current.onRefreshNotice?.(null);
+            latest.current.onRefreshNotice?.(DATA_REFRESH_FAILED_MESSAGE);
             reportError('sharedRefresh', readError);
           }
         } else {
-          latest.current.onRefreshNotice?.(null);
+          latest.current.onRefreshNotice?.(DATA_REFRESH_FAILED_MESSAGE);
           reportError('sharedRefresh', error);
         }
       } finally {

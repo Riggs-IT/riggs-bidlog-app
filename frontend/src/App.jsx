@@ -1,4 +1,4 @@
-import {DATA_UPDATING_MESSAGE, hasCacheReadProblem} from './refreshFeedback.js';
+import {DATA_UPDATED_MESSAGE, DATA_UPDATING_MESSAGE, DATA_REFRESH_FAILED_MESSAGE, hasCacheReadProblem} from './refreshFeedback.js';
 import {PASSIVE_IDLE_WINDOW_MS} from './browserFreshness.js';
 import {FilterToggleGroup, RefreshButton} from './ViewControls.jsx';
 import { resolveSessionIdleTimeoutMs } from './sessionPolicy.js';
@@ -48,6 +48,8 @@ import OriginatingBidAttentionDrawer from './OriginatingBidAttentionDrawer.jsx';
 import ProjectBillingPivot from './ProjectBillingPivot.jsx';
 import CsvExportDialog from './CsvExportDialog.jsx';
 import useStickyTableHeader from './useStickyTableHeader.js';
+import useTeamBadgeDirectory from './useTeamBadgeDirectory.js';
+import {teamIdentityMap, teamBadgeTextColor} from './teamBadgeIdentity.js';
 import {
   ProjectTeamBadges,
   retentionLabel,
@@ -622,61 +624,6 @@ function projectMonthDisplay(
 }
 
 
-function pmBadgeTextColor(
-  hexColor,
-) {
-  const match =
-    String(
-      hexColor || ''
-    )
-      .trim()
-      .match(
-        /^#?([0-9a-f]{6})$/i
-      );
-
-
-  if (!match) {
-    return '#ffffff';
-  }
-
-
-  const value =
-    match[1];
-
-
-  const red =
-    parseInt(
-      value.slice(0, 2),
-      16,
-    );
-
-  const green =
-    parseInt(
-      value.slice(2, 4),
-      16,
-    );
-
-  const blue =
-    parseInt(
-      value.slice(4, 6),
-      16,
-    );
-
-
-  const luminance =
-    (
-      red * 299
-      + green * 587
-      + blue * 114
-    ) / 1000;
-
-
-  return luminance > 160
-    ? '#111111'
-    : '#ffffff';
-}
-
-
 function PMInitialsBadge({
   initials,
   hexColor,
@@ -717,7 +664,7 @@ function PMInitialsBadge({
           background,
 
         color:
-          pmBadgeTextColor(
+          teamBadgeTextColor(
             background
           ),
       }}
@@ -1727,6 +1674,7 @@ export default function App() {
 
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [refreshFeedback, setRefreshFeedback] = useState(null);
+  const [workspaceRefreshFeedback, setWorkspaceRefreshFeedback] = useState(null);
   const bidLogRefreshRef = useRef(null);
   const projectsRefreshRef = useRef(null);
   const completedRefreshRef = useRef(null);
@@ -1746,8 +1694,22 @@ export default function App() {
     if (!ref?.current?.refresh) return;
     activeRefreshPagesRef.current.add(page);
     setRefreshingWorkspace(page);
+    setWorkspaceRefreshFeedback({page, message: DATA_UPDATING_MESSAGE, type: 'progress'});
     try {
-      await ref.current.refresh();
+      const result = await ref.current.refresh();
+      // Returning false means the reader deliberately declined the request;
+      // never claim success just because no promise was rejected.
+      if (activePageRef.current === page) {
+        setWorkspaceRefreshFeedback(result === true ? {
+          page, message: DATA_UPDATED_MESSAGE, type: 'success',
+        } : null);
+      }
+    } catch {
+      if (activePageRef.current === page) {
+        setWorkspaceRefreshFeedback({
+          page, message: DATA_REFRESH_FAILED_MESSAGE, type: 'error',
+        });
+      }
     } finally {
       activeRefreshPagesRef.current.delete(page);
       setRefreshingWorkspace(current => current === page ? null : current);
@@ -1756,13 +1718,22 @@ export default function App() {
 
   useEffect(() => {
     setRefreshFeedback(null);
+    setWorkspaceRefreshFeedback(null);
   }, [activePage]);
 
   useEffect(() => {
     if (!refreshFeedback || refreshFeedback === DATA_UPDATING_MESSAGE) return undefined;
-    const timeout = window.setTimeout(() => setRefreshFeedback(null), 3500);
+    const timeout = window.setTimeout(() => setRefreshFeedback(null),
+      refreshFeedback === DATA_REFRESH_FAILED_MESSAGE ? 6500 : 3500);
     return () => window.clearTimeout(timeout);
   }, [refreshFeedback]);
+
+  useEffect(() => {
+    if (!workspaceRefreshFeedback || workspaceRefreshFeedback.type === 'progress') return undefined;
+    const timeout = window.setTimeout(() => setWorkspaceRefreshFeedback(null),
+      workspaceRefreshFeedback.type === 'error' ? 6500 : 3500);
+    return () => window.clearTimeout(timeout);
+  }, [workspaceRefreshFeedback]);
 
   const [
     currentProjects,
@@ -2342,6 +2313,13 @@ export default function App() {
       .canViewCompletedBillings
     === true;
 
+  // The existing Bid Log badge-only endpoint resolves ALL employee identities
+  // from Cognito IT Users. One passive read serves every staff badge view.
+  const teamBadgeDirectory = useTeamBadgeDirectory(user?.eid, canViewBidLog);
+  const teamIdentityByName = useMemo(
+    () => teamIdentityMap(teamBadgeDirectory), [teamBadgeDirectory],
+  );
+
   // Server-created, exact-owner capability; never derive this from ADMIN.
   const canViewAdministration = user?.canViewAdministration === true;
 
@@ -2375,7 +2353,9 @@ export default function App() {
     isEnding: () => logoutInProgressRef.current,
     onSessionError: handleReadSessionError,
     onError: setDataError,
-    onRefreshNotice: setRefreshFeedback,
+    onRefreshNotice: message => {
+      if (activePageRef.current === 'projected') setRefreshFeedback(message);
+    },
     onInitialLoading: setDataLoading,
     onAttention: setForecastAttention,
     onPortfolioBalance: setPortfolioBalance,
@@ -5838,8 +5818,8 @@ export default function App() {
 
 
         {!dataError && hasCacheReadProblem(portfolioFreshness.cacheStatus) && (
-            <div className="page-alert" role="status">
-              Some data may be out of date. Please try again later.
+            <div className="page-alert" role="alert">
+              The latest billing refresh failed. You can try Refresh again.
             </div>
           )}
 
@@ -6896,6 +6876,7 @@ export default function App() {
           {monthlyComparisonView === 'project'
             ? (
               <ProjectBillingPivot
+                teamIdentityByName={teamIdentityByName}
                 months={monthRange}
                 currentProjects={currentDetails}
                 bidProjects={bidDetails}
@@ -7361,6 +7342,7 @@ export default function App() {
 
                                               <td className="project-team-badge-column">
                                                 <ProjectTeamBadges
+                                                  teamIdentityByName={teamIdentityByName}
                                                   pm={detail.pm}
                                                   pmInitials={detail.pmInitials}
                                                   pmHexColor={detail.pmHexColor}
@@ -7857,6 +7839,7 @@ export default function App() {
 
                       <td className="project-team-badge-column">
                         <ProjectTeamBadges
+                          teamIdentityByName={teamIdentityByName}
                           pm={row.pm}
                           pmInitials={row.pmInitials}
                           pmHexColor={row.pmHexColor}
@@ -7988,6 +7971,7 @@ export default function App() {
       ) ? (
         <BidLogWorkspace
           user={user}
+          pmBadgeDirectory={teamBadgeDirectory}
           refreshApiRef={bidLogRefreshRef}
           pmDirectory={[
             ...currentProjects,
@@ -8003,6 +7987,7 @@ export default function App() {
       ) ? (
         <ActiveProjectsWorkspace
           user={user}
+          teamIdentityByName={teamIdentityByName}
           refreshApiRef={projectsRefreshRef}
           rebalanceByJobId={rebalanceByJobId}
           scheduleReviewByJobId={scheduleReviewByJobId}
@@ -8015,6 +8000,7 @@ export default function App() {
       ) ? (
         <ProjectAccountability
           user={user}
+          teamIdentityByName={teamIdentityByName}
           refreshApiRef={completedRefreshRef}
           pmDirectory={[
             ...currentProjects,
@@ -8032,9 +8018,29 @@ export default function App() {
         />
       ) : null}
 
-      {activePage === 'projected' && refreshFeedback && (
-        <div className="action-toast refresh-feedback" role="status">
-          {refreshFeedback}
+      {((activePage === 'projected' && refreshFeedback)
+        || (workspaceRefreshFeedback?.page === activePage && workspaceRefreshFeedback)) && (
+        <div
+          className={`action-toast refresh-feedback ${
+            activePage === 'projected'
+              ? (refreshFeedback === DATA_REFRESH_FAILED_MESSAGE ? 'error' : '')
+              : (workspaceRefreshFeedback.type === 'error' ? 'error' : '')
+          }`}
+          role={((activePage === 'projected' && refreshFeedback === DATA_REFRESH_FAILED_MESSAGE)
+            || (workspaceRefreshFeedback?.page === activePage && workspaceRefreshFeedback?.type === 'error'))
+            ? 'alert' : 'status'}
+        >
+          <span className={`refresh-toast-indicator ${
+            (activePage === 'projected' ? refreshFeedback === DATA_UPDATING_MESSAGE
+              : workspaceRefreshFeedback?.type === 'progress') ? 'is-progress' : ''
+          }`} aria-hidden="true">
+            {(activePage === 'projected' ? refreshFeedback === DATA_UPDATING_MESSAGE
+              : workspaceRefreshFeedback?.type === 'progress') ? '↻' : (
+                (activePage === 'projected' ? refreshFeedback === DATA_REFRESH_FAILED_MESSAGE
+                  : workspaceRefreshFeedback?.type === 'error') ? '!' : '✓'
+              )}
+          </span>
+          {activePage === 'projected' ? refreshFeedback : workspaceRefreshFeedback.message}
         </div>
       )}
 

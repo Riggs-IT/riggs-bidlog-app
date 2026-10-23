@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  DATA_UPDATED_MESSAGE, DATA_UPDATING_MESSAGE,
+  DATA_UPDATED_MESSAGE, DATA_UPDATING_MESSAGE, DATA_REFRESH_FAILED_MESSAGE,
   isRefreshCooldown,
   hasFreshPortfolioSnapshot, hasCacheReadProblem,
 } from '../src/refreshFeedback.js';
@@ -23,9 +23,15 @@ test('ordinary soft-stale snapshots during a rebuild do not show outage banner',
  assert.equal(hasCacheReadProblem({...running,status:'PARTIAL'}), true);
  assert.equal(hasCacheReadProblem({...running,status:'FAILED'}), true);
  for (const state of ['MISSING','EXPIRED']) {
-   assert.equal(hasCacheReadProblem({...running,datasets:{dataset:{state}}}), true);
+   // An in-progress rebuild may temporarily lack a dataset: no warning.
+   assert.equal(hasCacheReadProblem({...running,datasets:{dataset:{state}}}), false);
+   // Once terminal, missing or expired datasets are a real failure.
+   assert.equal(hasCacheReadProblem({...running,status:'COMPLETE',datasets:{dataset:{state}}}), true);
  }
- assert.equal(hasCacheReadProblem({...running,datasets:{dataset:{state:'FRESH',lastErrorType:'SQLCapacityError'}}}), true);
+ assert.equal(hasCacheReadProblem({...running,datasets:{dataset:{state:'FRESH',lastErrorType:'SQLCapacityError'}}}), false);
+ assert.equal(hasCacheReadProblem({...running,status:'COMPLETE',datasets:{dataset:{state:'FRESH',lastErrorType:'SQLCapacityError'}}}), true);
+ assert.equal(hasCacheReadProblem({status:'FAILED'}), true);
+ assert.equal(hasCacheReadProblem({status:'PARTIAL'}), true);
  assert.equal(hasCacheReadProblem(null), false);
 });
 
@@ -39,6 +45,7 @@ test('refresh cooldown classification is exact; SQL and network failures remain 
 test('normal and limited manual refresh show only the simple user message after six fresh reads', () => {
   assert.equal(DATA_UPDATED_MESSAGE, 'Data is updated.');
   assert.equal(DATA_UPDATING_MESSAGE, 'Updating data…');
+  assert.equal(DATA_REFRESH_FAILED_MESSAGE, 'Refresh failed. Previous data is still shown.');
   assert.equal(hasFreshPortfolioSnapshot(results()), true);
 });
 

@@ -1,3 +1,4 @@
+import {teamBadgeTextColor} from './teamBadgeIdentity.js';
 import {facetRows} from './viewFilters.js';
 import {hasMissingEstimate, isOverdueForDays} from './bidLogOverdue.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
@@ -105,31 +106,6 @@ export function invalidateBidLogWorkspaceCache() {
 }
 
 
-function pmBadgeTextColor(hexColor) {
-  const match = String(hexColor || '')
-    .trim()
-    .match(/^#?([0-9a-f]{6})$/i);
-
-  if (!match) {
-    return '#ffffff';
-  }
-
-  const value = match[1];
-  const red = parseInt(value.slice(0, 2), 16);
-  const green = parseInt(value.slice(2, 4), 16);
-  const blue = parseInt(value.slice(4, 6), 16);
-  const luminance = (
-    red * 299
-    + green * 587
-    + blue * 114
-  ) / 1000;
-
-  return luminance > 160
-    ? '#111111'
-    : '#ffffff';
-}
-
-
 function initialsFromName(name) {
   const words = String(name || '')
     .trim()
@@ -185,7 +161,7 @@ function PMInitialsBadge({
       title={name ? `PM: ${name}` : 'Project Manager'}
       style={{
         backgroundColor: background,
-        color: pmBadgeTextColor(background),
+        color: teamBadgeTextColor(background),
       }}
     >
       {value}
@@ -807,38 +783,11 @@ function compareSortValues(
 export default function BidLogWorkspace({
   user,
   pmDirectory = [],
+  pmBadgeDirectory = [],
   onBidDataChanged,
   refreshApiRef,
 }) {
   const gcDirectory = useGcReference(canReadGcReference(user));
-  const [pmBadgeDirectory, setPmBadgeDirectory] = useState([]);
-
-  useEffect(() => {
-    if (!user?.eid) {
-      setPmBadgeDirectory([]);
-      return undefined;
-    }
-    const controller = new AbortController();
-    const load = async () => {
-      try {
-        const response = await window.fetch('/api/bid-log/reference/pm-badges', {
-          credentials: 'same-origin', cache: 'no-store', signal: controller.signal,
-          headers: {'X-Riggs-Passive-Read': '1'},
-        });
-        if (!response.ok) throw new Error(`PM badge read failed: ${response.status}`);
-        const payload = await response.json();
-        if (!Array.isArray(payload?.items)) throw new Error('Invalid PM badge directory');
-        if (!controller.signal.aborted) setPmBadgeDirectory(payload.items);
-      } catch (error) {
-        if (!controller.signal.aborted) {
-          // Badges are supplemental. Do not turn a failed lookup into an empty bid list.
-          console.warn('Bid Log PM badge directory unavailable', error);
-        }
-      }
-    };
-    void load();
-    return () => controller.abort();
-  }, [user?.eid]);
   const [
     bidView,
     setBidView,
@@ -1749,7 +1698,7 @@ export default function BidLogWorkspace({
 
   async function refreshCurrentBidView() {
     if (loading) {
-      return;
+      return false;
     }
 
     setLoading(true);
@@ -1793,19 +1742,10 @@ export default function BidLogWorkspace({
           ),
       );
 
-      showActionToast(
-        'success',
-        `${currentView.title} refreshed.`,
-      );
+      return true;
     } catch (refreshError) {
-      const message =
-        refreshError?.message
-        || `Unable to refresh ${currentView.title.toLowerCase()}.`;
-
-      showActionToast(
-        'error',
-        message,
-      );
+      setError(refreshError?.message || `Unable to refresh ${currentView.title.toLowerCase()}.`);
+      throw refreshError;
     } finally {
       setLoading(false);
     }
@@ -1816,9 +1756,10 @@ export default function BidLogWorkspace({
   // active/awarded/lost/unpursued selection remains owned by this workspace.
   useImperativeHandle(refreshApiRef, () => ({
     refresh: async () => {
-      if (loading) return;
-      await refreshCurrentBidView();
+      if (loading) return false;
+      const refreshed = await refreshCurrentBidView();
       if (canReadGcReference(user)) await gcDirectory.refresh();
+      return refreshed;
     },
   }));
 

@@ -41,7 +41,8 @@ test('each header button delegates to its existing page reader without affecting
   assert.match(completedHeaderRefresh, /await Promise\.allSettled\(\[/);
   assert.match(completedHeaderRefresh, /loadCompletedProjects\(\{forceRefresh: true\}\)/);
   assert.match(completedHeaderRefresh, /completedHistoryRefreshRef\.current\?\.refresh\(\)/);
-  assert.match(completedHeaderRefresh, /if \(monthly\.status === 'rejected'\)/);
+  assert.match(completedHeaderRefresh, /monthly\.status === 'rejected' \|\| monthly\.value == null/);
+  assert.match(completedHeaderRefresh, /directory\.value !== true/);
   assert.doesNotMatch(completedHeaderRefresh, /refreshCurrentBidView|loadProjects\(\{ quiet:/);
   assert.match(completed, /generation === completedLoadGenerationRef\.current/);
 });
@@ -54,5 +55,6 @@ test('no timer, technical cache note, or header hover tooltip is displayed', () 
   assert.doesNotMatch(hook, /Try again in [^\n]*seconds/);
   assert.match(app, /label="Refresh projected billings"[^]*?title=\{null\}/);
   assert.match(controls, /title === null \? undefined/);
-  assert.match(app, /Some data may be out of date/); // only on genuine stale/failed entries
+  assert.doesNotMatch(app, /Some data may be out of date/);
+  assert.match(app, /The latest billing refresh failed/);
 });
