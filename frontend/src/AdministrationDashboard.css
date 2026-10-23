@@ -53,3 +53,43 @@
 .administration-reconciler { margin-top: 12px; }
 @media (max-width: 1000px) { .administration-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media (max-width: 600px) { .administration-metrics { grid-template-columns: 1fr; } }
+
+/* First Administration cleanup slice: high-signal evidence, not more KPI tiles. */
+.administration-attention-content { border: 1px solid var(--border); border-radius: 9px; background: var(--surface); overflow: hidden; }
+.administration-attention-list { list-style: none; margin: 0; padding: 0; }
+.administration-attention-list li { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; padding: 14px 17px; border-bottom: 1px solid var(--row-divider); }
+.administration-attention-list li:last-child { border-bottom: 0; }
+.administration-attention-list strong { display: block; color: var(--text-strong); font-size: 12px; font-weight: 700; }
+.administration-attention-list p { color: var(--text-soft); font-size: 11px; line-height: 1.5; margin: 5px 0 0; }
+.administration-attention-list a { flex: none; color: var(--accent); font-size: 11px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.administration-attention-list a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.administration-attention-clear { color: var(--text-strong); font-size: 12px; margin: 0; padding: 15px 17px; }
+.administration-attention-unverified { border-top: 1px solid var(--row-divider); background: var(--surface-2); padding: 12px 17px; }
+.administration-attention-unverified strong { font-size: 11px; color: var(--text-strong); }
+.administration-attention-unverified p { margin: 5px 0 0; font-size: 11px; line-height: 1.55; color: var(--text-soft); }
+.administration-optional-details { border-top: 1px solid var(--border); padding-top: 12px; }
+.administration-optional-details summary { cursor: pointer; color: var(--text-soft); font-size: 12px; font-weight: 650; }
+.administration-optional-details summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.administration-optional-details .administration-pending { margin-top: 12px; }
+@media (max-width: 600px) { .administration-attention-list li { flex-direction: column; gap: 8px; } }
+
+/* Stage D: evidence-first outbox drilldown, scoped to existing theme variables. */
+.administration-queue-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.administration-queue-actions button, .administration-queue-drilldown-controls button {
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text-strong); padding: 5px 8px; font: inherit; font-size: 11px;
+  cursor: pointer;
+}
+.administration-queue-actions button:hover, .administration-queue-drilldown-controls button:hover {
+  border-color: var(--accent);
+}
+.administration-queue-actions button:focus-visible, .administration-queue-drilldown-controls button:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+.administration-queue-drilldown { border: 1px solid var(--border); border-radius: 9px; padding: 15px; background: var(--surface); margin-top: 12px; }
+.administration-queue-drilldown-heading { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; }
+.administration-queue-drilldown-heading h3 { color: var(--text-strong); font-size: 14px; margin: 0; }
+.administration-queue-drilldown-controls { display: flex; gap: 6px; flex-wrap: wrap; }
+.administration-queue-detail-table { min-width: 900px; }
+.administration-queue-job { display: block; color: var(--muted); margin-top: 3px; }
+@media (max-width: 700px) { .administration-queue-drilldown-heading { flex-direction: column; } }

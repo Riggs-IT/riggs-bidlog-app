@@ -3684,3 +3684,47 @@ def get_bid_log_administration_monitoring(*, actor_eid: int, entra_object_id: st
     if response.status_code != 200:
         raise DataAPIInvalidResponse("Unexpected Administration monitoring status")
     return _json_object(response, operation=operation)
+
+
+# Private owner-only outbox investigation. This never forwards a browser-chosen
+# identity: EID and OID originate from require_administration_owner().
+def get_bid_log_administration_queue_events(
+    *, actor_eid: int, entra_object_id: str, lane: str, status: str = "FAILED", limit: int = 20,
+) -> dict:
+    allowed = {"accounting_tickets", "cognito_staffing", "job_cognito",
+               "job_sharepoint", "ordering_center", "project_forecast"}
+    if type(actor_eid) is not int or actor_eid != 2021:
+        raise DataAPIConfigurationError("Administration actor unavailable")
+    try:
+        oid = UUID(entra_object_id)
+        if oid.int == 0:
+            raise ValueError("empty UUID")
+    except (ValueError, TypeError, AttributeError) as exc:
+        raise DataAPIConfigurationError("Administration identity unavailable") from exc
+    if lane not in allowed or status not in ("FAILED", "PENDING") or type(limit) is not int or not 1 <= limit <= 20:
+        raise ValueError("Invalid queue event filters")
+
+    headers = _request_headers(include_service_auth=True, actor_eid=actor_eid)
+    headers["X-Riggs-Actor-Entra-OID"] = str(oid)
+    operation = "Bid Log Administration outbox events"
+    try:
+        response = _timed_data_api_request(
+            "admin_queue_events",
+            lambda: _get_http_client().get(
+                "/v1/bid-log/admin/queue-events",
+                params={"lane": lane, "status": status, "limit": limit},
+                headers=headers,
+                timeout=httpx.Timeout(
+                    connect=settings.data_api_connect_timeout_seconds,
+                    read=settings.data_api_dashboard_read_timeout_seconds,
+                    write=settings.data_api_read_timeout_seconds,
+                    pool=settings.data_api_connect_timeout_seconds,
+                ),
+            ),
+        )
+    except (httpx.TimeoutException, httpx.RequestError) as exc:
+        raise DataAPIUnavailable("Administration queue events upstream unavailable") from exc
+    _raise_common_failure(response, operation=operation)
+    if response.status_code != 200:
+        raise DataAPIInvalidResponse("Unexpected Administration queue event status")
+    return _json_object(response, operation=operation)

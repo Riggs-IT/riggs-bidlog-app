@@ -30,7 +30,7 @@ from starlette.middleware.sessions import (
 )
 from starlette.concurrency import run_in_threadpool
 
-from .administration import get_administration_overview, get_administration_presence, get_administration_leaderboard
+from .administration import get_administration_overview, get_administration_presence, get_administration_leaderboard, get_administration_queue_events
 from .auth import (
     CurrentUser,
     get_current_user,
@@ -1438,6 +1438,29 @@ def administration_leaderboard(
             owner_eid=current_user.eid,
             owner_oid=current_user.entra_object_id,
             days=days, app_code=app,
+        ),
+        headers={"Cache-Control": "no-store, private"},
+    )
+
+
+@app.get("/api/admin/queue-events")
+def administration_queue_events(
+    lane: str = FastAPIQuery(...),
+    status: str = FastAPIQuery(default="FAILED"),
+    limit: int = FastAPIQuery(default=20),
+    current_user: CurrentUser = Depends(require_administration_owner),
+):
+    # Exact owner gate is checked before selector parsing reaches the bridge.
+    if lane not in (
+        "accounting_tickets", "cognito_staffing", "job_cognito",
+        "job_sharepoint", "ordering_center", "project_forecast",
+    ) or status not in ("FAILED", "PENDING") or type(limit) is not int or not 1 <= limit <= 20:
+        raise HTTPException(status_code=422, detail="administration_queue_events_invalid_filter")
+    return JSONResponse(
+        get_administration_queue_events(
+            owner_eid=current_user.eid,
+            owner_oid=current_user.entra_object_id,
+            lane=lane, status=status, limit=limit,
         ),
         headers={"Cache-Control": "no-store, private"},
     )

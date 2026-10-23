@@ -1,15 +1,9 @@
 import {useCallback, useEffect, useImperativeHandle, useRef, useState} from 'react';
 import './AdministrationDashboard.css';
 import AdministrationUsagePanel from './AdministrationUsagePanel.jsx';
-
-const LABELS = {
-  current_project_summary: 'Current projects · summary',
-  current_project_monthly_bulk: 'Current projects · monthly',
-  current_project_primary_projection: 'Primary PM projection',
-  active_bid_dashboard: 'Active bids',
-  portfolio_balance: 'Portfolio review',
-  schedule_review: 'Schedule review',
-};
+import {DATASET_LABELS, QUEUE_LABELS, summarizeAdministration} from './administrationSignals.mjs';
+import {queueEvidence, queueAgeLabel} from './administrationQueueEvidence.mjs';
+import AdministrationQueueDetails from './AdministrationQueueDetails.jsx';
 
 export function displayUTC(value) {
   if (!value) return 'Not recorded';
@@ -40,23 +34,41 @@ function HealthCard({name, service, detail}) {
   );
 }
 
-const QUEUE_LABELS = {
-  accounting_tickets: 'Accounting · SharePoint tickets',
-  cognito_staffing: 'Cognito · staffing',
-  job_cognito: 'Cognito · job updates',
-  job_sharepoint: 'SharePoint · job updates',
-  ordering_center: 'SharePoint · ordering center',
-  project_forecast: 'Project forecast',
-};
-
 const displayCount = value => Number.isSafeInteger(value) && value >= 0
   ? value.toLocaleString() : 'Not collected';
+
+function AdministrationAttention({overview}) {
+  const {issues, unknown} = summarizeAdministration(overview);
+  return <section className="administration-section administration-attention" aria-label="Needs attention">
+    <div className="administration-section-heading">
+      <h2>Needs attention</h2>
+      <span>{issues.length ? `${issues.length} finding${issues.length === 1 ? '' : 's'} to review` : 'Latest collected evidence'}</span>
+    </div>
+    <div className="administration-attention-content">
+      {issues.length ? <ul className="administration-attention-list">
+        {issues.map(item => <li key={item.id}>
+          <div><strong>{item.title}</strong><p>{item.description}</p></div>
+          <a href={`#${item.target}`}>View details <span aria-hidden="true">↗</span></a>
+        </li>)}
+      </ul> : <p className="administration-attention-clear">
+        No issues identified in the checks that returned usable evidence.
+      </p>}
+      {unknown.length > 0 && <div className="administration-attention-unverified">
+        <strong>Not verified</strong>
+        <p>{unknown.join(' · ')}</p>
+      </div>}
+    </div>
+    <p className="administration-detail">Only reported problems appear above. Worker process health and historical failure trends are not collected.</p>
+  </section>;
+}
 
 export function AdministrationView({
   overview, presence, leaderboard, usageMode = 'LIVE', leaderboardDays = 30,
   leaderboardApp = 'ALL', usageLoading = false,
   onUsageModeChange = () => {}, onLeaderboardDaysChange = () => {},
   onLeaderboardAppChange = () => {},
+  queueSelection = null, onQueueInspect = () => {}, onQueueClose = () => {},
+  onSessionError,
 }) {
   const services = overview?.services || {};
   const cache = overview?.cache || {};
@@ -65,7 +77,8 @@ export function AdministrationView({
   const datasets = Array.isArray(cache.datasets) ? cache.datasets : [];
   const monitoring = overview?.monitoring || {};
   const usage = monitoring.usage || {};
-  const queueRows = Array.isArray(monitoring.queues) ? monitoring.queues : [];
+  // Sort *existing* six-lane SQL evidence for investigation; no extra read.
+  const queueRows = queueEvidence(monitoring.queues, monitoring.observedAtUTC);
   const reconciler = monitoring.reconciliation || {};
   const started = refresh.startedAtUTC ? Date.parse(refresh.startedAtUTC) : NaN;
   const finished = refresh.finishedAtUTC ? Date.parse(refresh.finishedAtUTC) : NaN;
@@ -73,7 +86,8 @@ export function AdministrationView({
     ? `${((finished - started) / 1000).toFixed(0)} sec (timestamp resolution)` : 'Not recorded';
 
   return <>
-    <section className="administration-section" aria-label="System health">
+    <AdministrationAttention overview={overview}/>
+    <section className="administration-section" id="administration-system-health" aria-label="System health">
       <div className="administration-section-heading"><h2>System health</h2><span>Readiness observations, not uptime history</span></div>
       <div className="administration-tiles">
         <HealthCard name="Bid Log" service={services.bidLog} detail="This application responded to the owner-only request." />
@@ -89,7 +103,7 @@ export function AdministrationView({
       onModeChange={onUsageModeChange} onDaysChange={onLeaderboardDaysChange}
       onAppChange={onLeaderboardAppChange} />
 
-    <section className="administration-section" aria-label="Shared dashboard cache">
+    <section className="administration-section" id="administration-cache" aria-label="Shared dashboard cache">
       <div className="administration-section-heading"><h2>Shared dashboard cache</h2><span>Current process-local snapshot · no historical ledger</span></div>
       {cache.availability === 'AVAILABLE' ? <>
         <div className="administration-tiles administration-tiles-two">
@@ -118,7 +132,7 @@ export function AdministrationView({
           <table className="administration-table">
             <thead><tr><th>Dataset</th><th>Current state</th><th>Age</th><th>Last updated</th><th>Last error type</th></tr></thead>
             <tbody>{datasets.map(item => <tr key={item.key}>
-              <td><strong>{LABELS[item.key] || item.key}</strong></td>
+              <td><strong>{DATASET_LABELS[item.key] || item.key}</strong></td>
               <td><State value={item.state}/></td>
               <td>{humanSeconds(item.ageSeconds)}</td>
               <td>{displayUTC(item.updatedAtUTC)}</td>
@@ -131,7 +145,7 @@ export function AdministrationView({
       </div>}
     </section>
 
-    <section className="administration-section" aria-label="Usage and automatic closeout">
+    <section className="administration-section" id="administration-usage-closeout" aria-label="Usage and automatic closeout">
       <div className="administration-section-heading"><h2>Usage and session closeout</h2><span>SQL aggregate · no person-level tracking shown</span></div>
       {monitoring.availability === 'AVAILABLE' ? <>
         <p className="administration-detail">Observed {displayUTC(monitoring.observedAtUTC)} · Active means a heartbeat within {usage.activeDefinitionSeconds} seconds, not proof someone is at their desk.</p>
@@ -158,34 +172,47 @@ export function AdministrationView({
       </div>}
     </section>
 
-    <section className="administration-section" aria-label="Worker queue evidence">
+    <section className="administration-section" id="administration-queues" aria-label="Worker queue evidence">
       <div className="administration-section-heading"><h2>Worker queues</h2><span>Durable SQL outboxes · not Docker process monitoring</span></div>
       {monitoring.availability === 'AVAILABLE' ? <>
         <div className="administration-table-scroller">
           <table className="administration-table">
-            <thead><tr><th>Queue lane</th><th>Pending</th><th>Processing</th><th>Failed</th><th>Oldest pending</th><th>Last processed event</th></tr></thead>
+            <thead><tr><th>Queue lane</th><th>Pending</th><th>Processing</th><th>Failed</th><th>Oldest pending</th><th>Time waiting</th><th>Last processed event</th><th>Inspect</th></tr></thead>
             <tbody>{queueRows.map(item => <tr key={item.laneKey}>
               <td><strong>{QUEUE_LABELS[item.laneKey] || item.laneKey}</strong></td>
               <td>{displayCount(item.pendingCount)}</td>
               <td>{displayCount(item.processingCount)}</td>
               <td>{displayCount(item.failedCount)}</td>
-              <td>{displayUTC(item.oldestPendingAtUTC)}</td>
+              <td>{item.pendingCount > 0 ? displayUTC(item.oldestPendingAtUTC) : '—'}</td>
+              <td>{item.pendingCount > 0 ? queueAgeLabel(item.oldestPendingAgeSeconds) : '—'}</td>
               <td>{displayUTC(item.latestProcessedAtUTC)}</td>
+              <td><div className="administration-queue-actions">
+                {item.failedCount > 0 && <button type="button" onClick={() => onQueueInspect(item.laneKey, 'FAILED')}>Failures ({item.failedCount})</button>}
+                {item.pendingCount > 0 && <button type="button" onClick={() => onQueueInspect(item.laneKey, 'PENDING')}>Pending ({item.pendingCount})</button>}
+                {item.failedCount === 0 && item.pendingCount === 0 && '—'}
+              </div></td>
             </tr>)}</tbody>
           </table>
         </div>
-        <p className="administration-detail">An empty queue does not prove a worker is running. Process health is not collected here; last processed timestamps are historical evidence only.</p>
+        {queueSelection && <AdministrationQueueDetails
+          key={`${queueSelection.laneKey}:${queueSelection.status}`}
+          laneKey={queueSelection.laneKey} status={queueSelection.status}
+          label={QUEUE_LABELS[queueSelection.laneKey] || queueSelection.laneKey}
+          onClose={onQueueClose} onSessionError={onSessionError}/>
+        }
+        <p className="administration-detail">Failed queues appear first, followed by the oldest waiting events. Waiting time uses the SQL observation timestamp—not your computer clock. No arbitrary delay threshold is treated as an incident. Empty queues and past processed events do not prove a worker is running.</p>
       </> : <div className="administration-message administration-message-warning" role="status">Queue status not verified.</div>}
     </section>
 
-    <section className="administration-section" aria-label="Instrumentation not yet collected">
-      <div className="administration-section-heading"><h2>Coming in a later monitoring stage</h2><span>Not connected · not zero</span></div>
+    <details className="administration-section administration-optional-details">
+      <summary>Monitoring coverage · information not collected</summary>
+      <p className="administration-detail">These signals are not reported by the existing data sources. They are not zero or healthy observations.</p>
       <div className="administration-pending">
         {(overview.notCollected || []).map(item => <div key={item}>
           <span>{item}</span><small>Not connected</small>
         </div>)}
       </div>
-    </section>
+    </details>
   </>;
 }
 
@@ -196,6 +223,7 @@ export default function AdministrationDashboard({onSessionError, refreshApiRef, 
   const [usageMode, setUsageMode] = useState('LIVE');
   const [leaderboardDays, setLeaderboardDays] = useState(30);
   const [leaderboardApp, setLeaderboardApp] = useState('ALL');
+  const [queueSelection, setQueueSelection] = useState(null);
   const [busy, setBusy] = useState(false);
   const [usageBusy, setUsageBusy] = useState(false);
   const [error, setError] = useState('');
@@ -378,7 +406,9 @@ export default function AdministrationDashboard({onSessionError, refreshApiRef, 
       <AdministrationView overview={overview} presence={presence} leaderboard={leaderboard}
         usageMode={usageMode} leaderboardDays={leaderboardDays} leaderboardApp={leaderboardApp}
         usageLoading={usageBusy} onUsageModeChange={changeUsageMode}
-        onLeaderboardDaysChange={changeLeaderboardDays} onLeaderboardAppChange={changeLeaderboardApp} />
+        onLeaderboardDaysChange={changeLeaderboardDays} onLeaderboardAppChange={changeLeaderboardApp}
+        queueSelection={queueSelection} onQueueInspect={(laneKey, status) => setQueueSelection({laneKey, status})}
+        onQueueClose={() => setQueueSelection(null)} onSessionError={onSessionError} />
     </> : !error && <div className="administration-message">Checking current status…</div>}
   </main>;
 }

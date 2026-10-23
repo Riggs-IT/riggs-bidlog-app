@@ -26,6 +26,7 @@ from .data_api import (
     get_bid_log_administration_monitoring,
     get_bid_log_administration_presence,
     get_bid_log_administration_leaderboard,
+    get_bid_log_administration_queue_events,
 )
 
 _DATASETS = (
@@ -527,6 +528,112 @@ def get_administration_leaderboard(
             days=days, app_code=app_code,
         )
         return _sanitize_leaderboard(raw, days=days, app_code=app_code)
+    except ValueError:
+        return {**unavailable, "reasonCode": "INVALID_RESPONSE"}
+    except Exception as exc:
+        return {**unavailable, "reasonCode": _unavailability_code(exc)}
+
+
+# Owner-only, on-demand outbox inspection. Unlike the summary this is loaded
+# only when the owner selects a queue. It does not run on the 60-second timer.
+_QUEUE_EVENT_STATUSES = frozenset({"FAILED", "PENDING"})
+_QUEUE_ERROR_CATEGORIES = frozenset({
+    "NOT_RECORDED", "AUTHORIZATION", "RATE_LIMIT", "TIMEOUT", "CONNECTIVITY",
+    "CONFLICT", "VALIDATION", "UPSTREAM_ERROR", "UNCLASSIFIED",
+})
+
+
+def _sanitize_queue_events(payload: object, *, lane: str, status: str, limit: int) -> dict:
+    expected = {"readOnly", "source", "observedAtUTC", "laneKey", "status",
+                "limit", "hasMore", "events"}
+    if (not isinstance(payload, dict) or set(payload) != expected
+            or payload.get("readOnly") is not True
+            or payload.get("source") != "RIGGSDATAHUB_OUTBOX"
+            or payload.get("laneKey") != lane or payload.get("status") != status
+            or payload.get("limit") != limit or type(payload.get("hasMore")) is not bool):
+        raise ValueError("Invalid administration queue response")
+    observed = _timestamp(payload.get("observedAtUTC"))
+    entries = payload.get("events")
+    if (not observed or not isinstance(entries, list) or len(entries) > limit
+            or (payload["hasMore"] and len(entries) != limit)):
+        raise ValueError("Invalid administration queue pagination")
+    output = []
+    seen = set()
+    previous = None
+    for item in entries:
+        if not isinstance(item, dict) or set(item) != {
+            "eventId", "identityType", "jobListId", "ticketKey", "jobNumber",
+            "retryCount", "createdAtUTC", "eligibleAfterUTC", "errorCategory",
+        }:
+            raise ValueError("Invalid administration event fields")
+        event_id = item.get("eventId")
+        retries = _count(item.get("retryCount"), 1_000_000)
+        created = _timestamp(item.get("createdAtUTC"))
+        eligibility = _timestamp(item.get("eligibleAfterUTC"))
+        job_number = item.get("jobNumber")
+        kind = item.get("identityType")
+        job_id = item.get("jobListId")
+        key = item.get("ticketKey")
+        if (type(event_id) is not int or not 1 <= event_id <= 9_000_000_000_000
+                or event_id in seen or retries is None or created is None
+                or item.get("errorCategory") not in _QUEUE_ERROR_CATEGORIES
+                or (job_number is not None and (not isinstance(job_number, str)
+                    or not job_number.strip() or len(job_number) > 50))
+                or (status == "FAILED" and eligibility is not None)
+                or (status == "PENDING" and eligibility is None)):
+            raise ValueError("Invalid administration event values")
+        if kind == "JOB_LIST_ID" and lane != "accounting_tickets":
+            if type(job_id) is not int or job_id <= 0 or key is not None:
+                raise ValueError("Invalid job event identity")
+            normalized_key = None
+        elif kind == "TICKET_KEY" and lane == "accounting_tickets":
+            if job_id is not None:
+                raise ValueError("Invalid ticket event identity")
+            try:
+                normalized_key = str(UUID(key))
+                if not UUID(normalized_key).int:
+                    raise ValueError("Empty ticket identity")
+            except (ValueError, TypeError, AttributeError) as exc:
+                raise ValueError("Invalid ticket key") from exc
+        else:
+            raise ValueError("Wrong administration queue identity")
+        order = (created, event_id)
+        if previous is not None and order >= previous:
+            raise ValueError("Unexpected administration queue order")
+        previous = order
+        seen.add(event_id)
+        output.append({
+            "eventId": event_id, "identityType": kind,
+            "jobListId": job_id if kind == "JOB_LIST_ID" else None,
+            "ticketKey": normalized_key, "jobNumber": job_number.strip() if job_number else None,
+            "retryCount": retries, "createdAtUTC": created,
+            "eligibleAfterUTC": eligibility, "errorCategory": item["errorCategory"],
+        })
+    return {
+        "readOnly": True, "availability": "AVAILABLE",
+        "source": "RIGGSDATAHUB_OUTBOX", "observedAtUTC": observed,
+        "laneKey": lane, "status": status, "limit": limit,
+        "hasMore": payload["hasMore"], "events": output,
+    }
+
+
+def get_administration_queue_events(
+    *, owner_eid: int, owner_oid: str, lane: str, status: str = "FAILED", limit: int = 20,
+) -> dict:
+    if (lane not in _QUEUE_LANES or status not in _QUEUE_EVENT_STATUSES
+            or type(limit) is not int or not 1 <= limit <= 20):
+        raise ValueError("Invalid administration queue selector")
+    unavailable = {
+        "readOnly": True, "availability": "UNAVAILABLE",
+        "source": "RIGGSDATAHUB_OUTBOX", "laneKey": lane,
+        "status": status, "limit": limit,
+    }
+    try:
+        raw = get_bid_log_administration_queue_events(
+            actor_eid=owner_eid, entra_object_id=owner_oid,
+            lane=lane, status=status, limit=limit,
+        )
+        return _sanitize_queue_events(raw, lane=lane, status=status, limit=limit)
     except ValueError:
         return {**unavailable, "reasonCode": "INVALID_RESPONSE"}
     except Exception as exc:
