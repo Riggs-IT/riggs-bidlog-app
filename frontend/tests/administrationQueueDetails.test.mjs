@@ -41,7 +41,7 @@ test('queue-view does not expose raw error, token, payload, or SQL execution', (
 
 import {validQueueDetail} from '../src/administrationQueueDetailContract.mjs';
 const example = () => ({
-  readOnly:true, source:'RIGGSDATAHUB_OUTBOX', observedAtUTC:'2026-10-23T16:00:00+00:00',
+  readOnly:true, availability:'AVAILABLE', source:'RIGGSDATAHUB_OUTBOX', observedAtUTC:'2026-10-23T16:00:00+00:00',
   laneKey:'project_forecast', status:'FAILED', limit:20, hasMore:false,
   events:[{eventId:33, identityType:'JOB_LIST_ID', jobListId:527, ticketKey:null,
     jobNumber:'26583', retryCount:5, createdAtUTC:'2026-10-23T15:59:00+00:00',
@@ -67,5 +67,43 @@ test('identity mismatch, extra secrets, bad category, and unsafe retry time fail
   ]) {
     const d=example(); change(d);
     assert.equal(validQueueDetail(d,'project_forecast','FAILED'),false);
+  }
+});
+
+// Regression: the app backend adds availability:'AVAILABLE' after it has
+// validated the restricted shared API result. This exact field must be
+// accepted, while missing/unavailable or extra fields remain rejected.
+test('backend-shaped accounting queue details pass the strict browser contract', () => {
+  const observed = {
+    readOnly: true,
+    availability: 'AVAILABLE',
+    source: 'RIGGSDATAHUB_OUTBOX',
+    observedAtUTC: '2026-10-23T17:18:44+00:00',
+    laneKey: 'accounting_tickets',
+    status: 'FAILED',
+    limit: 20,
+    hasMore: true,
+    events: Array.from({length: 20}, (_, index) => ({
+      eventId: 67 - index,
+      identityType: 'TICKET_KEY',
+      jobListId: null,
+      ticketKey: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      jobNumber: null,
+      retryCount: index,
+      createdAtUTC: `2026-10-23T${String(17 - Math.floor(index / 10)).padStart(2, '0')}:${String(59 - index).padStart(2, '0')}:00+00:00`,
+      eligibleAfterUTC: null,
+      errorCategory: 'UNCLASSIFIED',
+    })),
+  };
+  assert.equal(validQueueDetail(observed, 'accounting_tickets', 'FAILED'), true);
+  for (const mutation of [
+    data => {delete data.availability;},
+    data => {data.availability = 'UNAVAILABLE';},
+    data => {data.debug = 'raw error';},
+    data => {data.events[0].lastError = 'do not expose';},
+  ]) {
+    const invalid = structuredClone(observed);
+    mutation(invalid);
+    assert.equal(validQueueDetail(invalid, 'accounting_tickets', 'FAILED'), false);
   }
 });

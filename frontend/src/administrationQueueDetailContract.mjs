@@ -11,7 +11,7 @@ export const CATEGORIES = Object.freeze({
   UNCLASSIFIED: 'Unclassified',
 });
 
-const RESPONSE_KEYS = ['readOnly','source','observedAtUTC','laneKey','status','limit','hasMore','events'].sort();
+const RESPONSE_KEYS = ['readOnly','availability','source','observedAtUTC','laneKey','status','limit','hasMore','events'].sort();
 const EVENT_KEYS = ['eventId','identityType','jobListId','ticketKey','jobNumber','retryCount','createdAtUTC','eligibleAfterUTC','errorCategory'].sort();
 const TICKET = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const sameKeys = (obj, keys) => obj !== null && typeof obj === 'object'
@@ -21,6 +21,7 @@ const utcMs = value => typeof value === 'string' && value.length <= 48
 
 export function validQueueDetail(response, laneKey, status) {
   if (!sameKeys(response, RESPONSE_KEYS) || response.readOnly !== true
+      || response.availability !== 'AVAILABLE'
       || response.source !== 'RIGGSDATAHUB_OUTBOX'
       || response.laneKey !== laneKey || response.status !== status
       || !['FAILED', 'PENDING'].includes(status)
