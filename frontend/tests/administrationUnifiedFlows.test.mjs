@@ -21,8 +21,8 @@ test('merged inventory displays origin environment',()=>{
   assert.equal(result.flows[0].environmentName,'Riggs default');
 });
 test('no environment picker, passive joined load, owner API only',()=>{
-  assert.match(ui,/readJson\('\/inventory', \{signal: controller.signal, passive: true\}\)/);
+  assert.match(ui,/readJson\('\/inventory', \{signal: controller.signal\}\)/);
   assert.doesNotMatch(ui,/Choose an environment|List accessible environments|Load flows/);
-  assert.match(ui,/Recently modified first/);
+  assert.match(ui,/Sorted by last modification/);
   assert.doesNotMatch(ui,/resubmitRun|restartFlow|deleteFlow/);
 });

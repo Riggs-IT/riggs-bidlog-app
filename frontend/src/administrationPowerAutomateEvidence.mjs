@@ -81,3 +81,39 @@ export function unifiedFlowInventoryEvidence(payload) {
   return {availability, flows:rows, environments:envs, providers,
     count:zero ? null : rows.length, message};
 }
+
+// Client-side directory navigation only. The server's sample/coverage limits
+// remain authoritative; paging here must never imply a complete tenant total.
+export function flowDirectoryEnvironments(flows) {
+  if (!Array.isArray(flows)) return [];
+  const seen = new Map();
+  for (const flow of flows) {
+    if (text(flow?.environmentId, 96) && !seen.has(flow.environmentId)) {
+      seen.set(flow.environmentId, text(flow.environmentName, 160) || 'Unnamed environment');
+    }
+  }
+  return [...seen.entries()]
+    .map(([id, name]) => ({id, name}))
+    .sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+}
+
+export function flowDirectoryPage(flows, {search = '', environmentId = 'ALL', page = 1, pageSize = 25} = {}) {
+  if (!Array.isArray(flows)) return {rows: [], matched: 0, pages: 1, page: 1, start: 0, end: 0};
+  const needle = typeof search === 'string' ? search.trim().toLocaleLowerCase() : '';
+  const filtered = flows.filter(flow => {
+    if (environmentId !== 'ALL' && flow.environmentId !== environmentId) return false;
+    return !needle || [flow.name, flow.environmentName]
+      .some(value => typeof value === 'string' && value.toLocaleLowerCase().includes(needle));
+  });
+  // The upstream server already sorts by modification time, NOT execution time.
+  const size = [25, 50].includes(pageSize) ? pageSize : 25;
+  const pages = Math.max(1, Math.ceil(filtered.length / size));
+  const safePage = Number.isSafeInteger(page) ? Math.max(1, Math.min(page, pages)) : 1;
+  const offset = (safePage - 1) * size;
+  return {
+    rows: filtered.slice(offset, offset + size), matched: filtered.length,
+    pages, page: safePage,
+    start: filtered.length ? offset + 1 : 0,
+    end: Math.min(offset + size, filtered.length),
+  };
+}
