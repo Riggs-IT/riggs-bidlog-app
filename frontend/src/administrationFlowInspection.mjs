@@ -71,7 +71,11 @@ export function inspectionMessage(evidence) {
     case 'ACCESS_DENIED': return 'Microsoft did not grant this account permission to read these runs.';
     case 'THROTTLED': return 'Microsoft throttled this lookup. Try again later.';
     case 'RECONNECT_REQUIRED': return 'Your delegated Microsoft connection needs to be renewed.';
-    case 'NOT_CHECKED': return `Flow lookup: ${evidence.detailAvailability}. Run retrieval was not attempted.`;
+    case 'NOT_CHECKED': return evidence.detailAvailability === 'NO_DATAVERSE_OR_NOT_FOUND'
+      ? 'Microsoft could not access this flow through the environment API, so no runs were checked. Use Open in Power Automate to inspect it there.'
+      : evidence.detailAvailability === 'ACCESS_DENIED'
+        ? 'Microsoft denied this account access to the selected flow. No run lookup was attempted.'
+        : `Flow lookup: ${evidence.detailAvailability}. Run retrieval was not attempted.`;
     case 'INVALID_RESPONSE': return 'Microsoft returned a run response the app could not verify.';
     default: return `Run history unavailable: ${evidence.runAvailability}.`;
   }

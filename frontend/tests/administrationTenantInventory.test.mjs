@@ -29,7 +29,7 @@ test('tenant-sourced flow renders with explicit unverified run history',()=>{
 test('one Administration table reports provider coverage and permits selected-only run lookup',()=>{
   const src=fs.readFileSync(new URL('../src/AdministrationPowerAutomate.jsx',import.meta.url),'utf8');
   assert.match(src,/Microsoft flow inventory providers/);
-  assert.match(src,/View runs/);
+  assert.match(src,/riggs-flow-clickable-row/);
   assert.match(src,/\/inspect`/);
   assert.ok(!src.includes('select_account'));
 });

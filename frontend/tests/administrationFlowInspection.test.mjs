@@ -30,7 +30,7 @@ test('unknown state is not silently interpreted as on/off or healthy',()=>{
 });
 
 test('selected flow reads are opt-in and provider writes remain absent',()=>{
-  assert.match(ui, /onClick=\{\(\) => void readRuns\(flow\)\}/);
+  assert.match(ui, /onClick=\{event => void readRuns\(flow, event.currentTarget\)\}/);
   assert.match(ui, /\/inspect`/);
   assert.match(bff, /Depends\(require_administration_owner\)/);
   assert.match(bff, /@router.get\("\/environments\/\{environment_id\}\/flows\/\{resource_id\}\/inspect"\)/);
@@ -59,7 +59,7 @@ test('404/403 are distinct from empty, malformed run data is rejected',()=>{
   const denied=selectedFlowInspection({details:{availability:'ACCESS_DENIED'},
     runIdentitySource:'NOT_CHECKED',runHistory:{availability:'NOT_CHECKED',runs:[],hasMore:null}});
   assert.equal(denied.valid,true);
-  assert.match(inspectionMessage(denied), /not attempted/i);
+  assert.match(inspectionMessage(denied), /no run lookup was attempted/i);
   const notfound=selectedFlowInspection({details:{availability:'NO_DATAVERSE_OR_NOT_FOUND'},
     runHistory:{availability:'NO_DATAVERSE_OR_NOT_FOUND',runs:[],hasMore:null}});
   assert.match(inspectionMessage(notfound), /could not retrieve/);

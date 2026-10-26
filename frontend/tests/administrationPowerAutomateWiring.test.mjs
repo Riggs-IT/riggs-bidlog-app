@@ -18,8 +18,9 @@ test('admin owner gate still authorizes the new router', () => {
 });
 test('monitoring never dispatches any flow mutation request', () => {
   assert.match(component, /Reload flows/);
-  assert.match(component, /View runs/);
-  assert.match(component, /onClick=\{\(\) => void readRuns\(flow\)\}/);
+  assert.match(component, /riggs-flow-clickable-row/);
+  assert.match(component, /createPortal/);
+  assert.match(component, /onClick=\{event => void readRuns\(flow, event.currentTarget\)\}/);
   assert.doesNotMatch(component, /\/flows\/.*\/run\b/);
   assert.doesNotMatch(component, /restartFlow|resubmitRun|disableFlow|deleteFlow/);
 });

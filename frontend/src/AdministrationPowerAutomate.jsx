@@ -1,4 +1,5 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {createPortal} from 'react-dom';
 import {
   unifiedFlowInventoryEvidence, flowDirectoryPage, flowDirectoryEnvironments,
 } from './administrationPowerAutomateEvidence.mjs';
@@ -51,6 +52,9 @@ export default function AdministrationPowerAutomate({onSessionError}) {
   const statusRequest = useRef(null);
   const inventoryRequest = useRef(null);
   const runsRequest = useRef(null);
+  const inspectedRowRef = useRef(null);
+  const inspectionDialogRef = useRef(null);
+  const inspectionCloseRef = useRef(null);
   const connectionRef = useRef(null);
   const inventoryRef = useRef(null);
   const credentialRef = useRef(null);
@@ -64,6 +68,7 @@ export default function AdministrationPowerAutomate({onSessionError}) {
   const [lastInventoryReadAt, setLastInventoryReadAt] = useState(null);
   const [runResult, setRunResult] = useState(null);
   const [runPhase, setRunPhase] = useState('idle');
+  const [runError, setRunError] = useState(null);
   const [selectedFlow, setSelectedFlow] = useState(null);
   const [action, setAction] = useState('');
   const [error, setError] = useState(null);
@@ -84,6 +89,7 @@ export default function AdministrationPowerAutomate({onSessionError}) {
     setLastInventoryReadAt(null);
     setRunResult(null);
     setRunPhase('idle');
+    setRunError(null);
     setSelectedFlow(null);
     setAction(previous => previous === 'runs' ? '' : previous);
     setSearch('');
@@ -239,14 +245,16 @@ export default function AdministrationPowerAutomate({onSessionError}) {
   }, [visible, statusChecked, statusError, connection?.connected, connection?.expiresAtUTC,
     inventoryResult, inventoryPhase, loadInventory]);
 
-  const readRuns = async flow => {
-    if (runsRequest.current || inventoryRequest.current || !visibleNow()
+  const readRuns = async (flow, originRow = null) => {
+    if (runsRequest.current || inventoryRequest.current || statusRequest.current || !visibleNow()
       || !connectionRef.current?.connected) return;
     const controller = new AbortController();
     runsRequest.current = controller;
+    if (originRow) inspectedRowRef.current = originRow;
     setSelectedFlow(flow);
     setRunResult(null);
     setRunPhase('loading');
+    setRunError(null);
     setAction('runs');
     setError(null);
     try {
@@ -256,6 +264,7 @@ export default function AdministrationPowerAutomate({onSessionError}) {
       );
       if (controller.signal.aborted) return;
       if (result.error) {
+        setRunError(result.error);
         handleReadError(result.error);
         setRunPhase('error');
       } else {
@@ -264,6 +273,7 @@ export default function AdministrationPowerAutomate({onSessionError}) {
         const inspection = selectedFlowInspection(result.data);
         if (!inspection.valid) {
           setRunPhase('error');
+          setRunError('INVALID_RESPONSE');
           setError('INVALID_RESPONSE');
         } else {
           setRunResult(result.data);
@@ -273,6 +283,7 @@ export default function AdministrationPowerAutomate({onSessionError}) {
     } catch {
       if (!controller.signal.aborted) {
         setRunPhase('error');
+        setRunError('NETWORK_UNAVAILABLE');
         handleReadError('NETWORK_UNAVAILABLE');
       }
     } finally {
@@ -289,8 +300,30 @@ export default function AdministrationPowerAutomate({onSessionError}) {
     setSelectedFlow(null);
     setRunResult(null);
     setRunPhase('idle');
+    setRunError(null);
     setAction(previous => previous === 'runs' ? '' : previous);
+    const row = inspectedRowRef.current;
+    inspectedRowRef.current = null;
+    row?.focus?.();
   };
+
+  // A native modal dialog enters the browser top layer, outside any scroller.
+  // This avoids the UX2 failure where details were appended 25 rows below view.
+  // showModal supplies focus trapping and Escape's cancel event without a custom
+  // global listener or a second Administration route.
+  const inspectionOpen = Boolean(selectedFlow);
+  useEffect(() => {
+    if (!inspectionOpen) return undefined;
+    const dialog = inspectionDialogRef.current;
+    if (!dialog) return undefined;
+    if (typeof dialog.showModal === 'function') dialog.showModal();
+    else dialog.setAttribute('open', '');
+    inspectionCloseRef.current?.focus();
+    return () => {
+      if (typeof dialog.close === 'function' && dialog.open) dialog.close();
+      else dialog.removeAttribute('open');
+    };
+  }, [inspectionOpen]);
 
   const disconnect = async () => {
     if (action || inventoryRequest.current || statusRequest.current) return;
@@ -387,22 +420,28 @@ export default function AdministrationPowerAutomate({onSessionError}) {
         </p>}
         {directory.rows.length > 0 ? <div className="administration-table-scroller">
           <table className="administration-table riggs-flow-directory-table">
-            <thead><tr><th>Flow</th><th>Flow state</th><th>Last modified</th><th>Execution history</th></tr></thead>
-            <tbody>{directory.rows.map(flow => <tr key={`${flow.environmentId}:${flow.workflowId}`}>
-              <td><button type="button" className="riggs-flow-name-button" onClick={() => void readRuns(flow)}
-                disabled={busy} aria-label={`Inspect ${flow.name}`}>
-                {flow.name}
+            <thead><tr><th>Flow</th><th>Flow state</th><th>Last modified</th><th aria-label="Open flow details">Details</th></tr></thead>
+            <tbody>{directory.rows.map(flow => <tr key={`${flow.environmentId}:${flow.workflowId}`}
+              className="riggs-flow-clickable-row" tabIndex={busy ? -1 : 0} aria-disabled={busy}
+              aria-label={`Inspect flow ${flow.name}`}
+              onClick={event => void readRuns(flow, event.currentTarget)}
+              onKeyDown={event => {
+                if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+                  event.preventDefault();
+                  void readRuns(flow, event.currentTarget);
+                }
+              }}>
+              <td><span className="riggs-flow-row-name">{flow.name}</span>
                 {!isRiggsDefaultEnvironment(flow) && <span className="riggs-flow-other-star"
                   title={`Other environment: ${flow.environmentName}`} aria-label={`Other environment: ${flow.environmentName}`}> ★</span>}
-              </button></td>
+              </td>
               <td><span className={flow.platformState === 'UNKNOWN' ? 'riggs-flow-muted-state' : ''}
                 title={flow.platformState === 'UNKNOWN'
                   ? 'Tenant inventory does not report whether this flow is enabled. Select it for an authorized on-demand check.'
                   : 'Microsoft flow state reported by the inventory provider.'}>
                 {flowStateLabel(flow.platformState)}</span></td>
               <td>{timestamp(flow.modifiedAtUTC)}</td>
-              <td><button type="button" className="riggs-flow-runs-button" disabled={busy}
-                onClick={() => void readRuns(flow)}>View runs</button></td>
+              <td className="riggs-flow-row-chevron" aria-hidden="true">›</td>
             </tr>)}</tbody>
           </table>
         </div> : <p className="riggs-flow-state">{inventory.flows.length ? 'No returned flows match these filters.' : inventory.message}</p>}
@@ -430,18 +469,23 @@ export default function AdministrationPowerAutomate({onSessionError}) {
           <p>Tenant-only entries show UNKNOWN state and Run lookup not verified; modified time does not prove a flow executed.</p>
         </details>
       </>}
-      {selectedFlow && <div className="riggs-flow-runs" role="region" aria-label="Selected flow diagnostics">
+      {selectedFlow && typeof document !== 'undefined' && createPortal(
+        <dialog ref={inspectionDialogRef} className="riggs-flow-runs riggs-flow-inspection-dialog"
+          aria-labelledby="riggs-flow-inspection-title"
+          onCancel={event => {event.preventDefault(); closeRuns();}}>
         <div className="riggs-flow-runs-heading">
-          <div><h3>{selectedFlow.name}</h3><small>{selectedFlow.environmentName}</small></div>
+          <div><h3 id="riggs-flow-inspection-title">{selectedFlow.name}</h3><small>{selectedFlow.environmentName}</small></div>
           <div className="riggs-flow-runs-actions">
             {powerAutomateFlowUrl(selectedFlow) && <a href={powerAutomateFlowUrl(selectedFlow)}
               target="_blank" rel="noopener noreferrer">Open in Power Automate</a>}
-            <button type="button" onClick={closeRuns}>Close</button>
+            <button type="button" ref={inspectionCloseRef} onClick={closeRuns}>Close</button>
           </div>
         </div>
         {runPhase === 'loading' && <p role="status">Checking this flow and its returned runs…</p>}
-        {runPhase === 'paused' && <p role="status">Flow inspection paused while the tab was hidden. Select View runs to retry.</p>}
-        {runPhase === 'error' && <p role="alert">Could not verify this flow's details. Existing inventory is unchanged.</p>}
+        {runPhase === 'paused' && <p role="status">Flow inspection paused while the tab was hidden. Retry after returning to this tab.</p>}
+        {runPhase === 'error' && <p role="alert">Flow inspection unavailable: {runError || 'READ_UNAVAILABLE'}. The directory remains unchanged; this is not evidence of a successful run.</p>}
+        {['error', 'paused'].includes(runPhase) && <button type="button"
+          onClick={() => void readRuns(selectedFlow)}>Retry inspection</button>}
         {runPhase === 'ready' && runResult && <>
           <div className="riggs-flow-inspection-facts">
             <div><span>Flow state</span><strong>{flowStateLabel(selectedRunEvidence.platformState)}</strong>
@@ -476,7 +520,7 @@ export default function AdministrationPowerAutomate({onSessionError}) {
           <small className="riggs-flow-inspection-disclaimer">Up to 20 returned records, sorted by recorded start time.
             Provider coverage/retention may be incomplete; a run marked Succeeded does not prove SQL commit.</small>
         </>}
-      </div>}
+        </dialog>, document.body)}
     </>}
     {error && <p role="alert" className="administration-message administration-message-warning">
       Power Automate request: {error}. Unavailable results are not treated as zero.
