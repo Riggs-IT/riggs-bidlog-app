@@ -5,6 +5,7 @@ import {DATASET_LABELS, QUEUE_LABELS, summarizeAdministration} from './administr
 import {queueEvidence, queueAgeLabel} from './administrationQueueEvidence.mjs';
 import AdministrationQueueDetails from './AdministrationQueueDetails.jsx';
 import AdministrationSources from './AdministrationSources.jsx';
+import AdministrationPowerAutomate from './AdministrationPowerAutomate.jsx';
 
 export function displayUTC(value) {
   if (!value) return 'Not recorded';
@@ -99,6 +100,7 @@ export function AdministrationView({
     </section>
 
     <AdministrationSources onSessionError={onSessionError}/>
+    <AdministrationPowerAutomate onSessionError={onSessionError}/>
 
     <AdministrationUsagePanel
       presence={presence} leaderboard={leaderboard} mode={usageMode}

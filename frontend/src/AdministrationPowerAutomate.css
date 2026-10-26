@@ -1,0 +1,10 @@
+.riggs-flow-monitor { min-width: 0; }
+.riggs-flow-actions { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin:12px 0; }
+.riggs-flow-actions strong { font-size:.88rem; }
+.riggs-flow-actions small { opacity:.75; }
+.riggs-flow-actions select { max-width:min(100%,440px); min-width:220px; border:1px solid var(--border-color, #56616e); border-radius:6px; padding:7px 10px; background:var(--surface-color, #262c33); color:inherit; }
+.riggs-flow-actions button, .riggs-flow-runs button, .riggs-flow-monitor td button { padding:6px 10px; border-radius:6px; border:1px solid currentColor; background:transparent; color:inherit; cursor:pointer; }
+.riggs-flow-actions button:disabled, .riggs-flow-monitor td button:disabled { opacity:.5; cursor:not-allowed; }
+.riggs-flow-runs { padding-top:12px; }
+.riggs-flow-runs h3 { font-size:.93rem; }
+.riggs-flow-monitor .administration-table td { overflow-wrap:anywhere; }

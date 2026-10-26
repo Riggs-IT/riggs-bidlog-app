@@ -34,6 +34,14 @@ class Settings(BaseSettings):
     # Optional until provisioned. Missing means ALL private Admin routes deny.
     admin_owner_entra_object_id: str = ""
 
+    # Opt-in monitoring only. Never requested as part of normal login.
+    # A separate Power Platform delegated token is held server-side in a
+    # cross-instance encrypted vault for at most one hour (no refresh token).
+    power_platform_monitoring_enabled: bool = False
+    power_platform_redirect_uri: str = ""
+    power_platform_token_key: str = ""  # Secret Manager -> Cloud Run env
+    power_platform_firestore_collection: str = "riggs_power_platform_connections"
+
     data_api_base_url: str = "https://api.riggsdata.net"
     data_api_client_token: str = ""
 

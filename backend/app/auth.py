@@ -335,6 +335,7 @@ _PASSIVE_READ_PATHS = frozenset({
     "/api/admin/overview",
     "/api/admin/presence",
     "/api/admin/leaderboard",
+    "/api/admin/power-platform/status",
     "/api/admin/queue-events",
     "/api/admin/source-evidence",
     # Navigation revalidation never counts as human activity. Exact GET paths

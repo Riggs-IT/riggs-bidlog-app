@@ -32,6 +32,7 @@ from starlette.concurrency import run_in_threadpool
 
 from .administration import get_administration_overview, get_administration_presence, get_administration_leaderboard, get_administration_queue_events
 from .administration_sources import get_administration_source_evidence
+from .power_platform_routes import create_power_platform_router
 from .auth import (
     CurrentUser,
     get_current_user,
@@ -154,6 +155,26 @@ oauth.register(
             "S256",
     },
 )
+
+
+# Different OAuth resource/audience from the regular Riggs Data API token.
+# Monitoring is disabled by default, requiring separately approved delegated
+# API permissions and secure cross-instance credential storage.
+oauth.register(
+    name="power_platform",
+    client_id=settings.entra_client_id,
+    client_secret=settings.entra_client_secret,
+    server_metadata_url=settings.entra_metadata_url,
+    client_kwargs={
+        "scope": (
+            "openid profile email "
+            "https://api.powerplatform.com/EnvironmentManagement.Environments.Read "
+            "https://api.powerplatform.com/PowerAutomate.Flows.Read"
+        ),
+        "code_challenge_method": "S256",
+    },
+)
+app.include_router(create_power_platform_router(oauth=oauth, settings=settings))
 
 
 _AUTH_ERROR_CODES = {
