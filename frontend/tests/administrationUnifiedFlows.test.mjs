@@ -23,6 +23,8 @@ test('merged inventory displays origin environment',()=>{
 test('no environment picker, passive joined load, owner API only',()=>{
   assert.match(ui,/readJson\('\/inventory', \{signal: controller.signal\}\)/);
   assert.doesNotMatch(ui,/Choose an environment|List accessible environments|Load flows/);
-  assert.match(ui,/Sorted by last modification/);
+  assert.match(ui,/Checked failures &amp; recent runs/);
+  assert.match(ui, /<option value="MODIFIED">Last modified<\/option>/);
+  assert.match(ui, /const \[sortBy, setSortBy\] = useState\('RUNS'\)/);
   assert.doesNotMatch(ui,/resubmitRun|restartFlow|deleteFlow/);
 });

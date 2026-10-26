@@ -61,7 +61,7 @@ test('Administration status renders real sampled fields with stale and unknown n
   const renderedHtml = html.replaceAll('<!-- -->', '');
   for (const marker of ['System health', 'Shared dashboard cache', 'STALE', 'RUNNING',
     '601 sec', 'Worker process liveness', 'Not connected', 'Not recorded',
-    'Usage and session closeout', 'Worker queues', '202', '65 minutes', 'Cognito', 'Accounting']) {
+    'Session accounting', 'Usage and automatic closeout', 'Worker queues', '202', '65 minutes', 'Cognito', 'Accounting']) {
     assert.ok(renderedHtml.includes(marker), marker);
   }
   assert.doesNotMatch(html, /sql passwords|secret token/i);

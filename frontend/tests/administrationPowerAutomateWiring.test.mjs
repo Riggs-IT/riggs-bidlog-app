@@ -30,6 +30,6 @@ test('status load is passive and source reads require click', () => {
   assert.match(component, /Flow directory/);
 });
 test('flow run summary is explicitly bounded and never claims historic last success', () => {
-  assert.match(component, /Last success in sample/);
-  assert.match(component, /Not an all-time last success/);
+  assert.match(component, /Last success \(returned runs\)/);
+  assert.match(component, /does not prove SQL commit/);
 });

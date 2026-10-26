@@ -97,7 +97,8 @@ export function flowDirectoryEnvironments(flows) {
     .sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
 }
 
-export function flowDirectoryPage(flows, {search = '', environmentId = 'ALL', page = 1, pageSize = 25} = {}) {
+export function flowDirectoryPage(flows, {search = '', environmentId = 'ALL', page = 1, pageSize = 25,
+  sortBy = 'MODIFIED', observations = {}} = {}) {
   if (!Array.isArray(flows)) return {rows: [], matched: 0, pages: 1, page: 1, start: 0, end: 0};
   const needle = typeof search === 'string' ? search.trim().toLocaleLowerCase() : '';
   const filtered = flows.filter(flow => {
@@ -105,7 +106,24 @@ export function flowDirectoryPage(flows, {search = '', environmentId = 'ALL', pa
     return !needle || [flow.name, flow.environmentName]
       .some(value => typeof value === 'string' && value.toLocaleLowerCase().includes(needle));
   });
-  // The upstream server already sorts by modification time, NOT execution time.
+  // Verified failures are prioritized, followed by other verified executions
+  // in last-run order. All unchecked flows fall back to last modification.
+  // NEVER infer a run timestamp from an edited flow's modified date.
+  if (sortBy === 'RUNS') filtered.sort((a, b) => {
+    const ao = observations?.[`${a.environmentId}:${a.workflowId}`];
+    const bo = observations?.[`${b.environmentId}:${b.workflowId}`];
+    const aKnown = !!ao?.startedAtUTC;
+    const bKnown = !!bo?.startedAtUTC;
+    if (aKnown !== bKnown) return aKnown ? -1 : 1;
+    if (aKnown && bKnown) {
+      const aFailed = ao.status === 'FAILED', bFailed = bo.status === 'FAILED';
+      if (aFailed !== bFailed) return aFailed ? -1 : 1;
+      const time = String(bo.startedAtUTC).localeCompare(String(ao.startedAtUTC));
+      if (time) return time;
+    }
+    const modified = String(b.modifiedAtUTC || '').localeCompare(String(a.modifiedAtUTC || ''));
+    return modified || String(a.name || '').localeCompare(String(b.name || ''));
+  });
   const size = [25, 50].includes(pageSize) ? pageSize : 25;
   const pages = Math.max(1, Math.ceil(filtered.length / size));
   const safePage = Number.isSafeInteger(page) ? Math.max(1, Math.min(page, pages)) : 1;

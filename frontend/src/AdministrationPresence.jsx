@@ -115,9 +115,7 @@ export default function AdministrationPresence({presence, embedded = false}) {
         : 'Checking cross-application usage…'}
     </div> : <>
       <p className="administration-detail">
-        Observed {new Date(observedAt).toLocaleString()} · Recent activity means a heartbeat and activity within 120 seconds.
-        Sessions without a heartbeat for over 2 minutes are unconfirmed; only the last 65 minutes are listed.
-        These are application reports, not verified Microsoft sign-in sessions.
+        Activity reported {new Date(observedAt).toLocaleString()} · Session signals, not confirmed Microsoft sign-ins.
       </p>
       <div className="administration-presence-apps">
         {apps.map(app => <article key={app.appCode} className="administration-tile administration-presence-app">
@@ -130,10 +128,7 @@ export default function AdministrationPresence({presence, embedded = false}) {
           {app.truncated && <small className="administration-presence-warning">Only the 50 most recent sessions are shown.</small>}
         </article>)}
       </div>
-      <p className="administration-detail administration-presence-group-description">
-        One row per employee per app, using the latest heartbeat. Activity and search filters apply to that latest report.
-        Expand the session count to inspect individual browser reports. Counts describe returned records, not confirmed open logins.
-      </p>
+
       <div className="administration-presence-controls">
         <label>Application
           <select value={selectedApp} onChange={event => setSelectedApp(event.target.value)}>

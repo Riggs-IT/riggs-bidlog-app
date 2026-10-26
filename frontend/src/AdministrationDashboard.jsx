@@ -60,7 +60,7 @@ function AdministrationAttention({overview}) {
         <p>{unknown.join(' · ')}</p>
       </div>}
     </div>
-    <p className="administration-detail">Only reported problems appear above. Worker process health and historical failure trends are not collected.</p>
+
   </section>;
 }
 
@@ -88,28 +88,64 @@ export function AdministrationView({
     ? `${((finished - started) / 1000).toFixed(0)} sec (timestamp resolution)` : 'Not recorded';
 
   return <>
-    <AdministrationAttention overview={overview}/>
-    <section className="administration-section" id="administration-system-health" aria-label="System health">
-      <div className="administration-section-heading"><h2>System health</h2><span>Readiness observations, not uptime history</span></div>
-      <div className="administration-tiles">
-        <HealthCard name="Bid Log" service={services.bidLog} detail="This application responded to the owner-only request." />
-        <HealthCard name="Data API" service={services.dataApi} detail="Cloudflare-protected bridge readiness check." />
-        <HealthCard name="SQL Server" service={services.sql} detail="SQL readiness reported by the bridge; not a full query audit." />
-      </div>
-      <p className="administration-detail">Cloud Run revision: <strong>{services.bidLog?.cloudRunRevision || 'Not available locally'}</strong>. App version: {services.bidLog?.appVersion || 'Unknown'}.</p>
-    </section>
-
-    <AdministrationSources onSessionError={onSessionError}/>
-    <AdministrationPowerAutomate onSessionError={onSessionError}/>
-
+    <div className="administration-top-grid" aria-label="Administration overview">
+      <AdministrationAttention overview={overview}/>
     <AdministrationUsagePanel
       presence={presence} leaderboard={leaderboard} mode={usageMode}
       days={leaderboardDays} appCode={leaderboardApp} loading={usageLoading}
       onModeChange={onUsageModeChange} onDaysChange={onLeaderboardDaysChange}
       onAppChange={onLeaderboardAppChange} />
+    </div>
+    <AdministrationPowerAutomate onSessionError={onSessionError}/>
+    <AdministrationSources onSessionError={onSessionError}/>
+    <section className="administration-section" id="administration-system-health" aria-label="System health">
+      <div className="administration-section-heading"><h2>Systems</h2><span>Current checks</span></div>
+      <div className="administration-tiles">
+        <HealthCard name="Bid Log" service={services.bidLog} detail="Application check" />
+        <HealthCard name="Data API" service={services.dataApi} detail="Private API readiness" />
+        <HealthCard name="SQL Server" service={services.sql} detail="SQL connection via bridge" />
+      </div>
+      <p className="administration-detail">Cloud Run revision: <strong>{services.bidLog?.cloudRunRevision || 'Not available locally'}</strong>. App version: {services.bidLog?.appVersion || 'Unknown'}.</p>
+    </section>
+
+
+
+
+    <section className="administration-section" id="administration-queues" aria-label="Worker queue evidence">
+      <div className="administration-section-heading"><h2>Worker queues</h2><span>Durable SQL outboxes · not Docker process monitoring</span></div>
+      {monitoring.availability === 'AVAILABLE' ? <>
+        <div className="administration-table-scroller">
+          <table className="administration-table">
+            <thead><tr><th>Queue lane</th><th>Pending</th><th>Processing</th><th>Failed</th><th>Oldest pending</th><th>Time waiting</th><th>Last processed event</th><th>Inspect</th></tr></thead>
+            <tbody>{queueRows.map(item => <tr key={item.laneKey}>
+              <td><strong>{QUEUE_LABELS[item.laneKey] || item.laneKey}</strong></td>
+              <td>{displayCount(item.pendingCount)}</td>
+              <td>{displayCount(item.processingCount)}</td>
+              <td>{displayCount(item.failedCount)}</td>
+              <td>{item.pendingCount > 0 ? displayUTC(item.oldestPendingAtUTC) : '—'}</td>
+              <td>{item.pendingCount > 0 ? queueAgeLabel(item.oldestPendingAgeSeconds) : '—'}</td>
+              <td>{displayUTC(item.latestProcessedAtUTC)}</td>
+              <td><div className="administration-queue-actions">
+                {item.failedCount > 0 && <button type="button" onClick={() => onQueueInspect(item.laneKey, 'FAILED')}>Failures ({item.failedCount})</button>}
+                {item.pendingCount > 0 && <button type="button" onClick={() => onQueueInspect(item.laneKey, 'PENDING')}>Pending ({item.pendingCount})</button>}
+                {item.failedCount === 0 && item.pendingCount === 0 && '—'}
+              </div></td>
+            </tr>)}</tbody>
+          </table>
+        </div>
+        {queueSelection && <AdministrationQueueDetails
+          key={`${queueSelection.laneKey}:${queueSelection.status}`}
+          laneKey={queueSelection.laneKey} status={queueSelection.status}
+          label={QUEUE_LABELS[queueSelection.laneKey] || queueSelection.laneKey}
+          onClose={onQueueClose} onSessionError={onSessionError}/>
+        }
+        <p className="administration-detail">Failed queues appear first, followed by the oldest waiting events. Waiting time uses the SQL observation timestamp—not your computer clock. No arbitrary delay threshold is treated as an incident. Empty queues and past processed events do not prove a worker is running.</p>
+      </> : <div className="administration-message administration-message-warning" role="status">Queue status not verified.</div>}
+    </section>
+
 
     <section className="administration-section" id="administration-cache" aria-label="Shared dashboard cache">
-      <div className="administration-section-heading"><h2>Shared dashboard cache</h2><span>Current process-local snapshot · no historical ledger</span></div>
+      <div className="administration-section-heading"><h2>Dashboard cache</h2><span>Current snapshot</span></div>
       {cache.availability === 'AVAILABLE' ? <>
         <div className="administration-tiles administration-tiles-two">
           <article className="administration-tile">
@@ -150,8 +186,10 @@ export function AdministrationView({
       </div>}
     </section>
 
+    <details className="administration-advanced-details">
+      <summary>Session accounting and automatic closeout</summary>
     <section className="administration-section" id="administration-usage-closeout" aria-label="Usage and automatic closeout">
-      <div className="administration-section-heading"><h2>Usage and session closeout</h2><span>SQL aggregate · no person-level tracking shown</span></div>
+      <div className="administration-section-heading"><h2>Session accounting</h2><span>SQL session summary</span></div>
       {monitoring.availability === 'AVAILABLE' ? <>
         <p className="administration-detail">Observed {displayUTC(monitoring.observedAtUTC)} · Active means a heartbeat within {usage.activeDefinitionSeconds} seconds, not proof someone is at their desk.</p>
         <div className="administration-metrics">
@@ -177,37 +215,7 @@ export function AdministrationView({
       </div>}
     </section>
 
-    <section className="administration-section" id="administration-queues" aria-label="Worker queue evidence">
-      <div className="administration-section-heading"><h2>Worker queues</h2><span>Durable SQL outboxes · not Docker process monitoring</span></div>
-      {monitoring.availability === 'AVAILABLE' ? <>
-        <div className="administration-table-scroller">
-          <table className="administration-table">
-            <thead><tr><th>Queue lane</th><th>Pending</th><th>Processing</th><th>Failed</th><th>Oldest pending</th><th>Time waiting</th><th>Last processed event</th><th>Inspect</th></tr></thead>
-            <tbody>{queueRows.map(item => <tr key={item.laneKey}>
-              <td><strong>{QUEUE_LABELS[item.laneKey] || item.laneKey}</strong></td>
-              <td>{displayCount(item.pendingCount)}</td>
-              <td>{displayCount(item.processingCount)}</td>
-              <td>{displayCount(item.failedCount)}</td>
-              <td>{item.pendingCount > 0 ? displayUTC(item.oldestPendingAtUTC) : '—'}</td>
-              <td>{item.pendingCount > 0 ? queueAgeLabel(item.oldestPendingAgeSeconds) : '—'}</td>
-              <td>{displayUTC(item.latestProcessedAtUTC)}</td>
-              <td><div className="administration-queue-actions">
-                {item.failedCount > 0 && <button type="button" onClick={() => onQueueInspect(item.laneKey, 'FAILED')}>Failures ({item.failedCount})</button>}
-                {item.pendingCount > 0 && <button type="button" onClick={() => onQueueInspect(item.laneKey, 'PENDING')}>Pending ({item.pendingCount})</button>}
-                {item.failedCount === 0 && item.pendingCount === 0 && '—'}
-              </div></td>
-            </tr>)}</tbody>
-          </table>
-        </div>
-        {queueSelection && <AdministrationQueueDetails
-          key={`${queueSelection.laneKey}:${queueSelection.status}`}
-          laneKey={queueSelection.laneKey} status={queueSelection.status}
-          label={QUEUE_LABELS[queueSelection.laneKey] || queueSelection.laneKey}
-          onClose={onQueueClose} onSessionError={onSessionError}/>
-        }
-        <p className="administration-detail">Failed queues appear first, followed by the oldest waiting events. Waiting time uses the SQL observation timestamp—not your computer clock. No arbitrary delay threshold is treated as an incident. Empty queues and past processed events do not prove a worker is running.</p>
-      </> : <div className="administration-message administration-message-warning" role="status">Queue status not verified.</div>}
-    </section>
+    </details>
 
     <details className="administration-section administration-optional-details">
       <summary>Monitoring coverage · information not collected</summary>
@@ -402,12 +410,12 @@ export default function AdministrationDashboard({onSessionError, refreshApiRef, 
       <div>
         <p className="administration-eyebrow">PRIVATE · READ ONLY</p>
         <h1>Administration</h1>
-        <p className="administration-subtitle">Current Riggs services, cache, usage sessions, and queue evidence.</p>
+        <p className="administration-subtitle">Integrations, people and issues in one place.</p>
       </div>
     </div>
     {error && <div className="administration-message administration-message-warning" role="alert">{error}</div>}
     {overview ? <>
-      <p className="administration-observed">Updated {displayUTC(overview.observedAtUTC)} · Automatically checks once a minute while this page is visible.</p>
+      <p className="administration-observed">Updated {displayUTC(overview.observedAtUTC)} · Auto-refresh when visible</p>
       <AdministrationView overview={overview} presence={presence} leaderboard={leaderboard}
         usageMode={usageMode} leaderboardDays={leaderboardDays} leaderboardApp={leaderboardApp}
         usageLoading={usageBusy} onUsageModeChange={changeUsageMode}

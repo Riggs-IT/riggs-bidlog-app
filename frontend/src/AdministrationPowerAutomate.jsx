@@ -6,10 +6,12 @@ import {
 import {
   isRiggsDefaultEnvironment, flowStateLabel, runStatusLabel,
   powerAutomateFlowUrl, powerAutomateRunUrl, selectedFlowInspection, inspectionMessage,
+  checkedFlowKey, verifiedRunObservation,
 } from './administrationFlowInspection.mjs';
 import './AdministrationPowerAutomate.css';
 
 const API = '/api/admin/power-platform';
+const EMPTY_FLOWS = Object.freeze([]);
 const BASE_HEADERS = {'Accept': 'application/json', 'Cache-Control': 'no-store'};
 const SAFE_READ_ERRORS = new Set([
   'ACCESS_DENIED', 'THROTTLED', 'RECONNECT_REQUIRED', 'NETWORK_UNAVAILABLE',
@@ -76,6 +78,8 @@ export default function AdministrationPowerAutomate({onSessionError}) {
   const [environmentFilter, setEnvironmentFilter] = useState('ALL');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [sortBy, setSortBy] = useState('RUNS');
+  const [checkedRuns, setCheckedRuns] = useState({});
 
   const clearPrivateData = useCallback(() => {
     inventoryRequest.current?.abort();
@@ -95,6 +99,7 @@ export default function AdministrationPowerAutomate({onSessionError}) {
     setSearch('');
     setEnvironmentFilter('ALL');
     setPage(1);
+    setCheckedRuns({});
   }, []);
 
   const handleReadError = useCallback(errorCode => {
@@ -278,6 +283,12 @@ export default function AdministrationPowerAutomate({onSessionError}) {
         } else {
           setRunResult(result.data);
           setRunPhase('ready');
+          // This is in-memory, per-current-authorized-session evidence only.
+          // An unverified ID or empty API response is never marked successful.
+          const verified = verifiedRunObservation(inspection);
+          const key = checkedFlowKey(flow);
+          setCheckedRuns(previous => ({...previous, [key]: verified
+            ? verified : {unavailable: true, availability: inspection.runAvailability}}));
         }
       }
     } catch {
@@ -347,12 +358,18 @@ export default function AdministrationPowerAutomate({onSessionError}) {
   };
 
   const inventory = useMemo(() => unifiedFlowInventoryEvidence(inventoryResult), [inventoryResult]);
-  const environments = useMemo(() => flowDirectoryEnvironments(inventory.flows), [inventory.flows]);
-  const directory = useMemo(() => flowDirectoryPage(inventory.flows, {
-    search, environmentId: environmentFilter, page, pageSize,
-  }), [inventory.flows, search, environmentFilter, page, pageSize]);
+  // A connection may be checked before Microsoft inventory exists. Evidence
+  // deliberately represents that as flows:null (unknown), never a confirmed
+  // zero. Render against a safe empty list without changing its meaning.
+  const returnedFlows = Array.isArray(inventory.flows) ? inventory.flows : EMPTY_FLOWS;
+  const environments = useMemo(() => flowDirectoryEnvironments(returnedFlows), [returnedFlows]);
+  const directory = useMemo(() => flowDirectoryPage(returnedFlows, {
+    search, environmentId: environmentFilter, page, pageSize, sortBy, observations:checkedRuns,
+  }), [returnedFlows, search, environmentFilter, page, pageSize, sortBy, checkedRuns]);
+  const checkedRunCount = returnedFlows.filter(flow =>
+    checkedRuns[checkedFlowKey(flow)]?.startedAtUTC).length;
   const selectedRunEvidence = selectedFlowInspection(runResult);
-  const hasOutsideDefault = inventory.flows?.some(flow => !isRiggsDefaultEnvironment(flow)) || false;
+  const hasOutsideDefault = returnedFlows.some(flow => !isRiggsDefaultEnvironment(flow));
   const inventoryLoading = ['loading', 'refreshing'].includes(inventoryPhase);
   const busy = inventoryLoading || checkingStatus || Boolean(action);
 
@@ -361,7 +378,7 @@ export default function AdministrationPowerAutomate({onSessionError}) {
 
   return <section className="administration-section riggs-flow-monitor" id="administration-power-automate" aria-label="Power Automate monitoring">
     <div className="administration-section-heading">
-      <h2>Power Automate</h2><span>Read-only · signed-in Microsoft account</span>
+      <h2>Power Automate</h2><span>Microsoft flows</span>
     </div>
     {!connection && !statusError && <p role="status" className="riggs-flow-state">Checking Microsoft connection…</p>}
     {statusError && <div role="alert" className="administration-message administration-message-warning">
@@ -370,7 +387,7 @@ export default function AdministrationPowerAutomate({onSessionError}) {
       {!connection && <button type="button" onClick={() => void checkConnection()} disabled={checkingStatus}>Retry connection check</button>}
     </div>}
     {connection?.enabled && <div className="riggs-flow-actions riggs-flow-connection">
-      <strong>{connection.connected ? 'Microsoft connection active' : 'Microsoft authorization required'}</strong>
+      <strong>{connection.connected ? 'Connected' : 'Microsoft connection required'}</strong>
       {connection.connected && <small>Expires {timestamp(connection.expiresAtUTC)}</small>}
       <button type="button" onClick={() => void checkConnection()} disabled={busy}>Check connection</button>
       {!connection.connected && <a href={`${API}/connect`} target="_blank" rel="noopener noreferrer">Authorize Power Automate</a>}
@@ -380,9 +397,9 @@ export default function AdministrationPowerAutomate({onSessionError}) {
       <div className="riggs-flow-directory-heading">
         <div>
           <strong>Flow directory</strong>
-          <small>{inventoryResult ? `${inventory.flows.length} returned · Coverage: ${inventory.availability}`
+          <small>{inventoryResult ? `${returnedFlows.length} returned · Coverage: ${inventory.availability}`
             : 'Waiting for inventory evidence'}</small>
-          {lastInventoryReadAt && <small>Checked {timestamp(lastInventoryReadAt)} · Sorted by last modification</small>}
+          {lastInventoryReadAt && <small>Updated {timestamp(lastInventoryReadAt)} · {checkedRunCount} with verified run dates</small>}
         </div>
         <button type="button" onClick={() => void loadInventory({force: true})} disabled={busy || !visible || !statusChecked || Boolean(statusError)}>
           {inventoryLoading ? 'Loading…' : 'Reload flows'}
@@ -403,6 +420,12 @@ export default function AdministrationPowerAutomate({onSessionError}) {
               {environments.map(env => <option value={env.id} key={env.id}>{env.name}</option>)}
             </select>
           </label>
+          <label>Order
+            <select value={sortBy} onChange={event => {setSortBy(event.target.value); setPage(1);}}>
+              <option value="RUNS">Checked failures &amp; recent runs</option>
+              <option value="MODIFIED">Last modified</option>
+            </select>
+          </label>
           <label>Rows
             <select value={pageSize} onChange={event => {setPageSize(Number(event.target.value)); setPage(1);}}>
               <option value={25}>25</option><option value={50}>50</option>
@@ -411,16 +434,16 @@ export default function AdministrationPowerAutomate({onSessionError}) {
         </div>
         <div className="riggs-flow-directory-summary" role="status">
           <span>Showing {directory.start}–{directory.end} of {directory.matched} returned matches</span>
-          <span>{inventory.availability === 'PARTIAL' ? 'Partial inventory — more flows may exist' :
-            inventory.availability === 'UNVERIFIED_EMPTY' ? 'No verified tenant-wide total' :
-              'Coverage limited to checked providers'}</span>
+          <span>{sortBy === 'RUNS'
+            ? 'Checked failures first; unchecked flows by modification'
+            : (inventory.availability === 'PARTIAL' ? 'Partial inventory' : 'Coverage based on returned flows')}</span>
         </div>
         {hasOutsideDefault && <p className="riggs-flow-other-legend" aria-label="Other environment legend">
           <span aria-hidden="true">★</span> = outside Riggs Companies (default). Open a flow to see its environment.
         </p>}
         {directory.rows.length > 0 ? <div className="administration-table-scroller">
           <table className="administration-table riggs-flow-directory-table">
-            <thead><tr><th>Flow</th><th>Flow state</th><th>Last modified</th><th aria-label="Open flow details">Details</th></tr></thead>
+            <thead><tr><th>Flow</th><th>Latest verified run</th><th>Last modified</th></tr></thead>
             <tbody>{directory.rows.map(flow => <tr key={`${flow.environmentId}:${flow.workflowId}`}
               className="riggs-flow-clickable-row" tabIndex={busy ? -1 : 0} aria-disabled={busy}
               aria-label={`Inspect flow ${flow.name}`}
@@ -435,13 +458,11 @@ export default function AdministrationPowerAutomate({onSessionError}) {
                 {!isRiggsDefaultEnvironment(flow) && <span className="riggs-flow-other-star"
                   title={`Other environment: ${flow.environmentName}`} aria-label={`Other environment: ${flow.environmentName}`}> ★</span>}
               </td>
-              <td><span className={flow.platformState === 'UNKNOWN' ? 'riggs-flow-muted-state' : ''}
-                title={flow.platformState === 'UNKNOWN'
-                  ? 'Tenant inventory does not report whether this flow is enabled. Select it for an authorized on-demand check.'
-                  : 'Microsoft flow state reported by the inventory provider.'}>
-                {flowStateLabel(flow.platformState)}</span></td>
+              <td>{checkedRuns[checkedFlowKey(flow)]?.startedAtUTC ? <span className={`riggs-flow-run-marker ${checkedRuns[checkedFlowKey(flow)].status === 'FAILED' ? 'is-failed' : checkedRuns[checkedFlowKey(flow)].status === 'SUCCEEDED' ? 'is-success' : ''}`}>
+                <b aria-hidden="true">{checkedRuns[checkedFlowKey(flow)].status === 'FAILED' ? '✕' : checkedRuns[checkedFlowKey(flow)].status === 'SUCCEEDED' ? '✓' : '•'}</b>
+                <span>{timestamp(checkedRuns[checkedFlowKey(flow)].startedAtUTC)}<small>{runStatusLabel(checkedRuns[checkedFlowKey(flow)].status)}</small></span>
+              </span> : <span className="riggs-flow-muted-state">{checkedRuns[checkedFlowKey(flow)] ? 'Unavailable' : 'Not checked'}</span>}</td>
               <td>{timestamp(flow.modifiedAtUTC)}</td>
-              <td className="riggs-flow-row-chevron" aria-hidden="true">›</td>
             </tr>)}</tbody>
           </table>
         </div> : <p className="riggs-flow-state">{inventory.flows.length ? 'No returned flows match these filters.' : inventory.message}</p>}
@@ -452,7 +473,7 @@ export default function AdministrationPowerAutomate({onSessionError}) {
         </div>}
         <details className="riggs-flow-details">
           <summary>Coverage and API diagnostics</summary>
-          <p>{inventory.message} Last execution sorting is unavailable until actual run-history access is verified.</p>
+          <p>{inventory.message} Run dates are shown only for individually verified flows.</p>
           {inventory.providers?.length > 0 && <div aria-label="Microsoft flow inventory providers">
             {inventory.providers.map(provider => <p key={provider.provider}>
               {provider.provider === 'POWER_PLATFORM_TENANT_INVENTORY' ? 'Microsoft tenant inventory' : 'Environment flow reader'}:
@@ -466,17 +487,23 @@ export default function AdministrationPowerAutomate({onSessionError}) {
               {env.hasDataverse === false ? ' · Dataverse absent' : ''}
             </p>)}
           </div>}
-          <p>Tenant-only entries show UNKNOWN state and Run lookup not verified; modified time does not prove a flow executed.</p>
+
         </details>
       </>}
       {selectedFlow && typeof document !== 'undefined' && createPortal(
         <dialog ref={inspectionDialogRef} className="riggs-flow-runs riggs-flow-inspection-dialog"
           aria-labelledby="riggs-flow-inspection-title"
-          onCancel={event => {event.preventDefault(); closeRuns();}}>
+          onCancel={event => {event.preventDefault(); closeRuns();}}
+          onClick={event => {
+            if (event.target !== event.currentTarget) return;
+            const bounds = event.currentTarget.getBoundingClientRect();
+            if (event.clientX < bounds.left || event.clientX > bounds.right ||
+              event.clientY < bounds.top || event.clientY > bounds.bottom) closeRuns();
+          }}>
         <div className="riggs-flow-runs-heading">
           <div><h3 id="riggs-flow-inspection-title">{selectedFlow.name}</h3><small>{selectedFlow.environmentName}</small></div>
           <div className="riggs-flow-runs-actions">
-            {powerAutomateFlowUrl(selectedFlow) && <a href={powerAutomateFlowUrl(selectedFlow)}
+            {powerAutomateFlowUrl(selectedFlow) && <a className="riggs-flow-portal-button" href={powerAutomateFlowUrl(selectedFlow)}
               target="_blank" rel="noopener noreferrer">Open in Power Automate</a>}
             <button type="button" ref={inspectionCloseRef} onClick={closeRuns}>Close</button>
           </div>
@@ -487,27 +514,28 @@ export default function AdministrationPowerAutomate({onSessionError}) {
         {['error', 'paused'].includes(runPhase) && <button type="button"
           onClick={() => void readRuns(selectedFlow)}>Retry inspection</button>}
         {runPhase === 'ready' && runResult && <>
-          <div className="riggs-flow-inspection-facts">
-            <div><span>Flow state</span><strong>{flowStateLabel(selectedRunEvidence.platformState)}</strong>
-              <small>{selectedRunEvidence.stateSource === 'DIRECT_CLOUD_FLOW_READ'
-                ? 'Checked with Microsoft for this flow' : 'Not verified by a flow detail read'}</small></div>
-            <div><span>Run history</span><strong>{selectedRunEvidence.runAvailability}</strong>
-              <small>{selectedRunEvidence.runs.length} returned in this bounded lookup</small></div>
-            <div><span>Latest returned run</span><strong>{timestamp(selectedRunEvidence.lastReturnedRun?.startedAtUTC)}</strong>
-              <small>{runStatusLabel(selectedRunEvidence.lastReturnedRun?.status)}</small></div>
-            <div><span>Last success in sample</span><strong>{timestamp(selectedRunEvidence.lastSuccess)}</strong>
-              <small>Not an all-time last success</small></div>
-            <div><span>Last failure in sample</span><strong>{timestamp(selectedRunEvidence.lastFailure)}</strong>
-              <small>From returned runs only</small></div>
+          <div className="riggs-flow-inspection-facts riggs-flow-inspection-facts-compact">
+            <div><span>Latest verified run</span>
+              {verifiedRunObservation(selectedRunEvidence) ? <>
+                <strong className={selectedRunEvidence.lastReturnedRun.status === 'FAILED' ? 'riggs-flow-failed-text' : selectedRunEvidence.lastReturnedRun.status === 'SUCCEEDED' ? 'riggs-flow-success-text' : ''}>
+                  {selectedRunEvidence.lastReturnedRun.status === 'SUCCEEDED' ? '✓ ' : selectedRunEvidence.lastReturnedRun.status === 'FAILED' ? '✕ ' : ''}
+                  {runStatusLabel(selectedRunEvidence.lastReturnedRun.status)}</strong>
+                <small>{timestamp(selectedRunEvidence.lastReturnedRun.startedAtUTC)}</small>
+              </> : <strong>Not verified</strong>}
+            </div>
+            <div><span>Last success (returned runs)</span><strong>{timestamp(selectedRunEvidence.lastSuccess)}</strong></div>
+            <div><span>Last failure (returned runs)</span><strong>{timestamp(selectedRunEvidence.lastFailure)}</strong></div>
+            {selectedRunEvidence.stateSource === 'DIRECT_CLOUD_FLOW_READ' &&
+              <div><span>Flow state</span><strong>{flowStateLabel(selectedRunEvidence.platformState)}</strong></div>}
           </div>
-          <p className="riggs-flow-inspection-message">{inspectionMessage(selectedRunEvidence)}</p>
-          {selectedRunEvidence.runIdentitySource === 'TENANT_RESOURCE_ID_UNVERIFIED' &&
-            <p className="riggs-flow-inspection-qualification">The tenant resource ID was used because Microsoft's
-              separate workflow identity could not be verified. Treat any returned run association as provisional.</p>}
+          <p className="riggs-flow-inspection-message" role="status">{inspectionMessage(selectedRunEvidence)}</p>
           {selectedRunEvidence.runs.length > 0 && <div className="administration-table-scroller">
             <table className="administration-table riggs-flow-run-table">
               <thead><tr><th>Result</th><th>Started</th><th>Ended</th><th>Microsoft run</th></tr></thead>
-              <tbody>{selectedRunEvidence.runs.map((run, index) => <tr key={`${run.runId}:${index}`}>
+              <tbody>{[...selectedRunEvidence.runs].sort((a,b) =>
+                Number(b.status === 'FAILED') - Number(a.status === 'FAILED') ||
+                String(b.startedAtUTC || '').localeCompare(String(a.startedAtUTC || '')))
+                .map((run, index) => <tr key={`${run.runId}:${index}`}>
                 <td>{runStatusLabel(run.status)}</td>
                 <td>{timestamp(run.startedAtUTC)}</td><td>{timestamp(run.endedAtUTC)}</td>
                 <td>{powerAutomateRunUrl(selectedFlow, run.runId)
@@ -517,7 +545,7 @@ export default function AdministrationPowerAutomate({onSessionError}) {
               </tr>)}</tbody>
             </table>
           </div>}
-          <small className="riggs-flow-inspection-disclaimer">Up to 20 returned records, sorted by recorded start time.
+          <small className="riggs-flow-inspection-disclaimer">Up to 20 returned records; failed first, then newest.
             Provider coverage/retention may be incomplete; a run marked Succeeded does not prove SQL commit.</small>
         </>}
         </dialog>, document.body)}

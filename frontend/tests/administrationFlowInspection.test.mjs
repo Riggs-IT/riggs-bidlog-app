@@ -26,7 +26,8 @@ test('unknown state is not silently interpreted as on/off or healthy',()=>{
   assert.equal(flowStateLabel('ACTIVATED'),'Activated');
   assert.equal(flowStateLabel('OFF'),'Off');
   assert.equal(runStatusLabel('FAILED'),'Failed');
-  assert.match(ui, /Tenant inventory does not report whether this flow is enabled/);
+  assert.match(ui, /Latest verified run/);
+  assert.doesNotMatch(ui, /<th>Flow state<\/th>/);
 });
 
 test('selected flow reads are opt-in and provider writes remain absent',()=>{
@@ -51,7 +52,7 @@ test('a supported return keeps last-success bounded and sorts returned runs by s
   assert.equal(ev.lastFailure,'2026-10-24T08:00:00Z');
   assert.equal(ev.lastReturnedRun.status,'SUCCEEDED');
   assert.match(inspectionMessage(ev), /Only part/);
-  assert.match(ui, /Not an all-time last success/);
+  assert.match(ui, /Last success \(returned runs\)/);
   assert.match(ui, /does not prove SQL commit/);
 });
 

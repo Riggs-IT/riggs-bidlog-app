@@ -40,7 +40,7 @@ test('three-app presence renders person only from bounded owner-only source',asy
     .replaceAll('&#x27;', "'");
   for (const marker of ["Who's using Riggs apps",'Synthetic Employee','Administration',
     'Accounting','Operations','Bid Log','Last recorded','65 minutes','Recent activity',
-    'not verified Microsoft sign-in']) {
+    'not confirmed Microsoft sign-ins']) {
     assert.ok(html.includes(marker), marker);
   }
   assert.doesNotMatch(html,/UsageSessionID|microsoftUsername|password|session token/i);

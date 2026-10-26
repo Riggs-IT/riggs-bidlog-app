@@ -59,13 +59,16 @@ export function selectedFlowInspection(payload) {
     lastSuccess:payload.runHistory.lastSuccessInReturnedSampleUTC || null,
     lastFailure:failed[0] || null, lastReturnedRun:latest,
     hasMore:payload.runHistory.hasMore ?? null,
-    runIdentitySource:payload.runIdentitySource || 'NOT_CHECKED'};
+    runIdentitySource:payload.runIdentitySource || 'NOT_CHECKED',
+    reasonCode:payload.runHistory.reasonCode || null};
 }
 
 export function inspectionMessage(evidence) {
   switch (evidence.runAvailability) {
+    case 'IDENTITY_NOT_VERIFIED': return 'Microsoft has not verified this flow’s run-history identity. Open it in Power Automate to see recent runs.';
+    case 'NO_RUNS_REPORTED': return 'Microsoft returned no recent runs for the verified workflow ID. This does not prove the flow has never run.';
     case 'AVAILABLE': return evidence.runs.length ?
-      'Runs returned by Microsoft for this selection.' : 'Microsoft returned no runs for the checked identity.';
+      'Recent execution records returned by Microsoft.' : 'No recent runs returned.';
     case 'PARTIAL': return 'Only part of the available run history was returned.';
     case 'NO_DATAVERSE_OR_NOT_FOUND': return 'This Microsoft API could not retrieve runs for this environment or flow. Try opening it in Power Automate.';
     case 'ACCESS_DENIED': return 'Microsoft did not grant this account permission to read these runs.';
@@ -79,4 +82,19 @@ export function inspectionMessage(evidence) {
     case 'INVALID_RESPONSE': return 'Microsoft returned a run response the app could not verify.';
     default: return `Run history unavailable: ${evidence.runAvailability}.`;
   }
+}
+
+// Only bound, verified inspection results can produce green/red health markers.
+const VERIFIED_ID_SOURCES = new Set(['DIRECT_CLOUD_FLOW_READ', 'TENANT_WORKFLOW_ENTITY_ID']);
+export function checkedFlowKey(flow) {
+  return `${flow?.environmentId || ''}:${flow?.workflowId || ''}`;
+}
+export function verifiedRunObservation(evidence) {
+  if (!evidence?.valid || !VERIFIED_ID_SOURCES.has(evidence.runIdentitySource) ||
+    !['AVAILABLE', 'PARTIAL'].includes(evidence.runAvailability)) return null;
+  const run = evidence.lastReturnedRun;
+  if (!run || !['SUCCEEDED', 'FAILED', 'RUNNING', 'CANCELLED', 'TIMEDOUT', 'SKIPPED', 'WAITING'].includes(run.status) ||
+    typeof run.startedAtUTC !== 'string' || !Number.isFinite(Date.parse(run.startedAtUTC))) return null;
+  return {status:run.status, startedAtUTC:run.startedAtUTC,
+    lastSuccessUTC:evidence.lastSuccess, lastFailureUTC:evidence.lastFailure};
 }

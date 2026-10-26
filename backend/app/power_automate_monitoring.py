@@ -159,7 +159,7 @@ def _normalize_resource_flow(row: Any) -> dict | None:
 def _normalize_run(row: Any) -> dict | None:
     if not isinstance(row, dict):
         return None
-    run_id = _text(row.get("runId") or row.get("id") or row.get("name"), 180)
+    run_id = _text(row.get("flowRunId") or row.get("runId") or row.get("id") or row.get("name"), 180)
     if not run_id:
         return None
     return {
@@ -294,7 +294,7 @@ class PowerPlatformReadClient:
                 break
             remaining = max_items - len(rows)
             rows.extend(batch[:remaining])
-            next_url = payload.get("@odata.nextLink") or payload.get("@odata.nextlink")
+            next_url = payload.get("nextLink") or payload.get("@odata.nextLink") or payload.get("@odata.nextlink")
             if next_url is not None and (not isinstance(next_url, str) or len(next_url) > 4096):
                 reason = "INVALID_RESPONSE"
                 more = True
@@ -576,51 +576,99 @@ class PowerPlatformReadClient:
             ],
         }
 
-    def inspect_flow(self, environment_id: str, resource_id: str) -> dict:
-        """Read ONLY one selected inventory identity and its bounded runs.
+    def _tenant_workflow_identity(self, environment_id: str, resource_id: str) -> dict:
+        """Resolve one selected resource using the documented ARG workflowEntityId.
 
-        The tenant inventory `name` is a resource ID, potentially different
-        from the `workflowId` used by the flowRuns API. A filtered Microsoft
-        cloudFlows read may resolve this discrepancy. No browser-provided SQL,
-        KQL, provider URL or flow definition is ever accepted or exposed.
+        The query's type, name and 4-row limit are SERVER-owned. Identity must
+        match both the requested resource and environment after normalization.
+        This is a delegated read-only POST; never expose raw resource payloads.
+        """
+        body = {
+            "TableName": "PowerPlatformResources",
+            "Clauses": [
+                {"$type": "where", "FieldName": "type", "Operator": "==",
+                 "Values": ["'microsoft.powerautomate/cloudflows'"]},
+                {"$type": "where", "FieldName": "name", "Operator": "==",
+                 "Values": [f"'{resource_id}'"]},
+            ],
+            "Options": {"Top": 4},
+        }
+        try:
+            response = self._client.post(
+                RESOURCE_QUERY_URL, json=body,
+                headers={"Authorization": f"Bearer {self._token}",
+                         "Accept": "application/json"},
+                follow_redirects=False,
+            )
+        except httpx.RequestError:
+            return {"availability": "NETWORK_UNAVAILABLE", "workflowId": None}
+        if response.status_code != 200:
+            return {"availability": _http_code(response.status_code), "workflowId": None}
+        if len(response.content) > 262_144:
+            return {"availability": "RESPONSE_TOO_LARGE", "workflowId": None}
+        try:
+            payload = response.json()
+        except (ValueError, UnicodeError):
+            return {"availability": "INVALID_RESPONSE", "workflowId": None}
+        if (not isinstance(payload, dict) or not isinstance(payload.get("data"), list)
+            or len(payload["data"]) > 4):
+            return {"availability": "INVALID_RESPONSE", "workflowId": None}
+        matches = set()
+        for row in payload["data"]:
+            if not isinstance(row, dict):
+                return {"availability": "INVALID_RESPONSE", "workflowId": None}
+            props = row.get("properties")
+            if (not isinstance(row.get("type"), str) or row["type"].lower() != "microsoft.powerautomate/cloudflows"
+                or _uuid(row.get("name")) != resource_id or not isinstance(props, dict)
+                or not isinstance(props.get("environmentId"), str)
+                or props["environmentId"].lower() != environment_id.lower()):
+                continue
+            workflow_id = _uuid(props.get("workflowEntityId"))
+            if workflow_id:
+                matches.add(workflow_id)
+        if len(matches) == 1:
+            return {"availability": "AVAILABLE", "workflowId": next(iter(matches))}
+        return {"availability": "IDENTITY_NOT_VERIFIED", "workflowId": None}
+
+    def inspect_flow(self, environment_id: str, resource_id: str) -> dict:
+        """Read a selected flow; run status only after trustworthy ID resolution.
+
+        A 200/204 empty run result for an UNKNOWN ID is NOT evidence that a flow
+        has never run. The Power Platform API requires a *workflow* ID, whereas
+        tenant ARG `name` is a different resource identity.
         """
         env = _environment_id(environment_id)
         resource = _uuid(resource_id)
         if not resource:
             raise PowerPlatformReadError("INVALID_WORKFLOW_ID")
-
         path = f"/powerautomate/environments/{env}/cloudFlows"
         lookup = f"{API_ROOT}{path}?{urlencode({'resourceId': resource, 'api-version': API_VERSION})}"
         detail = {"availability": "UNVERIFIED_EMPTY", "platformState": "UNKNOWN",
                   "modifiedAtUTC": None, "stateSource": "NOT_VERIFIED"}
-        run_identity = resource
-        identity_source = "TENANT_RESOURCE_ID_UNVERIFIED"
+        run_identity = None
+        identity_source = "NOT_VERIFIED"
         try:
             payload = self._get(lookup)
         except PowerPlatformReadError as exc:
             detail["availability"] = exc.code
-            # Microsoft specifically documents 404 for environments without
-            # Dataverse. Avoid redundant run reads and inaccurate zeroes.
-            if exc.code in ("NO_DATAVERSE_OR_NOT_FOUND", "ACCESS_DENIED", "THROTTLED",
-                            "RECONNECT_REQUIRED", "NETWORK_UNAVAILABLE", "UPSTREAM_UNAVAILABLE"):
+            if exc.code in ("ACCESS_DENIED", "THROTTLED", "RECONNECT_REQUIRED",
+                            "NETWORK_UNAVAILABLE", "UPSTREAM_UNAVAILABLE"):
                 return {"environmentId": env, "resourceId": resource,
-                        "details": detail, "runIdentitySource": "NOT_CHECKED",
+                        "details": detail, "runIdentitySource": identity_source,
                         "runHistory": {"availability": "NOT_CHECKED", "runs": [],
                                        "hasMore": None}}
+            # A Dataverse 404 need not imply the Resource Query inventory
+            # lacks this flow; try ONE fixed tenant identity read below.
         else:
             if payload is not None:
                 rows = payload.get("value")
                 if not isinstance(rows, list) or len(rows) > 100 or any(
-                    not isinstance(item, dict) for item in rows
+                    not isinstance(row, dict) for row in rows
                 ):
                     detail["availability"] = "INVALID_RESPONSE"
                 else:
-                    # A scoped provider query must still return a matching ID.
-                    # A flow with the same display name is never an identity match.
                     for row in rows:
                         direct_resource = _uuid(row.get("resourceId") or row.get("resourceid"))
-                        # An explicit, different resource ID wins over coincidental
-                        # workflow/name matches; never inspect the wrong flow.
                         if direct_resource and direct_resource != resource:
                             continue
                         ids = (direct_resource, _uuid(row.get("id")),
@@ -635,16 +683,28 @@ class PowerPlatformReadClient:
                                   "platformState": flow["platformState"],
                                   "modifiedAtUTC": flow["modifiedAtUTC"],
                                   "stateSource": "DIRECT_CLOUD_FLOW_READ"}
-                        workflow = _uuid(row.get("workflowId")) or _uuid(row.get("workflowid"))
-                        if workflow:
-                            run_identity = workflow
+                        confirmed = _uuid(row.get("workflowId")) or _uuid(row.get("workflowid"))
+                        if confirmed:
+                            run_identity = confirmed
                             identity_source = "DIRECT_CLOUD_FLOW_READ"
                         break
 
+        if not run_identity:
+            tenant = self._tenant_workflow_identity(env, resource)
+            run_identity = tenant["workflowId"]
+            if run_identity:
+                identity_source = "TENANT_WORKFLOW_ENTITY_ID"
+            else:
+                return {"environmentId": env, "resourceId": resource,
+                        "details": detail, "runIdentitySource": "NOT_VERIFIED",
+                        "runHistory": {"availability": "IDENTITY_NOT_VERIFIED",
+                                       "reasonCode": tenant["availability"],
+                                       "runs": [], "hasMore": None}}
+
         history = self.list_runs(env, run_identity)
-        # A direct flow read is needed to certify an alternate workflow ID.
-        # If Microsoft accepts the inventory GUID directly, keep the identity
-        # qualification explicit so the UI never invents a verified join.
+        if history["availability"] == "AVAILABLE" and not history["runs"]:
+            # Verified identity, but no records returned; NOT 'never executed'.
+            history["availability"] = "NO_RUNS_REPORTED"
         return {"environmentId": env, "resourceId": resource,
                 "details": detail, "runIdentitySource": identity_source,
                 "runHistory": history}
@@ -664,7 +724,10 @@ class PowerPlatformReadClient:
         except PowerPlatformReadError as exc:
             return {"environmentId": env, "workflowId": flow,
                     "availability": exc.code, "runs": [], "hasMore": None}
-        runs = [_normalize_run(x) for x in data["rows"]]
+        # A provider response must never associate an explicitly different
+        # workflow's run with the selected flow, even under a filtered URL.
+        runs = [_normalize_run(x) if not x.get("workflowId") or
+                _uuid(x.get("workflowId")) == flow else None for x in data["rows"]]
         dropped = sum(r is None for r in runs)
         normalized = [r for r in runs if r is not None]
         successes = [r["endedAtUTC"] for r in normalized
