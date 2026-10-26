@@ -18,7 +18,8 @@ test('admin owner gate still authorizes the new router', () => {
 });
 test('monitoring never dispatches any flow mutation request', () => {
   assert.match(component, /Reload flows/);
-  assert.match(component, /Recent runs/);
+  assert.match(component, /View runs/);
+  assert.match(component, /onClick=\{\(\) => void readRuns\(flow\)\}/);
   assert.doesNotMatch(component, /\/flows\/.*\/run\b/);
   assert.doesNotMatch(component, /restartFlow|resubmitRun|disableFlow|deleteFlow/);
 });
@@ -28,6 +29,6 @@ test('status load is passive and source reads require click', () => {
   assert.match(component, /Flow directory/);
 });
 test('flow run summary is explicitly bounded and never claims historic last success', () => {
-  assert.match(component, /Last success in returned sample/);
-  assert.match(component, /Not a guaranteed lifetime last success/);
+  assert.match(component, /Last success in sample/);
+  assert.match(component, /Not an all-time last success/);
 });

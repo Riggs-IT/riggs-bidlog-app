@@ -576,6 +576,79 @@ class PowerPlatformReadClient:
             ],
         }
 
+    def inspect_flow(self, environment_id: str, resource_id: str) -> dict:
+        """Read ONLY one selected inventory identity and its bounded runs.
+
+        The tenant inventory `name` is a resource ID, potentially different
+        from the `workflowId` used by the flowRuns API. A filtered Microsoft
+        cloudFlows read may resolve this discrepancy. No browser-provided SQL,
+        KQL, provider URL or flow definition is ever accepted or exposed.
+        """
+        env = _environment_id(environment_id)
+        resource = _uuid(resource_id)
+        if not resource:
+            raise PowerPlatformReadError("INVALID_WORKFLOW_ID")
+
+        path = f"/powerautomate/environments/{env}/cloudFlows"
+        lookup = f"{API_ROOT}{path}?{urlencode({'resourceId': resource, 'api-version': API_VERSION})}"
+        detail = {"availability": "UNVERIFIED_EMPTY", "platformState": "UNKNOWN",
+                  "modifiedAtUTC": None, "stateSource": "NOT_VERIFIED"}
+        run_identity = resource
+        identity_source = "TENANT_RESOURCE_ID_UNVERIFIED"
+        try:
+            payload = self._get(lookup)
+        except PowerPlatformReadError as exc:
+            detail["availability"] = exc.code
+            # Microsoft specifically documents 404 for environments without
+            # Dataverse. Avoid redundant run reads and inaccurate zeroes.
+            if exc.code in ("NO_DATAVERSE_OR_NOT_FOUND", "ACCESS_DENIED", "THROTTLED",
+                            "RECONNECT_REQUIRED", "NETWORK_UNAVAILABLE", "UPSTREAM_UNAVAILABLE"):
+                return {"environmentId": env, "resourceId": resource,
+                        "details": detail, "runIdentitySource": "NOT_CHECKED",
+                        "runHistory": {"availability": "NOT_CHECKED", "runs": [],
+                                       "hasMore": None}}
+        else:
+            if payload is not None:
+                rows = payload.get("value")
+                if not isinstance(rows, list) or len(rows) > 100 or any(
+                    not isinstance(item, dict) for item in rows
+                ):
+                    detail["availability"] = "INVALID_RESPONSE"
+                else:
+                    # A scoped provider query must still return a matching ID.
+                    # A flow with the same display name is never an identity match.
+                    for row in rows:
+                        direct_resource = _uuid(row.get("resourceId") or row.get("resourceid"))
+                        # An explicit, different resource ID wins over coincidental
+                        # workflow/name matches; never inspect the wrong flow.
+                        if direct_resource and direct_resource != resource:
+                            continue
+                        ids = (direct_resource, _uuid(row.get("id")),
+                               _uuid(row.get("name")), _uuid(row.get("workflowId"))
+                               or _uuid(row.get("workflowid")))
+                        if resource not in ids:
+                            continue
+                        flow = _normalize_flow(row, env)
+                        if flow is None:
+                            continue
+                        detail = {"availability": "AVAILABLE",
+                                  "platformState": flow["platformState"],
+                                  "modifiedAtUTC": flow["modifiedAtUTC"],
+                                  "stateSource": "DIRECT_CLOUD_FLOW_READ"}
+                        workflow = _uuid(row.get("workflowId")) or _uuid(row.get("workflowid"))
+                        if workflow:
+                            run_identity = workflow
+                            identity_source = "DIRECT_CLOUD_FLOW_READ"
+                        break
+
+        history = self.list_runs(env, run_identity)
+        # A direct flow read is needed to certify an alternate workflow ID.
+        # If Microsoft accepts the inventory GUID directly, keep the identity
+        # qualification explicit so the UI never invents a verified join.
+        return {"environmentId": env, "resourceId": resource,
+                "details": detail, "runIdentitySource": identity_source,
+                "runHistory": history}
+
     def list_runs(self, environment_id: str, workflow_id: str) -> dict:
         """Read selected flow only; 20 recent returned records at most."""
         env = _environment_id(environment_id)

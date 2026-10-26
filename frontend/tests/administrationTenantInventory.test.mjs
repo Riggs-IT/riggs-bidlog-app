@@ -26,9 +26,10 @@ test('tenant-sourced flow renders with explicit unverified run history',()=>{
   assert.equal(r.count,1);
   assert.equal(r.flows[0].runLookupVerified,false);
 });
-test('one Administration table reports provider coverage and refuses unsupported run lookup',()=>{
+test('one Administration table reports provider coverage and permits selected-only run lookup',()=>{
   const src=fs.readFileSync(new URL('../src/AdministrationPowerAutomate.jsx',import.meta.url),'utf8');
   assert.match(src,/Microsoft flow inventory providers/);
-  assert.match(src,/Run lookup not verified/);
+  assert.match(src,/View runs/);
+  assert.match(src,/\/inspect`/);
   assert.ok(!src.includes('select_account'));
 });

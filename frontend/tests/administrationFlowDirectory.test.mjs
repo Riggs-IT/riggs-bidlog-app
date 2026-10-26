@@ -58,7 +58,8 @@ test('role denial revokes private results, provider denial does not masquerade a
   assert.match(component, /SAFE_READ_ERRORS.has\(body\?\.detail\)/);
   assert.match(component, /\['SESSION_EXPIRED', 'ADMIN_ACCESS_DENIED', 'RECONNECT_REQUIRED'\]/);
   assert.match(component, /setInventoryResult\(null\)/);
-  assert.match(component, /flow.runLookupVerified !== true/);
+  assert.match(component, /\/inspect`/);
+  assert.doesNotMatch(component, /flow\.runLookupVerified !== true/);
   assert.match(component, /sessionCallback.current\?\.\(\{status: 401/);
   assert.match(backend, /Depends\(require_administration_owner\)/);
   assert.doesNotMatch(component, /resubmitRun|restartFlow|deleteFlow|generic-crud/);

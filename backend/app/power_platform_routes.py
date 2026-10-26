@@ -170,6 +170,15 @@ def create_power_platform_router(*, oauth, settings) -> APIRouter:
         return _read(user, lambda client, env, workflow: client.list_runs(env, workflow),
                      environment_id, workflow_id)
 
+    @router.get("/environments/{environment_id}/flows/{resource_id}/inspect")
+    def inspect_flow(
+        environment_id: str, resource_id: str,
+        user: CurrentUser = Depends(require_administration_owner),
+    ):
+        # One user-requested read; no inventory-wide background run scan.
+        return _read(user, lambda client, env, resource: client.inspect_flow(env, resource),
+                     environment_id, resource_id)
+
     @router.post("/disconnect")
     def disconnect(
         request: Request, user: CurrentUser = Depends(require_administration_owner),
