@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     # A separate Power Platform delegated token is held server-side in a
     # cross-instance encrypted vault for at most one hour (no refresh token).
     power_platform_monitoring_enabled: bool = False
+    power_platform_refresh_enabled: bool = False  # opt-in encrypted offline_access custody
     power_platform_redirect_uri: str = ""
     power_platform_token_key: str = ""  # Secret Manager -> Cloud Run env
     power_platform_firestore_collection: str = "riggs_power_platform_connections"

@@ -168,7 +168,8 @@ oauth.register(
     client_kwargs={
         "scope": (
             "openid profile email "
-            "https://api.powerplatform.com/EnvironmentManagement.Environments.Read "
+            + ("offline_access " if settings.power_platform_refresh_enabled else "")
+            + "https://api.powerplatform.com/EnvironmentManagement.Environments.Read "
             "https://api.powerplatform.com/PowerAutomate.Flows.Read "
             "https://api.powerplatform.com/ResourceQuery.Resources.Read"
         ),

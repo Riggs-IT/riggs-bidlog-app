@@ -69,7 +69,7 @@ def create_power_platform_router(*, oauth, settings) -> APIRouter:
         try:
             access = _vault(settings).access_token(_principal(user))
         except PowerPlatformVaultError as exc:
-            _deny(exc.code)
+            _deny(exc.code, 409 if exc.code == "RECONNECT_REQUIRED" else 503)
         if not access:
             _deny("power_platform_reconnect_required", 409)
         return access

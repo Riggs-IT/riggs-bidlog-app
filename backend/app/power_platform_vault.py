@@ -1,12 +1,11 @@
-"""Short-lived, per-Entra-user Power Platform token custody (Stage F1).
+"""Encrypted, identity-bound Power Platform OAuth token storage.
 
-No refresh tokens are retained: the signed-in user reconnects when the
-short-lived access token expires. This intentionally is NOT unattended 24/7
-monitoring. Firestore supplies cross-Cloud-Run-instance storage; a Secret
-Manager-supplied Fernet key protects ciphertext at the application layer.
-
-Never log/return access tokens, OIDs, Microsoft HTTP response bodies, or
-credential-store exception messages. No RiggsDataHub or worker writes.
+Default behavior is the original short-lived access-token-only Stage F1 vault.
+When explicitly enabled, an `offline_access` refresh token is encrypted with
+Fernet in the existing Firestore collection and retained for no longer than
+30 days. Microsoft refresh exchanges occur only on an authenticated, owner-
+authorized read. Never put Microsoft tokens in app sessions, browser storage,
+SQL, a log, or an HTTP response. No scheduled/unattended monitoring.
 """
 from __future__ import annotations
 
@@ -15,13 +14,16 @@ from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import json
 import re
+from typing import Any, Callable
 from uuid import UUID
-from typing import Any
 
 from cryptography.fernet import Fernet, InvalidToken
 
 _COLLECTION = re.compile(r"[a-z][a-z0-9_]{2,95}\Z")
 _MAX_SECONDS = 3600
+_REFRESH_RETENTION = timedelta(days=30)
+_REFRESH_SKEW = timedelta(seconds=60)
+_TOKEN_MAX = 50000
 
 
 class PowerPlatformVaultError(Exception):
@@ -38,6 +40,29 @@ def _guid(value: object) -> str:
     except (ValueError, TypeError, AttributeError):
         pass
     raise PowerPlatformVaultError("INVALID_IDENTITY")
+
+
+def _token_text(value: object, *, label: str) -> str:
+    if not isinstance(value, str) or not 10 <= len(value) <= _TOKEN_MAX:
+        raise PowerPlatformVaultError(label)
+    return value
+
+
+def _token_expiry(token: dict, now: datetime) -> datetime:
+    seconds = token.get("expires_in")
+    if type(seconds) is not int or not 60 <= seconds <= 86400:
+        raise PowerPlatformVaultError("INVALID_TOKEN_RESPONSE")
+    return now + timedelta(seconds=min(seconds, _MAX_SECONDS))
+
+
+def _datetime(value: object) -> datetime:
+    try:
+        item = datetime.fromisoformat(str(value))
+        if item.tzinfo is None:
+            raise ValueError()
+        return item
+    except (TypeError, ValueError):
+        raise PowerPlatformVaultError("VAULT_INVALID_RECORD") from None
 
 
 @dataclass(frozen=True)
@@ -58,16 +83,27 @@ class VerifiedPrincipal:
 
 
 class EncryptedPowerPlatformVault:
-    """Dependency-injectable Firestore collection; not an in-memory token cache."""
+    """Existing Firestore token vault; refresh custody is an opt-in extension."""
 
-    def __init__(self, *, collection: Any, encryption_key: str):
+    def __init__(
+        self,
+        *,
+        collection: Any,
+        encryption_key: str,
+        refresh_enabled: bool = False,
+        refresh_provider: Callable[[str], dict] | None = None,
+    ):
         if not encryption_key:
             raise PowerPlatformVaultError("VAULT_NOT_CONFIGURED")
         try:
             self._fernet = Fernet(encryption_key.encode("ascii"))
-        except (ValueError, TypeError, AttributeError) as exc:
+        except (ValueError, TypeError, AttributeError):
             raise PowerPlatformVaultError("VAULT_NOT_CONFIGURED") from None
         self._collection = collection
+        self._refresh_enabled = bool(refresh_enabled)
+        self._refresh_provider = refresh_provider
+        if self._refresh_enabled and self._refresh_provider is None:
+            raise PowerPlatformVaultError("VAULT_NOT_CONFIGURED")
 
     @classmethod
     def from_settings(cls, settings: Any) -> "EncryptedPowerPlatformVault":
@@ -75,38 +111,99 @@ class EncryptedPowerPlatformVault:
         key = str(getattr(settings, "power_platform_token_key", ""))
         if not _COLLECTION.fullmatch(name) or not key:
             raise PowerPlatformVaultError("VAULT_NOT_CONFIGURED")
+        enabled = bool(getattr(settings, "power_platform_refresh_enabled", False))
+        provider = None
+        if enabled:
+            tenant = _guid(getattr(settings, "entra_tenant_id", ""))
+            client_id = _guid(getattr(settings, "entra_client_id", ""))
+            client_secret = str(getattr(settings, "entra_client_secret", ""))
+            if not client_secret:
+                raise PowerPlatformVaultError("VAULT_NOT_CONFIGURED")
+
+            def provider(stored_refresh_token: str) -> dict:
+                # Fixed tenant authority, form-encoded server-only credential.
+                # Never print token, response body, headers, or exception details.
+                import httpx
+                endpoint = f"https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token"
+                try:
+                    with httpx.Client(
+                        timeout=httpx.Timeout(7, connect=3),
+                        trust_env=False, follow_redirects=False,
+                    ) as client:
+                        response = client.post(endpoint, data={
+                            "grant_type": "refresh_token",
+                            "client_id": client_id,
+                            "client_secret": client_secret,
+                            "refresh_token": stored_refresh_token,
+                            "scope": (
+                                "https://api.powerplatform.com/EnvironmentManagement.Environments.Read "
+                                "https://api.powerplatform.com/PowerAutomate.Flows.Read "
+                                "https://api.powerplatform.com/ResourceQuery.Resources.Read "
+                                "offline_access"
+                            ),
+                        }, headers={"Accept": "application/json"})
+                except httpx.RequestError:
+                    raise PowerPlatformVaultError("MICROSOFT_TOKEN_UNAVAILABLE") from None
+                if response.status_code in (400, 401, 403):
+                    raise PowerPlatformVaultError("RECONNECT_REQUIRED")
+                if response.status_code != 200 or len(response.content) > 100000:
+                    raise PowerPlatformVaultError("MICROSOFT_TOKEN_UNAVAILABLE")
+                try:
+                    body = response.json()
+                except (ValueError, UnicodeError):
+                    raise PowerPlatformVaultError("INVALID_TOKEN_RESPONSE") from None
+                if not isinstance(body, dict):
+                    raise PowerPlatformVaultError("INVALID_TOKEN_RESPONSE")
+                return body
+
         try:
             from google.cloud import firestore
             collection = firestore.Client().collection(name)
         except Exception:
             raise PowerPlatformVaultError("VAULT_UNAVAILABLE") from None
-        return cls(collection=collection, encryption_key=key)
+        return cls(
+            collection=collection,
+            encryption_key=key,
+            refresh_enabled=enabled,
+            refresh_provider=provider,
+        )
+
+    def _persist(
+        self, principal: VerifiedPrincipal, record: dict, *, ttl: datetime, version: int,
+    ) -> None:
+        encrypted = self._fernet.encrypt(
+            json.dumps(record, separators=(",", ":")).encode()
+        ).decode()
+        try:
+            self._collection.document(principal.document_id).set({
+                "ciphertext": encrypted,
+                "expiresAt": ttl,
+                "schemaVersion": version,
+            })
+        except Exception:
+            raise PowerPlatformVaultError("VAULT_UNAVAILABLE") from None
 
     def save(self, principal: VerifiedPrincipal, token: dict) -> datetime:
-        access = token.get("access_token") if isinstance(token, dict) else None
-        expires_in = token.get("expires_in") if isinstance(token, dict) else None
-        if not isinstance(access, str) or not 10 <= len(access) <= 50000:
-            raise PowerPlatformVaultError("INVALID_TOKEN_RESPONSE")
-        if type(expires_in) is not int or not 60 <= expires_in <= 86400:
+        if not isinstance(token, dict):
             raise PowerPlatformVaultError("INVALID_TOKEN_RESPONSE")
         now = datetime.now(timezone.utc)
-        expires = now + timedelta(seconds=min(expires_in, _MAX_SECONDS))
-        body = {
+        access = _token_text(token.get("access_token"), label="INVALID_TOKEN_RESPONSE")
+        expires = _token_expiry(token, now)
+        record = {
             "tenant": principal.tenant_id,
             "oid": principal.entra_oid,
             "eid": principal.eid,
             "access": access,
             "expires": expires.isoformat(),
         }
-        encrypted = self._fernet.encrypt(json.dumps(body, separators=(",", ":")).encode()).decode()
-        try:
-            self._collection.document(principal.document_id).set({
-                "ciphertext": encrypted,
-                "expiresAt": expires,  # Optional Firestore TTL policy can purge expired docs
-                "schemaVersion": 1,
-            })
-        except Exception:
-            raise PowerPlatformVaultError("VAULT_UNAVAILABLE") from None
+        if self._refresh_enabled:
+            refresh = _token_text(token.get("refresh_token"), label="REFRESH_TOKEN_REQUIRED")
+            refresh_until = now + _REFRESH_RETENTION
+            record.update(refresh=refresh, refreshUntil=refresh_until.isoformat())
+            self._persist(principal, record, ttl=refresh_until, version=2)
+        else:
+            # Backward-compatible, intentionally access-only legacy behavior.
+            self._persist(principal, record, ttl=expires, version=1)
         return expires
 
     def _read(self, principal: VerifiedPrincipal) -> dict | None:
@@ -117,38 +214,80 @@ class EncryptedPowerPlatformVault:
             raise PowerPlatformVaultError("VAULT_UNAVAILABLE") from None
         if not row:
             return None
-        if not isinstance(row, dict) or row.get("schemaVersion") != 1:
+        if not isinstance(row, dict) or row.get("schemaVersion") not in (1, 2):
             raise PowerPlatformVaultError("VAULT_INVALID_RECORD")
         try:
             plaintext = self._fernet.decrypt(str(row["ciphertext"]).encode())
             record = json.loads(plaintext)
-            exp = datetime.fromisoformat(record["expires"])
-            if exp.tzinfo is None:
-                raise ValueError()
+            exp = _datetime(record["expires"])
             if (record.get("oid"), record.get("tenant"), record.get("eid")) != (
-                principal.entra_oid, principal.tenant_id, principal.eid
+                principal.entra_oid, principal.tenant_id, principal.eid,
             ):
                 raise ValueError()
-            if not isinstance(record.get("access"), str):
-                raise ValueError()
-        except (InvalidToken, ValueError, KeyError, TypeError, UnicodeDecodeError):
+            _token_text(record.get("access"), label="VAULT_INVALID_RECORD")
+            if row["schemaVersion"] == 2:
+                _token_text(record.get("refresh"), label="VAULT_INVALID_RECORD")
+                deadline = _datetime(record["refreshUntil"])
+                if deadline < exp:
+                    raise ValueError()
+        except (InvalidToken, ValueError, KeyError, TypeError, UnicodeDecodeError, PowerPlatformVaultError):
             raise PowerPlatformVaultError("VAULT_INVALID_RECORD") from None
-        if exp <= datetime.now(timezone.utc) + timedelta(seconds=30):
+
+        now = datetime.now(timezone.utc)
+        if self._refresh_enabled:
+            # Existing access-only connections require ONE new delegated consent.
+            if row["schemaVersion"] != 2 or deadline <= now + _REFRESH_SKEW:
+                return None
+        elif exp <= now + timedelta(seconds=30):
             return None
         return record
 
     def status(self, principal: VerifiedPrincipal) -> dict:
         record = self._read(principal)
+        # expiresAtUTC is used by React as a connection identity; use the
+        # durable refresh window to avoid clearing inventory after every renew.
+        availability_expiry = (
+            record.get("refreshUntil") if self._refresh_enabled and record
+            else record.get("expires") if record else None
+        )
         return {
             "connected": record is not None,
             "availability": "CONNECTED" if record else "RECONNECT_REQUIRED",
-            "expiresAtUTC": record["expires"] if record else None,
+            "expiresAtUTC": availability_expiry,
             "credentialStorage": "SERVER_SIDE_ENCRYPTED",
         }
 
     def access_token(self, principal: VerifiedPrincipal) -> str | None:
         record = self._read(principal)
-        return record["access"] if record else None
+        if not record:
+            return None
+        now = datetime.now(timezone.utc)
+        if _datetime(record["expires"]) > now + _REFRESH_SKEW:
+            return record["access"]
+        if not self._refresh_enabled or self._refresh_provider is None:
+            return None
+        try:
+            result = self._refresh_provider(record["refresh"])
+            if not isinstance(result, dict):
+                raise PowerPlatformVaultError("INVALID_TOKEN_RESPONSE")
+            access = _token_text(result.get("access_token"), label="INVALID_TOKEN_RESPONSE")
+            expires = _token_expiry(result, datetime.now(timezone.utc))
+            next_refresh = _token_text(
+                result.get("refresh_token") or record["refresh"],
+                label="INVALID_TOKEN_RESPONSE",
+            )
+        except PowerPlatformVaultError as exc:
+            if exc.code == "RECONNECT_REQUIRED":
+                self.disconnect(principal)
+            raise
+        # Keep the original 30-day retention deadline; refresh does not extend it.
+        next_record = {**record, "access": access, "expires": expires.isoformat(),
+                       "refresh": next_refresh}
+        self._persist(
+            principal, next_record,
+            ttl=_datetime(record["refreshUntil"]), version=2,
+        )
+        return access
 
     def disconnect(self, principal: VerifiedPrincipal) -> None:
         try:
