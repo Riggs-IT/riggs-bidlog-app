@@ -31,6 +31,7 @@ from starlette.middleware.sessions import (
 from starlette.concurrency import run_in_threadpool
 
 from .administration import get_administration_overview, get_administration_presence, get_administration_leaderboard, get_administration_queue_events
+from .administration_sources import get_administration_source_evidence
 from .auth import (
     CurrentUser,
     get_current_user,
@@ -1400,6 +1401,20 @@ def administration_overview(
     # is checked before any bridge status reads.
     return JSONResponse(
         get_administration_overview(
+            owner_eid=current_user.eid,
+            owner_oid=current_user.entra_object_id,
+        ),
+        headers={"Cache-Control": "no-store, private"},
+    )
+
+
+@app.get("/api/admin/source-evidence")
+def administration_source_evidence(
+    current_user: CurrentUser = Depends(require_administration_owner),
+):
+    # Explicit GET only; never included in the automatic overview refresh.
+    return JSONResponse(
+        get_administration_source_evidence(
             owner_eid=current_user.eid,
             owner_oid=current_user.entra_object_id,
         ),

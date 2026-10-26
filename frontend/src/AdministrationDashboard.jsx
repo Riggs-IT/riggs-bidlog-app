@@ -4,6 +4,7 @@ import AdministrationUsagePanel from './AdministrationUsagePanel.jsx';
 import {DATASET_LABELS, QUEUE_LABELS, summarizeAdministration} from './administrationSignals.mjs';
 import {queueEvidence, queueAgeLabel} from './administrationQueueEvidence.mjs';
 import AdministrationQueueDetails from './AdministrationQueueDetails.jsx';
+import AdministrationSources from './AdministrationSources.jsx';
 
 export function displayUTC(value) {
   if (!value) return 'Not recorded';
@@ -96,6 +97,8 @@ export function AdministrationView({
       </div>
       <p className="administration-detail">Cloud Run revision: <strong>{services.bidLog?.cloudRunRevision || 'Not available locally'}</strong>. App version: {services.bidLog?.appVersion || 'Unknown'}.</p>
     </section>
+
+    <AdministrationSources onSessionError={onSessionError}/>
 
     <AdministrationUsagePanel
       presence={presence} leaderboard={leaderboard} mode={usageMode}
