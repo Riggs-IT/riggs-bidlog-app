@@ -613,22 +613,89 @@ class PowerPlatformReadClient:
         if (not isinstance(payload, dict) or not isinstance(payload.get("data"), list)
             or len(payload["data"]) > 4):
             return {"availability": "INVALID_RESPONSE", "workflowId": None}
-        matches = set()
+        matches: set[str] = set()
+        exact = 0
+        invalid_entity_ids = 0
         for row in payload["data"]:
             if not isinstance(row, dict):
                 return {"availability": "INVALID_RESPONSE", "workflowId": None}
             props = row.get("properties")
-            if (not isinstance(row.get("type"), str) or row["type"].lower() != "microsoft.powerautomate/cloudflows"
-                or _uuid(row.get("name")) != resource_id or not isinstance(props, dict)
+            if (not isinstance(row.get("type"), str)
+                or row["type"].lower() != "microsoft.powerautomate/cloudflows"
+                or _uuid(row.get("name")) != resource_id
+                or not isinstance(props, dict)
                 or not isinstance(props.get("environmentId"), str)
                 or props["environmentId"].lower() != environment_id.lower()):
                 continue
-            workflow_id = _uuid(props.get("workflowEntityId"))
-            if workflow_id:
-                matches.add(workflow_id)
-        if len(matches) == 1:
+            exact += 1
+            raw_entity_id = props.get("workflowEntityId")
+            entity_id = _uuid(raw_entity_id)
+            if entity_id:
+                matches.add(entity_id)
+            elif raw_entity_id is not None and str(raw_entity_id).strip():
+                invalid_entity_ids += 1
+        if len(matches) == 1 and exact == 1:
             return {"availability": "AVAILABLE", "workflowId": next(iter(matches))}
-        return {"availability": "IDENTITY_NOT_VERIFIED", "workflowId": None}
+        if len(matches) > 1 or exact > 1:
+            return {"availability": "AMBIGUOUS_WORKFLOW_ID", "workflowId": None}
+        if exact == 1 and invalid_entity_ids:
+            return {"availability": "INVALID_WORKFLOW_ENTITY_ID", "workflowId": None}
+        if exact == 1:
+            return {"availability": "WORKFLOW_ENTITY_ID_MISSING", "workflowId": None}
+        if not payload["data"]:
+            return {"availability": "RESOURCE_NOT_RETURNED", "workflowId": None}
+        # Different returned identity/environment: never probe that data.
+        return {"availability": "RESOURCE_MISMATCH", "workflowId": None}
+
+    def _probe_resource_flow_runs(self, environment_id: str, resource_id: str) -> dict:
+        """Probe the selected resource GUID as a workflow ID, WITHOUT trusting it.
+
+        Microsoft only documents a workflowId filter on this API, and the
+        inventory resource GUID may not be that workflow ID. An HTTP 200/204,
+        or rows without an explicit matching workflowId, prove NOTHING.
+        Only runs explicitly asserting the exact GUID qualify as verified.
+        This is a single, read-only, bounded call; never a fanout across flows.
+        """
+        path = f"/powerautomate/environments/{environment_id}/flowRuns"
+        start = f"{API_ROOT}{path}?{urlencode({'workflowId': resource_id, 'api-version': API_VERSION})}"
+        try:
+            data = self._pages(
+                start=start, path=path, max_pages=1, max_items=20,
+                workflow_id=resource_id,
+            )
+        except PowerPlatformReadError as exc:
+            return {"availability": "IDENTITY_NOT_VERIFIED", "reasonCode": exc.code,
+                    "runs": [], "hasMore": None}
+        verified: list[dict] = []
+        skipped = 0
+        matched_identity = False
+        for row in data["rows"]:
+            if _uuid(row.get("workflowId")) != resource_id:
+                skipped += 1
+                continue
+            matched_identity = True
+            record = _normalize_run(row)
+            if record is None:
+                skipped += 1
+                continue
+            verified.append(record)
+        if not verified:
+            reason = ("RESOURCE_ID_PROBE_EMPTY" if not data["rows"] else
+                      "RESOURCE_ID_RUN_DATA_UNUSABLE" if matched_identity else
+                      "RESOURCE_ID_RUN_MISMATCH_OR_MISSING")
+            return {"availability": "IDENTITY_NOT_VERIFIED", "reasonCode": reason,
+                    "runs": [], "hasMore": data["hasMore"]}
+        verified.sort(key=lambda r: r.get("startedAtUTC") or "", reverse=True)
+        success_times = [r["endedAtUTC"] for r in verified
+                         if r["status"] == "SUCCEEDED" and r["endedAtUTC"]]
+        return {
+            "availability": "PARTIAL" if data["hasMore"] or skipped else "AVAILABLE",
+            "runs": verified,
+            "lastSuccessInReturnedSampleUTC": max(success_times) if success_times else None,
+            "hasMore": bool(data["hasMore"]), "invalidRows": skipped,
+            "coverage": "BOUNDED_SELECTED_FLOW_SAMPLE_ONLY",
+            "reasonCode": "RESOURCE_RUN_EXPLICIT_ID_MATCH",
+        }
 
     def inspect_flow(self, environment_id: str, resource_id: str) -> dict:
         """Read a selected flow; run status only after trustworthy ID resolution.
@@ -695,6 +762,22 @@ class PowerPlatformReadClient:
             if run_identity:
                 identity_source = "TENANT_WORKFLOW_ENTITY_ID"
             else:
+                # Only try the resource GUID as a candidate if an authorized
+                # exact-name tenant read was successful but could not map it.
+                # A successful empty probe is NOT a verified empty run history.
+                if tenant["availability"] in (
+                    "RESOURCE_NOT_RETURNED", "WORKFLOW_ENTITY_ID_MISSING",
+                ):
+                    probe = self._probe_resource_flow_runs(env, resource)
+                    if probe["availability"] in ("AVAILABLE", "PARTIAL") and probe["runs"]:
+                        return {"environmentId": env, "resourceId": resource,
+                                "details": detail,
+                                "runIdentitySource": "RESOURCE_RUN_RESPONSE_MATCH",
+                                "runHistory": probe}
+                    return {"environmentId": env, "resourceId": resource,
+                            "details": detail, "runIdentitySource": "NOT_VERIFIED",
+                            "runHistory": {**probe,
+                                "identityLookupReason": tenant["availability"]}}
                 return {"environmentId": env, "resourceId": resource,
                         "details": detail, "runIdentitySource": "NOT_VERIFIED",
                         "runHistory": {"availability": "IDENTITY_NOT_VERIFIED",

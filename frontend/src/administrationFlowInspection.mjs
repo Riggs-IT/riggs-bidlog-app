@@ -65,7 +65,7 @@ export function selectedFlowInspection(payload) {
 
 export function inspectionMessage(evidence) {
   switch (evidence.runAvailability) {
-    case 'IDENTITY_NOT_VERIFIED': return 'Microsoft has not verified this flow’s run-history identity. Open it in Power Automate to see recent runs.';
+    case 'IDENTITY_NOT_VERIFIED': return 'Microsoft could not verify run history for this flow. The selected-flow lookup did not return an identity-matched execution; open it in Power Automate to check runs.';
     case 'NO_RUNS_REPORTED': return 'Microsoft returned no recent runs for the verified workflow ID. This does not prove the flow has never run.';
     case 'AVAILABLE': return evidence.runs.length ?
       'Recent execution records returned by Microsoft.' : 'No recent runs returned.';
@@ -85,7 +85,7 @@ export function inspectionMessage(evidence) {
 }
 
 // Only bound, verified inspection results can produce green/red health markers.
-const VERIFIED_ID_SOURCES = new Set(['DIRECT_CLOUD_FLOW_READ', 'TENANT_WORKFLOW_ENTITY_ID']);
+const VERIFIED_ID_SOURCES = new Set(['DIRECT_CLOUD_FLOW_READ', 'TENANT_WORKFLOW_ENTITY_ID', 'RESOURCE_RUN_RESPONSE_MATCH']);
 export function checkedFlowKey(flow) {
   return `${flow?.environmentId || ''}:${flow?.workflowId || ''}`;
 }

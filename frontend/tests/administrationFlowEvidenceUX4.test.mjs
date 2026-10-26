@@ -28,7 +28,7 @@ test('empty or unverified identity never earns green check or failure rank',()=>
     runIdentitySource:'NOT_VERIFIED',runHistory:{availability:'IDENTITY_NOT_VERIFIED',runs:[],hasMore:null}});
   assert.equal(empty.valid,true);
   assert.equal(verifiedRunObservation(empty),null);
-  assert.match(inspectionMessage(empty),/not verified/);
+  assert.match(inspectionMessage(empty),/could not verify run history/);
   const falsePositive=selectedFlowInspection({details:{availability:'AVAILABLE'},
     runIdentitySource:'NOT_VERIFIED',runHistory:{availability:'AVAILABLE',runs:[
       {runId:'x',status:'SUCCEEDED',startedAtUTC:'2026-10-26T10:00:00Z'}],hasMore:false}});
