@@ -42,3 +42,42 @@ export function flowRunEvidence(payload) {
     lastSuccessInReturnedSampleUTC:payload.lastSuccessInReturnedSampleUTC || null,
     caveat:'Only the returned sample; not full run history or a guaranteed last success'};
 }
+
+// Stage F1.1: merged accessible-environment inventory. API coverage is bounded;
+// an upstream empty result must never become a verified tenant-wide zero.
+export function unifiedFlowInventoryEvidence(payload) {
+  const unverified = {availability:'UNVERIFIED', flows:null, environments:null,
+    count:null, message:'Flow inventory has not been verified.'};
+  if (!record(payload) || payload.coverage !== 'BOUNDED_ACCESSIBLE_ENVIRONMENTS_ONLY') return unverified;
+  const availability = text(payload.availability, 40) || 'UNVERIFIED';
+  if (!Array.isArray(payload.flows) || !Array.isArray(payload.environments)) {
+    return {...unverified, availability};
+  }
+  const rows = [];
+  for (const flow of payload.flows) {
+    if (!record(flow) || !text(flow.workflowId,36) || !text(flow.environmentId,96)
+      || !text(flow.environmentName,160) || !text(flow.name)
+      || !states.has(flow.platformState) || flow.lastRunState !== 'NOT_COLLECTED') return unverified;
+    rows.push({...flow});
+  }
+  if (typeof payload.hasMore !== 'boolean' || payload.coverageComplete !== false) return unverified;
+  const envs = [];
+  for (const env of payload.environments) {
+    if (!record(env) || !text(env.environmentId,96) || !text(env.environmentName,160)
+      || !text(env.availability,40)) return unverified;
+    envs.push(env);
+  }
+  const zero = rows.length === 0;
+  const providers = Array.isArray(payload.providerResults)
+    ? payload.providerResults.filter(p => record(p) &&
+      ['POWER_PLATFORM_TENANT_INVENTORY', 'DATAVERSE_ENVIRONMENT_API'].includes(p.provider) &&
+      text(p.availability, 40) && Number.isInteger(p.rows) && p.rows >= 0)
+      .map(p => ({provider: p.provider, availability: p.availability, rows: p.rows,
+        hasMore: p.hasMore ?? null})) : [];
+  const tenant = providers.find(p => p.provider === 'POWER_PLATFORM_TENANT_INVENTORY');
+  const message = zero
+    ? 'No flows returned by the checked Microsoft inventory sources. This does not verify that no Power Automate flows exist.'
+    : `${rows.length} distinct flow identities returned. ${tenant?.availability === 'ACCESS_DENIED' ? 'Tenant inventory permission was denied; coverage remains incomplete.' : 'Tenant and environment API coverage are shown separately.'}`;
+  return {availability, flows:rows, environments:envs, providers,
+    count:zero ? null : rows.length, message};
+}

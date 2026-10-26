@@ -101,8 +101,11 @@ def create_power_platform_router(*, oauth, settings) -> APIRouter:
             "tid": current_user.tenant_id,
         }
         try:
+            # Do not force another Microsoft account picker. The existing Entra
+            # session usually supplies SSO; Microsoft may still require consent
+            # or an interactive sign-in under tenant Conditional Access policy.
             return await oauth.power_platform.authorize_redirect(
-                request, settings.power_platform_redirect_uri, prompt="select_account",
+                request, settings.power_platform_redirect_uri,
             )
         except Exception:
             request.session.pop("power_platform_connect_intent", None)
@@ -146,6 +149,10 @@ def create_power_platform_router(*, oauth, settings) -> APIRouter:
                 )
         except PowerPlatformReadError as exc:
             _deny(exc.code, 422)
+
+    @router.get("/inventory")
+    def inventory(user: CurrentUser = Depends(require_administration_owner)):
+        return _read(user, lambda client: client.list_accessible_inventory())
 
     @router.get("/environments")
     def environments(user: CurrentUser = Depends(require_administration_owner)):

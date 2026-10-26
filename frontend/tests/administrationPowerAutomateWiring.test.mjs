@@ -17,15 +17,15 @@ test('admin owner gate still authorizes the new router', () => {
   assert.match(main, /create_power_platform_router/);
 });
 test('monitoring never dispatches any flow mutation request', () => {
-  assert.match(component, /Load flows/);
+  assert.match(component, /Reload flows/);
   assert.match(component, /Recent runs/);
   assert.doesNotMatch(component, /\/flows\/.*\/run\b/);
   assert.doesNotMatch(component, /restartFlow|resubmitRun|disableFlow|deleteFlow/);
 });
 test('status load is passive and source reads require click', () => {
   assert.match(component, /X-Riggs-Passive-Read/);
-  assert.match(component, /List accessible environments/);
-  assert.match(component, /Flow inventory: /);
+  assert.match(component, /\/inventory/);
+  assert.match(component, /Flows across accessible environments/);
 });
 test('flow run summary is explicitly bounded and never claims historic last success', () => {
   assert.match(component, /Last success in returned sample/);

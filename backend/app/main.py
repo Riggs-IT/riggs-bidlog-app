@@ -169,7 +169,8 @@ oauth.register(
         "scope": (
             "openid profile email "
             "https://api.powerplatform.com/EnvironmentManagement.Environments.Read "
-            "https://api.powerplatform.com/PowerAutomate.Flows.Read"
+            "https://api.powerplatform.com/PowerAutomate.Flows.Read "
+            "https://api.powerplatform.com/ResourceQuery.Resources.Read"
         ),
         "code_challenge_method": "S256",
     },
