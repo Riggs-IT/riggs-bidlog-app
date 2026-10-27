@@ -389,8 +389,9 @@ export default function AdministrationPowerAutomate({onSessionError}) {
     {connection?.enabled && <div className="riggs-flow-actions riggs-flow-connection">
       <strong>{connection.connected ? 'Connected' : 'Microsoft connection required'}</strong>
       {connection.connected && <small>Expires {timestamp(connection.expiresAtUTC)}</small>}
-      <button type="button" onClick={() => void checkConnection()} disabled={busy}>Check connection</button>
-      {!connection.connected && <a href={`${API}/connect`} target="_blank" rel="noopener noreferrer">Authorize Power Automate</a>}
+      {!connection.singleSignOn && <button type="button" onClick={() => void checkConnection()} disabled={busy}>Check connection</button>}
+      {connection.connected && connection.singleSignOn && <small>Uses your Bid Log Microsoft sign-in</small>}
+      {!connection.connected && <a href={`${API}/connect`} target="_blank" rel="noopener noreferrer">Grant Microsoft permission if required</a>}
       {connection.connected && <button type="button" onClick={() => void disconnect()} disabled={busy}>Disconnect</button>}
     </div>}
     {connection?.connected && <>

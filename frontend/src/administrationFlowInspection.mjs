@@ -74,6 +74,11 @@ export function inspectionMessage(evidence) {
     case 'ACCESS_DENIED': return 'Microsoft did not grant this account permission to read these runs.';
     case 'THROTTLED': return 'Microsoft throttled this lookup. Try again later.';
     case 'RECONNECT_REQUIRED': return 'Your delegated Microsoft connection needs to be renewed.';
+    case 'RUNTIME_TOKEN_GRANT_REJECTED': return 'Microsoft did not issue a Power Automate runtime token to this app. Consent, API access or the token audience may be unsupported. No runs were retrieved.';
+    case 'RUNTIME_CREDENTIAL_UNAVAILABLE': return 'Sign in to Bid Log again to check whether Power Automate runtime access is available.';
+    case 'RUNTIME_TOKEN_REJECTED': return 'Microsoft rejected the runtime token for this app. No runs were retrieved.';
+    case 'RUNTIME_FLOW_NOT_FOUND': return 'Microsoft could not find this flow under the signed-in account.';
+    case 'RUN_DATA_UNVERIFIABLE': return 'Microsoft returned execution records without verifiable identifiers or dates.';
     case 'NOT_CHECKED': return evidence.detailAvailability === 'NO_DATAVERSE_OR_NOT_FOUND'
       ? 'Microsoft could not access this flow through the environment API, so no runs were checked. Use Open in Power Automate to inspect it there.'
       : evidence.detailAvailability === 'ACCESS_DENIED'
@@ -85,7 +90,7 @@ export function inspectionMessage(evidence) {
 }
 
 // Only bound, verified inspection results can produce green/red health markers.
-const VERIFIED_ID_SOURCES = new Set(['DIRECT_CLOUD_FLOW_READ', 'TENANT_WORKFLOW_ENTITY_ID', 'RESOURCE_RUN_RESPONSE_MATCH']);
+const VERIFIED_ID_SOURCES = new Set(['DIRECT_CLOUD_FLOW_READ', 'TENANT_WORKFLOW_ENTITY_ID', 'RESOURCE_RUN_RESPONSE_MATCH', 'RUNTIME_EXACT_RESOURCE_ENDPOINT']);
 export function checkedFlowKey(flow) {
   return `${flow?.environmentId || ''}:${flow?.workflowId || ''}`;
 }

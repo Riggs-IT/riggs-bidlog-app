@@ -36,6 +36,7 @@ class RouteTests(unittest.TestCase):
             power_platform_monitoring_enabled=enabled, auth_mode='entra',
             entra_configured=True, power_platform_redirect_uri='https://bidlog.riggscompanies.com/api/admin/power-platform/callback',
             power_platform_token_key='unused-fake',
+            power_platform_sso_enabled=False,
         )
         oauth = SimpleNamespace(power_platform=FakeOAuthClient(fake_oid))
         app = FastAPI()

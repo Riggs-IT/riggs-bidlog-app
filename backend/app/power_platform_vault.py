@@ -92,6 +92,7 @@ class EncryptedPowerPlatformVault:
         encryption_key: str,
         refresh_enabled: bool = False,
         refresh_provider: Callable[[str], dict] | None = None,
+        purpose: str = "platform",
     ):
         if not encryption_key:
             raise PowerPlatformVaultError("VAULT_NOT_CONFIGURED")
@@ -99,6 +100,9 @@ class EncryptedPowerPlatformVault:
             self._fernet = Fernet(encryption_key.encode("ascii"))
         except (ValueError, TypeError, AttributeError):
             raise PowerPlatformVaultError("VAULT_NOT_CONFIGURED") from None
+        if purpose not in ("platform", "runtime"):
+            raise PowerPlatformVaultError("VAULT_NOT_CONFIGURED")
+        self._purpose = purpose
         self._collection = collection
         self._refresh_enabled = bool(refresh_enabled)
         self._refresh_provider = refresh_provider
@@ -106,10 +110,12 @@ class EncryptedPowerPlatformVault:
             raise PowerPlatformVaultError("VAULT_NOT_CONFIGURED")
 
     @classmethod
-    def from_settings(cls, settings: Any) -> "EncryptedPowerPlatformVault":
+    def from_settings(cls, settings: Any, *, purpose: str = "platform") -> "EncryptedPowerPlatformVault":
         name = str(getattr(settings, "power_platform_firestore_collection", ""))
         key = str(getattr(settings, "power_platform_token_key", ""))
         if not _COLLECTION.fullmatch(name) or not key:
+            raise PowerPlatformVaultError("VAULT_NOT_CONFIGURED")
+        if purpose not in ("platform", "runtime"):
             raise PowerPlatformVaultError("VAULT_NOT_CONFIGURED")
         enabled = bool(getattr(settings, "power_platform_refresh_enabled", False))
         provider = None
@@ -125,6 +131,14 @@ class EncryptedPowerPlatformVault:
                 # Never print token, response body, headers, or exception details.
                 import httpx
                 endpoint = f"https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token"
+                requested_scope = (
+                    "https://service.flow.microsoft.com/.default offline_access"
+                    if purpose == "runtime" else
+                    "https://api.powerplatform.com/EnvironmentManagement.Environments.Read "
+                    "https://api.powerplatform.com/PowerAutomate.Flows.Read "
+                    "https://api.powerplatform.com/ResourceQuery.Resources.Read "
+                    "offline_access"
+                )
                 try:
                     with httpx.Client(
                         timeout=httpx.Timeout(7, connect=3),
@@ -135,17 +149,17 @@ class EncryptedPowerPlatformVault:
                             "client_id": client_id,
                             "client_secret": client_secret,
                             "refresh_token": stored_refresh_token,
-                            "scope": (
-                                "https://api.powerplatform.com/EnvironmentManagement.Environments.Read "
-                                "https://api.powerplatform.com/PowerAutomate.Flows.Read "
-                                "https://api.powerplatform.com/ResourceQuery.Resources.Read "
-                                "offline_access"
-                            ),
+                            "scope": requested_scope,
                         }, headers={"Accept": "application/json"})
                 except httpx.RequestError:
                     raise PowerPlatformVaultError("MICROSOFT_TOKEN_UNAVAILABLE") from None
                 if response.status_code in (400, 401, 403):
-                    raise PowerPlatformVaultError("RECONNECT_REQUIRED")
+                    # A runtime resource consent/audience failure MUST NOT
+                    # disconnect or erase the existing Power Platform token.
+                    raise PowerPlatformVaultError(
+                        "RUNTIME_TOKEN_GRANT_REJECTED" if purpose == "runtime"
+                        else "RECONNECT_REQUIRED"
+                    )
                 if response.status_code != 200 or len(response.content) > 100000:
                     raise PowerPlatformVaultError("MICROSOFT_TOKEN_UNAVAILABLE")
                 try:
@@ -166,7 +180,43 @@ class EncryptedPowerPlatformVault:
             encryption_key=key,
             refresh_enabled=enabled,
             refresh_provider=provider,
+            purpose=purpose,
         )
+
+    def _document_key(self, principal: VerifiedPrincipal) -> str:
+        # Preserve ALL preexisting v1/v2 Power Platform document IDs. The
+        # experimental runtime credential has a separate opaque document.
+        if self._purpose == "platform":
+            return principal.document_id
+        return sha256(f"{principal.document_id}:runtime:v1".encode()).hexdigest()
+
+    def runtime_access_token_from(self, principal: VerifiedPrincipal, source: "EncryptedPowerPlatformVault") -> str | None:
+        """Derive runtime access only from THIS verified user's platform grant.
+
+        The bootstrap result is stored in a distinct encrypted record. The
+        existing Power Platform refresh grant is never overwritten by the
+        experimental runtime reader and must never leave the backend.
+        """
+        if self._purpose != "runtime" or source._purpose != "platform":
+            raise PowerPlatformVaultError("VAULT_NOT_CONFIGURED")
+        access = self.access_token(principal)
+        if access:
+            return access
+        source_record = source._read(principal)
+        if not source_record or not isinstance(source_record.get("refresh"), str):
+            return None
+        if not self._refresh_provider:
+            raise PowerPlatformVaultError("VAULT_NOT_CONFIGURED")
+        result = self._refresh_provider(source_record["refresh"])
+        access = _token_text(result.get("access_token") if isinstance(result, dict) else None,
+                             label="INVALID_TOKEN_RESPONSE")
+        _token_expiry(result, datetime.now(timezone.utc))
+        # Microsoft may issue only an access token for the second audience.
+        # That is usable for THIS request but cannot create a persistent
+        # runtime grant. The existing platform grant remains untouched.
+        if result.get("refresh_token"):
+            self.save(principal, result)
+        return access
 
     def _persist(
         self, principal: VerifiedPrincipal, record: dict, *, ttl: datetime, version: int,
@@ -175,7 +225,7 @@ class EncryptedPowerPlatformVault:
             json.dumps(record, separators=(",", ":")).encode()
         ).decode()
         try:
-            self._collection.document(principal.document_id).set({
+            self._collection.document(self._document_key(principal)).set({
                 "ciphertext": encrypted,
                 "expiresAt": ttl,
                 "schemaVersion": version,
@@ -208,7 +258,7 @@ class EncryptedPowerPlatformVault:
 
     def _read(self, principal: VerifiedPrincipal) -> dict | None:
         try:
-            snapshot = self._collection.document(principal.document_id).get()
+            snapshot = self._collection.document(self._document_key(principal)).get()
             row = snapshot.to_dict() if snapshot.exists else None
         except Exception:
             raise PowerPlatformVaultError("VAULT_UNAVAILABLE") from None
@@ -291,6 +341,6 @@ class EncryptedPowerPlatformVault:
 
     def disconnect(self, principal: VerifiedPrincipal) -> None:
         try:
-            self._collection.document(principal.document_id).delete()
+            self._collection.document(self._document_key(principal)).delete()
         except Exception:
             raise PowerPlatformVaultError("VAULT_UNAVAILABLE") from None

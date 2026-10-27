@@ -34,11 +34,13 @@ class Settings(BaseSettings):
     # Optional until provisioned. Missing means ALL private Admin routes deny.
     admin_owner_entra_object_id: str = ""
 
-    # Opt-in monitoring only. Never requested as part of normal login.
-    # A separate Power Platform delegated token is held server-side in a
-    # cross-instance encrypted vault for at most one hour (no refresh token).
+    # Owner-only Power Platform monitoring. SSO and the experimental runtime
+    # reader are independently opt-in; encrypted vault custody is server-only.
+    # The historical separate Connect flow remains a consent fallback.
     power_platform_monitoring_enabled: bool = False
     power_platform_refresh_enabled: bool = False  # opt-in encrypted offline_access custody
+    power_platform_sso_enabled: bool = False  # opt-in same-login resource exchange
+    power_platform_runtime_probe_enabled: bool = False  # unsupported API canary ONLY
     power_platform_redirect_uri: str = ""
     power_platform_token_key: str = ""  # Secret Manager -> Cloud Run env
     power_platform_firestore_collection: str = "riggs_power_platform_connections"
@@ -97,6 +99,10 @@ class Settings(BaseSettings):
             "profile",
             "email",
         ]
+        # One-login opt-in requests an encrypted renewable grant. Only the
+        # independently pinned Administration owner may persist it.
+        if self.power_platform_sso_enabled and self.power_platform_refresh_enabled:
+            scopes.append("offline_access")
 
         if self.bid_log_delegated_auth_enabled:
             delegated_scope = (
@@ -176,6 +182,11 @@ class Settings(BaseSettings):
                 "DATA_API_CF_ACCESS_CLIENT_SECRET must either "
                 "both be configured or both be blank."
             )
+
+        if self.power_platform_sso_enabled and not self.power_platform_refresh_enabled:
+            raise ValueError("POWER_PLATFORM_SSO_ENABLED requires POWER_PLATFORM_REFRESH_ENABLED.")
+        if self.power_platform_runtime_probe_enabled and not self.power_platform_refresh_enabled:
+            raise ValueError("POWER_PLATFORM_RUNTIME_PROBE_ENABLED requires POWER_PLATFORM_REFRESH_ENABLED.")
 
         if self.data_api_connect_timeout_seconds <= 0:
             raise ValueError(

@@ -12,7 +12,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from .auth import CurrentUser, require_administration_owner
-from .power_automate_monitoring import PowerPlatformReadClient, PowerPlatformReadError
+from .power_automate_monitoring import PowerPlatformReadClient, PowerPlatformReadError, _environment_id, _uuid
+from .power_automate_runtime import FlowRuntimeReadClient
 from .power_platform_vault import (
     EncryptedPowerPlatformVault, PowerPlatformVaultError, VerifiedPrincipal,
 )
@@ -84,7 +85,8 @@ def create_power_platform_router(*, oauth, settings) -> APIRouter:
         except PowerPlatformVaultError as exc:
             _deny(exc.code)
         return JSONResponse(
-            {"enabled": True, **info, "accessScope": "SIGNED_IN_USER_ONLY"},
+            {"enabled": True, **info, "accessScope": "SIGNED_IN_USER_ONLY",
+             "singleSignOn": bool(settings.power_platform_sso_enabled)},
             headers={"Cache-Control": "private, no-store"},
         )
 
@@ -132,8 +134,9 @@ def create_power_platform_router(*, oauth, settings) -> APIRouter:
                 current_user.entra_object_id, current_user.tenant_id,
             ):
                 raise ValueError("identity_mismatch")
-            # NEVER store returned refresh_token or pass tokens to the browser.
-            # The access token is encrypted in Firestore and expires <= 1 hour.
+            # AUTH6 encrypts access/refresh credentials in the owner-bound
+            # Firestore vault when opt-in renewal is enabled. Never put either
+            # token in the browser session, URL or response.
             _vault(settings).save(_principal(current_user), result)
         except Exception:
             # OAuth/HTTP/vault errors never disclose tokens, OIDs or raw bodies.
@@ -175,7 +178,54 @@ def create_power_platform_router(*, oauth, settings) -> APIRouter:
         environment_id: str, resource_id: str,
         user: CurrentUser = Depends(require_administration_owner),
     ):
-        # One user-requested read; no inventory-wide background run scan.
+        # The compatibility runtime reader is one-read-at-a-time and OPT-IN.
+        # Never use the ordinary api.powerplatform.com access token for this
+        # different OAuth audience. Authenticated owner gate remains unchanged.
+        if settings.power_platform_runtime_probe_enabled:
+            enabled()
+            try:
+                env = _environment_id(environment_id)
+                resource = _uuid(resource_id)
+            except PowerPlatformReadError as exc:
+                _deny(exc.code, 422)
+            if not resource:
+                _deny("INVALID_WORKFLOW_ID", 422)
+            principal = _principal(user)
+            try:
+                runtime_vault = EncryptedPowerPlatformVault.from_settings(settings, purpose="runtime")
+                platform_vault = _vault(settings)
+                access = runtime_vault.runtime_access_token_from(principal, platform_vault)
+            except PowerPlatformVaultError as exc:
+                return JSONResponse({
+                    "environmentId": env, "resourceId": resource,
+                    "runIdentitySource": "NOT_VERIFIED",
+                    "details": {"availability": "NOT_CHECKED", "platformState": "UNKNOWN",
+                                "modifiedAtUTC": None, "stateSource": "NOT_VERIFIED"},
+                    "runHistory": {"availability": exc.code, "runs": [], "hasMore": None},
+                }, headers={"Cache-Control": "private, no-store"})
+            if not access:
+                return JSONResponse({
+                    "environmentId": env, "resourceId": resource,
+                    "runIdentitySource": "NOT_VERIFIED",
+                    "details": {"availability": "NOT_CHECKED", "platformState": "UNKNOWN",
+                                "modifiedAtUTC": None, "stateSource": "NOT_VERIFIED"},
+                    "runHistory": {"availability": "RUNTIME_CREDENTIAL_UNAVAILABLE", "runs": [],
+                                   "hasMore": None},
+                }, headers={"Cache-Control": "private, no-store"})
+            try:
+                with FlowRuntimeReadClient(delegated_access_token=access) as reader:
+                    history = reader.selected_runs(env, resource)
+            except PowerPlatformReadError as exc:
+                history = {"availability": exc.code, "runs": [], "hasMore": None}
+            return JSONResponse({
+                "environmentId": env, "resourceId": resource,
+                "runIdentitySource": ("RUNTIME_EXACT_RESOURCE_ENDPOINT"
+                    if history["availability"] in ("AVAILABLE", "PARTIAL") and history.get("runs")
+                    else "NOT_VERIFIED"),
+                "details": {"availability": "NOT_CHECKED", "platformState": "UNKNOWN",
+                            "modifiedAtUTC": None, "stateSource": "NOT_VERIFIED"},
+                "runHistory": history,
+            }, headers={"Cache-Control": "private, no-store"})
         return _read(user, lambda client, env, resource: client.inspect_flow(env, resource),
                      environment_id, resource_id)
 

@@ -33,6 +33,8 @@ from starlette.concurrency import run_in_threadpool
 from .administration import get_administration_overview, get_administration_presence, get_administration_leaderboard, get_administration_queue_events
 from .administration_sources import get_administration_source_evidence
 from .power_platform_routes import create_power_platform_router
+from .power_platform_vault import VerifiedPrincipal
+from .power_platform_sso import bootstrap_owner_connection
 from .auth import (
     CurrentUser,
     get_current_user,
@@ -1345,6 +1347,25 @@ async def auth_callback(
             "auth_return_to"
         )
     )
+
+    # Optional one-login Power Platform token acquisition. THIS IS NEVER
+    # REQUIRED FOR BID LOG SIGN-IN, and only this already-authorized owner
+    # may create a token vault record. The login refresh token never enters
+    # the browser session; Microsoft errors are intentionally nonfatal.
+    if (settings.power_platform_sso_enabled
+            and settings.power_platform_refresh_enabled
+            and settings.power_platform_monitoring_enabled
+            and can_view_administration(current_user, identity)):
+        await run_in_threadpool(
+            bootstrap_owner_connection,
+            settings,
+            VerifiedPrincipal(
+                eid=current_user.eid,
+                entra_oid=current_user.entra_object_id,
+                tenant_id=current_user.tenant_id,
+            ),
+            str(token.get("refresh_token") or ""),
+        )
 
     # The Microsoft bearer token intentionally dies here.
     # Only the opaque Data API delegated-session identifier
