@@ -19,26 +19,25 @@ export default function ForecastBalanceFlag({review, className = '', onClick,
   }), []);
   useEffect(() => () => interactions.dispose(), [interactions]);
 
-  if (!review) return null;
-  const pending = review.reviewStatus === PENDING_FOUNDATION;
-  const verifying = review.reviewStatusSource === 'SQL_REBALANCE_FALLBACK';
-  const label = verifying ? 'Verifying Balance' : balanceReviewLabel(review);
+  // A cold load/recovery must not briefly claim Needs Rebalance when the
+  // Data API may soon verify this same SQL gap as Pending Foundation.
+  // The numeric SQL gap remains visible in the table during this interval.
+  if (!review || review.reviewStatusSource === 'DEFERRED_CLASSIFICATION') return null;
+  const pending = status === PENDING_FOUNDATION;
+  const label = balanceReviewLabel({reviewStatus: status});
   const title = pending
     ? 'Recently locked billing is awaiting Foundation reconciliation. The underlying balance gap is still tracked.'
-    : review.reviewStatusSource === 'SQL_REBALANCE_FALLBACK'
-      ? 'SQL reports an out-of-balance PM Projection. Foundation timing could not yet be verified for the displayed data.'
-      : 'PM Projection Out of Balance — review billing projections';
+    : 'PM Projection Out of Balance — review the remaining contract difference';
   const classes = [
     'needs-rebalance-flag',
     pending && 'pending-foundation-flag',
-    verifying && 'review-verifying-flag',
     (onClick || onQuickFilter) && 'needs-rebalance-action',
     onQuickFilter && selectedQuickFilter === quickFilterForStatus(status) && 'balance-review-quick-selected',
     className,
   ].filter(Boolean).join(' ');
   return onClick || onQuickFilter ? (
     <button type="button" className={classes} data-needs-rebalance
-      title={onQuickFilter ? `${title} Click to review. Double-click or press Enter/Space to filter to ${verifying ? 'Needs Rebalance (provisional)' : label}.` : title}
+      title={onQuickFilter ? `${title} Click to review. Double-click or press Enter/Space to filter to ${label}.` : title}
       aria-pressed={onQuickFilter ? selectedQuickFilter === quickFilterForStatus(status) : undefined}
       aria-label={onQuickFilter ? `${label}: double-click or press Enter to toggle exclusive filter; single-click to review project` : undefined}
       onClick={onQuickFilter ? interactions.click : onClick}

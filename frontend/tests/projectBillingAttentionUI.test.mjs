@@ -196,10 +196,9 @@ test('unverified balance shows neutral status while verified Needs and Pending r
     review: {jobListId: 531, needsRebalance: true, rebalanceVarianceAmount: -2840349,
       reviewStatus: 'PENDING_FOUNDATION', reviewStatusSource: 'VERIFIED_SERVER'},
   }));
-  assert.match(fallback, />Verifying Balance</);
-  assert.match(fallback, /review-verifying-flag/);
-  assert.doesNotMatch(fallback, />Needs Rebalance</);
-  assert.match(fallback, /Foundation timing could not yet be verified/);
+  assert.match(fallback, />Needs Rebalance</);
+  assert.doesNotMatch(fallback, /Verifying Balance|review-verifying-flag/);
+  assert.match(fallback, /PM Projection Out of Balance/);
   assert.doesNotMatch(fallback, /pending-foundation-flag/);
   const verifiedNeeds = renderToString(React.createElement(ForecastBalanceFlag, {
     review: {jobListId: 531, needsRebalance: true, rebalanceVarianceAmount: -2840349,

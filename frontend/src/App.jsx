@@ -7,6 +7,7 @@ import {facetRows, hasMonthlyValues, isCompleted} from './viewFilters.js';
 import {resolveSignedInPmOption} from './pmScope.js';
 import {resolveVisiblePortfolioReviews, VISIBLE_REVIEW_SOURCE} from './acceptedReviewPair.js';
 import ForecastBalanceFlag from './ForecastBalanceFlag.jsx';
+import {BalanceReviewAmount} from './BalanceReviewSummary.jsx';
 import {balanceReviewFacetValues, isBalanceReviewFilter, matchesBalanceReviewFacet,
   toggleExclusiveBalanceReview} from './balanceReviewQuickFilter.js';
 import AdministrationDashboard from './AdministrationDashboard.jsx';
@@ -2435,9 +2436,11 @@ export default function App() {
   const visibleReview = useMemo(
     () => resolveVisiblePortfolioReviews(acceptedReviewPair, {
       portfolioBalance, currentProjects, currentMonthly, primarySnapshotId,
-    }, varianceAsOfUTC),
+    }, varianceAsOfUTC, {
+      deferUnverified: portfolioFreshness.reviewClassificationPending,
+    }),
     [acceptedReviewPair, portfolioBalance, currentProjects, currentMonthly,
-      primarySnapshotId, varianceAsOfUTC],
+      primarySnapshotId, varianceAsOfUTC, portfolioFreshness.reviewClassificationPending],
   );
   const rebalanceByJobId = visibleReview.rows;
   const scheduleReviewByJobId = useMemo(
@@ -6857,7 +6860,7 @@ export default function App() {
                         title={portfolioBalance === null
                           ? 'Portfolio balance statuses are loading or unavailable'
                           : visibleReview.source === VISIBLE_REVIEW_SOURCE.SQL_REBALANCE_FALLBACK
-                            ? 'SQL balance reviews are available. Foundation timing classification is being verified; unverified projects show Verifying Balance.'
+                            ? 'Available SQL balance gaps remain visible while Foundation timing classification is temporarily unavailable.'
                             : 'Review flagged projections, including those pending Foundation billing'}
                         disabled={portfolioBalance === null}
                         onClick={() => setProjectionSourceFilter(value => value === 'rebalance' ? ALL : 'rebalance')}
@@ -7298,12 +7301,15 @@ export default function App() {
                                                   </strong>
 
                                                   {detail.source === 'Current Project' && !isCompleted(detail.raw) && detail.raw?.needsRebalance && (
-                                                    <ForecastBalanceFlag review={rebalanceByJobId.get(String(detail.raw?.jobListId))}
-                                                      onClick={() => openCurrentProjectDrawer(detail.raw, 'pm-forecast')}
-                                                      onQuickFilter={status => setProjectionSourceFilter(value =>
-                                                        toggleExclusiveBalanceReview(value, status, ALL))}
-                                                      selectedQuickFilter={projectionSourceFilter}
-                                                    />
+                                                    <span className="balance-review-status-stack">
+                                                      <ForecastBalanceFlag review={rebalanceByJobId.get(String(detail.raw?.jobListId))}
+                                                        onClick={() => openCurrentProjectDrawer(detail.raw, 'pm-forecast')}
+                                                        onQuickFilter={status => setProjectionSourceFilter(value =>
+                                                          toggleExclusiveBalanceReview(value, status, ALL))}
+                                                        selectedQuickFilter={projectionSourceFilter}
+                                                      />
+                                                      <BalanceReviewAmount review={rebalanceByJobId.get(String(detail.raw?.jobListId))} />
+                                                    </span>
                                                   )}
                                                   {detail.source === 'Current Project' && !isCompleted(detail.raw) && (
                                                     <ScheduleReviewFlag review={detail.raw?.scheduleReview} />
@@ -7796,12 +7802,15 @@ export default function App() {
                           </strong>
 
                           {row.source === 'Current Project' && !isCompleted(row.raw) && row.raw?.needsRebalance && (
-                            <ForecastBalanceFlag review={rebalanceByJobId.get(String(row.raw?.jobListId))}
-                                                      onClick={() => openCurrentProjectDrawer(row.raw, 'pm-forecast')}
-                                                      onQuickFilter={status => setProjectionSourceFilter(value =>
-                                                        toggleExclusiveBalanceReview(value, status, ALL))}
-                                                      selectedQuickFilter={projectionSourceFilter}
-                                                    />
+                            <span className="balance-review-status-stack">
+                              <ForecastBalanceFlag review={rebalanceByJobId.get(String(row.raw?.jobListId))}
+                                                        onClick={() => openCurrentProjectDrawer(row.raw, 'pm-forecast')}
+                                                        onQuickFilter={status => setProjectionSourceFilter(value =>
+                                                          toggleExclusiveBalanceReview(value, status, ALL))}
+                                                        selectedQuickFilter={projectionSourceFilter}
+                                                      />
+                              <BalanceReviewAmount review={rebalanceByJobId.get(String(row.raw?.jobListId))} />
+                            </span>
                           )}
                           {row.source === 'Current Project' && !isCompleted(row.raw) && (
                             <ScheduleReviewFlag review={row.raw?.scheduleReview} />

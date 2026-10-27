@@ -2,6 +2,7 @@ import { completedProjectPivotCell, pivotCurrentCell, pivotTotals, nullableAmoun
 import { ProjectionEstimateMarker, ProjectionAmount } from './ProjectionDisplay.jsx';
 import ScheduleReviewFlag from './ScheduleReviewFlag.jsx';
 import ForecastBalanceFlag from './ForecastBalanceFlag.jsx';
+import {BalanceReviewAmount} from './BalanceReviewSummary.jsx';
 import {isBalanceReviewFilter} from './balanceReviewQuickFilter.js';
 import {
   useCallback,
@@ -530,10 +531,13 @@ function ProjectMeta({
         </strong>
 
         {row.source === 'current' && row.raw?.needsRebalance && !isCompleted(row.raw) && (
-          <ForecastBalanceFlag review={row.raw} className="pivot-needs-rebalance"
-            onClick={onOpenBalanceReview}
-            onQuickFilter={onBalanceReviewQuickFilter}
-            selectedQuickFilter={selectedQuickFilter} />
+          <span className="balance-review-status-stack">
+            <ForecastBalanceFlag review={row.raw} className="pivot-needs-rebalance"
+              onClick={onOpenBalanceReview}
+              onQuickFilter={onBalanceReviewQuickFilter}
+              selectedQuickFilter={selectedQuickFilter} />
+            <BalanceReviewAmount review={row.raw} />
+          </span>
         )}
 
         {row.source === 'current' && !isCompleted(row.raw) && (

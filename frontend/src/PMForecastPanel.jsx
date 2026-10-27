@@ -272,6 +272,7 @@ export default function PMForecastPanel({
   project,
   monthlyRows,
   user,
+  revisionRequest = null,
   onAttentionChanged,
 }) {
   const projectIsCompleted =
@@ -905,6 +906,25 @@ export default function PMForecastPanel({
     setEditing(true);
   };
 
+
+  // A non-admin PM can use the balance callout as a shortcut to the normal
+  // Revise action. This is *only* a draft-opening request, never a save.
+  // Do not choose Admin Correction automatically or bypass an unavailable
+  // forecast, locked months, backend entitlements, or existing unsaved edits.
+  const handledRevisionRequest = useRef(0);
+  useEffect(() => {
+    if (!revisionRequest || Number(revisionRequest.jobListId) !== Number(projectId)
+        || !Number.isSafeInteger(revisionRequest.sequence)
+        || revisionRequest.sequence <= handledRevisionRequest.current) return;
+    if (isAdmin || !canSubmit || projectIsCompleted) {
+      handledRevisionRequest.current = revisionRequest.sequence;
+      return;
+    }
+    if (loading) return; // Resume once the panel's own authorized read settles.
+    handledRevisionRequest.current = revisionRequest.sequence;
+    if (canEdit && editableRows.length && !editing) beginEdit('pm');
+  }, [revisionRequest, projectId, isAdmin, canSubmit, projectIsCompleted,
+    loading, canEdit, forecast, editableRows.length, editing]);
 
   const beginAdminCorrection = () => {
     if (

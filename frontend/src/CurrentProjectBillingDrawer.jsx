@@ -1,5 +1,7 @@
 import ScheduleReviewFlag from './ScheduleReviewFlag.jsx';
 import ForecastBalanceFlag from './ForecastBalanceFlag.jsx';
+import BalanceReviewSummary from './BalanceReviewSummary.jsx';
+import {safeReviewStatus} from './balanceReviewQuickFilter.js';
 import {
   useEffect,
   useRef,
@@ -169,6 +171,10 @@ export default function CurrentProjectBillingDrawer({
 
   const pmForecastSectionRef = useRef(null);
   const [highlightPmForecast, setHighlightPmForecast] = useState(false);
+  const [revisionRequest, setRevisionRequest] = useState(null);
+  const billingRole = String(user?.appRole || '').trim().toUpperCase();
+  const hasAdminCorrectionChoice = billingRole === 'ADMIN' || billingRole === 'MANAGEMENT_ADMIN';
+  const mayStartPmRevision = user?.canEditBilling === true && !hasAdminCorrectionChoice;
 
   function jumpToBillingProjections() {
     pmForecastSectionRef.current?.scrollIntoView({
@@ -181,6 +187,19 @@ export default function CurrentProjectBillingDrawer({
     pmForecastSectionRef.current
       ?.querySelector('.pm-forecast-heading-actions button:not([disabled])')
       ?.focus({ preventScroll: true });
+  }
+
+  function openBalanceProjections() {
+    jumpToBillingProjections();
+    // Pending Foundation is a reconciliation state, not a PM revision request.
+    // ADMIN/MANAGEMENT_ADMIN can inspect and choose their own permitted action.
+    // The PM panel remains the sole owner of billing write permissions.
+    if (mayStartPmRevision && safeReviewStatus(rebalanceAttention) === 'NEEDS_REBALANCE') {
+      setRevisionRequest(previous => ({
+        jobListId: project?.jobListId,
+        sequence: (previous?.sequence || 0) + 1,
+      }));
+    }
   }
 
   const varianceMonth =
@@ -583,7 +602,6 @@ export default function CurrentProjectBillingDrawer({
               )}
             </article>
           </section>
-
 
           <section className="billing-characteristics-grid">
             <article>
@@ -1303,10 +1321,19 @@ export default function CurrentProjectBillingDrawer({
             ref={pmForecastSectionRef}
             className={`pm-forecast-jump-target ${highlightPmForecast ? 'pm-forecast-highlight' : ''}`}
           >
+            {!projectIsCompleted && (
+              <BalanceReviewSummary
+                review={rebalanceAttention}
+                onAction={openBalanceProjections}
+                actionLabel={mayStartPmRevision && safeReviewStatus(rebalanceAttention) === 'NEEDS_REBALANCE'
+                  ? 'Revise Projections' : 'View Billing Projections'}
+              />
+            )}
             <PMForecastPanel
               project={project}
               monthlyRows={monthlyRows}
               user={user}
+              revisionRequest={revisionRequest}
               onAttentionChanged={onAttentionChanged}
             />
           </div>

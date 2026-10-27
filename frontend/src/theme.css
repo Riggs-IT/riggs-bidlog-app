@@ -427,10 +427,8 @@
   .bid-log-edit-footer small,
   .bid-gc-option-copy small,
   .bid-gc-picker-tip,
-  .active-project-name-cell span,
   .active-project-schedule-callout small,
   .active-project-reference-grid dt,
-  .cognito-read-field small,
   .cognito-file-row small
 ) {
   font-size: 10.5px;

@@ -65,9 +65,11 @@ export const VISIBLE_REVIEW_SOURCE = Object.freeze({
   VERIFIED_SERVER: 'VERIFIED_SERVER',
   SQL_REBALANCE_FALLBACK: 'SQL_REBALANCE_FALLBACK',
   BALANCE_UNAVAILABLE: 'BALANCE_UNAVAILABLE',
+  DEFERRED_CLASSIFICATION: 'DEFERRED_CLASSIFICATION',
 });
 
-export function resolveVisiblePortfolioReviews(pair, visible, asOfUTC) {
+export function resolveVisiblePortfolioReviews(pair, visible, asOfUTC,
+  {deferUnverified = false} = {}) {
   if (!visible || visible.portfolioBalance === null
       || visible.portfolioBalance === undefined) {
     // Do not misstate a failed balance read as zero reviews.
@@ -86,7 +88,11 @@ export function resolveVisiblePortfolioReviews(pair, visible, asOfUTC) {
     .map(([key, row]) => [key, Object.freeze({
       ...row,
       reviewStatus: NEEDS_REBALANCE,
-      reviewStatusSource: VISIBLE_REVIEW_SOURCE.SQL_REBALANCE_FALLBACK,
+      reviewStatusSource: deferUnverified
+        ? VISIBLE_REVIEW_SOURCE.DEFERRED_CLASSIFICATION
+        : VISIBLE_REVIEW_SOURCE.SQL_REBALANCE_FALLBACK,
     })]));
-  return {source: VISIBLE_REVIEW_SOURCE.SQL_REBALANCE_FALLBACK, rows: fallback};
+  return {source: deferUnverified
+    ? VISIBLE_REVIEW_SOURCE.DEFERRED_CLASSIFICATION
+    : VISIBLE_REVIEW_SOURCE.SQL_REBALANCE_FALLBACK, rows: fallback};
 }

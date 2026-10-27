@@ -30,6 +30,11 @@ export function toggleExclusiveBalanceReview(current, status, all = '__ALL__') {
 
 export function balanceReviewFacetValues(row) {
   if (!row?.needsRebalance) return [];
+  // The SQL imbalance is known, but its Foundation timing classification
+  // is not. Keep it in All Reviews without inventing a Needs-only facet.
+  if (row.reviewStatusSource === 'DEFERRED_CLASSIFICATION') {
+    return [BALANCE_REVIEW_FILTER.ALL_REVIEWS];
+  }
   return [BALANCE_REVIEW_FILTER.ALL_REVIEWS,
     quickFilterForStatus(safeReviewStatus(row))];
 }
@@ -37,6 +42,7 @@ export function balanceReviewFacetValues(row) {
 export function matchesBalanceReviewFacet(row, selection) {
   if (!row?.needsRebalance) return false;
   if (selection === BALANCE_REVIEW_FILTER.ALL_REVIEWS) return true;
+  if (row.reviewStatusSource === 'DEFERRED_CLASSIFICATION') return false;
   return quickFilterForStatus(safeReviewStatus(row)) === selection;
 }
 

@@ -20,10 +20,11 @@ export default function useProjectedBillingsFreshness(options) {
   // Diagnostic state for the paired read; only an exact accepted pair may
   // drive server financial review labels in Stage 3G6.
   const [reviewPairEvidence, setReviewPairEvidence] = useState(null);
+  const [recoveringReview, setRecoveringReview] = useState(false);
   const scope = `${options.userKey ?? ''}:${Boolean(options.enabled)}`;
 
   const reads = useMemo(() => {
-    const state = { alive: false, busy: 0, failures: new Map(), manualRefreshInProgress: false };
+    const state = { alive: false, busy: 0, failures: new Map(), manualRefreshInProgress: false, recoverySerial: 0 };
     const stagedPairs = new Map();
     const usable = () => state.alive && latest.current.enabled && !latest.current.isEnding();
     const publisher = createReviewCohortPublisher({
@@ -36,6 +37,8 @@ export default function useProjectedBillingsFreshness(options) {
         if (!usable()) return;
         setReviewPairEvidence(evidence);
         if (evidence.state === 'VERIFIED' && acceptedPair) {
+          state.recoverySerial++;
+          setRecoveringReview(false);
           // One synchronous publication of the exact PRIMARY, MONTHLY,
           // BALANCE and review certificate, never two independent updates.
           publisher.verified(acceptedPair);
@@ -232,7 +235,13 @@ export default function useProjectedBillingsFreshness(options) {
           if (verdict.state === 'VERIFIED') recovery.cancel();
           else if (!config?.cacheRecoveryCheck && !state.manualRefreshInProgress
               && recoverableReviewReason(verdict)) {
-            void recovery.start();
+            const recoverySerial = ++state.recoverySerial;
+            setRecoveringReview(true);
+            void recovery.start().then(() => {
+              if (usable() && state.recoverySerial === recoverySerial) setRecoveringReview(false);
+            }, () => {
+              if (usable() && state.recoverySerial === recoverySerial) setRecoveringReview(false);
+            });
           }
         }
         if (showSpinner) {
@@ -360,6 +369,7 @@ export default function useProjectedBillingsFreshness(options) {
     setLastUpdatedAt(null);
     setRefreshing(false);
     setCacheStatus(null);
+    setRecoveringReview(false);
     reads.reviewPair.invalidate('SCREEN_RESET');
     latest.current.onReset();
     if (options.enabled) {
@@ -370,6 +380,7 @@ export default function useProjectedBillingsFreshness(options) {
     }
     return () => {
       reads.state.alive = false;
+      reads.state.recoverySerial++;
       reads.batch.reset();
       reads.recovery.cancel();
       reads.publisher.forget();
@@ -394,8 +405,14 @@ export default function useProjectedBillingsFreshness(options) {
     });
   }, [reads, options.enabled]);
 
+  // Expose only the presentation need to App; the paired-read evidence and
+  // server financial classification stay owned by this hook/coordinator.
+  const reviewClassificationPending = reviewPairEvidence?.state === 'WAITING'
+    || recoveringReview;
+
   return {
-    refreshing, lastUpdatedAt, cacheStatus, reviewPairEvidence,
+    refreshing, lastUpdatedAt, cacheStatus, reviewPairEvidence, recoveringReview,
+    reviewClassificationPending,
     refreshAll: () => reads.refreshAll(),
     refreshCurrent: () => {
       if (!reads.usable()) return Promise.resolve();

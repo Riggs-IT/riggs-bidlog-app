@@ -12061,7 +12061,7 @@ td.pivot-project-column {
 .active-project-name-cell span {
   margin-top: 3px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.35;
 }
 
@@ -12524,7 +12524,7 @@ td.pivot-project-column {
 
 .cognito-read-field > span {
   color: var(--muted, #96a0ad);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.055em;
   text-transform: uppercase;
@@ -12552,7 +12552,7 @@ td.pivot-project-column {
 
 .cognito-read-field small {
   color: var(--muted, #8994a2);
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.4;
 }
 
@@ -12848,9 +12848,6 @@ td.pivot-project-column {
   color: #e3bd66;
 }
 
-.active-project-data-row:has(.project-status-pill.completed) {
-  background: color-mix(in srgb, var(--surface-2) 60%, transparent);
-}
 
 @media (max-width: 760px) {
   .billing-drawer-header-actions {
@@ -14289,19 +14286,8 @@ tbody > tr:nth-child(
   background: color-mix(in srgb, var(--warning) 12%, var(--surface));
 }
 
-/* When no exact review pair is certified, distinguish verification from an
-   actual Needs Rebalance status, in both dark and light themes. */
-.needs-rebalance-flag.review-verifying-flag,
-:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line)
-  > .needs-rebalance-flag.review-verifying-flag {
-  color: var(--text);
-  border-color: var(--border);
-  background: var(--surface-2);
-}
-.needs-rebalance-action.review-verifying-flag:hover,
-.needs-rebalance-action.review-verifying-flag:focus-visible {
-  background: var(--surface-3);
-}
+/* When timing cannot be certified, SQL still owns Needs Rebalance.
+   No neutral "Verifying Balance" badge replaces a prior valid status. */
 
 /* The same generic table span selector must not mute schedule warnings. */
 :is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line)
@@ -14959,4 +14945,121 @@ tbody > tr:nth-child(
 }
 .completed-closeout-evidence .originating-bid-finder {
   margin-top: 8px;
+}
+
+/* Balance pill + amount share one right-aligned slot in all project tables. */
+:is(.project-name-status-line, .pivot-project-name-line, .active-project-name-line)
+  > .balance-review-status-stack {
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  margin-left: auto;
+  min-width: 0;
+}
+:is(.project-cell, .active-project-name-cell, .pivot-project-info)
+  .balance-review-status-stack > .balance-review-amount-line {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  margin-top: 0;
+  color: var(--warning);
+  text-align: right;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* Keep the entire status amount in the exact warning color used by the pill.
+   A single text node avoids inherited table <strong> color overrides. */
+:is(.project-name-status-line, .pivot-project-name-line, .active-project-name-line)
+  .balance-review-status-stack > .needs-rebalance-flag {
+  display: inline-flex;
+  margin: 0;
+  flex: 0 0 auto;
+}
+:is(.project-name-status-line, .pivot-project-name-line, .active-project-name-line)
+  .balance-review-status-stack > .needs-rebalance-flag.pending-foundation-flag {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 36%, var(--border));
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+}
+/* The card is the action: no nested button, no duplicate gap figure. */
+.pm-forecast-jump-target > .balance-review-detail { margin-bottom: 16px; }
+.balance-review-detail {
+  display: block;
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid color-mix(in srgb, var(--warning) 42%, var(--border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--warning) 6%, var(--surface));
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+.balance-review-detail.is-pending {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+}
+.balance-review-detail.is-actionable { cursor: pointer; }
+.balance-review-detail.is-actionable:hover {
+  border-color: color-mix(in srgb, var(--warning) 76%, var(--border));
+  background: color-mix(in srgb, var(--warning) 10%, var(--surface));
+}
+.balance-review-detail.is-pending.is-actionable:hover {
+  border-color: color-mix(in srgb, var(--accent) 66%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+.balance-review-detail.is-actionable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.balance-review-detail-heading {
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  align-items: center;
+}
+.balance-review-detail-title { display: grid; gap: 3px; }
+.balance-review-detail-heading .section-kicker { margin: 0; }
+.balance-review-detail-amount { text-align: right; margin-left: auto; }
+.balance-review-detail-amount > strong {
+  color: var(--warning);
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.balance-review-detail.is-pending .balance-review-detail-amount > strong { color: var(--accent); }
+.balance-review-detail-values > span > span,
+.balance-review-detail-note {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.balance-review-detail-values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+.balance-review-detail-values > span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.balance-review-detail-values strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.balance-review-detail-note { display: block; margin-top: 8px; }
+@media (max-width: 630px) {
+  .balance-review-detail-heading { align-items: flex-start; }
+  .balance-review-detail-values { grid-template-columns: 1fr 1fr; }
 }

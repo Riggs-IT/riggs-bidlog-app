@@ -24,6 +24,7 @@ import {
 import ActiveProjectEditDrawer from './ActiveProjectEditDrawer.jsx';
 import ScheduleReviewFlag from './ScheduleReviewFlag.jsx';
 import ForecastBalanceFlag from './ForecastBalanceFlag.jsx';
+import {BalanceReviewAmount} from './BalanceReviewSummary.jsx';
 
 
 const ALL = '__ALL__';
@@ -1376,12 +1377,15 @@ export default function ActiveProjectsWorkspace({
                         {displayValue(project.jobName)}
                       </strong>
                       {!project.projectCompleted && rebalanceByJobId.has(String(project.jobListId)) && (
-                        <ForecastBalanceFlag
-                          review={rebalanceByJobId.get(String(project.jobListId))}
-                          onClick={onOpenBillingProject
-                            ? event => {event.stopPropagation(); onOpenBillingProject(project.jobListId);}
-                            : null}
-                        />
+                        <span className="balance-review-status-stack">
+                          <ForecastBalanceFlag
+                            review={rebalanceByJobId.get(String(project.jobListId))}
+                            onClick={onOpenBillingProject
+                              ? event => {event.stopPropagation(); onOpenBillingProject(project.jobListId);}
+                              : null}
+                          />
+                          <BalanceReviewAmount review={rebalanceByJobId.get(String(project.jobListId))} />
+                        </span>
                       )}
                       {!project.projectCompleted && (
                         <ScheduleReviewFlag

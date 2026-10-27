@@ -86,19 +86,34 @@ test('new VERIFIED status replaces the financial cohort and certificate together
   assert.equal(display(events[1]).rows.get('531').reviewStatus,NEEDS_REBALANCE);
 });
 
-test('a changed financial amount cannot borrow the old Pending certificate',()=>{
+test('changed amounts during incomplete refresh hold ORIGINAL data, never borrow Pending for new data',()=>{
   const {publisher,events}=fixture();
-  publisher.verified(certify(make()));
+  const prior=certify(make());
+  publisher.verified(prior);
   const incoming=transient(make(SNAPSHOT,102));
   assert.equal(publisher.unavailable({...incoming,reason:'UNAVAILABLE',passive:true}),
-    'UNVERIFIED_COHORT');
+    'RETAINED_VERIFIED_COHORT');
+  assert.equal(events.length,1,'no unpaired financial values are displayed');
+  assert.strictEqual(events[0].current,prior.current);
+  assert.strictEqual(events[0].balance,prior.balance);
+  assert.equal(display(events[0]).rows.get('531').reviewStatus,PENDING_FOUNDATION);
+  const next=make(NEXT,102);
+  next.balance[0].reviewStatus=NEEDS_REBALANCE;
+  publisher.verified(certify(next));
   assert.equal(events.length,2);
-  assert.strictEqual(events[1].current,incoming.current);
-  assert.strictEqual(events[1].balance,incoming.balance);
+  assert.strictEqual(events[1].current,next.current);
+  assert.equal(display(events[1]).rows.get('531').reviewStatus,NEEDS_REBALANCE);
+});
+
+test('changed SQL imbalance set cannot leave a resolved project marked Pending',()=>{
+  const {publisher,events}=fixture();
+  publisher.verified(certify(make()));
+  const incoming=transient(make());
+  incoming.balance=[];
+  assert.equal(publisher.unavailable({...incoming,reason:'UNAVAILABLE',passive:true}),
+    'UNVERIFIED_COHORT');
   assert.equal(events[1].acceptedPair,null);
-  const view=display(events[1]);
-  assert.equal(view.source,VISIBLE_REVIEW_SOURCE.SQL_REBALANCE_FALLBACK);
-  assert.equal(view.rows.get('531').reviewStatus,NEEDS_REBALANCE);
+  assert.deepEqual(events[1].balance,[]);
 });
 
 test('a changed PM version cannot retain Pending when Foundation evidence is unavailable',()=>{
@@ -112,8 +127,8 @@ test('a changed PM version cannot retain Pending when Foundation evidence is una
   assert.equal(events[1].acceptedPair,null);
 });
 
-test('only transient unavailable evidence may retain; actual row errors fail closed',()=>{
-  for(const reason of ['PARTIAL_REFRESH','STALE_PROJECT','STALE_MONTH','INVALID_CONTRACT']) {
+test('only incomplete/recoverable evidence may retain; real row errors fail closed',()=>{
+  for(const reason of ['STALE_PROJECT','STALE_MONTH','INVALID_CONTRACT']) {
     const {publisher,events}=fixture();
     publisher.verified(certify(make()));
     assert.equal(publisher.unavailable({...transient(make()),reason,passive:true}),
@@ -122,26 +137,36 @@ test('only transient unavailable evidence may retain; actual row errors fail clo
   }
 });
 
-test('manual refresh and independent read never retain a previous certificate',()=>{
+test('manual refresh keeps an unchanged verified cohort; independent read revokes it',()=>{
   const {publisher,events}=fixture();
   publisher.verified(certify(make()));
   const input=transient(make());
   assert.equal(publisher.unavailable({...input,reason:'UNAVAILABLE',passive:false}),
-    'UNVERIFIED_COHORT');
-  assert.equal(events.at(-1).acceptedPair,null);
-  publisher.verified(certify(make()));
-  publisher.forget();
+    'RETAINED_VERIFIED_COHORT');
+  assert.equal(events.length,1,'no manual-refresh flicker');
+  publisher.forget(); // called by the hook for an independent fresh read
   assert.equal(publisher.unavailable({...input,reason:'UNAVAILABLE',passive:true}),
     'UNVERIFIED_COHORT');
 });
 
-test('expiry of display grace fails closed rather than pinning stale Pending indefinitely',()=>{
+test('no arbitrary 180-second timeout can replace an unchanged verified balance',()=>{
   const {publisher,events,advance}=fixture();
   publisher.verified(certify(make()));
-  advance(180_000);
+  advance(600_000);
   assert.equal(publisher.unavailable({...transient(make()),reason:'UNAVAILABLE',passive:true}),
-    'UNVERIFIED_COHORT');
-  assert.equal(events[1].acceptedPair,null);
+    'RETAINED_VERIFIED_COHORT');
+  assert.equal(events.length,1);
+});
+
+test('one missing financial reader keeps original certified data and reports no false zero',()=>{
+  const {publisher,events}=fixture();
+  const pair=certify(make());
+  publisher.verified(pair);
+  assert.equal(publisher.unavailable({current:null,balance:null,
+    reason:'PARTIAL_REFRESH',passive:true}),'RETAINED_VERIFIED_COHORT');
+  assert.equal(events.length,1);
+  assert.strictEqual(events[0].current,pair.current);
+  assert.strictEqual(events[0].balance,pair.balance);
 });
 
 test('Arizona day-15 rollover cannot retain the old lock-month certificate',()=>{
@@ -163,14 +188,16 @@ test('in-place mutation of prior certified response cannot retain stale status',
   assert.equal(events[1].acceptedPair,null);
 });
 
-test('failure of either financial reader removes acceptance but does not invent empty totals',()=>{
+test('a changed current half during partial refresh invalidates a previous certificate',()=>{
   const {publisher,events}=fixture();
   publisher.verified(certify(make()));
-  assert.equal(publisher.unavailable({current:null,balance:null,
+  const newer=transient(make());
+  newer.current.projects[0].latestForecastVersionId=202;
+  assert.equal(publisher.unavailable({current:newer.current,balance:null,
     reason:'PARTIAL_REFRESH',passive:true}),'UNVERIFIED_COHORT');
-  assert.equal(events[1].current,null);
-  assert.equal(events[1].balance,null);
   assert.equal(events[1].acceptedPair,null);
+  assert.strictEqual(events[1].current,newer.current);
+  assert.equal(events[1].balance,null);
 });
 
 test('hook stages paired inputs, publishes one cohort and preserves explicit invalidation',()=>{
@@ -187,11 +214,10 @@ test('hook stages paired inputs, publishes one cohort and preserves explicit inv
   assert.match(app,/setAcceptedReviewPair\(acceptedPair\)/);
 });
 
-test('unverified render has neutral status, never falsely identifies Pending Foundation',()=>{
+test('unverified SQL balance uses Needs Rebalance, never an invented Pending label',()=>{
   const badge=readFileSync(new URL('../src/ForecastBalanceFlag.jsx',import.meta.url),'utf8');
-  assert.match(badge,/review\.reviewStatusSource === 'SQL_REBALANCE_FALLBACK'/);
-  assert.match(badge,/verifying \? 'Verifying Balance' : balanceReviewLabel\(review\)/);
-  assert.doesNotMatch(badge,/verifying \? 'Pending Foundation'/);
+  assert.match(badge,/const label = balanceReviewLabel\(\{reviewStatus: status\}\)/);
+  assert.doesNotMatch(badge,/Verifying Balance|review-verifying-flag/);
 });
 
 test('an acceptance race across day 15 publishes no certified Pending label',()=>{
