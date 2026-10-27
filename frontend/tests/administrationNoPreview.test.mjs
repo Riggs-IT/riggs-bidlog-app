@@ -20,7 +20,7 @@ test('there is no synthetic/local Administration preview or alternate navigation
   ]) assert.equal(existsSync(new URL(removedPath, import.meta.url)), false, removedPath);
 });
 
-test('the actual tab and endpoints still require the unchanged server-owned identity', () => {
+test('the actual tab and endpoints require exact pinned two-person identity', () => {
   const app = source('../src/App.jsx');
   const main = source('../../backend/app/main.py');
   const auth = source('../../backend/app/auth.py');
@@ -29,8 +29,10 @@ test('the actual tab and endpoints still require the unchanged server-owned iden
   assert.match(app, /activePage === 'administration'\s*&& canViewAdministration/);
   assert.match(main, /Depends\(require_administration_owner\)/);
   assert.match(auth, /settings\.auth_mode != "entra"/);
-  assert.match(auth, /user\.eid != 2021/);
-  assert.match(auth, /configured_owner == current_oid == session_oid/);
+  assert.match(auth, /if \(user\.eid, role\) == \(2021, "ADMIN"\)/);
+  assert.match(auth, /elif \(user\.eid, role\) == \(176, "MANAGEMENT_ADMIN"\)/);
+  assert.match(auth, /getattr\(settings, "admin_secondary_entra_object_id", ""\)/);
+  assert.match(auth, /configured_pin == current_oid == session_oid/);
   assert.match(auth, /configured_tenant == current_tenant == session_tenant/);
 });
 

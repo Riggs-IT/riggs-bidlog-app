@@ -3567,7 +3567,7 @@ def refresh_shared_dashboard_cache(*, actor_eid: int) -> dict:
 
 # Human presence is diagnostic evidence, never an authentication grant.
 def get_bid_log_administration_presence(*, actor_eid: int, entra_object_id: str) -> dict:
-    if type(actor_eid) is not int or actor_eid != 2021:
+    if type(actor_eid) is not int or actor_eid not in (2021, 176):
         raise DataAPIConfigurationError("Administration actor unavailable")
     try:
         oid = UUID(entra_object_id)
@@ -3608,7 +3608,7 @@ def get_bid_log_administration_presence(*, actor_eid: int, entra_object_id: str)
 def get_bid_log_administration_leaderboard(
     *, actor_eid: int, entra_object_id: str, days: int = 30, app_code: str = "ALL",
 ) -> dict:
-    if type(actor_eid) is not int or actor_eid != 2021:
+    if type(actor_eid) is not int or actor_eid not in (2021, 176):
         raise DataAPIConfigurationError("Administration actor unavailable")
     try:
         oid = UUID(entra_object_id)
@@ -3651,7 +3651,7 @@ def get_bid_log_administration_leaderboard(
 # Private Administration metrics: owner identity originates exclusively from
 # the signed Entra session after require_administration_owner in main.py.
 def get_bid_log_administration_monitoring(*, actor_eid: int, entra_object_id: str) -> dict:
-    if type(actor_eid) is not int or actor_eid != 2021:
+    if type(actor_eid) is not int or actor_eid not in (2021, 176):
         raise DataAPIConfigurationError("Administration actor unavailable")
     try:
         oid = UUID(entra_object_id)
@@ -3689,7 +3689,7 @@ def get_bid_log_administration_monitoring(*, actor_eid: int, entra_object_id: st
 # Source evidence uses an explicit owner-only click, not the overview poll.
 # It never trusts EID/OID from the browser and never contacts arbitrary tables.
 def get_bid_log_administration_source_evidence(*, actor_eid: int, entra_object_id: str) -> dict:
-    if type(actor_eid) is not int or actor_eid != 2021:
+    if type(actor_eid) is not int or actor_eid not in (2021, 176):
         raise DataAPIConfigurationError("Administration actor unavailable")
     try:
         oid = UUID(entra_object_id)
@@ -3729,7 +3729,7 @@ def get_bid_log_administration_queue_events(
 ) -> dict:
     allowed = {"accounting_tickets", "cognito_staffing", "job_cognito",
                "job_sharepoint", "ordering_center", "project_forecast"}
-    if type(actor_eid) is not int or actor_eid != 2021:
+    if type(actor_eid) is not int or actor_eid not in (2021, 176):
         raise DataAPIConfigurationError("Administration actor unavailable")
     try:
         oid = UUID(entra_object_id)

@@ -11,9 +11,11 @@ test('monitoring lives inside the established Administration page', () => {
   assert.match(dashboard, /<AdministrationPowerAutomate onSessionError=/);
   assert.doesNotMatch(main, /AdministrationPreview/);
 });
-test('admin owner gate still authorizes the new router', () => {
-  assert.match(authSource, /user\.eid != 2021/);
-  assert.match(authSource, /configured_owner == current_oid == session_oid/);
+test('two-account pinned Administration gate still protects the router', () => {
+  assert.match(authSource, /if \(user\.eid, role\) == \(2021, "ADMIN"\)/);
+  assert.match(authSource, /elif \(user\.eid, role\) == \(176, "MANAGEMENT_ADMIN"\)/);
+  assert.match(authSource, /getattr\(settings, "admin_secondary_entra_object_id", ""\)/);
+  assert.match(authSource, /configured_pin == current_oid == session_oid/);
   assert.match(main, /create_power_platform_router/);
 });
 test('monitoring never dispatches any flow mutation request', () => {

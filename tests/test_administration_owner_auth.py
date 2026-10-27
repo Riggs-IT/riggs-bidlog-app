@@ -20,6 +20,7 @@ from backend.app.config import Settings
 from backend.app.data_api import BidLogAccessUser
 
 OWNER_OID = "11111111-1111-4111-8111-111111111111"
+RODNEY_OID = "55555555-5555-4555-8555-555555555555"
 OTHER_OID = "22222222-2222-4222-8222-222222222222"
 TENANT = "33333333-3333-4333-8333-333333333333"
 OTHER_TENANT = "44444444-4444-4444-8444-444444444444"
@@ -34,6 +35,7 @@ class AdministrationOwnerAuthorizationTests(unittest.TestCase):
             entra_configured=True,
             entra_tenant_id=TENANT,
             admin_owner_entra_object_id=OWNER_OID,
+            admin_secondary_entra_object_id="",
             session_revision="owner-test-revision",
             session_idle_timeout_seconds=3600,
             is_production_runtime=False,
@@ -96,6 +98,34 @@ class AdministrationOwnerAuthorizationTests(unittest.TestCase):
         self.assertEqual(me.status_code, 200, me.text)
         self.assertIs(me.json()["canViewAdministration"], True)
         self.resolve.assert_called_once_with(OWNER_OID)
+
+    def test_only_explicitly_pinned_second_admin_is_allowed(self):
+        # No real identities/OIDs in test source; all values are synthetic.
+        self.access = self.access.__class__(**{
+            **self.access.__dict__, "eid": 176,
+            "entra_object_id": RODNEY_OID, "app_role": "MANAGEMENT_ADMIN",
+        })
+        self.seed_cookie(oid=RODNEY_OID)
+        self.assertEqual(self.client.get("/api/admin/access").status_code, 403)
+        self.cfg.admin_secondary_entra_object_id = RODNEY_OID
+        self.assertEqual(self.client.get("/api/admin/access").status_code, 200)
+        self.assertIs(self.client.get("/api/auth/me").json()["canViewAdministration"], True)
+        self.cfg.admin_secondary_entra_object_id = OWNER_OID
+        self.assertEqual(self.client.get("/api/admin/access").status_code, 403)
+        self.cfg.admin_secondary_entra_object_id = RODNEY_OID
+        self.access = self.access.__class__(**{
+            **self.access.__dict__, "app_role": "ADMIN",
+        })
+        self.assertEqual(self.client.get("/api/admin/access").status_code, 403)
+
+    def test_unapproved_management_admin_stays_denied(self):
+        self.cfg.admin_secondary_entra_object_id = RODNEY_OID
+        self.access = self.access.__class__(**{
+            **self.access.__dict__, "eid": 415,
+            "entra_object_id": RODNEY_OID, "app_role": "MANAGEMENT_ADMIN",
+        })
+        self.seed_cookie(oid=RODNEY_OID)
+        self.assertEqual(self.client.get("/api/admin/access").status_code, 403)
 
     def test_other_admin_does_not_inherit_private_capability(self):
         self.access = self.access.__class__(**{
@@ -180,6 +210,11 @@ class AdministrationOwnerAuthorizationTests(unittest.TestCase):
         valid = Settings(auth_mode="entra", admin_owner_entra_object_id=OWNER_OID)
         self.assertEqual(valid.admin_owner_entra_object_id, OWNER_OID)
         self.assertEqual(Settings(auth_mode="entra").admin_owner_entra_object_id, "")
+        self.assertEqual(Settings(auth_mode="entra").admin_secondary_entra_object_id, "")
+        self.assertEqual(Settings(auth_mode="entra", admin_secondary_entra_object_id=RODNEY_OID).admin_secondary_entra_object_id, RODNEY_OID)
+        with self.assertRaises(ValueError):
+            Settings(auth_mode="entra", admin_owner_entra_object_id=OWNER_OID,
+                     admin_secondary_entra_object_id=OWNER_OID)
         for invalid in ("invalid", "00000000-0000-0000-0000-000000000000"):
             with self.subTest(value=invalid), self.assertRaises(ValueError):
                 Settings(auth_mode="entra", admin_owner_entra_object_id=invalid)

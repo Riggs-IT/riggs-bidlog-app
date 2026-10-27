@@ -459,13 +459,21 @@ def can_view_administration(
     if settings.auth_mode != "entra" or not settings.entra_configured:
         return False
 
-    if user.eid != 2021 or user.app_role.strip().upper() != "ADMIN":
+    # Exactly two approved, immutable Riggs identities. MANAGEMENT_ADMIN alone
+    # never confers access, and Rodney's business/financial role is unchanged.
+    role = user.app_role.strip().upper()
+    if (user.eid, role) == (2021, "ADMIN"):
+        configured_pin = _uuid_or_none(settings.admin_owner_entra_object_id)
+    elif (user.eid, role) == (176, "MANAGEMENT_ADMIN"):
+        configured_pin = _uuid_or_none(
+            getattr(settings, "admin_secondary_entra_object_id", "")
+        )
+    else:
         return False
 
     if not isinstance(signed_entra_identity, dict):
         return False
 
-    configured_owner = _uuid_or_none(settings.admin_owner_entra_object_id)
     configured_tenant = _uuid_or_none(settings.entra_tenant_id)
     current_oid = _uuid_or_none(user.entra_object_id)
     session_oid = _uuid_or_none(signed_entra_identity.get("oid"))
@@ -476,9 +484,9 @@ def can_view_administration(
     # different tenant all deny. The regular get_current_user() resolver
     # independently requires SQL's Entra OID to equal the validated OID.
     return bool(
-        configured_owner is not None
+        configured_pin is not None
         and configured_tenant is not None
-        and configured_owner == current_oid == session_oid
+        and configured_pin == current_oid == session_oid
         and configured_tenant == current_tenant == session_tenant
     )
 

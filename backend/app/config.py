@@ -33,6 +33,9 @@ class Settings(BaseSettings):
 
     # Optional until provisioned. Missing means ALL private Admin routes deny.
     admin_owner_entra_object_id: str = ""
+    # Fail-closed pin for the one approved second administrator (EID 176).
+    # Populate using a secure Cloud Run/Secret Manager setting, never Git.
+    admin_secondary_entra_object_id: str = ""
 
     # Owner-only Power Platform monitoring. SSO and the experimental runtime
     # reader are independently opt-in; encrypted vault custody is server-only.
@@ -238,6 +241,23 @@ class Settings(BaseSettings):
             if parsed_owner_oid.int == 0:
                 raise ValueError(
                     "ADMIN_OWNER_ENTRA_OBJECT_ID cannot be the zero UUID."
+                )
+
+        secondary_oid = self.admin_secondary_entra_object_id.strip()
+        if secondary_oid:
+            try:
+                parsed_secondary_oid = UUID(secondary_oid)
+            except (ValueError, TypeError, AttributeError) as exc:
+                raise ValueError(
+                    "ADMIN_SECONDARY_ENTRA_OBJECT_ID must be a valid UUID."
+                ) from exc
+            if parsed_secondary_oid.int == 0:
+                raise ValueError(
+                    "ADMIN_SECONDARY_ENTRA_OBJECT_ID cannot be the zero UUID."
+                )
+            if owner_oid and UUID(owner_oid) == parsed_secondary_oid:
+                raise ValueError(
+                    "Administration owner and secondary identity cannot match."
                 )
 
         if self.auth_mode == "dev":
