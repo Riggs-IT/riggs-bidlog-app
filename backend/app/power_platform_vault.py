@@ -25,6 +25,56 @@ _REFRESH_RETENTION = timedelta(days=30)
 _REFRESH_SKEW = timedelta(seconds=60)
 _TOKEN_MAX = 50000
 
+# Only stable, documented Microsoft Entra numeric error codes and error types
+# are mapped. Never expose error_description, trace IDs, account IDs, URLs,
+# credentials, or arbitrary upstream values to the browser or logs.
+_RUNTIME_AADSTS_CODES = {
+    70011: "RUNTIME_INVALID_SCOPE",
+    500011: "RUNTIME_RESOURCE_NOT_FOUND",
+    65001: "RUNTIME_CONSENT_REQUIRED",
+    90094: "RUNTIME_CONSENT_REQUIRED",
+    50076: "RUNTIME_INTERACTION_REQUIRED",
+    50079: "RUNTIME_INTERACTION_REQUIRED",
+    50058: "RUNTIME_INTERACTION_REQUIRED",
+    700082: "RUNTIME_REAUTH_REQUIRED",
+    700084: "RUNTIME_REAUTH_REQUIRED",
+    50173: "RUNTIME_REAUTH_REQUIRED",
+    7000215: "RUNTIME_CLIENT_AUTH_FAILED",
+    7000222: "RUNTIME_CLIENT_AUTH_FAILED",
+    700016: "RUNTIME_CLIENT_AUTH_FAILED",
+}
+_RUNTIME_OAUTH_TYPES = {
+    "invalid_scope": "RUNTIME_INVALID_SCOPE",
+    "invalid_resource": "RUNTIME_RESOURCE_NOT_FOUND",
+    "consent_required": "RUNTIME_CONSENT_REQUIRED",
+    "interaction_required": "RUNTIME_INTERACTION_REQUIRED",
+    "invalid_grant": "RUNTIME_REAUTH_REQUIRED",
+    "invalid_client": "RUNTIME_CLIENT_AUTH_FAILED",
+    "unauthorized_client": "RUNTIME_CLIENT_AUTH_FAILED",
+}
+
+
+def _runtime_grant_failure(response: Any) -> str:
+    """Classify only explicitly allowlisted Entra errors. No raw error leakage."""
+    fallback = "RUNTIME_TOKEN_GRANT_REJECTED"
+    try:
+        if len(response.content) > 8192:
+            return fallback
+        payload = response.json()
+        if not isinstance(payload, dict):
+            return fallback
+        codes = payload.get("error_codes")
+        if isinstance(codes, list) and len(codes) <= 8:
+            for code in codes:
+                if type(code) is int and code in _RUNTIME_AADSTS_CODES:
+                    return _RUNTIME_AADSTS_CODES[code]
+        category = payload.get("error")
+        if isinstance(category, str):
+            return _RUNTIME_OAUTH_TYPES.get(category, fallback)
+    except (ValueError, UnicodeError, TypeError, AttributeError):
+        pass
+    return fallback
+
 
 class PowerPlatformVaultError(Exception):
     def __init__(self, code: str):
@@ -132,7 +182,7 @@ class EncryptedPowerPlatformVault:
                 import httpx
                 endpoint = f"https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token"
                 requested_scope = (
-                    "https://service.flow.microsoft.com/.default offline_access"
+                    "https://service.flow.microsoft.com//.default offline_access"
                     if purpose == "runtime" else
                     "https://api.powerplatform.com/EnvironmentManagement.Environments.Read "
                     "https://api.powerplatform.com/PowerAutomate.Flows.Read "
@@ -154,10 +204,12 @@ class EncryptedPowerPlatformVault:
                 except httpx.RequestError:
                     raise PowerPlatformVaultError("MICROSOFT_TOKEN_UNAVAILABLE") from None
                 if response.status_code in (400, 401, 403):
-                    # A runtime resource consent/audience failure MUST NOT
-                    # disconnect or erase the existing Power Platform token.
+                    # Never disconnect the working platform credential because
+                    # a separate Flow runtime audience has rejected a grant.
+                    # Entra's optional numeric error_codes are reduced to a
+                    # fixed safe enum; raw OAuth responses are never emitted.
                     raise PowerPlatformVaultError(
-                        "RUNTIME_TOKEN_GRANT_REJECTED" if purpose == "runtime"
+                        _runtime_grant_failure(response) if purpose == "runtime"
                         else "RECONNECT_REQUIRED"
                     )
                 if response.status_code != 200 or len(response.content) > 100000:
