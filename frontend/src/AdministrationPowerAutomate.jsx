@@ -8,6 +8,10 @@ import {
   powerAutomateFlowUrl, powerAutomateRunUrl, selectedFlowInspection, inspectionMessage,
   checkedFlowKey, verifiedRunObservation,
 } from './administrationFlowInspection.mjs';
+import {
+  RUN_BATCH_SIZE, RUN_CACHE_TTL_MS, HALT_RUN_PREFETCH,
+  pageRunCandidates, batchRunQuery, validateRunBatch,
+} from './administrationRunPrefetch.mjs';
 import './AdministrationPowerAutomate.css';
 
 const API = '/api/admin/power-platform';
@@ -59,6 +63,9 @@ export default function AdministrationPowerAutomate({onSessionError}) {
   const inspectionCloseRef = useRef(null);
   const connectionRef = useRef(null);
   const inventoryRef = useRef(null);
+  const backgroundRequest = useRef(null);
+  const inspectionCache = useRef(new Map());
+  const observationsRef = useRef({});
   const credentialRef = useRef(null);
   const [visible, setVisible] = useState(visibleNow);
   const [connection, setConnection] = useState(null);
@@ -80,10 +87,16 @@ export default function AdministrationPowerAutomate({onSessionError}) {
   const [pageSize, setPageSize] = useState(25);
   const [sortBy, setSortBy] = useState('RUNS');
   const [checkedRuns, setCheckedRuns] = useState({});
+  const [backgroundRuns, setBackgroundRuns] = useState({phase:'idle', checked:0, total:0, reason:null});
+  const [refreshRunSerial, setRefreshRunSerial] = useState(0);
+  useEffect(() => { observationsRef.current = checkedRuns; }, [checkedRuns]);
 
   const clearPrivateData = useCallback(() => {
     inventoryRequest.current?.abort();
     inventoryRequest.current = null;
+    backgroundRequest.current?.abort();
+    backgroundRequest.current = null;
+    inspectionCache.current.clear();
     runsRequest.current?.abort();
     runsRequest.current = null;
     inventoryRef.current = null;
@@ -100,6 +113,8 @@ export default function AdministrationPowerAutomate({onSessionError}) {
     setEnvironmentFilter('ALL');
     setPage(1);
     setCheckedRuns({});
+    observationsRef.current = {};
+    setBackgroundRuns({phase:'idle', checked:0, total:0, reason:null});
   }, []);
 
   const handleReadError = useCallback(errorCode => {
@@ -174,6 +189,8 @@ export default function AdministrationPowerAutomate({onSessionError}) {
         statusRequest.current = null;
         inventoryRequest.current?.abort();
         inventoryRequest.current = null;
+        backgroundRequest.current?.abort();
+        backgroundRequest.current = null;
         runsRequest.current?.abort();
         runsRequest.current = null;
         setAction(previous => previous === 'runs' ? '' : previous);
@@ -190,6 +207,7 @@ export default function AdministrationPowerAutomate({onSessionError}) {
     return () => {
       statusRequest.current?.abort();
       inventoryRequest.current?.abort();
+      backgroundRequest.current?.abort();
       runsRequest.current?.abort();
       statusRequest.current = null;
       inventoryRequest.current = null;
@@ -201,6 +219,7 @@ export default function AdministrationPowerAutomate({onSessionError}) {
   const loadInventory = useCallback(async ({force = false} = {}) => {
     if (!visibleNow() || !connectionRef.current?.connected || inventoryRequest.current
       || (!force && inventoryRef.current)) return;
+    backgroundRequest.current?.abort();
     const controller = new AbortController();
     inventoryRequest.current = controller;
     setInventoryPhase(inventoryRef.current ? 'refreshing' : 'loading');
@@ -227,6 +246,10 @@ export default function AdministrationPowerAutomate({onSessionError}) {
           setInventoryResult(result.data);
           setInventoryPhase('ready');
           setLastInventoryReadAt(new Date().toISOString());
+          if (force) {
+            for (const cached of inspectionCache.current.values()) cached.checkedAt = 0;
+            setRefreshRunSerial(current => current + 1);
+          }
           setPage(1);
         }
       }
@@ -250,12 +273,101 @@ export default function AdministrationPowerAutomate({onSessionError}) {
   }, [visible, statusChecked, statusError, connection?.connected, connection?.expiresAtUTC,
     inventoryResult, inventoryPhase, loadInventory]);
 
+  // After a visible, authorized inventory read, check only the CURRENT page
+  // in small batches. This never recursively follows the changing run-sort,
+  // and never scans the 300-flow tenant sample in the background.
+  useEffect(() => {
+    if (!visible || !statusChecked || statusError || !connection?.connected ||
+      !inventoryResult || inventoryPhase !== 'ready' || selectedFlow) return undefined;
+
+    const controller = new AbortController();
+    backgroundRequest.current = controller;
+    let startTimer = null;
+    const candidates = pageRunCandidates(returnedFlows, {
+      search, environmentId:environmentFilter, page, pageSize, sortBy,
+    }, observationsRef.current, inspectionCache.current);
+    setBackgroundRuns({phase:candidates.length ? 'loading' : 'complete',
+      checked:0, total:candidates.length, reason:null});
+
+    const runPage = async () => {
+      let checked = 0;
+      for (let offset = 0; offset < candidates.length && !controller.signal.aborted;
+        offset += RUN_BATCH_SIZE) {
+        const batch = candidates.slice(offset, offset + RUN_BATCH_SIZE);
+        const query = batchRunQuery(batch);
+        if (!query) {
+          setBackgroundRuns({phase:'paused',checked,total:candidates.length,reason:'INVALID_FLOW_ID'});
+          return;
+        }
+        let result;
+        try {
+          result = await readJson(`/runtime-run-batch?${query}`, {signal:controller.signal});
+        } catch {
+          if (controller.signal.aborted) return;
+          setBackgroundRuns({phase:'paused',checked,total:candidates.length,reason:'NETWORK_UNAVAILABLE'});
+          return;
+        }
+        if (controller.signal.aborted) return;
+        if (result.error) {
+          if (['SESSION_EXPIRED','ADMIN_ACCESS_DENIED','RECONNECT_REQUIRED'].includes(result.error)) {
+            handleReadError(result.error);
+          } else {
+            setBackgroundRuns({phase:'paused',checked,total:candidates.length,reason:result.error});
+          }
+          return;
+        }
+        const parsed = validateRunBatch(batch, result.data);
+        if (!parsed) {
+          setBackgroundRuns({phase:'paused',checked,total:candidates.length,reason:'INVALID_RESPONSE'});
+          return;
+        }
+        const next = {};
+        const now = Date.now();
+        for (const entry of parsed) {
+          inspectionCache.current.set(entry.key, {payload:entry.payload, checkedAt:now});
+          next[entry.key] = entry.observation ||
+            {unavailable:true, availability:entry.availability};
+        }
+        setCheckedRuns(previous => ({...previous, ...next}));
+        checked += parsed.length;
+        const halt = parsed.find(entry => HALT_RUN_PREFETCH.has(entry.availability));
+        if (halt) {
+          setBackgroundRuns({phase:'paused',checked,total:candidates.length,reason:halt.availability});
+          return;
+        }
+        setBackgroundRuns({phase:checked === candidates.length ? 'complete' : 'loading',
+          checked,total:candidates.length,reason:null});
+      }
+    };
+
+    // Debounce search/filter changes; first-page inventory starts almost
+    // immediately, but fast typing does not launch abandoned Microsoft reads.
+    if (candidates.length) startTimer = setTimeout(() => void runPage(), search ? 300 : 0);
+    return () => {
+      if (startTimer !== null) clearTimeout(startTimer);
+      controller.abort();
+      if (backgroundRequest.current === controller) backgroundRequest.current = null;
+    };
+  }, [visible, statusChecked, statusError, connection?.connected, inventoryResult,
+    inventoryPhase, selectedFlow, search, environmentFilter, page, pageSize,
+    sortBy, refreshRunSerial, handleReadError]);
+
   const readRuns = async (flow, originRow = null) => {
     if (runsRequest.current || inventoryRequest.current || statusRequest.current || !visibleNow()
       || !connectionRef.current?.connected) return;
+    const key = checkedFlowKey(flow);
+    const cached = inspectionCache.current.get(key);
+    if (originRow) inspectedRowRef.current = originRow;
+    if (cached && Date.now() - cached.checkedAt < RUN_CACHE_TTL_MS &&
+      verifiedRunObservation(selectedFlowInspection(cached.payload))) {
+      setSelectedFlow(flow);
+      setRunResult(cached.payload);
+      setRunPhase('ready');
+      setRunError(null);
+      return;
+    }
     const controller = new AbortController();
     runsRequest.current = controller;
-    if (originRow) inspectedRowRef.current = originRow;
     setSelectedFlow(flow);
     setRunResult(null);
     setRunPhase('loading');
@@ -283,6 +395,8 @@ export default function AdministrationPowerAutomate({onSessionError}) {
         } else {
           setRunResult(result.data);
           setRunPhase('ready');
+          inspectionCache.current.set(checkedFlowKey(flow),
+            {payload:result.data,checkedAt:Date.now()});
           // This is in-memory, per-current-authorized-session evidence only.
           // An unverified ID or empty API response is never marked successful.
           const verified = verifiedRunObservation(inspection);
@@ -401,6 +515,12 @@ export default function AdministrationPowerAutomate({onSessionError}) {
           <small>{inventoryResult ? `${returnedFlows.length} returned · Coverage: ${inventory.availability}`
             : 'Waiting for inventory evidence'}</small>
           {lastInventoryReadAt && <small>Updated {timestamp(lastInventoryReadAt)} · {checkedRunCount} with verified run dates</small>}
+          {backgroundRuns.phase === 'loading' && <small role="status">
+            Checking this page's runs in the background · {backgroundRuns.checked}/{backgroundRuns.total}
+          </small>}
+          {backgroundRuns.phase === 'paused' && <small role="status">
+            Background run checks paused ({backgroundRuns.reason}). You can still open individual flows.
+          </small>}
         </div>
         <button type="button" onClick={() => void loadInventory({force: true})} disabled={busy || !visible || !statusChecked || Boolean(statusError)}>
           {inventoryLoading ? 'Loading…' : 'Reload flows'}

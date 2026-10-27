@@ -7,8 +7,9 @@ resource from the existing Bid Log/Data API login. No flow mutation endpoint.
 from __future__ import annotations
 
 from uuid import UUID
+from concurrent.futures import ThreadPoolExecutor
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from .auth import CurrentUser, require_administration_owner
@@ -228,6 +229,82 @@ def create_power_platform_router(*, oauth, settings) -> APIRouter:
             }, headers={"Cache-Control": "private, no-store"})
         return _read(user, lambda client, env, resource: client.inspect_flow(env, resource),
                      environment_id, resource_id)
+
+    @router.get("/runtime-run-batch")
+    def runtime_run_batch(
+        flow: list[str] = Query(default=[]),
+        user: CurrentUser = Depends(require_administration_owner),
+    ):
+        """Owner-only, passive first-page prefetch: at most four exact flow IDs.
+
+        One runtime credential read per batch; at most two concurrent Microsoft
+        requests. No arbitrary URL, flow mutations, SQL, or long-lived worker.
+        """
+        enabled()
+        if not settings.power_platform_runtime_probe_enabled:
+            _deny("runtime_monitoring_disabled", 404)
+        if not 1 <= len(flow) <= 4:
+            _deny("INVALID_BATCH_SIZE", 422)
+        selected = []
+        seen = set()
+        for item in flow:
+            if not isinstance(item, str) or len(item) > 150 or item.count(":") != 1:
+                _deny("INVALID_FLOW_ID", 422)
+            raw_env, raw_flow = item.split(":", 1)
+            try:
+                env = _environment_id(raw_env)
+                resource = _uuid(raw_flow)
+            except PowerPlatformReadError as exc:
+                _deny(exc.code, 422)
+            if not resource or (env, resource) in seen:
+                _deny("INVALID_FLOW_ID", 422)
+            seen.add((env, resource))
+            selected.append((env, resource))
+
+        def response_for(env: str, resource: str, history: dict) -> dict:
+            return {
+                "environmentId": env, "resourceId": resource,
+                "runIdentitySource": (
+                    "RUNTIME_EXACT_RESOURCE_ENDPOINT"
+                    if history.get("availability") in ("AVAILABLE", "PARTIAL")
+                    and history.get("runs") else "NOT_VERIFIED"
+                ),
+                "details": {"availability": "NOT_CHECKED", "platformState": "UNKNOWN",
+                            "modifiedAtUTC": None, "stateSource": "NOT_VERIFIED"},
+                "runHistory": history,
+            }
+
+        principal = _principal(user)
+        try:
+            runtime_vault = EncryptedPowerPlatformVault.from_settings(
+                settings, purpose="runtime"
+            )
+            platform_vault = _vault(settings)
+            access = runtime_vault.runtime_access_token_from(principal, platform_vault)
+        except PowerPlatformVaultError as exc:
+            access = None
+            failure = exc.code
+        else:
+            failure = "RUNTIME_CREDENTIAL_UNAVAILABLE" if not access else None
+        if failure:
+            return JSONResponse({"results": [
+                response_for(env, resource, {"availability": failure, "runs": [], "hasMore": None})
+                for env, resource in selected
+            ]}, headers={"Cache-Control": "private, no-store"})
+
+        def selected_result(reader, item):
+            env, resource = item
+            try:
+                history = reader.selected_runs(env, resource)
+            except PowerPlatformReadError as exc:
+                history = {"availability": exc.code, "runs": [], "hasMore": None}
+            return response_for(env, resource, history)
+
+        with FlowRuntimeReadClient(delegated_access_token=access) as reader:
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                # Executor.map preserves requested order, even with two in flight.
+                results = list(executor.map(lambda item: selected_result(reader, item), selected))
+        return JSONResponse({"results": results}, headers={"Cache-Control": "private, no-store"})
 
     @router.post("/disconnect")
     def disconnect(

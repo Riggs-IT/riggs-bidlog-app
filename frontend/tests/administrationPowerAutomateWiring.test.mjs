@@ -24,10 +24,13 @@ test('monitoring never dispatches any flow mutation request', () => {
   assert.doesNotMatch(component, /\/flows\/.*\/run\b/);
   assert.doesNotMatch(component, /restartFlow|resubmitRun|disableFlow|deleteFlow/);
 });
-test('status load is passive and source reads require click', () => {
+test('status and page-bounded background run reads remain passive; manual inspection is preserved', () => {
   assert.match(component, /X-Riggs-Passive-Read/);
   assert.match(component, /\/inventory/);
   assert.match(component, /Flow directory/);
+  assert.match(component, /runtime-run-batch/);
+  assert.match(component, /pageRunCandidates/);
+  assert.match(component, /cached\.payload/);
 });
 test('flow run summary is explicitly bounded and never claims historic last success', () => {
   assert.match(component, /Last success \(returned runs\)/);
