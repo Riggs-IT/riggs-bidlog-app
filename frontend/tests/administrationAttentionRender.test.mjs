@@ -1,6 +1,6 @@
+import { readSource } from './helpers/readSource.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import React from 'react';
 import {renderToString} from 'react-dom/server';
@@ -48,8 +48,8 @@ test('attention links to read-only details; technical inventory is collapsed by 
 });
 
 test('attention presentation reuses light/dark theme tokens without a new fixed palette', () => {
-  const css = readFileSync(new URL('../src/AdministrationDashboard.css', import.meta.url), 'utf8');
-  const theme = readFileSync(new URL('../src/theme.css', import.meta.url), 'utf8');
+  const css = readSource(new URL('../src/AdministrationDashboard.css', import.meta.url), 'utf8');
+  const theme = readSource(new URL('../src/theme.css', import.meta.url), 'utf8');
   const slice = css.split('/* First Administration cleanup slice:')[1];
   assert.ok(slice, 'expected scoped first-slice styles');
   for (const token of ['--surface', '--surface-2', '--text-strong', '--text-soft', '--border', '--accent']) {

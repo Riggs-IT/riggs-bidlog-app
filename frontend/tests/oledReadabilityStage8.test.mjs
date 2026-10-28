@@ -1,7 +1,7 @@
+import { readSource } from './helpers/readSource.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
-const read = f => readFileSync(new URL('../src/' + f, import.meta.url), 'utf8');
+const read = f => readSource(new URL('../src/' + f, import.meta.url), 'utf8');
 const theme = read('theme.css');
 const styles = read('styles.css');
 const controls = read('ViewControls.css');

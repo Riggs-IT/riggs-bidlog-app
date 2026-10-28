@@ -1,8 +1,8 @@
+import { readSource } from './helpers/readSource.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
 
-const read = file => readFileSync(new URL('../src/' + file, import.meta.url), 'utf8');
+const read = file => readSource(new URL('../src/' + file, import.meta.url), 'utf8');
 const theme = read('theme.css');
 const styles = read('styles.css');
 const sourceFilters = read('ProjectionDisplay.css');

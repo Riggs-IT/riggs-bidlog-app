@@ -1,8 +1,8 @@
+import { readSource } from './helpers/readSource.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 
-const read = path => fs.readFileSync(new URL(`../src/${path}`, import.meta.url), 'utf8');
+const read = path => readSource(new URL(`../src/${path}`, import.meta.url), 'utf8');
 
 test('overview no longer exposes baseline comparison control', () => {
   const source = read('App.jsx');

@@ -1,13 +1,13 @@
+import { readSource } from './helpers/readSource.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import React from 'react';
 import {renderToString} from 'react-dom/server';
 import {createServer} from 'vite';
 import {metricPinThreshold, shouldPinMetricLabels} from '../src/pivotMetricPinning.js';
 
-const source = filename => readFileSync(new URL(`../src/${filename}`, import.meta.url), 'utf8');
+const source = filename => readSource(new URL(`../src/${filename}`, import.meta.url), 'utf8');
 
 const fixture = {
   months: ['2026-10', '2026-11'],

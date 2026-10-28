@@ -1,0 +1,476 @@
+/* ==========================================================================
+   PROJECTED BILLINGS — landing page and financial detail layout
+
+   Edit here: Forecast page composition, summary tables, active-project commercial summary and source comparison.
+   Related: Monthly project pivot geometry is in 05; final shared typography remains theme-independent.
+
+   Loaded by ../styles.css in explicit cascade order. Do not alphabetize imports.
+   Colors: theme-tokens.css. Editing map: docs/BIDLOG_CSS_EDITING_GUIDE.md.
+   ========================================================================== */
+
+/* PROJECTED BILLINGS - LANDING PAGE OVERHAUL */
+
+.pm-initials-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.pm-badge-empty {
+  color: var(--muted);
+}
+
+.pm-badge-cell {
+  width: 58px;
+}
+
+.job-number-cell {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.project-location-line {
+  max-width: 330px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-month-cell {
+  width: 90px;
+  min-width: 90px;
+  max-width: 90px;
+  white-space: nowrap;
+}
+
+.sortable-column {
+  padding: 0 !important;
+}
+
+.table-sort-button {
+  width: 100%;
+  min-height: 43px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.numeric
+.table-sort-button {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.table-sort-button:hover,
+.table-sort-button.active {
+  color: var(--text);
+  background: var(--surface-3);
+}
+
+.table-sort-indicator {
+  flex: 0 0 auto;
+  opacity: 0.45;
+  font-size: 11px;
+}
+
+.table-sort-button.active
+.table-sort-indicator {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.projected-monthly-table
+tfoot th,
+.projected-monthly-table
+tfoot td {
+  padding: 13px 14px;
+  border-top: 2px solid var(--border-strong);
+  border-bottom: 0;
+  background: var(--surface-2);
+  font-weight: 600;
+}
+
+.projected-monthly-table
+tfoot th {
+  color: var(--text);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.monthly-total-row {
+  break-inside: avoid;
+}
+
+.monthly-margin-cell {
+  min-width: 138px;
+}
+
+.monthly-margin-value,
+.monthly-margin-percent {
+  display: block;
+}
+
+.monthly-margin-value {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.monthly-margin-percent {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.monthly-margin-warning {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 7px;
+  border: 1px solid color-mix( in srgb, var(--warning) 48%, var(--border) );
+  border-radius: 999px;
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .project-location-line {
+    max-width: 240px;
+  }
+}
+
+@media print {
+  .table-sort-indicator {
+    display: none !important;
+  }
+
+  .table-sort-button {
+    min-height: auto;
+    padding: 0;
+  }
+}
+
+/* CURRENT PROJECT SHOULDER - BUSINESS UI OVERHAUL */
+
+.billing-drawer-meta-five {
+  grid-template-columns: repeat( 5, minmax(0, 1fr) );
+}
+
+.billing-meta-card,
+.billing-characteristics-grid article {
+  min-width: 0;
+  padding: 13px 14px;
+  border: 1px solid var( --border, rgba(255, 255, 255, 0.12) );
+  border-radius: 10px;
+  background: rgba( 255, 255, 255, 0.025 );
+}
+
+.billing-meta-label,
+.billing-characteristics-grid span {
+  display: block;
+  margin-bottom: 6px;
+  color: var( --text-muted, #9da9b7 );
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.billing-location-card > small:not(.billing-meta-label) {
+  display: block;
+  margin-top: 3px;
+}
+
+.drawer-tbd-value {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.billing-characteristics-grid {
+  display: grid;
+  grid-template-columns: repeat( 4, minmax(0, 1fr) );
+}
+
+.billing-characteristics-grid strong {
+  font-size: 18px;
+}
+
+.billing-kpi-primary-grid {
+  grid-template-columns: repeat( 4, minmax(0, 1fr) );
+}
+
+.billing-kpi-secondary-grid {
+  grid-template-columns: repeat( 4, minmax(0, 1fr) );
+}
+
+.billing-kpi-grid article > small {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.billing-curve-summary {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid var( --border, rgba(255, 255, 255, 0.12) );
+}
+
+.billing-detail-label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.billing-curve-tag {
+  display: inline-flex;
+  padding: 5px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.billing-curve-help {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.billing-curve-help summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 29px;
+  height: 29px;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  color: var(--muted);
+  cursor: pointer;
+  list-style: none;
+}
+
+.billing-curve-help summary::-webkit-details-marker {
+  display: none;
+}
+
+.billing-curve-help summary:hover {
+  color: var(--text);
+  background: var(--surface-3);
+}
+
+.billing-curve-help-popover {
+  position: absolute;
+  top: 36px;
+  width: min( 380px, 75vw );
+  padding: 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.32);
+}
+
+.billing-curve-help-popover strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.billing-curve-help-popover p {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.billing-curve-help-popover p:last-child {
+  margin-bottom: 0;
+}
+
+.projection-attention-message {
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: var(--surface-2);
+  font-size: 11px;
+}
+
+.projection-detail-grid {
+  grid-template-columns: repeat( 5, minmax(0, 1fr) );
+}
+
+@media (max-width: 1050px) {
+  .billing-drawer-meta-five {
+    grid-template-columns: repeat( 3, minmax(0, 1fr) );
+  }
+
+  .billing-characteristics-grid,
+  .billing-kpi-primary-grid {
+    grid-template-columns: repeat( 2, minmax(0, 1fr) );
+  }
+
+  .projection-detail-grid {
+    grid-template-columns: repeat( 3, minmax(0, 1fr) );
+  }
+}
+
+@media (max-width: 700px) {
+  .billing-drawer-meta-five,
+  .billing-characteristics-grid,
+  .billing-kpi-primary-grid,
+  .billing-kpi-secondary-grid,
+  .projection-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  .billing-curve-help {
+    display: none !important;
+  }
+}
+
+/* - FOUNDATION COMMERCIALS / ADMIN SOURCE COMPARISON */
+
+.money-negative {
+  color: var(--negative) !important;
+}
+
+.commercial-source-note {
+  display: block;
+  margin-top: 5px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.admin-source-hint {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.source-comparison {
+  width: 100%;
+  margin-top: 9px;
+}
+
+.source-comparison > summary {
+  width: fit-content;
+  cursor: pointer;
+  list-style: none;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+}
+
+.source-comparison > summary::-webkit-details-marker {
+  display: none;
+}
+
+.source-comparison > summary::after {
+  content: ' ▾';
+}
+
+.source-comparison[open] > summary::after {
+  content: ' ▴';
+}
+
+.source-comparison-panel {
+  display: grid;
+  gap: 6px;
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid var(--border);
+}
+
+.source-comparison-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  font-size: 11px;
+}
+
+.source-comparison-row > span {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.source-comparison-row > strong {
+  color: var(--text);
+  font-size: 11px;
+  text-align: right;
+}
+
+.completed-commercial-grid {
+  grid-template-columns: repeat( 5, minmax(0, 1fr) );
+}
+
+.completed-lifecycle-summary-grid {
+  margin-bottom: 12px;
+}
+
+@media (max-width: 1200px) {
+  .completed-commercial-grid {
+    grid-template-columns: repeat( 2, minmax(0, 1fr) );
+  }
+}
+
+@media (max-width: 760px) {
+  .completed-commercial-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.completed-drawer-meta-five {
+  display: grid;
+}
+
+.completed-curve-summary {
+  margin-bottom: 0;
+}
+
+.completed-project-table
+.commercial-source-note,
+.completed-project-table
+.admin-source-hint {
+  white-space: normal;
+}
+
+@media print {
+  .source-comparison {
+    display: none !important;
+  }
+}

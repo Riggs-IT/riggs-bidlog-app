@@ -1,9 +1,9 @@
+import { readSource } from './helpers/readSource.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 
-const styles = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
-const theme = readFileSync(new URL('../src/theme.css', import.meta.url), 'utf8');
+const styles = readSource(new URL('../src/styles.css', import.meta.url), 'utf8');
+const theme = readSource(new URL('../src/theme.css', import.meta.url), 'utf8');
 
 const rule = selector => {
   const start = styles.indexOf(selector);

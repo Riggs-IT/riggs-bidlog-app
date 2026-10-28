@@ -1,8 +1,8 @@
+import { readSource } from './helpers/readSource.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
 
-const source = file => readFileSync(new URL(`../src/${file}`, import.meta.url), 'utf8');
+const source = file => readSource(new URL(`../src/${file}`, import.meta.url), 'utf8');
 
 test('manual refresh uses one page-scoped progress/result toast, never background polling', () => {
   const app = source('App.jsx');

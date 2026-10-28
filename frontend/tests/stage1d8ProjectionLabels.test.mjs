@@ -1,7 +1,7 @@
+import { readSource } from './helpers/readSource.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-const read = path => fs.readFileSync(new URL(`../src/${path}`, import.meta.url), 'utf8');
+const read = path => readSource(new URL(`../src/${path}`, import.meta.url), 'utf8');
 
 test('system estimates use a project-name marker instead of source badges or value stars', () => {
   const display = read('ProjectionDisplay.jsx');

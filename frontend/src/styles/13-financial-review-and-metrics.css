@@ -1,0 +1,576 @@
+/* ==========================================================================
+   FINANCIAL REVIEW — status flags and shared metric lanes
+
+   Edit here: Needs Rebalance/Pending Foundation, exclusive filters, balance detail shell, shared metric labels and coverage.
+   Related: Amounts and final clickable balance-card layout are in 15. This is presentation, not classification logic.
+
+   Loaded by ../styles.css in explicit cascade order. Do not alphabetize imports.
+   Colors: theme-tokens.css. Editing map: docs/BIDLOG_CSS_EDITING_GUIDE.md.
+   ========================================================================== */
+
+/* Bid Log contract-coverage attention: one visible warning and one action. */
+
+.needs-rebalance-flag {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 3px 7px;
+  border: 1px solid color-mix(in srgb, var(--warning) 50%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+  color: var(--warning);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.needs-rebalance-action {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.needs-rebalance-action:hover,
+.needs-rebalance-action:focus-visible {
+  background: color-mix(in srgb, var(--warning) 20%, var(--surface));
+}
+
+.pivot-needs-rebalance {
+  font-size: 10px;
+}
+
+.projection-source-count-toggle.rebalance-count:not(.active) {
+  color: var(--warning);
+}
+
+/* Clearly indicate an exclusive Balance Reviews selection on its status badge. */
+
+.needs-rebalance-flag.balance-review-quick-selected {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 58%, transparent);
+}
+
+/* Pending Foundation is a provisional billing-timing review, not a red/amber
+   instruction to redistribute the PM plan. The original SQL flag is retained. */
+
+.needs-rebalance-flag.pending-foundation-flag,
+:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line)
+> .needs-rebalance-flag.pending-foundation-flag {
+  color: var(--pending-foundation);
+  border-color: color-mix(in srgb, var(--pending-foundation) 36%, var(--border));
+  background: color-mix(in srgb, var(--pending-foundation) 9%, var(--surface));
+}
+
+.needs-rebalance-action.pending-foundation-flag:hover,
+.needs-rebalance-action.pending-foundation-flag:focus-visible {
+  background: color-mix(in srgb, var(--pending-foundation) 17%, var(--surface));
+}
+
+/* Selection is a filled state, not just amber text on a neutral pill.
+   This applies to the regular controls and their floating sticky copies. */
+
+.projection-source-count-toggle.rebalance-count.active {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 58%, var(--border));
+  background: color-mix(in srgb, var(--accent) 20%, var(--surface-2));
+}
+
+.pm-forecast-jump-target {
+  scroll-margin-top: 20px;
+}
+
+.pm-forecast-jump-target.pm-forecast-highlight > .pm-forecast-section {
+  outline: 2px solid var(--warning);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+/* Both alert families have the same full-card interaction and one scroll owner. */
+
+.notification-action-card {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 12px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.notification-action-card:last-child {
+  border-bottom: 0;
+}
+
+.notification-action-card:hover,
+.notification-action-card:focus-visible {
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+}
+
+.notification-card-heading-copy {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.notification-card-heading-copy > span {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.notification-card-heading-copy > strong {
+  display: block;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notification-card-description,
+.notification-card-context,
+.notification-card-reason {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.notification-card-context {
+  margin-top: 4px;
+}
+
+.notification-card-reason {
+  color: var(--text);
+}
+
+.notification-card-action {
+  display: block;
+  margin-top: 9px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.notification-grace-note {
+  margin: 0;
+}
+
+/* A schedule extension is distinct from a financial contract mismatch. */
+
+.schedule-review-flag {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 3px 7px;
+  border: 1px solid color-mix(in srgb, var(--accent) 50%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 11%, var(--surface));
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.schedule-review-action {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.schedule-review-action:hover, .schedule-review-action:focus-visible {
+  background: color-mix(in srgb, var(--accent) 20%, var(--surface));
+}
+
+.schedule-review-info-drawer {
+  max-width: 560px;
+}
+
+.schedule-review-info-message {
+  line-height: 1.6;
+  font-weight: 600;
+}
+
+/* Keep project title + warning on ONE line in all project tables.
+   Give the name the flexible/ellipsized space; badges never wrap. */
+
+.pivot-project-name-line:has(.schedule-review-flag),
+.pivot-project-name-line:has(.needs-rebalance-flag),
+.project-name-status-line:has(.schedule-review-flag),
+.project-name-status-line:has(.needs-rebalance-flag),
+.active-project-name-line:has(.schedule-review-flag),
+.active-project-name-line:has(.needs-rebalance-flag) {
+  flex-wrap: nowrap;
+}
+
+:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line)
+> :is(.needs-rebalance-flag, .schedule-review-flag) {
+  flex: 0 0 auto;
+}
+
+/* The generic .project-cell span rule has higher specificity than the bare
+   warning badge and was turning it gray in the monthly breakdown tables. */
+
+:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line)
+> .needs-rebalance-flag {
+  display: inline-flex;
+  margin-top: 0;
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 50%, var(--border));
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+}
+
+/* When timing cannot be certified, SQL still owns Needs Rebalance.
+   No neutral "Verifying Balance" badge replaces a prior valid status. */
+
+/* The same generic table span selector must not mute schedule warnings. */
+
+:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line)
+> .schedule-review-flag {
+  display: inline-flex;
+  margin-top: 0;
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  background: color-mix(in srgb, var(--accent) 11%, var(--surface));
+}
+
+/* Projected Billings / Values All — sticky shared metric labels */
+
+/* One label track per project replaces repeated labels in every month. */
+
+/* All other value modes keep their original table structure. */
+
+.project-pivot-table.pivot-metric-all .pivot-metric-labels-column {
+  position: sticky;
+  left: 394px;
+  /* Active: Job # (94) + Project (300) */
+  z-index: 7;
+  width: 128px;
+  min-width: 128px;
+  max-width: 128px;
+  box-sizing: border-box;
+  background: var(--surface);
+  border-right: 1px solid var(--border-strong);
+  box-shadow: 5px 0 10px rgba(0, 0, 0, .09);
+}
+
+.project-pivot-table.pivot-metric-all.pivot-source-combined
+.pivot-metric-labels-column {
+  left: 618px;
+  /* Source (82) + Job # (94) + Project (300) + Probability (142) */
+}
+
+.project-pivot-table.pivot-metric-all th.pivot-metric-labels-column {
+  z-index: 10;
+  background: var(--surface-2);
+  color: var(--muted);
+  text-align: left;
+  font-size: 9px;
+  letter-spacing: .045em;
+  white-space: nowrap;
+}
+
+/* Reclaim space but retain a 15px gap before adjacent month values.
+   The pin threshold depends only on preceding stable column widths,
+   with hysteresis preventing pin/unpin feedback during the resize. */
+
+.project-pivot-table.pivot-metric-all.pivot-metric-labels-pinned
+.pivot-metric-labels-column {
+  width: 63px;
+  min-width: 63px;
+  max-width: 63px;
+  padding-left: 12px;
+  padding-right: 15px;
+}
+
+/* Identical row tracks in the shared label column and each month, so
+   PROJECTED / ACTUAL / VARIANCE / MARGIN always align with their values. */
+
+.pivot-metric-label-list,
+.pivot-billing-amounts {
+  display: grid;
+  grid-template-rows: repeat(4, 15px);
+  row-gap: 3px;
+  min-width: 0;
+}
+
+/* Users without margin access still retain All (P/A/Δ); the margin track
+   is absent from both the labels and values, not merely hidden by CSS. */
+
+.project-pivot-table.pivot-metric-all.pivot-no-margin .pivot-metric-label-list,
+.project-pivot-table.pivot-metric-all.pivot-no-margin .pivot-billing-amounts {
+  grid-template-rows: repeat(3, 15px);
+}
+
+/* Completed history All has exactly two tracks: Actual and authorized Margin.
+   Do not leave the four-track projected billing grid's empty rows behind. */
+
+.project-pivot-table.pivot-metric-all.pivot-history-only .pivot-metric-label-list,
+.project-pivot-table.pivot-metric-all.pivot-history-only .pivot-billing-amounts {
+  grid-template-rows: repeat(2, 15px);
+}
+
+.pivot-metric-label,
+.pivot-billing-amount-line {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  line-height: 15px;
+}
+
+.pivot-metric-label {
+  font-size: 9px;
+  font-weight: 650;
+  color: var(--muted);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pivot-metric-label abbr {
+  color: var(--text-soft);
+  text-decoration: none;
+  cursor: help;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.pivot-billing-amount-line {
+  justify-content: flex-end;
+}
+
+.pivot-billing-amount-line strong {
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 650;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.pivot-billing-amount-line.variance-negative strong {
+  color: var(--negative);
+}
+
+/* The full labels now live in the shared column, making All month cells
+   value-only rather than two-column label/value mini tables. */
+
+.project-pivot-table.pivot-metric-all .pivot-month-column,
+.project-pivot-table.pivot-metric-all .pivot-total-column {
+  width: 154px;
+  min-width: 154px;
+  max-width: 154px;
+}
+
+/* Keep the frozen label lane striped/highlighted with its own project row. */
+
+.project-pivot-table.pivot-metric-all
+tbody > tr:nth-child(even of .pivot-project-row)
+> td.pivot-metric-labels-column {
+  background: var(--table-row-alt);
+}
+
+.project-pivot-table.pivot-metric-all
+.pivot-project-row:hover > td.pivot-metric-labels-column {
+  background: color-mix(in srgb, var(--surface) 92%, var(--accent) 8%);
+}
+
+/* A System Estimate comparison note may add height under a month; align
+   all four metric tracks at the top instead of vertically centering only
+   the label column and shifting P/A/Δ/M away from their amounts. */
+
+.project-pivot-table.pivot-metric-all tbody td.pivot-metric-labels-column,
+.project-pivot-table.pivot-metric-all tbody td.pivot-month-column,
+.project-pivot-table.pivot-metric-all tbody td.pivot-total-column {
+  vertical-align: top;
+}
+
+/* Values -> All: a single financial legend lives in the frozen Metric header.
+   Each month and Total show the full values only. Identical grid row heights
+   align the shared legend with each number, even for unavailable values. */
+
+.project-pivot-table.pivot-metric-all .pivot-header-total-label {
+  min-height: 18px;
+  line-height: 18px;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-total-values-all {
+  grid-auto-rows: 15px;
+  row-gap: 2px;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-total-values-all
+.pivot-header-total-value {
+  display: block;
+  line-height: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-activity-counts {
+  min-height: 12px;
+  line-height: 12px;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-activity-counts
+.pivot-header-billed-count {
+  line-height: 12px;
+}
+
+.project-pivot-table.pivot-metric-all th.pivot-metric-labels-column {
+  padding: 0 14px;
+  vertical-align: top;
+}
+
+/* Match the 12px vertical / 14px horizontal padding of sortable month headers.
+   In the compact state the existing 12px/15px inset is retained. */
+
+.project-pivot-table.pivot-metric-all th.pivot-metric-labels-column
+.pivot-header-metric-rail {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  justify-items: start;
+  gap: 3px;
+  text-transform: none;
+  text-align: left;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-metric-rail
+.pivot-header-total-label {
+  font-size: 10px;
+  font-weight: 650;
+  color: var(--muted);
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-metric-rail
+.pivot-header-total-values-all {
+  justify-content: start;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-metric-rail
+.pivot-header-metric-label {
+  font-size: 10px;
+  font-weight: 650;
+  color: var(--muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-metric-rail
+.pivot-header-activity-counts {
+  justify-self: start;
+  text-align: left;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-metric-rail
+.pivot-header-metric-count {
+  text-overflow: ellipsis;
+  font-size: 9px;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-metric-rail
+.pivot-header-metric-baseline {
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-month-column .table-sort-button,
+.project-pivot-table.pivot-metric-all .pivot-total-column .table-sort-button {
+  align-items: flex-start;
+}
+
+/* Management administrators review Active Projects while write mapping is incomplete. */
+
+.active-projects-workspace.management-admin-preview {
+  position: relative;
+  isolation: isolate;
+}
+
+.active-projects-workspace.management-admin-preview::after {
+  content: 'UNDER DEVELOPMENT · VIEW ONLY';
+  position: fixed;
+  top: 51%;
+  left: 28%;
+  transform: translateY(-50%) rotate(-16deg);
+  font-size: clamp(1.7rem, 4.4vw, 5.25rem);
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  opacity: 0.075;
+  color: var(--text-primary, #cbd5e1);
+  pointer-events: none;
+  z-index: 30;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.management-preview-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.8rem 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color, #55616e);
+  border-radius: 0.65rem;
+  background: var(--surface-secondary, rgba(110, 126, 141, 0.11));
+  font-size: 0.86rem;
+}
+
+.management-preview-notice strong {
+  font-size: 0.76rem;
+  letter-spacing: 0.075em;
+  flex: 0 0 auto;
+}
+
+.management-preview-notice span {
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+
+.management-preview-drawer-notice {
+  margin: 0 0 1rem;
+}
+
+.management-preview-cognito-guide {
+  display: grid;
+  gap: 0.35rem;
+  margin: 1rem 0 0.7rem;
+  padding: 0.85rem 1rem;
+  border: 1px dashed var(--border-color, #65717b);
+  border-radius: 0.6rem;
+  font-size: 0.83rem;
+}
+
+.management-preview-cognito-guide strong {
+  font-size: 0.9rem;
+}
+
+@media (max-width: 760px) {
+  .active-projects-workspace.management-admin-preview::after {
+    left: 10%;
+    font-size: 1.55rem;
+  }
+}
+
+/* A tiny C differentiates pre-15th comparable variance without crowding month figures.
+   Mixed multi-month totals use * and explain the rollup in their tooltip. */
+
+.pivot-variance-mode-indicator {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 650;
+  margin-left: 3px;
+  vertical-align: super;
+  line-height: 0;
+}

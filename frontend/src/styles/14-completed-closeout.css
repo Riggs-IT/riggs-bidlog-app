@@ -1,0 +1,535 @@
+/* ==========================================================================
+   COMPLETED CLOSEOUT — contract ledger, progression, and historical context
+
+   Edit here: Completed-project closeout layout/chart, directory contract hint and originating-bid disclosure.
+   Related: Read-only history and financial totals remain owned by the existing components and API.
+
+   Loaded by ../styles.css in explicit cascade order. Do not alphabetize imports.
+   Colors: theme-tokens.css. Editing map: docs/BIDLOG_CSS_EDITING_GUIDE.md.
+   ========================================================================== */
+
+/* COMPLETED PROJECT CLOSEOUT: READABLE ANALYSIS, NOT KPI TILES
+   Isolated to CompletedProjectBillingDrawer; shared billing layouts unchanged. */
+
+.completed-closeout-context {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 24px;
+  padding: 12px 26px 15px;
+  border-bottom: 1px solid var(--border);
+}
+
+.completed-closeout-context > div {
+  min-width: 0;
+}
+
+.completed-closeout-context > div > span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.completed-closeout-context > div > strong,
+.completed-closeout-context > div > .gc-display,
+.completed-closeout-context > div > .general-contractor-display {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.completed-closeout-context small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.completed-closeout-location {
+  grid-column: span 2;
+}
+
+.completed-drawer .completed-closeout-report {
+  padding-top: 17px;
+}
+
+.completed-closeout-report .completed-closeout-section {
+  padding: 20px 0 0;
+  margin: 24px 0 0;
+  border-top: 1px solid var(--border);
+}
+
+.completed-closeout-report .completed-closeout-section:first-child {
+  padding-top: 0;
+  margin-top: 0;
+  border-top: 0;
+}
+
+.completed-closeout-report .completed-section-heading {
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+
+.completed-closeout-report .completed-section-heading h3 {
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.completed-closeout-report .section-kicker {
+  font-size: 11px;
+  font-weight: 550;
+  letter-spacing: 0.04em;
+}
+
+.completed-closeout-report .section-note {
+  font-size: 12px;
+  font-weight: 450;
+}
+
+.completed-closeout-report .completed-closeout-contract-ledger,
+.completed-closeout-report .completed-closeout-financial-outcome {
+  display: grid;
+  gap: 0;
+}
+
+.completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value,
+.completed-closeout-report .completed-closeout-financial-outcome > .completed-detail-value,
+.completed-closeout-report .completed-closeout-extra > .completed-detail-value {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  min-height: 0;
+  padding: 9px 0;
+  gap: 3px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value > span:first-child,
+.completed-closeout-report .completed-closeout-financial-outcome > .completed-detail-value > span:first-child,
+.completed-closeout-report .completed-closeout-extra > .completed-detail-value > span:first-child {
+  font-size: 13px;
+  font-weight: 550;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text);
+}
+
+.completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value > strong,
+.completed-closeout-report .completed-closeout-financial-outcome > .completed-detail-value > strong,
+.completed-closeout-report .completed-closeout-extra > .completed-detail-value > strong {
+  text-align: right;
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value > small,
+.completed-closeout-report .completed-closeout-financial-outcome > .completed-detail-value > small,
+.completed-closeout-report .completed-closeout-extra > .completed-detail-value > small {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  font-weight: 450;
+  letter-spacing: 0;
+}
+
+.completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value > .source-comparison {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
+  width: auto;
+  margin-top: 0;
+}
+
+.completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value > .source-comparison[open] {
+  grid-column: 1 / -1;
+  grid-row: auto;
+  justify-self: stretch;
+  width: 100%;
+}
+
+.completed-closeout-report .completed-closeout-contract-ledger .source-comparison > summary {
+  font-size: 12px;
+  font-weight: 550;
+  letter-spacing: 0;
+}
+
+.completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value > .completed-data-pill {
+  grid-column: 1 / -1;
+}
+
+.completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value:last-child {
+  border-bottom: 0;
+  border-top: 1px solid var(--border-strong);
+}
+
+.completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value:last-child > strong {
+  font-weight: 650;
+}
+
+.completed-closeout-report .completed-closeout-financial-outcome {
+  margin-top: 6px;
+  border-top: 2px solid var(--border-strong);
+}
+
+.completed-closeout-report .completed-closeout-financial-outcome > .completed-detail-value:last-child {
+  border-bottom: 0;
+}
+
+.completed-closeout-report .completed-closeout-financial-outcome > .completed-detail-value:last-child > span:first-child {
+  font-weight: 700;
+}
+
+.completed-closeout-report .completed-closeout-financial-outcome > .completed-detail-value:last-child > strong {
+  font-size: clamp(19px, 2vw, 21px);
+  font-weight: 650;
+}
+
+.completed-closeout-report .money-negative {
+  color: var(--negative) !important;
+}
+
+.completed-closeout-extra {
+  margin-top: 9px;
+}
+
+.completed-closeout-extra > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.completed-closeout-extra > summary:hover,
+.completed-closeout-evidence > summary:hover {
+  color: var(--text);
+}
+
+.completed-closeout-duration > .completed-detail-value {
+  min-height: 0;
+  padding: 7px 0;
+  border: 0;
+  background: transparent;
+}
+
+.completed-closeout-report .completed-closeout-timing .completed-detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 0;
+  gap: 0 24px;
+}
+
+.completed-closeout-report .completed-closeout-timing .completed-detail-value {
+  min-height: 0;
+  padding: 9px 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  border-radius: 0;
+}
+
+.completed-closeout-report .completed-closeout-timing .completed-detail-value > strong {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.completed-closeout-report .completed-closeout-timing .completed-detail-value > span:first-child,
+.completed-closeout-report .completed-closeout-duration .completed-detail-value > span:first-child {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.completed-closeout-terms-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 24px;
+}
+
+.completed-closeout-terms-list > article,
+.completed-closeout-terms-list > .completed-detail-value {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-height: 0;
+  margin: 0;
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.completed-closeout-terms-list > article > span:first-child,
+.completed-closeout-terms-list > .completed-detail-value > span:first-child {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.completed-closeout-terms-list > article > strong,
+.completed-closeout-terms-list > .completed-detail-value > strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.completed-closeout-evidence {
+  padding-top: 18px;
+  margin-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.completed-closeout-evidence > summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 2px 0 12px;
+  color: var(--text);
+  cursor: pointer;
+  list-style: none;
+}
+
+.completed-closeout-evidence > summary::-webkit-details-marker {
+  display: none;
+}
+
+.completed-closeout-evidence > summary span:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.completed-closeout-evidence > summary strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.completed-closeout-evidence > summary small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.completed-closeout-evidence[open] .completed-closeout-evidence-caret {
+  transform: rotate(180deg);
+}
+
+.completed-closeout-report .completed-closeout-evidence .completed-drawer-section {
+  margin-top: 12px;
+}
+
+.completed-closeout-report .completed-closeout-evidence .completed-detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.completed-closeout-report .completed-closeout-evidence .completed-detail-value {
+  min-height: 0;
+  padding: 11px;
+}
+
+@media (max-width: 760px) {
+  .completed-closeout-context {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 12px 18px;
+  }
+
+  .completed-closeout-location {
+    grid-column: span 2;
+  }
+
+  .completed-closeout-terms-list {
+    grid-template-columns: 1fr;
+  }
+
+  .completed-closeout-report .completed-closeout-timing .completed-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .completed-closeout-context {
+    grid-template-columns: 1fr;
+  }
+
+  .completed-closeout-location {
+    grid-column: auto;
+  }
+
+  .completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value,
+  .completed-closeout-report .completed-closeout-financial-outcome > .completed-detail-value {
+    grid-template-columns: 1fr;
+  }
+
+  .completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value > strong,
+  .completed-closeout-report .completed-closeout-financial-outcome > .completed-detail-value > strong {
+    text-align: left;
+  }
+}
+
+/* COMPLETED CLOSEOUT BILLING PROGRESSION — existing monthly data only */
+
+.completed-progress {
+  margin: 0 0 18px;
+  padding: 12px 0 11px;
+  border-bottom: 1px solid var(--border);
+}
+
+.completed-progress-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 22px;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--text-soft);
+}
+
+.completed-progress-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.completed-progress-legend > span::before {
+  content: '';
+  display: inline-block;
+  width: 20px;
+  border-top: 3px solid var(--accent);
+}
+
+.completed-progress-legend .completed-progress-legend-contract::before {
+  border-top: 2px dashed var(--muted);
+}
+
+.completed-progress svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 240px;
+  overflow: visible;
+}
+
+.completed-progress-gridline {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.completed-progress-contract {
+  stroke: var(--muted);
+  stroke-width: 2;
+  stroke-dasharray: 7 5;
+}
+
+.completed-progress-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.completed-progress-point {
+  fill: var(--surface);
+  stroke: var(--accent);
+  stroke-width: 2.2;
+}
+
+.completed-progress-axis {
+  fill: var(--muted);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.completed-progress figcaption,
+.completed-progress-unavailable {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.completed-progress-unavailable {
+  padding: 6px 0 13px;
+}
+
+@media (max-width: 650px) {
+  .completed-progress-legend {
+    font-size: 11px;
+    gap: 8px 13px;
+  }
+
+  .completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value > .source-comparison {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    justify-self: start;
+  }
+}
+
+/* Completed directory: contract composition belongs in a small hover hint,
+   not a second stack of financial numbers in each table row. */
+
+.completed-project-table .completed-directory-contract-total {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: .38rem;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  cursor: help;
+}
+
+/* Completed closeout: use an in-flow, accessible bid disclosure instead of
+   an info-bubble positioned over the financial report. */
+
+.completed-closeout-evidence .completed-originating-bid-details {
+  display: block;
+  width: 100%;
+}
+
+.completed-closeout-evidence .completed-originating-bid-details > summary {
+  width: auto;
+  height: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  min-width: 0;
+  padding: 5px 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 0;
+}
+
+.completed-closeout-evidence .completed-originating-bid-details > summary > .project-setup-tag.linked {
+  flex: 0 0 auto;
+  min-width: max-content;
+  overflow: visible;
+  text-overflow: clip;
+  font-size: 11px;
+}
+
+.completed-closeout-evidence .completed-originating-bid-details .originating-bid-help-popover {
+  position: static;
+  width: 100%;
+  margin-top: 6px;
+  padding: 12px;
+  background: var(--surface-2);
+  box-shadow: none;
+}
+
+.completed-closeout-evidence .originating-bid-finder {
+  margin-top: 8px;
+}

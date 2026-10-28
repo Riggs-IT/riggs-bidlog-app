@@ -1,0 +1,166 @@
+/* ==========================================================================
+   THEME TOKENS — the single palette editor
+
+   First block: LIGHT and shared values. Second block: OLED DARK replacements.
+   --bg / --surface*: page, cards and raised surfaces.
+   --text* / --muted: text hierarchy.
+   --accent*: ordinary controls; not financial meaning.
+   --pending-foundation: blue reconciliation status, independent of gray accent.
+   --warning / --positive / --negative: financial/status meaning.
+   --toggle-*: ON/OFF track, thumb, border and label.
+   --topbar-*: header and neutral refresh controls.
+
+   Font sizes/layout are not dark-mode variables. Preserve light/dark parity.
+   Keep declared values unchanged when performing structural consolidation.
+   ========================================================================== */
+
+:root {
+  font-family:
+    "Public Sans Variable",
+    "Public Sans",
+    "Segoe UI",
+    system-ui,
+    sans-serif;
+
+  /* Surface stack */
+  --bg: #f2f3f5;
+  --surface: #ffffff;
+  --surface-2: #f8f9fa;
+  --surface-3: #eef1f3;
+
+  /* Text hierarchy */
+  --text: #1f252c;
+  --text-strong: #1f252c;
+  --text-soft: #4f5964;
+  --muted: #68717c;
+
+  /* Structure */
+  --border: #d9dee3;
+  --border-strong: #c5ccd2;
+  --row-divider: #e3e7ea;
+  --table-row-alt: color-mix(in srgb, var(--surface-2) 52%, var(--surface));
+
+  /* Interaction + meaning */
+  --accent: #2d607f;
+  --accent-soft: #e5eef3;
+  /* Foundation billing reconciliation is blue regardless of UI accent. */
+  --pending-foundation: #2d607f;
+  --positive: #2c785c;
+  --negative: #a34f4f;
+
+  /* Accountability/status colors */
+  --review: #6f628f;
+  --review-soft: #f0ecf7;
+  --warning: #9a691f;
+  --warning-soft: #faf0df;
+  --critical: #9a4141;
+  --critical-soft: #f8e8e8;
+  --success-soft: #e5f2ec;
+
+  /* High-contrast ON/OFF controls — neutral, never a status color.
+     Both themes use these same semantic variables; edit values here. */
+  --toggle-on-track: #454b51;
+  --toggle-on-thumb: #ffffff;
+  --toggle-on-border: #6a7177;
+  --toggle-on-label: #1f252c;
+  --toggle-off-track: #d6dbe0;
+  --toggle-off-thumb: #525c66;
+  --toggle-off-border: #b7c0c8;
+  --toggle-off-label: #59636e;
+
+  /* Header */
+  --topbar: #1b2229;
+  --topbar-border: #323b44;
+  --topbar-text: #f5f7f8;
+  --topbar-muted: #9da6af;
+  /* Shared header controls are neutral even when light theme topbar is dark. */
+  --topbar-control-bg: #191919;
+  --topbar-control-text: #e8e8e8;
+  --topbar-control-border: #3c3c3c;
+  --topbar-control-hover-bg: #272727;
+  --topbar-control-hover-border: #656565;
+
+  --shadow:
+    0 10px 28px
+    rgba(18, 27, 36, 0.07);
+}
+
+:root[data-theme="dark"] {
+  /* Accepted OLED / Neutral Black.
+     Edit these surface tokens to change the feel of dark mode.
+     Keep meaningful warning/positive/negative/review hues separate. */
+  --bg: #0c0c0c;
+  --surface: #191919;
+  --surface-2: #202020;
+  --surface-3: #292929;
+
+  /* Neutral text hierarchy, deliberately not blue-gray. */
+  --text: #e1e1e1;
+  --text-strong: #f4f4f4;
+  --text-soft: #d1d1d1;
+  --muted: #b6b6b6;
+
+  /* Subtle neutral separators for dense financial tables. */
+  --border: #303030;
+  --border-strong: #424242;
+  --row-divider: #2a2a2a;
+  --table-row-alt: color-mix(in srgb, var(--surface-2) 48%, var(--surface));
+
+  /* Interaction + meaning */
+  --accent: #c7c7c7;
+  --accent-soft: #303030;
+  --pending-foundation: #85bde3;
+  --positive: #78ad97;
+  --negative: #d08484;
+
+  /* Accountability/status colors */
+  --review: #aa9acb;
+  --review-soft: #302c39;
+  --warning: #d3a75f;
+  --warning-soft: #383123;
+  --critical: #d98989;
+  --critical-soft: #3a2929;
+  --success-soft: #26372f;
+
+  /* ON is light with a dark thumb; OFF is charcoal with a light thumb.
+     Financial/approval states use separate colors, never toggle colors. */
+  --toggle-on-track: #e0e0e0;
+  --toggle-on-thumb: #171717;
+  --toggle-on-border: #909090;
+  --toggle-on-label: #f3f3f3;
+  --toggle-off-track: #383838;
+  --toggle-off-thumb: #bcbcbc;
+  --toggle-off-border: #505050;
+  --toggle-off-label: #bcbcbc;
+
+  /* Header */
+  --topbar: #101010;
+  --topbar-border: #292929;
+  --topbar-text: #eeeeee;
+  --topbar-muted: #a6a6a6;
+  --topbar-control-bg: #191919;
+  --topbar-control-text: #e8e8e8;
+  --topbar-control-border: #3c3c3c;
+  --topbar-control-hover-bg: #272727;
+  --topbar-control-hover-border: #656565;
+
+  /* Dark component tuning. These are intentionally semantic so most future
+     dark-mode changes can be made here without touching selectors below. */
+  --dark-control-bg: #191919;
+  --dark-control-hover-bg: #292929;
+  --dark-placeholder: #a3a3a3;
+  --dark-table-head-bg: #222222;
+  --dark-table-head-text: #cecece;
+  --dark-row-hover: #2c2c2c;
+  --dark-status-pill-bg: #292929;
+  --dark-scroll-thumb: #505050;
+  --dark-auth-bg: #0c0c0c;
+  --dark-auth-mark-bg: #222222;
+  --dark-auth-copy: #b7b7b7;
+  --dark-auth-product: #d6d6d6;
+  --dark-auth-trust: #c7c7c7;
+
+  --shadow:
+    0 8px 24px
+    rgba(0, 0, 0, 0.15);
+}

@@ -1,0 +1,173 @@
+/* ==========================================================================
+   BALANCE PRESENTATION — right-aligned table amounts and actionable detail card
+
+   Edit here: Final table flag/amount alignment and the compact, clickable projection-balance card.
+   Related: Status meaning is in 13; source calculations and PM/Admin actions remain unchanged in React.
+
+   Loaded by ../styles.css in explicit cascade order. Do not alphabetize imports.
+   Colors: theme-tokens.css. Editing map: docs/BIDLOG_CSS_EDITING_GUIDE.md.
+   ========================================================================== */
+
+/* Balance pill + amount share one right-aligned slot in all project tables. */
+
+:is(.project-name-status-line, .pivot-project-name-line, .active-project-name-line)
+> .balance-review-status-stack {
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  margin-left: auto;
+  min-width: 0;
+}
+
+:is(.project-cell, .active-project-name-cell, .pivot-project-info)
+.balance-review-status-stack > .balance-review-amount-line {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  margin-top: 0;
+  color: var(--warning);
+  text-align: right;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Keep the entire status amount in the exact warning color used by the pill.
+   A single text node avoids inherited table <strong> color overrides. */
+
+:is(.project-name-status-line, .pivot-project-name-line, .active-project-name-line)
+.balance-review-status-stack > .needs-rebalance-flag {
+  display: inline-flex;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+:is(.project-name-status-line, .pivot-project-name-line, .active-project-name-line)
+.balance-review-status-stack > .needs-rebalance-flag.pending-foundation-flag {
+  color: var(--pending-foundation);
+  border-color: color-mix(in srgb, var(--pending-foundation) 36%, var(--border));
+  background: color-mix(in srgb, var(--pending-foundation) 9%, var(--surface));
+}
+
+/* The card is the action: no nested button, no duplicate gap figure. */
+
+.pm-forecast-jump-target > .balance-review-detail {
+  margin-bottom: 16px;
+}
+
+.balance-review-detail {
+  display: block;
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid color-mix(in srgb, var(--warning) 42%, var(--border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--warning) 6%, var(--surface));
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+
+.balance-review-detail.is-pending {
+  border-color: color-mix(in srgb, var(--pending-foundation) 40%, var(--border));
+  background: color-mix(in srgb, var(--pending-foundation) 5%, var(--surface));
+}
+
+.balance-review-detail.is-actionable {
+  cursor: pointer;
+}
+
+.balance-review-detail.is-actionable:hover {
+  border-color: color-mix(in srgb, var(--warning) 76%, var(--border));
+  background: color-mix(in srgb, var(--warning) 10%, var(--surface));
+}
+
+.balance-review-detail.is-pending.is-actionable:hover {
+  border-color: color-mix(in srgb, var(--pending-foundation) 66%, var(--border));
+  background: color-mix(in srgb, var(--pending-foundation) 8%, var(--surface));
+}
+
+.balance-review-detail.is-actionable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.balance-review-detail-heading {
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.balance-review-detail-title {
+  display: grid;
+  gap: 3px;
+}
+
+.balance-review-detail-heading .section-kicker {
+  margin: 0;
+}
+
+.balance-review-detail-amount {
+  text-align: right;
+  margin-left: auto;
+}
+
+.balance-review-detail-amount > strong {
+  color: var(--warning);
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.balance-review-detail.is-pending .balance-review-detail-amount > strong {
+  color: var(--accent);
+}
+
+.balance-review-detail-values > span > span,
+.balance-review-detail-note {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.balance-review-detail-values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.balance-review-detail-values > span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.balance-review-detail-values strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.balance-review-detail-note {
+  display: block;
+  margin-top: 8px;
+}
+
+@media (max-width: 630px) {
+  .balance-review-detail-heading {
+    align-items: flex-start;
+  }
+
+  .balance-review-detail-values {
+    grid-template-columns: 1fr 1fr;
+  }
+}

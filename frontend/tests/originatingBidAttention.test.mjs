@@ -1,11 +1,11 @@
+import { readSource } from './helpers/readSource.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const src = name => fs.readFileSync(path.join(here, '..', 'src', name), 'utf8');
+const src = name => readSource(path.join(here, '..', 'src', name), 'utf8');
 
 test('originating-bid attention uses the shared passive freshness machinery without a duplicate eager read', () => {
   const hook = src('useOriginatingBidAttention.js');

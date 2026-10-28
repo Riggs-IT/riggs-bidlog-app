@@ -1,0 +1,473 @@
+/* ==========================================================================
+   TABLE FINISHES — compact headers, employee badges, and row states
+
+   Edit here: Project value column sizing, compact table headers, team badges, zebra stripes and hover/completed states.
+   Related: Preserve badge geometry and accepted status colors. Financial review badges are in 13/15.
+
+   Loaded by ../styles.css in explicit cascade order. Do not alphabetize imports.
+   Colors: theme-tokens.css. Editing map: docs/BIDLOG_CSS_EDITING_GUIDE.md.
+   ========================================================================== */
+
+/* PROJECT VALUES + COMPLETED BILLING VISIBILITY */
+
+.project-pivot-table .pivot-project-values-column {
+  width: 154px;
+  min-width: 154px;
+  max-width: 154px;
+}
+
+.pivot-project-values {
+  display: grid;
+  gap: 4px;
+}
+
+.pivot-project-value-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.pivot-project-value-line small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.pivot-project-value-line strong {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pivot-project-name-line,
+.project-name-status-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.project-completed-pill,
+.source-chip.completed {
+  border: 1px solid color-mix(in srgb, #d7a842 62%, var(--border));
+  background: color-mix(in srgb, #d7a842 16%, var(--surface-2));
+  color: #e3bd66;
+}
+
+.project-completed-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.055em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* COMPACT BILLING HEADER + TEAM BADGES */
+
+.projected-page-heading {
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.projected-page-heading h1 {
+  margin: 0;
+  font-size: clamp(28px, 2vw, 36px);
+}
+
+.projected-heading-controls {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.projected-heading-source-toggles {
+  flex: 0 1 auto;
+  justify-content: flex-end;
+}
+
+.projected-heading-source-toggles button {
+  min-width: 152px;
+  min-height: 40px;
+  padding: 6px 11px;
+}
+
+.projected-heading-source-toggles .toggle-label strong {
+  font-size: 12px;
+}
+
+.projected-heading-source-toggles .toggle-label small {
+  font-size: 9px;
+}
+
+.projected-export-button {
+  min-height: 40px;
+  white-space: nowrap;
+}
+
+.projected-filter-panel {
+  margin-bottom: 10px;
+  padding: 11px 12px;
+}
+
+.projected-filter-panel .filter-field {
+  gap: 4px;
+}
+
+.projected-filter-panel .filter-field input,
+.projected-filter-panel .filter-field select {
+  min-height: 36px;
+}
+
+.projected-filter-panel .filter-actions button {
+  min-height: 36px;
+}
+
+.project-team-badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 5px;
+  min-width: 0;
+}
+
+.project-team-badge {
+  min-width: 30px;
+  height: 27px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.project-team-badge strong {
+  color: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.project-team-badges.compact {
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.project-team-badges.compact .project-team-badge {
+  min-width: 27px;
+  height: 24px;
+  padding: 0 4px;
+  border-radius: 5px;
+}
+
+.project-team-badges.compact .project-team-badge strong {
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.project-team-badge-column {
+  width: 205px;
+  min-width: 205px;
+  max-width: 205px;
+}
+
+.pivot-project-info,
+.pivot-project-name-line,
+.project-name-status-line {
+  min-width: 0;
+}
+
+.pivot-project-name-line,
+.project-name-status-line {
+  flex-wrap: nowrap;
+}
+
+.pivot-project-name,
+.project-title-ellipsis {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pivot-project-name {
+  display: block;
+  flex: 1 1 auto;
+}
+
+.project-title-ellipsis {
+  display: block;
+  flex: 1 1 auto;
+  max-width: 100%;
+}
+
+.projected-breakdown-table .project-cell,
+.monthly-project-table .project-cell {
+  width: 310px;
+  min-width: 310px;
+  max-width: 310px;
+}
+
+/* The full Probability heading, 28px of sort-button padding, and the
+   sort arrow need a real lane. Otherwise the beginning of the heading
+   overflows under the preceding frozen Project / Bid column. */
+
+.project-pivot-table .pivot-probability-column {
+  width: 142px;
+  min-width: 142px;
+  max-width: 142px;
+}
+
+.project-pivot-table.pivot-source-potential
+th.pivot-project-column,
+.project-pivot-table.pivot-source-potential
+td.pivot-project-column,
+.project-pivot-table.pivot-source-combined
+th.pivot-project-column,
+.project-pivot-table.pivot-source-combined
+td.pivot-project-column {
+  border-right: 0;
+  box-shadow: none;
+}
+
+.project-pivot-table.pivot-source-potential
+th.pivot-probability-column,
+.project-pivot-table.pivot-source-potential
+td.pivot-probability-column,
+.project-pivot-table.pivot-source-combined
+th.pivot-probability-column,
+.project-pivot-table.pivot-source-combined
+td.pivot-probability-column {
+  position: sticky;
+  left: 300px;
+  z-index: 6;
+  border-right: 1px solid var(--border-strong);
+  background: var(--surface);
+  background-clip: padding-box;
+  box-shadow: 8px 0 12px rgba(0, 0, 0, 0.14);
+}
+
+.project-pivot-table.pivot-source-combined
+th.pivot-probability-column,
+.project-pivot-table.pivot-source-combined
+td.pivot-probability-column {
+  left: 476px;
+}
+
+.project-pivot-table.pivot-source-potential
+th.pivot-probability-column,
+.project-pivot-table.pivot-source-combined
+th.pivot-probability-column {
+  z-index: 9;
+  background: var(--surface-2);
+}
+
+.project-pivot-table.pivot-source-potential
+.pivot-project-row:hover
+td.pivot-probability-column,
+.project-pivot-table.pivot-source-combined
+.pivot-project-row:hover
+td.pivot-probability-column {
+  background: color-mix( in srgb, var(--surface) 92%, var(--accent) 8% );
+}
+
+.floating-table-header-table
+th.pivot-probability-column {
+  /* Paint the Probability header above the shadow of the preceding
+     frozen Project / Bid header in the cloned sticky table. */
+  z-index: 13;
+}
+
+.pivot-header-total-values,
+.pivot-header-activity-counts {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+
+.pivot-header-activity-separator {
+  display: none;
+}
+
+@media (max-width: 1100px) {
+  .projected-page-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .projected-heading-controls,
+  .projected-heading-source-toggles {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 760px) {
+  .projected-heading-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .projected-heading-source-toggles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .projected-heading-source-toggles button {
+    min-width: 0;
+  }
+
+  .projected-export-button {
+    width: 100%;
+  }
+
+  .project-pivot-table.pivot-source-potential
+  th.pivot-probability-column,
+  .project-pivot-table.pivot-source-potential
+  td.pivot-probability-column {
+    left: 260px;
+  }
+
+  .project-pivot-table.pivot-source-combined
+  th.pivot-probability-column,
+  .project-pivot-table.pivot-source-combined
+  td.pivot-probability-column {
+    left: 436px;
+  }
+}
+
+/* TEAM BADGES ACROSS PROJECT / BID WORKSPACES */
+
+.active-project-name-line {
+  min-width: 0;
+}
+
+.active-project-name-line .project-title-ellipsis {
+  flex: 1 1 auto;
+}
+
+.active-project-team-cell {
+  width: 205px;
+  min-width: 205px;
+  max-width: 205px;
+}
+
+.completed-project-name {
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
+}
+
+.completed-project-name .project-title-ellipsis {
+  max-width: 100%;
+}
+
+.completed-project-table .project-team-badge-column {
+  width: 205px;
+  min-width: 205px;
+  max-width: 205px;
+}
+
+.bid-log-name-cell {
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
+}
+
+.bid-log-name-line {
+  min-width: 0;
+}
+
+.bid-log-name-line .project-title-ellipsis {
+  flex: 1 1 auto;
+}
+
+/* SUBTLE TABLE ZEBRA STRIPING */
+
+/* Keep alternating rows calm enough for dense financial tables. Expanded */
+
+/* detail/note rows are excluded from the stripe count so opening a drawer */
+
+/* does not shift the pattern below it. */
+
+:is(
+.monthly-table,
+.detail-table,
+.billing-monthly-table,
+.monthly-project-table,
+.completed-project-table,
+.completed-monthly-table,
+.project-pivot-table,
+.bid-log-table,
+.active-bid-monthly-table,
+.active-project-table
+)
+tbody > tr:nth-child(
+even of :not(.monthly-project-detail-row):not(.bid-log-notes-row)
+) {
+  background: var(--table-row-alt);
+}
+
+/* Sticky pivot identity cells need their own background so the stripe stays
+   continuous while horizontally scrolling the table. */
+
+.project-pivot-table
+tbody > tr:nth-child(even of .pivot-project-row)
+> :is(
+td.pivot-source-column,
+td.pivot-job-column,
+td.pivot-project-column,
+td.pivot-probability-column
+) {
+  background: var(--table-row-alt);
+}
+
+/* Preserve stronger semantic/interaction states above zebra striping. */
+
+.monthly-comparison-row.selected {
+  background: rgba(117, 167, 255, 0.10);
+}
+
+.active-project-data-row:has(.project-status-pill.completed) {
+  background: color-mix(in srgb, var(--surface-2) 60%, transparent);
+}
+
+:is(
+.monthly-table tbody tr,
+.detail-table tbody tr,
+.monthly-comparison-row,
+.month-current-project-row,
+.completed-project-row,
+.bid-log-data-row,
+.active-project-data-row,
+.pivot-project-row
+):hover {
+  background: var(--surface-2);
+}
+
+.project-pivot-table
+.pivot-project-row:hover
+> :is(
+td.pivot-source-column,
+td.pivot-job-column,
+td.pivot-project-column,
+td.pivot-probability-column
+) {
+  background: color-mix( in srgb, var(--surface) 92%, var(--accent) 8% );
+}

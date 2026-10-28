@@ -1,6 +1,6 @@
+import { readSource } from './helpers/readSource.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import {pivotTotals} from '../src/primaryProjection.js';
 
 const current = (projected, actual = null) => ({source:'current', cells:[{
@@ -28,9 +28,9 @@ test('active-only month excludes bid projected dollars and count', () => {
 });
 
 test('project filters are labeled Active Projects and unselected balance badge retains pill background', () => {
-  const app=fs.readFileSync(new URL('../src/App.jsx',import.meta.url),'utf8');
-  const css=fs.readFileSync(new URL('../src/ProjectionDisplay.css',import.meta.url),'utf8');
-  const pivot=fs.readFileSync(new URL('../src/ProjectBillingPivot.jsx',import.meta.url),'utf8');
+  const app=readSource(new URL('../src/App.jsx',import.meta.url),'utf8');
+  const css=readSource(new URL('../src/ProjectionDisplay.css',import.meta.url),'utf8');
+  const pivot=readSource(new URL('../src/ProjectBillingPivot.jsx',import.meta.url),'utf8');
   assert.match(app,/<strong>Active Projects<\/strong>/);
   assert.match(app,/No PM Projection\*/);
   assert.match(pivot,/No PM Projection\*/);
@@ -94,9 +94,9 @@ test('projected count tooltips show record counts only when sources are combined
 });
 
 test('warning badges have unified colors, nowrap table lanes, and clearly selected rebalance pills', () => {
-  const styles = fs.readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
-  const pills = fs.readFileSync(new URL('../src/ProjectionDisplay.css', import.meta.url), 'utf8');
-  const breakdown = fs.readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+  const styles = readSource(new URL('../src/styles.css', import.meta.url), 'utf8');
+  const pills = readSource(new URL('../src/ProjectionDisplay.css', import.meta.url), 'utf8');
+  const breakdown = readSource(new URL('../src/App.jsx', import.meta.url), 'utf8');
   assert.match(styles, /\.project-pivot-table\s*\.pivot-project-column \{\s*width: 300px;/);
   assert.match(styles, /\.projected-breakdown-table \.project-cell,\s*\.monthly-project-table \.project-cell \{\s*width: 310px;/);
   assert.match(styles, /\.project-pivot-table \.pivot-probability-column \{\s*width: 142px;\s*min-width: 142px;/);

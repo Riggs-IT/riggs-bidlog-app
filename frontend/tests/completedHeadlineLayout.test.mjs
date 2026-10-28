@@ -1,9 +1,9 @@
+import { readSource } from './helpers/readSource.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {readFileSync} from 'node:fs';
 
-const source = readFileSync(new URL('../src/ProjectAccountability.jsx', import.meta.url), 'utf8');
-const style = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
+const source = readSource(new URL('../src/ProjectAccountability.jsx', import.meta.url), 'utf8');
+const style = readSource(new URL('../src/styles.css', import.meta.url), 'utf8');
 const heading = source.slice(source.indexOf('className="page-heading"'), source.indexOf('{error && ('));
 const start = source.indexOf('className="stats-grid completed-project-stats"');
 const finish = source.indexOf('className="content-card completed-project-card"', start);

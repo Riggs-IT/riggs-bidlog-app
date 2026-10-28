@@ -1,12 +1,12 @@
+import { readSource } from './helpers/readSource.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {readFileSync} from 'node:fs';
 import {facetRows, ALL_FILTER} from '../src/viewFilters.js';
 import {
   isProjectManagerWorkspaceUser, normalizePmIdentity, resolveSignedInPmOption,
 } from '../src/pmScope.js';
 
-const read = filename => readFileSync(new URL(`../src/${filename}`, import.meta.url), 'utf8');
+const read = filename => readSource(new URL(`../src/${filename}`, import.meta.url), 'utf8');
 
 const pm = {eid: 2172, workspaceProfile: 'PM', displayName: '  Josh Erlandson  '};
 
@@ -59,8 +59,8 @@ test('Bid Log defaults its existing PM dropdown for every available lifecycle vi
 
 test('Bid Log gets badge colors from an independent authenticated read, never from billing only', () => {
   const workspace = read('BidLogWorkspace.jsx');
-  const main = readFileSync(new URL('../../backend/app/main.py', import.meta.url), 'utf8');
-  const client = readFileSync(new URL('../../backend/app/data_api.py', import.meta.url), 'utf8');
+  const main = readSource(new URL('../../backend/app/main.py', import.meta.url), 'utf8');
+  const client = readSource(new URL('../../backend/app/data_api.py', import.meta.url), 'utf8');
   const hook = read('useTeamBadgeDirectory.js');
   assert.match(hook, /fetch\('\/api\/bid-log\/reference\/pm-badges'/);
   assert.match(read('App.jsx'), /useTeamBadgeDirectory\(user\?\.eid, canViewBidLog\)/);

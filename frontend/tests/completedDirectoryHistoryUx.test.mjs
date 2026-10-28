@@ -1,12 +1,12 @@
+import { readSource } from './helpers/readSource.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import React from 'react';
 import {renderToString} from 'react-dom/server';
 import {createServer} from 'vite';
 
-const read = name => readFileSync(new URL(`../src/${name}`, import.meta.url), 'utf8');
+const read = name => readSource(new URL(`../src/${name}`, import.meta.url), 'utf8');
 
 test('completed directory defaults to Foundation and explains original/CO in tooltip', () => {
   const page = read('ProjectAccountability.jsx');

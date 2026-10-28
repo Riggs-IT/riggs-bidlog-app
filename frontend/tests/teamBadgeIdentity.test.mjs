@@ -1,12 +1,12 @@
+import { readSource } from './helpers/readSource.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {readFileSync} from 'node:fs';
 import {
   configuredTeamColor, resolveTeamBadge, teamBadgeTextColor,
   teamIdentityMap, teamNameKey,
 } from '../src/teamBadgeIdentity.js';
 
-const source = filename => readFileSync(new URL(`../src/${filename}`, import.meta.url), 'utf8');
+const source = filename => readSource(new URL(`../src/${filename}`, import.meta.url), 'utf8');
 
 const directory = teamIdentityMap([
   {pm:'  Alex  Costanzo  ', pmInitials:' AC ', pmHexColor:'#F09A11'},

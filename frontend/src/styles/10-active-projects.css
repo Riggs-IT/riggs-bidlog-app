@@ -1,0 +1,839 @@
+/* ==========================================================================
+   ACTIVE PROJECTS — directory and Form 19 editor layout
+
+   Edit here: Active Projects table, floating master-record editor, read-only Form 19 sections and project team form.
+   Related: General Information/Save Review retain their existing component CSS. No editing eligibility changes.
+
+   Loaded by ../styles.css in explicit cascade order. Do not alphabetize imports.
+   Colors: theme-tokens.css. Editing map: docs/BIDLOG_CSS_EDITING_GUIDE.md.
+   ========================================================================== */
+
+/* Active Projects workspace */
+
+.active-projects-workspace {
+  min-width: 0;
+}
+
+.active-project-summary-grid {
+  margin-top: 0;
+}
+
+.active-project-filter-grid {
+  grid-template-columns: minmax(260px, 1.6fr) repeat(5, minmax(145px, 0.8fr));
+}
+
+.active-project-filter-toolbar {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.active-project-filter-note {
+  margin-top: 12px;
+}
+
+.active-project-filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.active-project-list-error {
+  margin-bottom: 14px;
+}
+
+.active-project-table {
+  min-width: 1660px;
+}
+
+.active-project-table thead th {
+  top: 68px;
+}
+
+.active-project-job-cell {
+  width: 92px;
+  white-space: nowrap;
+}
+
+.active-project-name-cell {
+  min-width: 270px;
+}
+
+.active-project-name-cell strong,
+.active-project-name-cell span {
+  display: block;
+}
+
+.active-project-name-cell span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.active-project-gc-cell {
+  min-width: 190px;
+}
+
+.active-project-pm-cell {
+  min-width: 58px;
+  display: flex;
+  align-items: center;
+}
+
+.active-project-date-cell,
+.active-project-contract-cell,
+.active-project-quantity-cell {
+  white-space: nowrap;
+}
+
+.active-project-data-row {
+  cursor: pointer;
+}
+
+.active-project-data-row:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.active-project-readonly-value {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-2) 82%, var(--surface));
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.active-project-schedule-callout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-3);
+}
+
+.active-project-schedule-callout span,
+.active-project-schedule-callout strong,
+.active-project-schedule-callout small {
+  display: block;
+}
+
+.active-project-schedule-callout span {
+  margin-bottom: 2px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.active-project-schedule-callout strong {
+  font-size: 15px;
+}
+
+.active-project-schedule-callout small {
+  color: var(--muted);
+  font-size: 9px;
+  text-align: right;
+}
+
+.active-project-reference-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.active-project-reference-grid > div {
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-3);
+}
+
+.active-project-reference-grid dt,
+.active-project-reference-grid dd {
+  margin: 0;
+}
+
+.active-project-reference-grid dt {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.active-project-reference-grid dd {
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.active-project-source-link {
+  display: inline-flex;
+  margin-top: 12px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.active-project-source-link:hover,
+.active-project-source-link:focus-visible {
+  text-decoration: underline;
+}
+
+@media (max-width: 1280px) {
+  .active-project-filter-grid {
+    grid-template-columns: minmax(240px, 1.4fr) repeat(2, minmax(160px, 0.8fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .active-project-filter-actions {
+    width: 100%;
+  }
+
+  .active-project-filter-actions > button {
+    flex: 1;
+  }
+
+  .active-project-schedule-callout {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .active-project-schedule-callout small {
+    text-align: left;
+  }
+
+  .active-project-reference-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Floating full-page master record editors */
+
+.floating-editor-backdrop {
+  align-items: center;
+  justify-content: center;
+  padding: 14px 18px;
+  background: rgba(4, 8, 13, 0.58);
+  backdrop-filter: blur(3px);
+}
+
+.floating-editor-surface,
+.floating-editor-surface.bid-log-edit-drawer {
+  width: calc(100vw - 36px);
+  height: calc(100vh - 28px);
+  max-width: none;
+  max-height: none;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 86%, transparent);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.48), 0 0 0 1px rgba(255, 255, 255, 0.025);
+}
+
+.floating-editor-header {
+  flex: 0 0 auto;
+  align-items: flex-start;
+  padding: 17px 22px 16px;
+  background: linear-gradient( 180deg, color-mix(in srgb, var(--surface-2) 90%, transparent), color-mix(in srgb, var(--surface) 96%, transparent) );
+}
+
+.floating-editor-heading {
+  min-width: 0;
+  display: grid;
+  gap: 13px;
+}
+
+.floating-editor-title-row {
+  min-width: 0;
+}
+
+.floating-editor-title-row h2 {
+  margin: 4px 0 4px;
+  font-size: clamp(24px, 2.35vw, 34px);
+  line-height: 1.05;
+}
+
+.floating-editor-title-row p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.floating-editor-back {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 9px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.floating-editor-back:hover:not(:disabled),
+.floating-editor-back:focus-visible {
+  border-color: var(--border);
+  background: var(--surface-3);
+  color: var(--text);
+  outline: none;
+}
+
+.floating-editor-back:disabled,
+.floating-editor-close:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.floating-editor-close {
+  width: 40px;
+  height: 40px;
+  flex-basis: 40px;
+  margin-top: 1px;
+  border-radius: 8px;
+  font-size: 26px;
+}
+
+.floating-editor-body {
+  min-height: 0;
+  padding: 20px 24px 34px;
+  overscroll-behavior: contain;
+}
+
+.floating-editor-body.bid-log-edit-body {
+  gap: 16px;
+}
+
+.floating-editor-body .bid-edit-section {
+  padding: 19px 20px;
+}
+
+.floating-editor-footer {
+  padding: 12px 22px;
+}
+
+.floating-editor-footer-status {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.floating-editor-footer-status small {
+  line-height: 1.4;
+}
+
+.floating-editor-dirty-indicator {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border: 1px solid color-mix(in srgb, var(--warning) 45%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--warning) 10%, transparent);
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+@media (min-width: 1450px) {
+  .floating-editor-body .bid-edit-grid.two-column {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .floating-editor-body .bid-edit-grid.three-column {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .floating-editor-body .bid-edit-grid.four-column {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .floating-editor-backdrop {
+    padding: 0;
+  }
+
+  .floating-editor-surface,
+  .floating-editor-surface.bid-log-edit-drawer {
+    width: 100vw;
+    height: 100vh;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .floating-editor-header {
+    padding: 14px 16px 13px;
+  }
+
+  .floating-editor-body {
+    padding: 16px 16px 28px;
+  }
+
+  .floating-editor-footer {
+    padding: 11px 16px;
+  }
+
+  .floating-editor-footer-status {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* ACTIVE PROJECT - JOB INFORMATION SHEET LAYOUT */
+
+/* Give both floating master-record editors a deliberate visible gutter. */
+
+@media (min-width: 761px) {
+  .floating-editor-backdrop {
+    padding: clamp(32px, 4vh, 44px) clamp(56px, 5vw, 88px);
+  }
+
+  .floating-editor-surface,
+  .floating-editor-surface.bid-log-edit-drawer {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+/* Keep long-form sections content-sized inside the scrollable editor grid. */
+
+.active-project-edit-drawer .floating-editor-body.bid-log-edit-body {
+  align-content: start;
+  grid-auto-rows: max-content;
+}
+
+/* Active Project should read like a long form, not a dashboard. */
+
+.active-project-edit-drawer .bid-edit-section {
+  overflow: visible;
+  padding: 0 22px 22px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-2) 84%, transparent);
+}
+
+.active-project-edit-drawer .bid-edit-section-heading {
+  align-items: center;
+  margin: 0 -22px 20px;
+  padding: 12px 16px 11px;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  background: linear-gradient( 90deg, color-mix(in srgb, var(--accent) 19%, var(--surface-3)), color-mix(in srgb, var(--accent) 7%, var(--surface-2)) 58%, var(--surface-2) );
+  border-radius: 10px 10px 0 0;
+}
+
+.active-project-edit-drawer .bid-edit-section-heading h3 {
+  margin: 2px 0 0;
+  font-size: 15px;
+  letter-spacing: 0.01em;
+}
+
+.active-project-edit-drawer .bid-edit-section-heading > small {
+  max-width: 420px;
+  color: color-mix(in srgb, var(--muted) 92%, white);
+  font-size: 9px;
+  line-height: 1.45;
+  text-align: right;
+}
+
+.active-project-edit-drawer .section-kicker {
+  color: color-mix(in srgb, var(--accent) 72%, white);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.085em;
+}
+
+.information-sheet-section {
+  position: relative;
+}
+
+.information-sheet-grid {
+  column-gap: 18px;
+  row-gap: 15px;
+}
+
+.information-sheet-subheading {
+  margin: 22px 0 11px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  color: color-mix(in srgb, var(--text) 92%, var(--muted));
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.information-sheet-heading + .information-sheet-subheading {
+  margin-top: 0;
+}
+
+.cognito-read-field {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cognito-read-field.wide {
+  grid-column: 1 / -1;
+}
+
+.cognito-read-field > span {
+  color: var(--muted, #96a0ad);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.cognito-read-field > div {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-3) 72%, var(--surface-2));
+  color: var(--text, #edf1f5);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.cognito-read-field > div.is-empty {
+  background: color-mix(in srgb, var(--surface-3) 52%, var(--surface-2));
+  color: transparent;
+}
+
+.cognito-read-field small {
+  color: var(--muted, #8994a2);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.cognito-checkbox-value {
+  gap: 9px;
+}
+
+.cognito-checkbox-box {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--surface);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cognito-checkbox-box.checked {
+  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
+  background: var(--accent);
+  color: #071019;
+}
+
+.cognito-checkbox-value strong {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.cognito-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 15px 18px;
+}
+
+.cognito-supplier-sheet {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-3) 45%, transparent);
+}
+
+.cognito-supplier-row {
+  display: grid;
+  grid-template-columns: minmax(145px, 0.8fr) minmax(180px, 1.15fr) minmax(120px, 0.55fr) minmax(240px, 1.45fr);
+  align-items: stretch;
+}
+
+.cognito-supplier-row + .cognito-supplier-row {
+  border-top: 1px solid var(--border);
+}
+
+.cognito-supplier-row > div {
+  min-width: 0;
+  padding: 11px 12px;
+}
+
+.cognito-supplier-row > div + div {
+  border-left: 1px solid var(--border);
+}
+
+.cognito-supplier-row.header {
+  background: color-mix(in srgb, var(--surface-3) 86%, var(--surface-2));
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.cognito-supplier-label {
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 780;
+}
+
+.cognito-supplier-value {
+  color: var(--text);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.cognito-supplier-value.amount {
+  font-variant-numeric: tabular-nums;
+}
+
+.cognito-supplier-files {
+  display: flex;
+  align-items: center;
+}
+
+.cognito-file-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cognito-file-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cognito-file-row span {
+  min-width: 0;
+  color: var(--text);
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+
+.cognito-file-row small {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.cognito-file-empty {
+  color: var(--muted);
+  font-size: 10px;
+  font-style: italic;
+}
+
+.cognito-workflow-line {
+  width: min(320px, 100%);
+  margin-top: 16px;
+}
+
+@media (max-width: 1200px) {
+  .cognito-checkbox-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cognito-supplier-row {
+    grid-template-columns: minmax(135px, 0.8fr) minmax(180px, 1.2fr) minmax(110px, 0.55fr);
+  }
+
+  .cognito-supplier-row > .cognito-supplier-files {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+
+  .cognito-supplier-row.header > div:last-child {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .active-project-edit-drawer .bid-edit-section {
+    padding: 0 16px 18px;
+  }
+
+  .active-project-edit-drawer .bid-edit-section-heading {
+    align-items: flex-start;
+    margin: 0 -16px 17px;
+    padding: 11px 13px;
+  }
+
+  .active-project-edit-drawer .bid-edit-section-heading > small {
+    text-align: left;
+  }
+
+  .cognito-checkbox-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cognito-supplier-row,
+  .cognito-supplier-row.header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cognito-supplier-row.header {
+    display: none;
+  }
+
+  .cognito-supplier-row > div,
+  .cognito-supplier-row > div + div,
+  .cognito-supplier-row > .cognito-supplier-files {
+    border-left: 0;
+    border-top: 0;
+    padding: 8px 10px;
+  }
+
+  .cognito-supplier-label {
+    padding-top: 11px !important;
+  }
+
+  .cognito-supplier-files {
+    padding-bottom: 11px !important;
+  }
+}
+
+/* linked master-record editing + project directory controls */
+
+.billing-drawer-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.billing-drawer-edit-button {
+  min-height: 42px;
+  padding-inline: 16px;
+  white-space: nowrap;
+}
+
+.project-directory-completed-toggle {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.project-directory-completed-toggle:hover,
+.project-directory-completed-toggle:focus-visible {
+  border-color: color-mix(in srgb, #d7a842 42%, var(--border-strong));
+  color: var(--text);
+}
+
+.project-directory-completed-toggle.active {
+  border-color: color-mix(in srgb, #d7a842 70%, var(--border));
+  background: color-mix(in srgb, #d7a842 13%, var(--surface-2));
+  color: #e3bd66;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #d7a842 16%, transparent);
+}
+
+.project-directory-completed-dot {
+  width: 8px;
+  height: 8px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.project-directory-completed-toggle.active .project-directory-completed-dot {
+  border-color: #d7a842;
+  background: #d7a842;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #d7a842 14%, transparent);
+}
+
+.active-project-name-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.active-project-name-line strong {
+  min-width: 0;
+}
+
+.active-project-name-cell .project-status-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 0;
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--surface-2);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.active-project-name-cell .project-status-pill.completed {
+  border-color: color-mix(in srgb, #d7a842 62%, var(--border));
+  background: color-mix(in srgb, #d7a842 16%, var(--surface-2));
+  color: #e3bd66;
+}
+
+@media (max-width: 760px) {
+  .billing-drawer-header-actions {
+    align-items: flex-end;
+    flex-direction: column-reverse;
+  }
+
+  .project-directory-completed-toggle {
+    flex: 1 1 100%;
+  }
+}

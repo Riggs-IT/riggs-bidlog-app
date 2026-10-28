@@ -1,10 +1,10 @@
+import { readSource } from './helpers/readSource.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 
-const css = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
-const theme = readFileSync(new URL('../src/theme.css', import.meta.url), 'utf8');
-const pmPanel = readFileSync(new URL('../src/PMForecastPanel.jsx', import.meta.url), 'utf8');
+const css = readSource(new URL('../src/styles.css', import.meta.url), 'utf8');
+const theme = readSource(new URL('../src/theme.css', import.meta.url), 'utf8');
+const pmPanel = readSource(new URL('../src/PMForecastPanel.jsx', import.meta.url), 'utf8');
 
 function rule(source, selector) {
   const marker = `${selector} {`;

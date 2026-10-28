@@ -1,13 +1,13 @@
+import { readSource } from './helpers/readSource.mjs';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import test from 'node:test';
 
-const styles = fs.readFileSync(
+const styles = readSource(
   new URL('../src/styles.css', import.meta.url),
   'utf8',
 );
 
-const theme = fs.readFileSync(
+const theme = readSource(
   new URL('../src/theme.css', import.meta.url),
   'utf8',
 );

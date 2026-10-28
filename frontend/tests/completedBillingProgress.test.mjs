@@ -1,6 +1,6 @@
+import { readSource } from './helpers/readSource.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {completedBillingProgress} from '../src/completedBillingProgress.mjs';
 
@@ -10,7 +10,7 @@ const rows = () => [
   {monthStart: '2026-04-01', cumulativeActualAmount: 80},
   {monthStart: '2026-05-01', cumulativeActualAmount: 140},
 ];
-const source = path => readFileSync(new URL(path, import.meta.url), 'utf8');
+const source = path => readSource(new URL(path, import.meta.url), 'utf8');
 
 test('progression reuses API cumulative values, preserving zero-activity months and credit reductions', () => {
   const input = rows();

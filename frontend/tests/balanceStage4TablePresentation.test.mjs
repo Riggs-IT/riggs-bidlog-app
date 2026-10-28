@@ -1,8 +1,8 @@
+import { readSource } from './helpers/readSource.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
 
-const source = name => readFileSync(new URL(`../src/${name}`, import.meta.url), 'utf8');
+const source = name => readSource(new URL(`../src/${name}`, import.meta.url), 'utf8');
 
 test('compact table uses whole dollars while detail and hover retain exact cents', () => {
   const code = source('BalanceReviewSummary.jsx');
