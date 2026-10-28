@@ -806,13 +806,6 @@
   color: var(--muted);
 }
 
-.project-pivot-table
-.pivot-team-column {
-  width: 220px;
-  min-width: 220px;
-  max-width: 220px;
-}
-
 .monthly-project-table {
   min-width: 1040px;
 }

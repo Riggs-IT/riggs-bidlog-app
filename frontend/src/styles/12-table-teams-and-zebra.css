@@ -1,53 +1,19 @@
 /* ==========================================================================
    TABLE FINISHES — compact headers, employee badges, and row states
 
-   Edit here: Project value column sizing, compact table headers, team badges, zebra stripes and hover/completed states.
-   Related: Preserve badge geometry and accepted status colors. Financial review badges are in 13/15.
+   Edit here: Compact page heading, team badges, zebra stripes and hover/completed states.
+   Related: Preserve badge geometry and accepted status colors. Pivot column geometry and project-value typography are in 05; financial flags in 13/15.
 
    Loaded by ../styles.css in explicit cascade order. Do not alphabetize imports.
    Colors: theme-tokens.css. Editing map: docs/BIDLOG_CSS_EDITING_GUIDE.md.
    ========================================================================== */
 
-/* PROJECT VALUES + COMPLETED BILLING VISIBILITY */
-
-.project-pivot-table .pivot-project-values-column {
-  width: 154px;
-  min-width: 154px;
-  max-width: 154px;
-}
-
-.pivot-project-values {
-  display: grid;
-  gap: 4px;
-}
-
-.pivot-project-value-line {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  white-space: nowrap;
-}
-
-.pivot-project-value-line small {
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.045em;
-  text-transform: uppercase;
-}
-
-.pivot-project-value-line strong {
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.pivot-project-name-line,
 .project-name-status-line {
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
+  flex-wrap: nowrap;
 }
 
 .project-completed-pill,
@@ -187,31 +153,11 @@
   max-width: 205px;
 }
 
-.pivot-project-info,
-.pivot-project-name-line,
-.project-name-status-line {
-  min-width: 0;
-}
-
-.pivot-project-name-line,
-.project-name-status-line {
-  flex-wrap: nowrap;
-}
-
-.pivot-project-name,
 .project-title-ellipsis {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.pivot-project-name {
-  display: block;
-  flex: 1 1 auto;
-}
-
-.project-title-ellipsis {
   display: block;
   flex: 1 1 auto;
   max-width: 100%;
@@ -222,87 +168,6 @@
   width: 310px;
   min-width: 310px;
   max-width: 310px;
-}
-
-/* The full Probability heading, 28px of sort-button padding, and the
-   sort arrow need a real lane. Otherwise the beginning of the heading
-   overflows under the preceding frozen Project / Bid column. */
-
-.project-pivot-table .pivot-probability-column {
-  width: 142px;
-  min-width: 142px;
-  max-width: 142px;
-}
-
-.project-pivot-table.pivot-source-potential
-th.pivot-project-column,
-.project-pivot-table.pivot-source-potential
-td.pivot-project-column,
-.project-pivot-table.pivot-source-combined
-th.pivot-project-column,
-.project-pivot-table.pivot-source-combined
-td.pivot-project-column {
-  border-right: 0;
-  box-shadow: none;
-}
-
-.project-pivot-table.pivot-source-potential
-th.pivot-probability-column,
-.project-pivot-table.pivot-source-potential
-td.pivot-probability-column,
-.project-pivot-table.pivot-source-combined
-th.pivot-probability-column,
-.project-pivot-table.pivot-source-combined
-td.pivot-probability-column {
-  position: sticky;
-  left: 300px;
-  z-index: 6;
-  border-right: 1px solid var(--border-strong);
-  background: var(--surface);
-  background-clip: padding-box;
-  box-shadow: 8px 0 12px rgba(0, 0, 0, 0.14);
-}
-
-.project-pivot-table.pivot-source-combined
-th.pivot-probability-column,
-.project-pivot-table.pivot-source-combined
-td.pivot-probability-column {
-  left: 476px;
-}
-
-.project-pivot-table.pivot-source-potential
-th.pivot-probability-column,
-.project-pivot-table.pivot-source-combined
-th.pivot-probability-column {
-  z-index: 9;
-  background: var(--surface-2);
-}
-
-.project-pivot-table.pivot-source-potential
-.pivot-project-row:hover
-td.pivot-probability-column,
-.project-pivot-table.pivot-source-combined
-.pivot-project-row:hover
-td.pivot-probability-column {
-  background: color-mix( in srgb, var(--surface) 92%, var(--accent) 8% );
-}
-
-.floating-table-header-table
-th.pivot-probability-column {
-  /* Paint the Probability header above the shadow of the preceding
-     frozen Project / Bid header in the cloned sticky table. */
-  z-index: 13;
-}
-
-.pivot-header-total-values,
-.pivot-header-activity-counts {
-  display: grid;
-  justify-items: end;
-  gap: 2px;
-}
-
-.pivot-header-activity-separator {
-  display: none;
 }
 
 @media (max-width: 1100px) {
@@ -335,20 +200,6 @@ th.pivot-probability-column {
 
   .projected-export-button {
     width: 100%;
-  }
-
-  .project-pivot-table.pivot-source-potential
-  th.pivot-probability-column,
-  .project-pivot-table.pivot-source-potential
-  td.pivot-probability-column {
-    left: 260px;
-  }
-
-  .project-pivot-table.pivot-source-combined
-  th.pivot-probability-column,
-  .project-pivot-table.pivot-source-combined
-  td.pivot-probability-column {
-    left: 436px;
   }
 }
 

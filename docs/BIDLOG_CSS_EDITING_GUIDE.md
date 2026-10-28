@@ -1,8 +1,8 @@
 # Bid Log CSS editing guide
 
-**Current editing map: C2 — October 27, 2026.**
-**Starting release:** accepted C1 `cf021ce296595b9871a5c04940ffcf38068ec6df`.
-C2 changes ownership of existing drawer CSS, not the accepted light/OLED design.
+**Current editing map: C3 — October 27, 2026.**
+**Starting release:** accepted C2 `8e477a9f80e01c67c719e0b10d03d797ebf89a36`.
+C3 gives the project pivot one layout owner, preserving the accepted light/OLED design and C2 drawer ownership.
 
 ## Start here
 
@@ -35,15 +35,15 @@ Paths below are under `frontend/src/`.
 | `styles/02-billing-drawers.css` | Active/completed drawer shells, shared cards, label/value/source typography, curve help, source comparison and forecast detail grids | Includes the former 04/07 card refinements and their breakpoints. PM editor stays in 03; closeout-specific layout stays in 14. |
 | `styles/03-pm-projections.css` | PM editor, history, print behavior, and ON/OFF policy-switch geometry | Toggle colors belong in theme tokens, not hardcoded here. |
 | `styles/04-projected-workspace.css` | Landing table metadata, sorting, monthly-margin display and negative-money utility | Drawer cards/source comparison moved to 02. Detailed pivot columns remain in 05. |
-| `styles/05-project-pivot.css` | Pivot columns, financial cells, project names/metadata, metric selection | Final compact header and shared metric lanes are in 11–13. |
+| `styles/05-project-pivot.css` | Pivot columns/sticky offsets, project names and values, normal/floating controls, month navigation, header totals and shared metric tracks | C3 owns these together, including 760px and print variants. Shared row states stay in 12; flags in 13/15. |
 | `styles/06-project-references.css` | Three reference cards, originating-bid finder/disclosure, change-order popovers and basic team metadata | The final reference-card grid and spacing now live here too. Curve-help geometry lives in 02. |
 | `styles/07-detail-layout-and-filters.css` | Side-filter drawer and completed-directory filters, sorting and lifecycle cells | Filename retained to avoid import churn. It no longer owns billing-card or reference-card overrides. |
 | `styles/08-notifications-and-inputs.css` | Bell/count geometry, notification panel, PM correction fields, probability/GC controls and potential-bid drawer | OLED counter ink/fill is in `theme-surfaces.css`. |
 | `styles/09-bid-log.css` | Bid Log directory, summaries, table, notes, editor fields and GC picker | Lifecycle component polish stays in its existing separate file. |
 | `styles/10-active-projects.css` | Active Projects directory, floating job editor and Form 19 read-only sections | This file does not control write permission or test-job eligibility. |
-| `styles/11-lifecycle-feedback-and-staffing.css` | Lifecycle navigation, refresh toasts, compact month controls/header totals, Organizer | Sticky cloned controls must remain compatible with the existing hook. |
-| `styles/12-table-teams-and-zebra.css` | Compact table headers, employee badge geometry, table widths, zebra and hover/completed states | Keep alternating backgrounds on frozen identity cells too. |
-| `styles/13-financial-review-and-metrics.css` | Needs Rebalance/Pending Foundation flags, selection states, shared metric lanes and coverage notes | No classification or financial calculation is performed in CSS. |
+| `styles/11-lifecycle-feedback-and-staffing.css` | Lifecycle navigation, refresh toasts and Organizer | Month controls and header totals now live in 05. |
+| `styles/12-table-teams-and-zebra.css` | Compact page heading, shared employee badges/title ellipsis, cross-workspace widths, zebra and hover/completed states | Pivot column geometry moved to 05. Keep row shading continuous on frozen identity cells. |
+| `styles/13-financial-review-and-metrics.css` | Needs Rebalance/Pending Foundation and schedule flags, selection states, notification actions, Management view-only notices | Metric lanes now live in 05. No classification, calculation or authorization is performed in CSS. |
 | `styles/14-completed-closeout.css` | Completed contract ledger, progress chart, historical context and directory hints | Scoped to the completed report; do not turn it into a generic drawer reset. |
 | `styles/15-balance-presentation.css` | Final right-aligned flag/whole-dollar amount stack and clickable balance card | Role-dependent click actions remain in the existing React components. |
 
@@ -56,7 +56,7 @@ those components. Bid lifecycle, merge and CSV dialogs retain their own files.
 The four Administration stylesheets are unchanged.
 
 This is deliberate: moving these component imports would change their relationship
-to the shared styles. C1 does not merge unrelated components into a global file.
+to the shared styles. The consolidation does not merge unrelated components into a global file.
 
 ## Common edits
 
@@ -118,10 +118,12 @@ inside CSS.
 
 ### Change sticky table sizing
 
-Review 05, 11–13 and `useStickyTableHeader.js` together. Frozen left offsets, metric
-lanes, column widths and floating-header clones form one layout contract. Do not
-change a visible header's width without testing its body cells and clone during
-horizontal scrolling. The consolidation intentionally preserves these contracts.
+Start in **05** and review `ProjectBillingPivot.jsx` / `useStickyTableHeader.js`
+when changing geometry. Source-dependent frozen offsets, metric-lane compaction,
+column widths and the floating header form one layout contract. The shared table
+module 12 still owns zebra/hover colors, but not pivot column widths. Do not
+change a visible header's width without checking body cells and the cloned
+header at both sides of 760px. C3 deliberately changes none of these values.
 
 ## Drawer editing recipes — C2
 
@@ -145,6 +147,33 @@ example, `.projection-detail-grid` has five desktop columns and its existing
 1050px/700px variants. Moving the desktop declaration below those rules would
 change the layout even without changing a number.
 
+## Pivot editing recipes — C3
+
+The following layout selectors now all live in `styles/05-project-pivot.css`.
+The same pivot is reused for Completed Billings history; test that view too.
+
+| You want to change… | Find this section / selector |
+|---|---|
+| Source / Job / Project widths | Base column rules at the top; preserve matching sticky offsets |
+| Active-only vs potential-only left offsets | SOURCE-AWARE IDENTITIES |
+| Probability width and frozen left position | PROBABILITY LANE, including the 760px variants |
+| Team / GC / Contract-SF-CY column widths | AUXILIARY COLUMNS and PROJECT VALUES |
+| Project name, clipping, or team/context spacing | Project / Bid identity; shared employee badge geometry remains in 12 |
+| All / Projected / Actual / Variance control geometry | `.project-pivot-toolbar`, `.project-pivot-metric-toggle` |
+| Horizontal month slider and disabled state | COMPACT MONTH NAVIGATION |
+| Floating control reveal and coverage chips | `.floating-table-controls` and `.project-pivot-sticky-coverage` |
+| Month label, totals and activity count alignment | HEADER TOTALS |
+| Shared P/A/Variance/Margin lane and pinning | Values All — sticky shared metric labels |
+| Three tracks without margin / two tracks for completed history | `.pivot-no-margin` / `.pivot-history-only` |
+| Small comparable-variance indicator | `.pivot-variance-mode-indicator` |
+
+**Do not flatten the remaining contexts.** The desktop and 760px rules are
+intentional. The late project-column `background-clip` rule must remain after
+the shared `th` background shorthand; combining them changes header painting.
+There is a nearby comment describing that dependency. Source count controls in
+`ProjectionDisplay.css` still own their selected color; C3 only owns their
+floating-toolbar geometry. Semantic status/amount styles remain in 13/15.
+
 ## What has actually been consolidated
 
 **C1, accepted:** removed 255 earlier declarations, 54 resulting empty rule blocks
@@ -165,6 +194,14 @@ rules are intentional. C2 is not a global flattening of all CSS and does not
 change palette, fonts, financial calculations, roles, PM actions or API behavior.
 Use the regenerated selector index to find these relationships.
 
+**C3:** pivot layout fragments formerly in 06, 08, 11, 12 and 13 now belong
+with the base pivot in 05. Twelve split base definitions are consolidated.
+All per-selector/property/context contracts are retained, with zero removed
+selector-specific declarations. Physical rule blocks decrease from 1,622 to
+1,613; physical declarations increase from 5,311 to 5,324 because shared selector
+lists are separated to give each component a single editable definition. This
+is a maintainability change, not a performance or payload-reduction claim.
+
 ## How to add or adjust a rule
 
 Edit an existing rule where that property belongs. Add a nearby comment describing
@@ -180,7 +217,7 @@ header clones construct some class names dynamically.
 
 ## Validation and release
 
-The C2 package has a separate local apply/QA/rebuild gate and optional commit/push
+The C3 package has a separate local apply/QA/rebuild gate and optional commit/push
 gates. Its source hashes certify this exact refactor; do not reuse that QA marker
 for your own subsequent edits.
 
@@ -188,7 +225,7 @@ Normal source tests live in `frontend/tests`. The existing `helpers/readSource.m
 resolves the real CSS imports for the existing source-contract assertions; it does
 not keep a duplicate legacy stylesheet or disable those assertions.
 
-A complete C2 host QA run includes the per-selector/conditional declaration contract, focused and full
+A complete C3 host QA run includes the per-selector/conditional declaration contract, focused and full
 frontend tests, the Vite production build, the backend test suite, and both Docker
 image targets. Tests run against sanitized source, without production credentials
 or SQL writes. The build proof checks that local CSS imports have been inlined.

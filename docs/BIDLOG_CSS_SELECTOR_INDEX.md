@@ -1,13 +1,13 @@
 # Bid Log CSS selector index
 
-Generated for C2 from accepted C1 `cf021ce296595b9871a5c04940ffcf38068ec6df`. Paths are relative to `frontend/src/`. Line numbers are a navigation snapshot. Base, state, responsive and print selectors may intentionally repeat; consult their owning-file comments.
+Generated for C3 from accepted C2 `8e477a9f80e01c67c719e0b10d03d797ebf89a36`. Paths are relative to `frontend/src/`. Line numbers are a navigation snapshot. Base, state, responsive and print selectors may intentionally repeat; consult their owning-file comments.
 
-Selector occurrences: **2510**.
+Selector occurrences: **2495**.
 
 | Selector | File and line | Context |
 |---|---|---|
-| `:is( .monthly-table tbody tr, .detail-table tbody tr, .monthly-comparison-row, .month-current-project-row, .completed-project-row, .bid-log-data-row, .active-project-data-row, .pivot-project-row ):hover` | `styles/12-table-teams-and-zebra.css:451` | base |
-| `:is( .monthly-table, .detail-table, .billing-monthly-table, .monthly-project-table, .completed-project-table, .completed-monthly-table, .project-pivot-table, .bid-log-table, .active-bid-monthly-table, .active-project-table ) tbody > tr:nth-child( even of :not(.monthly-project-detail-row):not(.bid-log-notes-row) )` | `styles/12-table-teams-and-zebra.css:409` | base |
+| `:is( .monthly-table tbody tr, .detail-table tbody tr, .monthly-comparison-row, .month-current-project-row, .completed-project-row, .bid-log-data-row, .active-project-data-row, .pivot-project-row ):hover` | `styles/12-table-teams-and-zebra.css:302` | base |
+| `:is( .monthly-table, .detail-table, .billing-monthly-table, .monthly-project-table, .completed-project-table, .completed-monthly-table, .project-pivot-table, .bid-log-table, .active-bid-monthly-table, .active-project-table ) tbody > tr:nth-child( even of :not(.monthly-project-detail-row):not(.bid-log-notes-row) )` | `styles/12-table-teams-and-zebra.css:260` | base |
 | `:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line) > :is(.needs-rebalance-flag, .schedule-review-flag)` | `styles/13-financial-review-and-metrics.css:217` | base |
 | `:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line) > .needs-rebalance-flag` | `styles/13-financial-review-and-metrics.css:225` | base |
 | `:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line) > .needs-rebalance-flag.pending-foundation-flag` | `styles/13-financial-review-and-metrics.css:55` | base |
@@ -147,60 +147,60 @@ Selector occurrences: **2510**.
 | `.action-toast.refresh-feedback` | `styles/11-lifecycle-feedback-and-staffing.css:178` | base |
 | `.action-toast.success` | `styles/11-lifecycle-feedback-and-staffing.css:225` | base |
 | `.action-toast.success .action-toast-icon` | `styles/11-lifecycle-feedback-and-staffing.css:245` | base |
-| `.active-bid-billing-drawer` | `styles/08-notifications-and-inputs.css:468` | base |
-| `.active-bid-drawer-message` | `styles/08-notifications-and-inputs.css:472` | base |
-| `.active-bid-drawer-message.error` | `styles/08-notifications-and-inputs.css:482` | base |
-| `.active-bid-drawer-message.success` | `styles/08-notifications-and-inputs.css:486` | base |
-| `.active-bid-duration-input` | `styles/08-notifications-and-inputs.css:643` | base |
-| `.active-bid-duration-input > span` | `styles/08-notifications-and-inputs.css:658` | base |
-| `.active-bid-duration-input input` | `styles/08-notifications-and-inputs.css:652` | base |
-| `.active-bid-missing-field` | `styles/08-notifications-and-inputs.css:519` | base |
-| `.active-bid-missing-field` | `styles/08-notifications-and-inputs.css:716` | @media (max-width: 800px) |
-| `.active-bid-missing-field small` | `styles/08-notifications-and-inputs.css:525` | base |
-| `.active-bid-monthly-heading` | `styles/08-notifications-and-inputs.css:543` | base |
-| `.active-bid-monthly-heading` | `styles/08-notifications-and-inputs.css:709` | @media (max-width: 800px) |
-| `.active-bid-monthly-table` | `styles/08-notifications-and-inputs.css:700` | base |
-| `.active-bid-monthly-totals` | `styles/08-notifications-and-inputs.css:672` | base |
-| `.active-bid-monthly-totals` | `styles/08-notifications-and-inputs.css:723` | @media (max-width: 800px) |
-| `.active-bid-monthly-totals > span` | `styles/08-notifications-and-inputs.css:678` | base |
-| `.active-bid-monthly-totals > span` | `styles/08-notifications-and-inputs.css:727` | @media (max-width: 800px) |
-| `.active-bid-monthly-totals small` | `styles/08-notifications-and-inputs.css:682` | base |
-| `.active-bid-monthly-totals small` | `styles/08-notifications-and-inputs.css:687` | base |
-| `.active-bid-monthly-totals strong` | `styles/08-notifications-and-inputs.css:682` | base |
-| `.active-bid-monthly-totals strong` | `styles/08-notifications-and-inputs.css:696` | base |
-| `.active-bid-notes-field` | `styles/08-notifications-and-inputs.css:595` | base |
-| `.active-bid-notes-field > span` | `styles/08-notifications-and-inputs.css:602` | base |
-| `.active-bid-notes-field textarea` | `styles/08-notifications-and-inputs.css:624` | base |
-| `.active-bid-notes-field textarea` | `styles/08-notifications-and-inputs.css:638` | base |
-| `.active-bid-readiness-card` | `styles/08-notifications-and-inputs.css:490` | base |
-| `.active-bid-readiness-card` | `styles/08-notifications-and-inputs.css:709` | @media (max-width: 800px) |
-| `.active-bid-readiness-card > div:first-child` | `styles/08-notifications-and-inputs.css:502` | base |
-| `.active-bid-readiness-card p` | `styles/08-notifications-and-inputs.css:512` | base |
-| `.active-bid-readiness-card strong` | `styles/08-notifications-and-inputs.css:506` | base |
-| `.active-bid-settings-actions` | `styles/08-notifications-and-inputs.css:665` | base |
-| `.active-bid-settings-form` | `styles/08-notifications-and-inputs.css:551` | base |
-| `.active-bid-settings-grid` | `styles/08-notifications-and-inputs.css:589` | base |
-| `.active-bid-settings-grid` | `styles/08-notifications-and-inputs.css:705` | @media (max-width: 800px) |
-| `.active-bid-settings-grid > label` | `styles/08-notifications-and-inputs.css:595` | base |
-| `.active-bid-settings-grid > label > span` | `styles/08-notifications-and-inputs.css:602` | base |
-| `.active-bid-settings-grid input` | `styles/08-notifications-and-inputs.css:624` | base |
-| `.active-bid-settings-grid input[type="number"]` | `styles/08-notifications-and-inputs.css:613` | base |
-| `.active-bid-settings-grid input[type="number"]::-webkit-inner-spin-button` | `styles/08-notifications-and-inputs.css:618` | base |
-| `.active-bid-settings-grid input[type="number"]::-webkit-outer-spin-button` | `styles/08-notifications-and-inputs.css:618` | base |
-| `.active-bid-settings-grid small` | `styles/08-notifications-and-inputs.css:581` | base |
-| `.active-bid-settings-heading` | `styles/08-notifications-and-inputs.css:543` | base |
-| `.active-bid-settings-heading` | `styles/08-notifications-and-inputs.css:709` | @media (max-width: 800px) |
-| `.active-bid-settings-section` | `styles/08-notifications-and-inputs.css:535` | base |
-| `.active-bid-settings-toggle` | `styles/08-notifications-and-inputs.css:556` | base |
-| `.active-bid-settings-toggle input` | `styles/08-notifications-and-inputs.css:566` | base |
-| `.active-bid-settings-toggle small` | `styles/08-notifications-and-inputs.css:572` | base |
-| `.active-bid-settings-toggle small` | `styles/08-notifications-and-inputs.css:581` | base |
-| `.active-bid-settings-toggle strong` | `styles/08-notifications-and-inputs.css:572` | base |
-| `.active-bid-settings-toggle strong` | `styles/08-notifications-and-inputs.css:577` | base |
+| `.active-bid-billing-drawer` | `styles/08-notifications-and-inputs.css:461` | base |
+| `.active-bid-drawer-message` | `styles/08-notifications-and-inputs.css:465` | base |
+| `.active-bid-drawer-message.error` | `styles/08-notifications-and-inputs.css:475` | base |
+| `.active-bid-drawer-message.success` | `styles/08-notifications-and-inputs.css:479` | base |
+| `.active-bid-duration-input` | `styles/08-notifications-and-inputs.css:636` | base |
+| `.active-bid-duration-input > span` | `styles/08-notifications-and-inputs.css:651` | base |
+| `.active-bid-duration-input input` | `styles/08-notifications-and-inputs.css:645` | base |
+| `.active-bid-missing-field` | `styles/08-notifications-and-inputs.css:512` | base |
+| `.active-bid-missing-field` | `styles/08-notifications-and-inputs.css:709` | @media (max-width: 800px) |
+| `.active-bid-missing-field small` | `styles/08-notifications-and-inputs.css:518` | base |
+| `.active-bid-monthly-heading` | `styles/08-notifications-and-inputs.css:536` | base |
+| `.active-bid-monthly-heading` | `styles/08-notifications-and-inputs.css:702` | @media (max-width: 800px) |
+| `.active-bid-monthly-table` | `styles/08-notifications-and-inputs.css:693` | base |
+| `.active-bid-monthly-totals` | `styles/08-notifications-and-inputs.css:665` | base |
+| `.active-bid-monthly-totals` | `styles/08-notifications-and-inputs.css:716` | @media (max-width: 800px) |
+| `.active-bid-monthly-totals > span` | `styles/08-notifications-and-inputs.css:671` | base |
+| `.active-bid-monthly-totals > span` | `styles/08-notifications-and-inputs.css:720` | @media (max-width: 800px) |
+| `.active-bid-monthly-totals small` | `styles/08-notifications-and-inputs.css:675` | base |
+| `.active-bid-monthly-totals small` | `styles/08-notifications-and-inputs.css:680` | base |
+| `.active-bid-monthly-totals strong` | `styles/08-notifications-and-inputs.css:675` | base |
+| `.active-bid-monthly-totals strong` | `styles/08-notifications-and-inputs.css:689` | base |
+| `.active-bid-notes-field` | `styles/08-notifications-and-inputs.css:588` | base |
+| `.active-bid-notes-field > span` | `styles/08-notifications-and-inputs.css:595` | base |
+| `.active-bid-notes-field textarea` | `styles/08-notifications-and-inputs.css:617` | base |
+| `.active-bid-notes-field textarea` | `styles/08-notifications-and-inputs.css:631` | base |
+| `.active-bid-readiness-card` | `styles/08-notifications-and-inputs.css:483` | base |
+| `.active-bid-readiness-card` | `styles/08-notifications-and-inputs.css:702` | @media (max-width: 800px) |
+| `.active-bid-readiness-card > div:first-child` | `styles/08-notifications-and-inputs.css:495` | base |
+| `.active-bid-readiness-card p` | `styles/08-notifications-and-inputs.css:505` | base |
+| `.active-bid-readiness-card strong` | `styles/08-notifications-and-inputs.css:499` | base |
+| `.active-bid-settings-actions` | `styles/08-notifications-and-inputs.css:658` | base |
+| `.active-bid-settings-form` | `styles/08-notifications-and-inputs.css:544` | base |
+| `.active-bid-settings-grid` | `styles/08-notifications-and-inputs.css:582` | base |
+| `.active-bid-settings-grid` | `styles/08-notifications-and-inputs.css:698` | @media (max-width: 800px) |
+| `.active-bid-settings-grid > label` | `styles/08-notifications-and-inputs.css:588` | base |
+| `.active-bid-settings-grid > label > span` | `styles/08-notifications-and-inputs.css:595` | base |
+| `.active-bid-settings-grid input` | `styles/08-notifications-and-inputs.css:617` | base |
+| `.active-bid-settings-grid input[type="number"]` | `styles/08-notifications-and-inputs.css:606` | base |
+| `.active-bid-settings-grid input[type="number"]::-webkit-inner-spin-button` | `styles/08-notifications-and-inputs.css:611` | base |
+| `.active-bid-settings-grid input[type="number"]::-webkit-outer-spin-button` | `styles/08-notifications-and-inputs.css:611` | base |
+| `.active-bid-settings-grid small` | `styles/08-notifications-and-inputs.css:574` | base |
+| `.active-bid-settings-heading` | `styles/08-notifications-and-inputs.css:536` | base |
+| `.active-bid-settings-heading` | `styles/08-notifications-and-inputs.css:702` | @media (max-width: 800px) |
+| `.active-bid-settings-section` | `styles/08-notifications-and-inputs.css:528` | base |
+| `.active-bid-settings-toggle` | `styles/08-notifications-and-inputs.css:549` | base |
+| `.active-bid-settings-toggle input` | `styles/08-notifications-and-inputs.css:559` | base |
+| `.active-bid-settings-toggle small` | `styles/08-notifications-and-inputs.css:565` | base |
+| `.active-bid-settings-toggle small` | `styles/08-notifications-and-inputs.css:574` | base |
+| `.active-bid-settings-toggle strong` | `styles/08-notifications-and-inputs.css:565` | base |
+| `.active-bid-settings-toggle strong` | `styles/08-notifications-and-inputs.css:570` | base |
 | `.active-project-contract-cell` | `styles/10-active-projects.css:83` | base |
 | `.active-project-data-row` | `styles/10-active-projects.css:89` | base |
 | `.active-project-data-row:focus-visible` | `styles/10-active-projects.css:93` | base |
-| `.active-project-data-row:has(.project-status-pill.completed)` | `styles/12-table-teams-and-zebra.css:447` | base |
+| `.active-project-data-row:has(.project-status-pill.completed)` | `styles/12-table-teams-and-zebra.css:298` | base |
 | `.active-project-date-cell` | `styles/10-active-projects.css:83` | base |
 | `.active-project-edit-drawer .bid-edit-section` | `styles/10-active-projects.css:435` | base |
 | `.active-project-edit-drawer .bid-edit-section` | `styles/10-active-projects.css:693` | @media (max-width: 760px) |
@@ -230,8 +230,8 @@ Selector occurrences: **2510**.
 | `.active-project-name-cell span` | `styles/10-active-projects.css:66` | base |
 | `.active-project-name-cell strong` | `styles/10-active-projects.css:61` | base |
 | `.active-project-name-line` | `styles/10-active-projects.css:797` | base |
-| `.active-project-name-line` | `styles/12-table-teams-and-zebra.css:357` | base |
-| `.active-project-name-line .project-title-ellipsis` | `styles/12-table-teams-and-zebra.css:361` | base |
+| `.active-project-name-line` | `styles/12-table-teams-and-zebra.css:208` | base |
+| `.active-project-name-line .project-title-ellipsis` | `styles/12-table-teams-and-zebra.css:212` | base |
 | `.active-project-name-line strong` | `styles/10-active-projects.css:803` | base |
 | `.active-project-name-line:has(.needs-rebalance-flag)` | `styles/13-financial-review-and-metrics.css:208` | base |
 | `.active-project-name-line:has(.schedule-review-flag)` | `styles/13-financial-review-and-metrics.css:208` | base |
@@ -260,11 +260,11 @@ Selector occurrences: **2510**.
 | `.active-project-summary-grid` | `styles/10-active-projects.css:17` | base |
 | `.active-project-table` | `styles/10-active-projects.css:44` | base |
 | `.active-project-table thead th` | `styles/10-active-projects.css:48` | base |
-| `.active-project-team-cell` | `styles/12-table-teams-and-zebra.css:365` | base |
+| `.active-project-team-cell` | `styles/12-table-teams-and-zebra.css:216` | base |
 | `.active-projects-workspace` | `styles/10-active-projects.css:13` | base |
-| `.active-projects-workspace.management-admin-preview` | `styles/13-financial-review-and-metrics.css:494` | base |
-| `.active-projects-workspace.management-admin-preview::after` | `styles/13-financial-review-and-metrics.css:499` | base |
-| `.active-projects-workspace.management-admin-preview::after` | `styles/13-financial-review-and-metrics.css:560` | @media (max-width: 760px) |
+| `.active-projects-workspace.management-admin-preview` | `styles/13-financial-review-and-metrics.css:250` | base |
+| `.active-projects-workspace.management-admin-preview::after` | `styles/13-financial-review-and-metrics.css:255` | base |
+| `.active-projects-workspace.management-admin-preview::after` | `styles/13-financial-review-and-metrics.css:316` | @media (max-width: 760px) |
 | `.admin-source-hint` | `styles/02-billing-drawers.css:1184` | base |
 | `.administration-advanced-details` | `AdministrationDashboard.css:120` | base |
 | `.administration-advanced-details>.administration-section` | `AdministrationDashboard.css:123` | base |
@@ -716,12 +716,12 @@ Selector occurrences: **2510**.
 | `.bid-log-merge-from-editor` | `BidLogMergeDialog.css:22` | base |
 | `.bid-log-merge-from-editor:disabled` | `BidLogMergeDialog.css:24` | base |
 | `.bid-log-merge-from-editor:hover:not(:disabled)` | `BidLogMergeDialog.css:23` | base |
-| `.bid-log-name-cell` | `styles/12-table-teams-and-zebra.css:387` | base |
+| `.bid-log-name-cell` | `styles/12-table-teams-and-zebra.css:238` | base |
 | `.bid-log-name-cell span` | `styles/09-bid-log.css:331` | base |
 | `.bid-log-name-cell strong` | `styles/09-bid-log.css:309` | base |
 | `.bid-log-name-line` | `styles/09-bid-log.css:339` | base |
-| `.bid-log-name-line` | `styles/12-table-teams-and-zebra.css:393` | base |
-| `.bid-log-name-line .project-title-ellipsis` | `styles/12-table-teams-and-zebra.css:397` | base |
+| `.bid-log-name-line` | `styles/12-table-teams-and-zebra.css:244` | base |
+| `.bid-log-name-line .project-title-ellipsis` | `styles/12-table-teams-and-zebra.css:248` | base |
 | `.bid-log-name-line > strong` | `styles/09-bid-log.css:345` | base |
 | `.bid-log-new-bid-button` | `BidLogLifecyclePolish.css:5` | base |
 | `.bid-log-new-bid-button` | `styles/11-lifecycle-feedback-and-staffing.css:19` | base |
@@ -1105,11 +1105,11 @@ Selector occurrences: **2510**.
 | `.comparison-bar.actual` | `styles/01-foundations.css:459` | base |
 | `.comparison-bar.expected` | `styles/01-foundations.css:455` | base |
 | `.comparison-bars` | `styles/01-foundations.css:441` | base |
-| `.comparison-view-toggle` | `styles/05-project-pivot.css:13` | base |
-| `.comparison-view-toggle` | `styles/05-project-pivot.css:227` | @media print |
-| `.comparison-view-toggle button` | `styles/05-project-pivot.css:22` | base |
-| `.comparison-view-toggle button:hover` | `styles/05-project-pivot.css:35` | base |
-| `.comparison-view-toggle button.active` | `styles/05-project-pivot.css:39` | base |
+| `.comparison-view-toggle` | `styles/05-project-pivot.css:238` | @media print |
+| `.comparison-view-toggle` | `styles/05-project-pivot.css:24` | base |
+| `.comparison-view-toggle button` | `styles/05-project-pivot.css:33` | base |
+| `.comparison-view-toggle button:hover` | `styles/05-project-pivot.css:46` | base |
+| `.comparison-view-toggle button.active` | `styles/05-project-pivot.css:50` | base |
 | `.completed-benchmark-card` | `styles/02-billing-drawers.css:922` | base |
 | `.completed-benchmark-card p` | `styles/02-billing-drawers.css:949` | base |
 | `.completed-benchmark-card small` | `styles/02-billing-drawers.css:956` | base |
@@ -1259,7 +1259,7 @@ Selector occurrences: **2510**.
 | `.completed-estimator-flags` | `styles/02-billing-drawers.css:703` | base |
 | `.completed-filter-reset` | `styles/02-billing-drawers.css:478` | base |
 | `.completed-filter-reset` | `styles/07-detail-layout-and-filters.css:214` | base |
-| `.completed-gc-column` | `styles/08-notifications-and-inputs.css:461` | base |
+| `.completed-gc-column` | `styles/08-notifications-and-inputs.css:454` | base |
 | `.completed-heading-count` | `styles/02-billing-drawers.css:421` | base |
 | `.completed-heading-title` | `styles/02-billing-drawers.css:414` | base |
 | `.completed-inline-warning` | `styles/02-billing-drawers.css:1401` | base |
@@ -1311,8 +1311,8 @@ Selector occurrences: **2510**.
 | `.completed-project-filter-grid` | `styles/02-billing-drawers.css:769` | @media ( max-width: 1200px ) |
 | `.completed-project-filter-grid` | `styles/02-billing-drawers.css:779` | @media ( max-width: 760px ) |
 | `.completed-project-name` | `styles/02-billing-drawers.css:496` | base |
-| `.completed-project-name` | `styles/12-table-teams-and-zebra.css:371` | base |
-| `.completed-project-name .project-title-ellipsis` | `styles/12-table-teams-and-zebra.css:377` | base |
+| `.completed-project-name` | `styles/12-table-teams-and-zebra.css:222` | base |
+| `.completed-project-name .project-title-ellipsis` | `styles/12-table-teams-and-zebra.css:228` | base |
 | `.completed-project-name span` | `styles/02-billing-drawers.css:502` | base |
 | `.completed-project-name span` | `styles/02-billing-drawers.css:519` | base |
 | `.completed-project-name strong` | `styles/02-billing-drawers.css:502` | base |
@@ -1331,11 +1331,11 @@ Selector occurrences: **2510**.
 | `.completed-project-stats .stat-card` | `styles/02-billing-drawers.css:438` | base |
 | `.completed-project-stats .stat-card small` | `styles/02-billing-drawers.css:449` | base |
 | `.completed-project-stats .stat-card strong` | `styles/02-billing-drawers.css:443` | base |
-| `.completed-project-table` | `styles/08-notifications-and-inputs.css:457` | base |
+| `.completed-project-table` | `styles/08-notifications-and-inputs.css:450` | base |
 | `.completed-project-table .admin-source-hint` | `styles/02-billing-drawers.css:1281` | base |
 | `.completed-project-table .commercial-source-note` | `styles/02-billing-drawers.css:1281` | base |
 | `.completed-project-table .completed-directory-contract-total` | `styles/14-completed-closeout.css:481` | base |
-| `.completed-project-table .project-team-badge-column` | `styles/12-table-teams-and-zebra.css:381` | base |
+| `.completed-project-table .project-team-badge-column` | `styles/12-table-teams-and-zebra.css:232` | base |
 | `.completed-project-table .sortable-column .table-sort-button` | `styles/07-detail-layout-and-filters.css:246` | base |
 | `.completed-project-table td` | `styles/07-detail-layout-and-filters.css:274` | base |
 | `.completed-projects-page` | `styles/02-billing-drawers.css:410` | base |
@@ -1466,24 +1466,24 @@ Selector occurrences: **2510**.
 | `.floating-filter-tab` | `styles/07-detail-layout-and-filters.css:194` | @media (max-width: 640px) |
 | `.floating-filter-tab span` | `styles/07-detail-layout-and-filters.css:34` | base |
 | `.floating-filter-tab:hover` | `styles/07-detail-layout-and-filters.css:40` | base |
-| `.floating-table-controls` | `styles/05-project-pivot.css:548` | @media print |
-| `.floating-table-controls .project-pivot-metric-toggle` | `styles/05-project-pivot.css:527` | base |
-| `.floating-table-controls .project-pivot-month-scroll` | `styles/11-lifecycle-feedback-and-staffing.css:406` | base |
-| `.floating-table-controls .project-pivot-sticky-coverage` | `styles/11-lifecycle-feedback-and-staffing.css:432` | base |
-| `.floating-table-controls .project-pivot-sticky-coverage .projection-source-count-toggle` | `styles/11-lifecycle-feedback-and-staffing.css:442` | base |
-| `.floating-table-controls.project-pivot-toolbar` | `styles/05-project-pivot.css:504` | base |
-| `.floating-table-header` | `styles/05-project-pivot.css:164` | base |
-| `.floating-table-header` | `styles/05-project-pivot.css:227` | @media print |
-| `.floating-table-header-table` | `styles/05-project-pivot.css:191` | base |
-| `.floating-table-header-table th` | `styles/05-project-pivot.css:195` | base |
-| `.floating-table-header-table th.pivot-job-column` | `styles/05-project-pivot.css:200` | base |
-| `.floating-table-header-table th.pivot-probability-column` | `styles/12-table-teams-and-zebra.css:290` | base |
-| `.floating-table-header-table th.pivot-project-column` | `styles/05-project-pivot.css:200` | base |
-| `.floating-table-header-table th.pivot-source-column` | `styles/05-project-pivot.css:200` | base |
-| `.floating-table-header-viewport` | `styles/05-project-pivot.css:178` | base |
-| `.floating-table-header-viewport::-webkit-scrollbar` | `styles/05-project-pivot.css:186` | base |
-| `.floating-table-header.controls-visible .floating-table-controls.project-pivot-toolbar` | `styles/05-project-pivot.css:517` | base |
-| `.floating-table-header.visible` | `styles/05-project-pivot.css:174` | base |
+| `.floating-table-controls` | `styles/05-project-pivot.css:751` | @media print |
+| `.floating-table-controls .project-pivot-metric-toggle` | `styles/05-project-pivot.css:730` | base |
+| `.floating-table-controls .project-pivot-month-scroll` | `styles/05-project-pivot.css:836` | base |
+| `.floating-table-controls .project-pivot-sticky-coverage` | `styles/05-project-pivot.css:862` | base |
+| `.floating-table-controls .project-pivot-sticky-coverage .projection-source-count-toggle` | `styles/05-project-pivot.css:872` | base |
+| `.floating-table-controls.project-pivot-toolbar` | `styles/05-project-pivot.css:707` | base |
+| `.floating-table-header` | `styles/05-project-pivot.css:175` | base |
+| `.floating-table-header` | `styles/05-project-pivot.css:238` | @media print |
+| `.floating-table-header-table` | `styles/05-project-pivot.css:202` | base |
+| `.floating-table-header-table th` | `styles/05-project-pivot.css:206` | base |
+| `.floating-table-header-table th.pivot-job-column` | `styles/05-project-pivot.css:211` | base |
+| `.floating-table-header-table th.pivot-probability-column` | `styles/05-project-pivot.css:360` | base |
+| `.floating-table-header-table th.pivot-project-column` | `styles/05-project-pivot.css:211` | base |
+| `.floating-table-header-table th.pivot-source-column` | `styles/05-project-pivot.css:211` | base |
+| `.floating-table-header-viewport` | `styles/05-project-pivot.css:189` | base |
+| `.floating-table-header-viewport::-webkit-scrollbar` | `styles/05-project-pivot.css:197` | base |
+| `.floating-table-header.controls-visible .floating-table-controls.project-pivot-toolbar` | `styles/05-project-pivot.css:720` | base |
+| `.floating-table-header.visible` | `styles/05-project-pivot.css:185` | base |
 | `.gc-cell` | `styles/01-foundations.css:500` | base |
 | `.gc-chip` | `styles/08-notifications-and-inputs.css:400` | base |
 | `.gc-chip-more` | `styles/08-notifications-and-inputs.css:415` | base |
@@ -1511,12 +1511,12 @@ Selector occurrences: **2510**.
 | `.loading-panel small` | `styles/01-foundations.css:1602` | base |
 | `.loading-panel small` | `styles/01-foundations.css:324` | base |
 | `.loading-screen` | `styles/01-foundations.css:45` | base |
-| `.management-preview-cognito-guide` | `styles/13-financial-review-and-metrics.css:545` | base |
-| `.management-preview-cognito-guide strong` | `styles/13-financial-review-and-metrics.css:555` | base |
-| `.management-preview-drawer-notice` | `styles/13-financial-review-and-metrics.css:541` | base |
-| `.management-preview-notice` | `styles/13-financial-review-and-metrics.css:517` | base |
-| `.management-preview-notice span` | `styles/13-financial-review-and-metrics.css:536` | base |
-| `.management-preview-notice strong` | `styles/13-financial-review-and-metrics.css:530` | base |
+| `.management-preview-cognito-guide` | `styles/13-financial-review-and-metrics.css:301` | base |
+| `.management-preview-cognito-guide strong` | `styles/13-financial-review-and-metrics.css:311` | base |
+| `.management-preview-drawer-notice` | `styles/13-financial-review-and-metrics.css:297` | base |
+| `.management-preview-notice` | `styles/13-financial-review-and-metrics.css:273` | base |
+| `.management-preview-notice span` | `styles/13-financial-review-and-metrics.css:292` | base |
+| `.management-preview-notice strong` | `styles/13-financial-review-and-metrics.css:286` | base |
 | `.microsoft-mark` | `styles/01-foundations.css:816` | base |
 | `.microsoft-mark span:nth-child(1)` | `styles/01-foundations.css:826` | base |
 | `.microsoft-mark span:nth-child(2)` | `styles/01-foundations.css:830` | base |
@@ -1535,10 +1535,10 @@ Selector occurrences: **2510**.
 | `.monthly-comparison-body[hidden]` | `styles/02-billing-drawers.css:383` | base |
 | `.monthly-comparison-row` | `styles/02-billing-drawers.css:277` | base |
 | `.monthly-comparison-row:hover` | `styles/02-billing-drawers.css:282` | base |
-| `.monthly-comparison-row.selected` | `styles/12-table-teams-and-zebra.css:443` | base |
+| `.monthly-comparison-row.selected` | `styles/12-table-teams-and-zebra.css:294` | base |
 | `.monthly-heading-actions` | `styles/02-billing-drawers.css:356` | base |
 | `.monthly-heading-actions` | `styles/02-billing-drawers.css:388` | @media (max-width: 700px) |
-| `.monthly-heading-actions` | `styles/05-project-pivot.css:210` | @media (max-width: 900px) |
+| `.monthly-heading-actions` | `styles/05-project-pivot.css:221` | @media (max-width: 900px) |
 | `.monthly-margin-cell` | `styles/04-projected-workspace.css:121` | base |
 | `.monthly-margin-percent` | `styles/04-projected-workspace.css:125` | base |
 | `.monthly-margin-percent` | `styles/04-projected-workspace.css:136` | base |
@@ -1552,10 +1552,10 @@ Selector occurrences: **2510**.
 | `.monthly-project-detail-row > td` | `styles/02-billing-drawers.css:286` | base |
 | `.monthly-project-detail-row > td` | `styles/02-billing-drawers.css:396` | base |
 | `.monthly-project-table` | `styles/02-billing-drawers.css:316` | base |
-| `.monthly-project-table` | `styles/06-project-references.css:816` | base |
-| `.monthly-project-table .gc-table-cell` | `styles/08-notifications-and-inputs.css:436` | base |
+| `.monthly-project-table` | `styles/06-project-references.css:809` | base |
+| `.monthly-project-table .gc-table-cell` | `styles/08-notifications-and-inputs.css:429` | base |
 | `.monthly-project-table .numeric` | `styles/02-billing-drawers.css:335` | base |
-| `.monthly-project-table .project-cell` | `styles/12-table-teams-and-zebra.css:220` | base |
+| `.monthly-project-table .project-cell` | `styles/12-table-teams-and-zebra.css:166` | base |
 | `.monthly-project-table td` | `styles/02-billing-drawers.css:321` | base |
 | `.monthly-project-table th` | `styles/02-billing-drawers.css:321` | base |
 | `.monthly-project-table th` | `styles/02-billing-drawers.css:328` | base |
@@ -1633,7 +1633,7 @@ Selector occurrences: **2510**.
 | `.notification-view-project` | `styles/08-notifications-and-inputs.css:232` | base |
 | `.numeric` | `styles/01-foundations.css:528` | base |
 | `.numeric .table-sort-button` | `styles/04-projected-workspace.css:74` | base |
-| `.organizer-notes-field` | `styles/11-lifecycle-feedback-and-staffing.css:922` | base |
+| `.organizer-notes-field` | `styles/11-lifecycle-feedback-and-staffing.css:694` | base |
 | `.originating-bid-attention-drawer` | `styles/08-notifications-and-inputs.css:236` | base |
 | `.originating-bid-candidate` | `styles/06-project-references.css:375` | base |
 | `.originating-bid-candidate-facts` | `styles/06-project-references.css:181` | base |
@@ -1728,73 +1728,65 @@ Selector occurrences: **2510**.
 | `.page-shell` | `styles/01-foundations.css:1388` | base |
 | `.page-shell` | `styles/01-foundations.css:1712` | @media (max-width: 900px) |
 | `.page-shell` | `styles/01-foundations.css:1764` | @media (max-width: 760px) |
-| `.pivot-billing-amount-line` | `styles/13-financial-review-and-metrics.css:324` | base |
-| `.pivot-billing-amount-line` | `styles/13-financial-review-and-metrics.css:348` | base |
-| `.pivot-billing-amount-line strong` | `styles/13-financial-review-and-metrics.css:352` | base |
-| `.pivot-billing-amount-line.variance-negative strong` | `styles/13-financial-review-and-metrics.css:360` | base |
-| `.pivot-billing-amounts` | `styles/13-financial-review-and-metrics.css:300` | base |
-| `.pivot-billing-cell` | `styles/05-project-pivot.css:429` | base |
-| `.pivot-billing-cell .variance-negative strong` | `styles/05-project-pivot.css:153` | base |
-| `.pivot-billing-cell .variance-positive strong` | `styles/05-project-pivot.css:148` | base |
-| `.pivot-billing-cell > span` | `styles/05-project-pivot.css:126` | base |
-| `.pivot-billing-cell small` | `styles/05-project-pivot.css:133` | base |
-| `.pivot-billing-cell strong` | `styles/05-project-pivot.css:141` | base |
-| `.pivot-billing-line` | `styles/05-project-pivot.css:434` | base |
-| `.pivot-billing-line small` | `styles/05-project-pivot.css:441` | base |
-| `.pivot-billing-line strong` | `styles/05-project-pivot.css:449` | base |
-| `.pivot-billing-line.variance-negative strong` | `styles/05-project-pivot.css:464` | base |
-| `.pivot-empty-value` | `styles/05-project-pivot.css:158` | base |
-| `.pivot-header-activity-counts` | `styles/11-lifecycle-feedback-and-staffing.css:492` | base |
-| `.pivot-header-activity-counts` | `styles/12-table-teams-and-zebra.css:297` | base |
-| `.pivot-header-activity-counts .pivot-header-billed-count` | `styles/11-lifecycle-feedback-and-staffing.css:498` | base |
-| `.pivot-header-activity-separator` | `styles/11-lifecycle-feedback-and-staffing.css:522` | base |
-| `.pivot-header-activity-separator` | `styles/12-table-teams-and-zebra.css:304` | base |
-| `.pivot-header-billed-count` | `styles/11-lifecycle-feedback-and-staffing.css:534` | base |
-| `.pivot-header-total` | `styles/11-lifecycle-feedback-and-staffing.css:453` | base |
-| `.pivot-header-total-label` | `styles/11-lifecycle-feedback-and-staffing.css:460` | base |
-| `.pivot-header-total-value` | `styles/11-lifecycle-feedback-and-staffing.css:468` | base |
-| `.pivot-header-total-value-actual` | `styles/11-lifecycle-feedback-and-staffing.css:526` | base |
-| `.pivot-header-total-value-variance.variance-negative` | `styles/11-lifecycle-feedback-and-staffing.css:530` | base |
-| `.pivot-header-total-values` | `styles/11-lifecycle-feedback-and-staffing.css:478` | base |
-| `.pivot-header-total-values` | `styles/12-table-teams-and-zebra.css:297` | base |
-| `.pivot-header-total-values-all` | `styles/11-lifecycle-feedback-and-staffing.css:485` | base |
-| `.pivot-metric-label` | `styles/13-financial-review-and-metrics.css:324` | base |
-| `.pivot-metric-label` | `styles/13-financial-review-and-metrics.css:332` | base |
-| `.pivot-metric-label abbr` | `styles/13-financial-review-and-metrics.css:340` | base |
-| `.pivot-metric-label-list` | `styles/13-financial-review-and-metrics.css:300` | base |
+| `.pivot-billing-amount-line` | `styles/05-project-pivot.css:1069` | base |
+| `.pivot-billing-amount-line` | `styles/05-project-pivot.css:1093` | base |
+| `.pivot-billing-amount-line strong` | `styles/05-project-pivot.css:1097` | base |
+| `.pivot-billing-amount-line.variance-negative strong` | `styles/05-project-pivot.css:1105` | base |
+| `.pivot-billing-amounts` | `styles/05-project-pivot.css:1045` | base |
+| `.pivot-billing-cell` | `styles/05-project-pivot.css:631` | base |
+| `.pivot-billing-cell .variance-negative strong` | `styles/05-project-pivot.css:164` | base |
+| `.pivot-billing-cell .variance-positive strong` | `styles/05-project-pivot.css:159` | base |
+| `.pivot-billing-cell > span` | `styles/05-project-pivot.css:137` | base |
+| `.pivot-billing-cell small` | `styles/05-project-pivot.css:144` | base |
+| `.pivot-billing-cell strong` | `styles/05-project-pivot.css:152` | base |
+| `.pivot-billing-line` | `styles/05-project-pivot.css:636` | base |
+| `.pivot-billing-line small` | `styles/05-project-pivot.css:643` | base |
+| `.pivot-billing-line strong` | `styles/05-project-pivot.css:651` | base |
+| `.pivot-billing-line.variance-negative strong` | `styles/05-project-pivot.css:666` | base |
+| `.pivot-empty-value` | `styles/05-project-pivot.css:169` | base |
+| `.pivot-header-activity-counts` | `styles/05-project-pivot.css:925` | base |
+| `.pivot-header-activity-counts .pivot-header-billed-count` | `styles/05-project-pivot.css:934` | base |
+| `.pivot-header-activity-separator` | `styles/05-project-pivot.css:961` | base |
+| `.pivot-header-billed-count` | `styles/05-project-pivot.css:974` | base |
+| `.pivot-header-total` | `styles/05-project-pivot.css:883` | base |
+| `.pivot-header-total-label` | `styles/05-project-pivot.css:890` | base |
+| `.pivot-header-total-value` | `styles/05-project-pivot.css:898` | base |
+| `.pivot-header-total-value-actual` | `styles/05-project-pivot.css:966` | base |
+| `.pivot-header-total-value-variance.variance-negative` | `styles/05-project-pivot.css:970` | base |
+| `.pivot-header-total-values` | `styles/05-project-pivot.css:908` | base |
+| `.pivot-header-total-values-all` | `styles/05-project-pivot.css:918` | base |
+| `.pivot-metric-label` | `styles/05-project-pivot.css:1069` | base |
+| `.pivot-metric-label` | `styles/05-project-pivot.css:1077` | base |
+| `.pivot-metric-label abbr` | `styles/05-project-pivot.css:1085` | base |
+| `.pivot-metric-label-list` | `styles/05-project-pivot.css:1045` | base |
 | `.pivot-needs-rebalance` | `styles/13-financial-review-and-metrics.css:38` | base |
-| `.pivot-pm-color-dot` | `styles/05-project-pivot.css:354` | base |
-| `.pivot-pm-initials` | `styles/05-project-pivot.css:364` | base |
-| `.pivot-pm-meta` | `styles/05-project-pivot.css:264` | base |
-| `.pivot-project-context-group` | `styles/05-project-pivot.css:395` | base |
-| `.pivot-project-context-item` | `styles/05-project-pivot.css:401` | base |
-| `.pivot-project-context-line` | `styles/05-project-pivot.css:383` | base |
-| `.pivot-project-context-separator` | `styles/05-project-pivot.css:408` | base |
-| `.pivot-project-gc` | `styles/05-project-pivot.css:413` | base |
-| `.pivot-project-info` | `styles/05-project-pivot.css:332` | base |
-| `.pivot-project-info` | `styles/12-table-teams-and-zebra.css:190` | base |
-| `.pivot-project-meta` | `styles/05-project-pivot.css:253` | base |
-| `.pivot-project-meta-separator` | `styles/05-project-pivot.css:271` | base |
-| `.pivot-project-name` | `styles/05-project-pivot.css:337` | base |
-| `.pivot-project-name` | `styles/12-table-teams-and-zebra.css:201` | base |
-| `.pivot-project-name` | `styles/12-table-teams-and-zebra.css:209` | base |
-| `.pivot-project-name-line` | `styles/12-table-teams-and-zebra.css:190` | base |
-| `.pivot-project-name-line` | `styles/12-table-teams-and-zebra.css:196` | base |
-| `.pivot-project-name-line` | `styles/12-table-teams-and-zebra.css:46` | base |
+| `.pivot-pm-color-dot` | `styles/05-project-pivot.css:513` | base |
+| `.pivot-pm-initials` | `styles/05-project-pivot.css:523` | base |
+| `.pivot-pm-meta` | `styles/05-project-pivot.css:415` | base |
+| `.pivot-project-context-group` | `styles/05-project-pivot.css:554` | base |
+| `.pivot-project-context-item` | `styles/05-project-pivot.css:560` | base |
+| `.pivot-project-context-line` | `styles/05-project-pivot.css:542` | base |
+| `.pivot-project-context-separator` | `styles/05-project-pivot.css:567` | base |
+| `.pivot-project-gc` | `styles/05-project-pivot.css:572` | base |
+| `.pivot-project-info` | `styles/05-project-pivot.css:484` | base |
+| `.pivot-project-meta` | `styles/05-project-pivot.css:404` | base |
+| `.pivot-project-meta-separator` | `styles/05-project-pivot.css:422` | base |
+| `.pivot-project-name` | `styles/05-project-pivot.css:490` | base |
+| `.pivot-project-name-line` | `styles/05-project-pivot.css:586` | base |
 | `.pivot-project-name-line:has(.needs-rebalance-flag)` | `styles/13-financial-review-and-metrics.css:208` | base |
 | `.pivot-project-name-line:has(.schedule-review-flag)` | `styles/13-financial-review-and-metrics.css:208` | base |
-| `.pivot-project-pm-line` | `styles/05-project-pivot.css:344` | base |
-| `.pivot-project-role-label` | `styles/05-project-pivot.css:375` | base |
-| `.pivot-project-row:hover td.pivot-job-column` | `styles/05-project-pivot.css:117` | base |
-| `.pivot-project-row:hover td.pivot-project-column` | `styles/05-project-pivot.css:117` | base |
-| `.pivot-project-row:hover td.pivot-source-column` | `styles/05-project-pivot.css:117` | base |
-| `.pivot-project-value-line` | `styles/12-table-teams-and-zebra.css:24` | base |
-| `.pivot-project-value-line small` | `styles/12-table-teams-and-zebra.css:32` | base |
-| `.pivot-project-value-line strong` | `styles/12-table-teams-and-zebra.css:40` | base |
-| `.pivot-project-values` | `styles/12-table-teams-and-zebra.css:19` | base |
-| `.pivot-single-value` | `styles/05-project-pivot.css:456` | base |
-| `.pivot-single-value.variance-negative` | `styles/05-project-pivot.css:464` | base |
-| `.pivot-variance-mode-indicator` | `styles/13-financial-review-and-metrics.css:569` | base |
+| `.pivot-project-pm-line` | `styles/05-project-pivot.css:503` | base |
+| `.pivot-project-role-label` | `styles/05-project-pivot.css:534` | base |
+| `.pivot-project-row:hover td.pivot-job-column` | `styles/05-project-pivot.css:128` | base |
+| `.pivot-project-row:hover td.pivot-project-column` | `styles/05-project-pivot.css:128` | base |
+| `.pivot-project-row:hover td.pivot-source-column` | `styles/05-project-pivot.css:128` | base |
+| `.pivot-project-value-line` | `styles/05-project-pivot.css:607` | base |
+| `.pivot-project-value-line small` | `styles/05-project-pivot.css:615` | base |
+| `.pivot-project-value-line strong` | `styles/05-project-pivot.css:623` | base |
+| `.pivot-project-values` | `styles/05-project-pivot.css:602` | base |
+| `.pivot-single-value` | `styles/05-project-pivot.css:658` | base |
+| `.pivot-single-value.variance-negative` | `styles/05-project-pivot.css:666` | base |
+| `.pivot-variance-mode-indicator` | `styles/05-project-pivot.css:1222` | base |
 | `.place-1 .administration-podium-step` | `AdministrationUsagePanel.css:21` | base |
 | `.place-1 .administration-podium-step` | `AdministrationUsagePanel.css:38` | @media (max-width:650px) |
 | `.place-2 .administration-podium-step` | `AdministrationUsagePanel.css:22` | base |
@@ -1915,8 +1907,8 @@ Selector occurrences: **2510**.
 | `.primary-filters` | `styles/01-foundations.css:984` | @media (max-width: 1180px) |
 | `.primary-projection-amount` | `ProjectionDisplay.css:2` | base |
 | `.probability-input` | `styles/08-notifications-and-inputs.css:330` | base |
-| `.probability-input` | `styles/08-notifications-and-inputs.css:444` | @media (max-width: 1180px) |
-| `.probability-input` | `styles/08-notifications-and-inputs.css:450` | @media (max-width: 900px) |
+| `.probability-input` | `styles/08-notifications-and-inputs.css:437` | @media (max-width: 1180px) |
+| `.probability-input` | `styles/08-notifications-and-inputs.css:443` | @media (max-width: 900px) |
 | `.probability-input > span` | `styles/08-notifications-and-inputs.css:337` | base |
 | `.probability-input-control` | `styles/08-notifications-and-inputs.css:346` | base |
 | `.probability-input-control > span` | `styles/08-notifications-and-inputs.css:378` | base |
@@ -1924,15 +1916,15 @@ Selector occurrences: **2510**.
 | `.probability-input-control input::-webkit-inner-spin-button` | `styles/08-notifications-and-inputs.css:372` | base |
 | `.probability-input-control input::-webkit-outer-spin-button` | `styles/08-notifications-and-inputs.css:372` | base |
 | `.probability-input:focus-within .probability-input-control` | `styles/08-notifications-and-inputs.css:384` | base |
-| `.probability-input.compact` | `styles/08-notifications-and-inputs.css:738` | base |
-| `.probability-input.compact` | `styles/08-notifications-and-inputs.css:779` | @media (max-width: 1180px) |
+| `.probability-input.compact` | `styles/08-notifications-and-inputs.css:731` | base |
+| `.probability-input.compact` | `styles/08-notifications-and-inputs.css:743` | @media (max-width: 1180px) |
 | `.progress-fill` | `styles/01-foundations.css:338` | base |
 | `.progress-track` | `styles/01-foundations.css:330` | base |
 | `.project-cell` | `styles/01-foundations.css:484` | base |
 | `.project-cell span` | `styles/01-foundations.css:493` | base |
 | `.project-cell strong` | `styles/01-foundations.css:488` | base |
-| `.project-completed-pill` | `styles/12-table-teams-and-zebra.css:53` | base |
-| `.project-completed-pill` | `styles/12-table-teams-and-zebra.css:60` | base |
+| `.project-completed-pill` | `styles/12-table-teams-and-zebra.css:19` | base |
+| `.project-completed-pill` | `styles/12-table-teams-and-zebra.css:26` | base |
 | `.project-directory-completed-dot` | `styles/10-active-projects.css:783` | base |
 | `.project-directory-completed-toggle` | `styles/10-active-projects.css:752` | base |
 | `.project-directory-completed-toggle` | `styles/10-active-projects.css:836` | @media (max-width: 760px) |
@@ -1943,124 +1935,118 @@ Selector occurrences: **2510**.
 | `.project-location-line` | `styles/04-projected-workspace.css:160` | @media (max-width: 900px) |
 | `.project-location-line` | `styles/04-projected-workspace.css:39` | base |
 | `.project-month-cell` | `styles/04-projected-workspace.css:46` | base |
-| `.project-name-status-line` | `styles/12-table-teams-and-zebra.css:190` | base |
-| `.project-name-status-line` | `styles/12-table-teams-and-zebra.css:196` | base |
-| `.project-name-status-line` | `styles/12-table-teams-and-zebra.css:46` | base |
+| `.project-name-status-line` | `styles/12-table-teams-and-zebra.css:11` | base |
 | `.project-name-status-line:has(.needs-rebalance-flag)` | `styles/13-financial-review-and-metrics.css:208` | base |
 | `.project-name-status-line:has(.schedule-review-flag)` | `styles/13-financial-review-and-metrics.css:208` | base |
-| `.project-pivot-metric-toggle` | `styles/05-project-pivot.css:298` | base |
-| `.project-pivot-metric-toggle button` | `styles/05-project-pivot.css:307` | base |
-| `.project-pivot-metric-toggle button:hover` | `styles/05-project-pivot.css:320` | base |
-| `.project-pivot-metric-toggle button.active` | `styles/05-project-pivot.css:324` | base |
-| `.project-pivot-month-scroll` | `styles/11-lifecycle-feedback-and-staffing.css:329` | base |
-| `.project-pivot-month-scroll` | `styles/11-lifecycle-feedback-and-staffing.css:418` | @media print |
-| `.project-pivot-month-scroll-button` | `styles/11-lifecycle-feedback-and-staffing.css:349` | base |
-| `.project-pivot-month-scroll-button:hover` | `styles/11-lifecycle-feedback-and-staffing.css:366` | base |
-| `.project-pivot-month-scroll-label` | `styles/11-lifecycle-feedback-and-staffing.css:340` | base |
-| `.project-pivot-month-scroll-range` | `styles/11-lifecycle-feedback-and-staffing.css:372` | base |
-| `.project-pivot-month-scroll-range` | `styles/11-lifecycle-feedback-and-staffing.css:412` | @media (max-width: 760px) |
-| `.project-pivot-shell` | `styles/05-project-pivot.css:277` | base |
-| `.project-pivot-sticky-coverage` | `styles/11-lifecycle-feedback-and-staffing.css:428` | base |
-| `.project-pivot-table` | `styles/05-project-pivot.css:45` | base |
-| `.project-pivot-table .pivot-gc-column` | `styles/08-notifications-and-inputs.css:429` | base |
-| `.project-pivot-table .pivot-job-column` | `styles/05-project-pivot.css:62` | base |
-| `.project-pivot-table .pivot-month-column` | `styles/05-project-pivot.css:241` | base |
-| `.project-pivot-table .pivot-probability-column` | `styles/12-table-teams-and-zebra.css:231` | base |
-| `.project-pivot-table .pivot-project-column` | `styles/05-project-pivot.css:218` | @media (max-width: 760px) |
-| `.project-pivot-table .pivot-project-column` | `styles/05-project-pivot.css:69` | base |
-| `.project-pivot-table .pivot-project-row:hover > :is( td.pivot-source-column, td.pivot-job-column, td.pivot-project-column, td.pivot-probability-column )` | `styles/12-table-teams-and-zebra.css:464` | base |
-| `.project-pivot-table .pivot-project-values-column` | `styles/12-table-teams-and-zebra.css:13` | base |
-| `.project-pivot-table .pivot-source-column` | `styles/05-project-pivot.css:55` | base |
-| `.project-pivot-table .pivot-team-column` | `styles/06-project-references.css:809` | base |
-| `.project-pivot-table .pivot-total-column` | `styles/05-project-pivot.css:241` | base |
-| `.project-pivot-table tbody > tr:nth-child(even of .pivot-project-row) > :is( td.pivot-source-column, td.pivot-job-column, td.pivot-project-column, td.pivot-probability-column )` | `styles/12-table-teams-and-zebra.css:430` | base |
-| `.project-pivot-table td` | `styles/05-project-pivot.css:50` | base |
-| `.project-pivot-table td.pivot-job-column` | `styles/05-project-pivot.css:86` | base |
-| `.project-pivot-table td.pivot-project-column` | `styles/05-project-pivot.css:96` | base |
-| `.project-pivot-table td.pivot-project-column` | `styles/08-notifications-and-inputs.css:766` | base |
-| `.project-pivot-table td.pivot-source-column` | `styles/05-project-pivot.css:76` | base |
-| `.project-pivot-table th` | `styles/05-project-pivot.css:50` | base |
-| `.project-pivot-table th.pivot-job-column` | `styles/05-project-pivot.css:107` | base |
-| `.project-pivot-table th.pivot-job-column` | `styles/05-project-pivot.css:86` | base |
+| `.project-pivot-metric-toggle` | `styles/05-project-pivot.css:450` | base |
+| `.project-pivot-metric-toggle button` | `styles/05-project-pivot.css:459` | base |
+| `.project-pivot-metric-toggle button:hover` | `styles/05-project-pivot.css:472` | base |
+| `.project-pivot-metric-toggle button.active` | `styles/05-project-pivot.css:476` | base |
+| `.project-pivot-month-scroll` | `styles/05-project-pivot.css:759` | base |
+| `.project-pivot-month-scroll` | `styles/05-project-pivot.css:848` | @media print |
+| `.project-pivot-month-scroll-button` | `styles/05-project-pivot.css:779` | base |
+| `.project-pivot-month-scroll-button:hover` | `styles/05-project-pivot.css:796` | base |
+| `.project-pivot-month-scroll-label` | `styles/05-project-pivot.css:770` | base |
+| `.project-pivot-month-scroll-range` | `styles/05-project-pivot.css:802` | base |
+| `.project-pivot-month-scroll-range` | `styles/05-project-pivot.css:842` | @media (max-width: 760px) |
+| `.project-pivot-shell` | `styles/05-project-pivot.css:428` | base |
+| `.project-pivot-sticky-coverage` | `styles/05-project-pivot.css:858` | base |
+| `.project-pivot-table` | `styles/05-project-pivot.css:56` | base |
+| `.project-pivot-table .pivot-gc-column` | `styles/05-project-pivot.css:253` | base |
+| `.project-pivot-table .pivot-job-column` | `styles/05-project-pivot.css:73` | base |
+| `.project-pivot-table .pivot-month-column` | `styles/05-project-pivot.css:392` | base |
+| `.project-pivot-table .pivot-probability-column` | `styles/05-project-pivot.css:301` | base |
+| `.project-pivot-table .pivot-project-column` | `styles/05-project-pivot.css:229` | @media (max-width: 760px) |
+| `.project-pivot-table .pivot-project-column` | `styles/05-project-pivot.css:80` | base |
+| `.project-pivot-table .pivot-project-row:hover > :is( td.pivot-source-column, td.pivot-job-column, td.pivot-project-column, td.pivot-probability-column )` | `styles/12-table-teams-and-zebra.css:315` | base |
+| `.project-pivot-table .pivot-project-values-column` | `styles/05-project-pivot.css:596` | base |
+| `.project-pivot-table .pivot-source-column` | `styles/05-project-pivot.css:66` | base |
+| `.project-pivot-table .pivot-team-column` | `styles/05-project-pivot.css:246` | base |
+| `.project-pivot-table .pivot-total-column` | `styles/05-project-pivot.css:392` | base |
+| `.project-pivot-table tbody > tr:nth-child(even of .pivot-project-row) > :is( td.pivot-source-column, td.pivot-job-column, td.pivot-project-column, td.pivot-probability-column )` | `styles/12-table-teams-and-zebra.css:281` | base |
+| `.project-pivot-table td` | `styles/05-project-pivot.css:61` | base |
+| `.project-pivot-table td.pivot-job-column` | `styles/05-project-pivot.css:97` | base |
+| `.project-pivot-table td.pivot-project-column` | `styles/05-project-pivot.css:107` | base |
+| `.project-pivot-table td.pivot-project-column` | `styles/05-project-pivot.css:289` | base |
+| `.project-pivot-table td.pivot-source-column` | `styles/05-project-pivot.css:87` | base |
+| `.project-pivot-table th` | `styles/05-project-pivot.css:61` | base |
+| `.project-pivot-table th.pivot-job-column` | `styles/05-project-pivot.css:118` | base |
+| `.project-pivot-table th.pivot-job-column` | `styles/05-project-pivot.css:97` | base |
 | `.project-pivot-table th.pivot-project-column` | `styles/05-project-pivot.css:107` | base |
-| `.project-pivot-table th.pivot-project-column` | `styles/05-project-pivot.css:96` | base |
-| `.project-pivot-table th.pivot-project-column` | `styles/08-notifications-and-inputs.css:766` | base |
-| `.project-pivot-table th.pivot-source-column` | `styles/05-project-pivot.css:107` | base |
-| `.project-pivot-table th.pivot-source-column` | `styles/05-project-pivot.css:76` | base |
-| `.project-pivot-table:not(.pivot-metric-all) .pivot-month-column` | `styles/05-project-pivot.css:472` | base |
-| `.project-pivot-table:not(.pivot-metric-all) .pivot-month-column` | `styles/05-project-pivot.css:537` | @media (max-width: 760px) |
-| `.project-pivot-table:not(.pivot-metric-all) .pivot-total-column` | `styles/05-project-pivot.css:472` | base |
-| `.project-pivot-table:not(.pivot-metric-all) .pivot-total-column` | `styles/05-project-pivot.css:537` | @media (max-width: 760px) |
-| `.project-pivot-table:not(.pivot-metric-all) tbody td` | `styles/05-project-pivot.css:496` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-activity-counts` | `styles/11-lifecycle-feedback-and-staffing.css:506` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-activity-counts` | `styles/13-financial-review-and-metrics.css:418` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-activity-counts .pivot-header-billed-count` | `styles/11-lifecycle-feedback-and-staffing.css:512` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-activity-counts .pivot-header-billed-count` | `styles/13-financial-review-and-metrics.css:423` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-activity-counts` | `styles/13-financial-review-and-metrics.css:469` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-metric-baseline` | `styles/13-financial-review-and-metrics.css:481` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-metric-count` | `styles/13-financial-review-and-metrics.css:475` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-metric-label` | `styles/13-financial-review-and-metrics.css:458` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-total-label` | `styles/13-financial-review-and-metrics.css:446` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-total-values-all` | `styles/13-financial-review-and-metrics.css:453` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-total-label` | `styles/13-financial-review-and-metrics.css:401` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-total-values-all` | `styles/13-financial-review-and-metrics.css:406` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-total-values-all .pivot-header-total-value` | `styles/13-financial-review-and-metrics.css:411` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-metric-labels-column` | `styles/13-financial-review-and-metrics.css:254` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-month-column` | `styles/13-financial-review-and-metrics.css:367` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-month-column .table-sort-button` | `styles/13-financial-review-and-metrics.css:487` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-project-row:hover > td.pivot-metric-labels-column` | `styles/13-financial-review-and-metrics.css:382` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-total-column` | `styles/13-financial-review-and-metrics.css:367` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-total-column .table-sort-button` | `styles/13-financial-review-and-metrics.css:487` | base |
-| `.project-pivot-table.pivot-metric-all tbody > tr:nth-child(even of .pivot-project-row) > td.pivot-metric-labels-column` | `styles/13-financial-review-and-metrics.css:376` | base |
-| `.project-pivot-table.pivot-metric-all tbody td` | `styles/05-project-pivot.css:490` | base |
-| `.project-pivot-table.pivot-metric-all tbody td.pivot-metric-labels-column` | `styles/13-financial-review-and-metrics.css:391` | base |
-| `.project-pivot-table.pivot-metric-all tbody td.pivot-month-column` | `styles/13-financial-review-and-metrics.css:391` | base |
-| `.project-pivot-table.pivot-metric-all tbody td.pivot-total-column` | `styles/13-financial-review-and-metrics.css:391` | base |
-| `.project-pivot-table.pivot-metric-all th.pivot-metric-labels-column` | `styles/13-financial-review-and-metrics.css:274` | base |
-| `.project-pivot-table.pivot-metric-all th.pivot-metric-labels-column` | `styles/13-financial-review-and-metrics.css:428` | base |
-| `.project-pivot-table.pivot-metric-all th.pivot-metric-labels-column .pivot-header-metric-rail` | `styles/13-financial-review-and-metrics.css:436` | base |
-| `.project-pivot-table.pivot-metric-all.pivot-history-only .pivot-billing-amounts` | `styles/13-financial-review-and-metrics.css:319` | base |
-| `.project-pivot-table.pivot-metric-all.pivot-history-only .pivot-metric-label-list` | `styles/13-financial-review-and-metrics.css:319` | base |
-| `.project-pivot-table.pivot-metric-all.pivot-metric-labels-pinned .pivot-metric-labels-column` | `styles/13-financial-review-and-metrics.css:288` | base |
-| `.project-pivot-table.pivot-metric-all.pivot-no-margin .pivot-billing-amounts` | `styles/13-financial-review-and-metrics.css:311` | base |
-| `.project-pivot-table.pivot-metric-all.pivot-no-margin .pivot-metric-label-list` | `styles/13-financial-review-and-metrics.css:311` | base |
-| `.project-pivot-table.pivot-metric-all.pivot-source-combined .pivot-metric-labels-column` | `styles/13-financial-review-and-metrics.css:268` | base |
-| `.project-pivot-table.pivot-metric-variance .pivot-month-column` | `styles/05-project-pivot.css:481` | base |
-| `.project-pivot-table.pivot-metric-variance .pivot-total-column` | `styles/05-project-pivot.css:481` | base |
-| `.project-pivot-table.pivot-source-active td.pivot-job-column` | `styles/08-notifications-and-inputs.css:745` | base |
-| `.project-pivot-table.pivot-source-active td.pivot-project-column` | `styles/08-notifications-and-inputs.css:752` | base |
-| `.project-pivot-table.pivot-source-active th.pivot-job-column` | `styles/08-notifications-and-inputs.css:745` | base |
-| `.project-pivot-table.pivot-source-active th.pivot-project-column` | `styles/08-notifications-and-inputs.css:752` | base |
-| `.project-pivot-table.pivot-source-combined .pivot-project-row:hover td.pivot-probability-column` | `styles/12-table-teams-and-zebra.css:281` | base |
-| `.project-pivot-table.pivot-source-combined td.pivot-probability-column` | `styles/12-table-teams-and-zebra.css:249` | base |
-| `.project-pivot-table.pivot-source-combined td.pivot-probability-column` | `styles/12-table-teams-and-zebra.css:266` | base |
-| `.project-pivot-table.pivot-source-combined td.pivot-probability-column` | `styles/12-table-teams-and-zebra.css:347` | @media (max-width: 760px) |
-| `.project-pivot-table.pivot-source-combined td.pivot-project-column` | `styles/12-table-teams-and-zebra.css:237` | base |
-| `.project-pivot-table.pivot-source-combined th.pivot-probability-column` | `styles/12-table-teams-and-zebra.css:249` | base |
-| `.project-pivot-table.pivot-source-combined th.pivot-probability-column` | `styles/12-table-teams-and-zebra.css:266` | base |
-| `.project-pivot-table.pivot-source-combined th.pivot-probability-column` | `styles/12-table-teams-and-zebra.css:273` | base |
-| `.project-pivot-table.pivot-source-combined th.pivot-probability-column` | `styles/12-table-teams-and-zebra.css:347` | @media (max-width: 760px) |
-| `.project-pivot-table.pivot-source-combined th.pivot-project-column` | `styles/12-table-teams-and-zebra.css:237` | base |
-| `.project-pivot-table.pivot-source-potential .pivot-project-row:hover td.pivot-probability-column` | `styles/12-table-teams-and-zebra.css:281` | base |
-| `.project-pivot-table.pivot-source-potential td.pivot-probability-column` | `styles/12-table-teams-and-zebra.css:249` | base |
-| `.project-pivot-table.pivot-source-potential td.pivot-probability-column` | `styles/12-table-teams-and-zebra.css:340` | @media (max-width: 760px) |
-| `.project-pivot-table.pivot-source-potential td.pivot-project-column` | `styles/08-notifications-and-inputs.css:759` | base |
-| `.project-pivot-table.pivot-source-potential td.pivot-project-column` | `styles/12-table-teams-and-zebra.css:237` | base |
-| `.project-pivot-table.pivot-source-potential th.pivot-probability-column` | `styles/12-table-teams-and-zebra.css:249` | base |
-| `.project-pivot-table.pivot-source-potential th.pivot-probability-column` | `styles/12-table-teams-and-zebra.css:273` | base |
-| `.project-pivot-table.pivot-source-potential th.pivot-probability-column` | `styles/12-table-teams-and-zebra.css:340` | @media (max-width: 760px) |
-| `.project-pivot-table.pivot-source-potential th.pivot-project-column` | `styles/08-notifications-and-inputs.css:759` | base |
-| `.project-pivot-table.pivot-source-potential th.pivot-project-column` | `styles/12-table-teams-and-zebra.css:237` | base |
-| `.project-pivot-toolbar` | `styles/05-project-pivot.css:282` | base |
-| `.project-pivot-toolbar` | `styles/05-project-pivot.css:533` | @media (max-width: 760px) |
-| `.project-pivot-toolbar` | `styles/05-project-pivot.css:548` | @media print |
-| `.project-pivot-toolbar` | `styles/11-lifecycle-feedback-and-staffing.css:325` | base |
-| `.project-pivot-toolbar-label` | `styles/05-project-pivot.css:290` | base |
-| `.project-pivot-toolbar.horizontal-scroll-disabled .project-pivot-month-scroll` | `styles/11-lifecycle-feedback-and-staffing.css:380` | base |
-| `.project-pivot-toolbar.horizontal-scroll-disabled .project-pivot-month-scroll-button` | `styles/11-lifecycle-feedback-and-staffing.css:385` | base |
-| `.project-pivot-toolbar.horizontal-scroll-disabled .project-pivot-month-scroll-range` | `styles/11-lifecycle-feedback-and-staffing.css:385` | base |
-| `.project-pivot-wrap` | `styles/11-lifecycle-feedback-and-staffing.css:396` | base |
-| `.project-pivot-wrap::-webkit-scrollbar` | `styles/11-lifecycle-feedback-and-staffing.css:401` | base |
+| `.project-pivot-table th.pivot-project-column` | `styles/05-project-pivot.css:118` | base |
+| `.project-pivot-table th.pivot-project-column` | `styles/05-project-pivot.css:289` | base |
+| `.project-pivot-table th.pivot-source-column` | `styles/05-project-pivot.css:118` | base |
+| `.project-pivot-table th.pivot-source-column` | `styles/05-project-pivot.css:87` | base |
+| `.project-pivot-table:not(.pivot-metric-all) .pivot-month-column` | `styles/05-project-pivot.css:675` | base |
+| `.project-pivot-table:not(.pivot-metric-all) .pivot-month-column` | `styles/05-project-pivot.css:740` | @media (max-width: 760px) |
+| `.project-pivot-table:not(.pivot-metric-all) .pivot-total-column` | `styles/05-project-pivot.css:675` | base |
+| `.project-pivot-table:not(.pivot-metric-all) .pivot-total-column` | `styles/05-project-pivot.css:740` | @media (max-width: 760px) |
+| `.project-pivot-table:not(.pivot-metric-all) tbody td` | `styles/05-project-pivot.css:699` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-header-activity-counts` | `styles/05-project-pivot.css:942` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-header-activity-counts .pivot-header-billed-count` | `styles/05-project-pivot.css:950` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-activity-counts` | `styles/05-project-pivot.css:1199` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-metric-baseline` | `styles/05-project-pivot.css:1211` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-metric-count` | `styles/05-project-pivot.css:1205` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-metric-label` | `styles/05-project-pivot.css:1188` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-total-label` | `styles/05-project-pivot.css:1176` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-total-values-all` | `styles/05-project-pivot.css:1183` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-header-total-label` | `styles/05-project-pivot.css:1146` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-header-total-values-all` | `styles/05-project-pivot.css:1151` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-header-total-values-all .pivot-header-total-value` | `styles/05-project-pivot.css:1156` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-metric-labels-column` | `styles/05-project-pivot.css:997` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-month-column` | `styles/05-project-pivot.css:1112` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-month-column .table-sort-button` | `styles/05-project-pivot.css:1217` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-project-row:hover > td.pivot-metric-labels-column` | `styles/05-project-pivot.css:1127` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-total-column` | `styles/05-project-pivot.css:1112` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-total-column .table-sort-button` | `styles/05-project-pivot.css:1217` | base |
+| `.project-pivot-table.pivot-metric-all tbody > tr:nth-child(even of .pivot-project-row) > td.pivot-metric-labels-column` | `styles/05-project-pivot.css:1121` | base |
+| `.project-pivot-table.pivot-metric-all tbody td` | `styles/05-project-pivot.css:693` | base |
+| `.project-pivot-table.pivot-metric-all tbody td.pivot-metric-labels-column` | `styles/05-project-pivot.css:1136` | base |
+| `.project-pivot-table.pivot-metric-all tbody td.pivot-month-column` | `styles/05-project-pivot.css:1136` | base |
+| `.project-pivot-table.pivot-metric-all tbody td.pivot-total-column` | `styles/05-project-pivot.css:1136` | base |
+| `.project-pivot-table.pivot-metric-all th.pivot-metric-labels-column` | `styles/05-project-pivot.css:1017` | base |
+| `.project-pivot-table.pivot-metric-all th.pivot-metric-labels-column .pivot-header-metric-rail` | `styles/05-project-pivot.css:1166` | base |
+| `.project-pivot-table.pivot-metric-all.pivot-history-only .pivot-billing-amounts` | `styles/05-project-pivot.css:1064` | base |
+| `.project-pivot-table.pivot-metric-all.pivot-history-only .pivot-metric-label-list` | `styles/05-project-pivot.css:1064` | base |
+| `.project-pivot-table.pivot-metric-all.pivot-metric-labels-pinned .pivot-metric-labels-column` | `styles/05-project-pivot.css:1033` | base |
+| `.project-pivot-table.pivot-metric-all.pivot-no-margin .pivot-billing-amounts` | `styles/05-project-pivot.css:1056` | base |
+| `.project-pivot-table.pivot-metric-all.pivot-no-margin .pivot-metric-label-list` | `styles/05-project-pivot.css:1056` | base |
+| `.project-pivot-table.pivot-metric-all.pivot-source-combined .pivot-metric-labels-column` | `styles/05-project-pivot.css:1011` | base |
+| `.project-pivot-table.pivot-metric-variance .pivot-month-column` | `styles/05-project-pivot.css:684` | base |
+| `.project-pivot-table.pivot-metric-variance .pivot-total-column` | `styles/05-project-pivot.css:684` | base |
+| `.project-pivot-table.pivot-source-active td.pivot-job-column` | `styles/05-project-pivot.css:264` | base |
+| `.project-pivot-table.pivot-source-active td.pivot-project-column` | `styles/05-project-pivot.css:271` | base |
+| `.project-pivot-table.pivot-source-active th.pivot-job-column` | `styles/05-project-pivot.css:264` | base |
+| `.project-pivot-table.pivot-source-active th.pivot-project-column` | `styles/05-project-pivot.css:271` | base |
+| `.project-pivot-table.pivot-source-combined .pivot-project-row:hover td.pivot-probability-column` | `styles/05-project-pivot.css:351` | base |
+| `.project-pivot-table.pivot-source-combined td.pivot-probability-column` | `styles/05-project-pivot.css:319` | base |
+| `.project-pivot-table.pivot-source-combined td.pivot-probability-column` | `styles/05-project-pivot.css:336` | base |
+| `.project-pivot-table.pivot-source-combined td.pivot-probability-column` | `styles/05-project-pivot.css:376` | @media (max-width: 760px) |
+| `.project-pivot-table.pivot-source-combined td.pivot-project-column` | `styles/05-project-pivot.css:307` | base |
+| `.project-pivot-table.pivot-source-combined th.pivot-probability-column` | `styles/05-project-pivot.css:319` | base |
+| `.project-pivot-table.pivot-source-combined th.pivot-probability-column` | `styles/05-project-pivot.css:336` | base |
+| `.project-pivot-table.pivot-source-combined th.pivot-probability-column` | `styles/05-project-pivot.css:343` | base |
+| `.project-pivot-table.pivot-source-combined th.pivot-probability-column` | `styles/05-project-pivot.css:376` | @media (max-width: 760px) |
+| `.project-pivot-table.pivot-source-combined th.pivot-project-column` | `styles/05-project-pivot.css:307` | base |
+| `.project-pivot-table.pivot-source-potential .pivot-project-row:hover td.pivot-probability-column` | `styles/05-project-pivot.css:351` | base |
+| `.project-pivot-table.pivot-source-potential td.pivot-probability-column` | `styles/05-project-pivot.css:319` | base |
+| `.project-pivot-table.pivot-source-potential td.pivot-probability-column` | `styles/05-project-pivot.css:369` | @media (max-width: 760px) |
+| `.project-pivot-table.pivot-source-potential td.pivot-project-column` | `styles/05-project-pivot.css:278` | base |
+| `.project-pivot-table.pivot-source-potential td.pivot-project-column` | `styles/05-project-pivot.css:307` | base |
+| `.project-pivot-table.pivot-source-potential th.pivot-probability-column` | `styles/05-project-pivot.css:319` | base |
+| `.project-pivot-table.pivot-source-potential th.pivot-probability-column` | `styles/05-project-pivot.css:343` | base |
+| `.project-pivot-table.pivot-source-potential th.pivot-probability-column` | `styles/05-project-pivot.css:369` | @media (max-width: 760px) |
+| `.project-pivot-table.pivot-source-potential th.pivot-project-column` | `styles/05-project-pivot.css:278` | base |
+| `.project-pivot-table.pivot-source-potential th.pivot-project-column` | `styles/05-project-pivot.css:307` | base |
+| `.project-pivot-toolbar` | `styles/05-project-pivot.css:433` | base |
+| `.project-pivot-toolbar` | `styles/05-project-pivot.css:736` | @media (max-width: 760px) |
+| `.project-pivot-toolbar` | `styles/05-project-pivot.css:751` | @media print |
+| `.project-pivot-toolbar-label` | `styles/05-project-pivot.css:442` | base |
+| `.project-pivot-toolbar.horizontal-scroll-disabled .project-pivot-month-scroll` | `styles/05-project-pivot.css:810` | base |
+| `.project-pivot-toolbar.horizontal-scroll-disabled .project-pivot-month-scroll-button` | `styles/05-project-pivot.css:815` | base |
+| `.project-pivot-toolbar.horizontal-scroll-disabled .project-pivot-month-scroll-range` | `styles/05-project-pivot.css:815` | base |
+| `.project-pivot-wrap` | `styles/05-project-pivot.css:826` | base |
+| `.project-pivot-wrap::-webkit-scrollbar` | `styles/05-project-pivot.css:831` | base |
 | `.project-reference-refresh-note` | `ActiveProjectSaveReview.css:9` | base |
 | `.project-save-comparison` | `ActiveProjectSaveReview.css:11` | @media (max-width: 640px) |
 | `.project-save-comparison` | `ActiveProjectSaveReview.css:4` | base |
@@ -2076,12 +2062,12 @@ Selector occurrences: **2510**.
 | `.project-setup-flag-row` | `styles/06-project-references.css:25` | base |
 | `.project-setup-flags` | `styles/06-project-references.css:522` | @media (max-width: 760px) |
 | `.project-setup-flags` | `styles/06-project-references.css:739` | @media ( max-width: 760px ) |
-| `.project-setup-flags` | `styles/06-project-references.css:829` | base |
-| `.project-setup-flags` | `styles/06-project-references.css:858` | @media (max-width: 1050px) |
-| `.project-setup-flags` | `styles/06-project-references.css:864` | @media (max-width: 700px) |
-| `.project-setup-flags > .project-setup-flag` | `styles/06-project-references.css:841` | base |
+| `.project-setup-flags` | `styles/06-project-references.css:822` | base |
+| `.project-setup-flags` | `styles/06-project-references.css:851` | @media (max-width: 1050px) |
+| `.project-setup-flags` | `styles/06-project-references.css:857` | @media (max-width: 700px) |
+| `.project-setup-flags > .project-setup-flag` | `styles/06-project-references.css:834` | base |
 | `.project-setup-flags > .project-setup-flag + .project-setup-flag` | `styles/06-project-references.css:527` | @media (max-width: 760px) |
-| `.project-setup-flags > .project-setup-flag + .project-setup-flag` | `styles/06-project-references.css:850` | base |
+| `.project-setup-flags > .project-setup-flag + .project-setup-flag` | `styles/06-project-references.css:843` | base |
 | `.project-setup-help` | `styles/06-project-references.css:123` | base |
 | `.project-setup-help > summary` | `styles/06-project-references.css:129` | base |
 | `.project-setup-help > summary` | `styles/06-project-references.css:85` | base |
@@ -2100,90 +2086,89 @@ Selector occurrences: **2510**.
 | `.project-setup-tag.linked` | `styles/06-project-references.css:57` | base |
 | `.project-setup-tag.neutral` | `styles/06-project-references.css:75` | base |
 | `.project-setup-tag.unlinked` | `styles/06-project-references.css:63` | base |
-| `.project-team-badge` | `styles/12-table-teams-and-zebra.css:145` | base |
-| `.project-team-badge strong` | `styles/12-table-teams-and-zebra.css:159` | base |
-| `.project-team-badge-column` | `styles/12-table-teams-and-zebra.css:184` | base |
-| `.project-team-badges` | `styles/12-table-teams-and-zebra.css:137` | base |
-| `.project-team-badges.compact` | `styles/12-table-teams-and-zebra.css:166` | base |
-| `.project-team-badges.compact .project-team-badge` | `styles/12-table-teams-and-zebra.css:172` | base |
-| `.project-team-badges.compact .project-team-badge strong` | `styles/12-table-teams-and-zebra.css:179` | base |
+| `.project-team-badge` | `styles/12-table-teams-and-zebra.css:111` | base |
+| `.project-team-badge strong` | `styles/12-table-teams-and-zebra.css:125` | base |
+| `.project-team-badge-column` | `styles/12-table-teams-and-zebra.css:150` | base |
+| `.project-team-badges` | `styles/12-table-teams-and-zebra.css:103` | base |
+| `.project-team-badges.compact` | `styles/12-table-teams-and-zebra.css:132` | base |
+| `.project-team-badges.compact .project-team-badge` | `styles/12-table-teams-and-zebra.css:138` | base |
+| `.project-team-badges.compact .project-team-badge strong` | `styles/12-table-teams-and-zebra.css:145` | base |
 | `.project-team-cell` | `styles/06-project-references.css:772` | base |
 | `.project-team-column` | `styles/06-project-references.css:768` | base |
-| `.project-team-current-editor` | `styles/11-lifecycle-feedback-and-staffing.css:766` | base |
-| `.project-team-current-editor` | `styles/11-lifecycle-feedback-and-staffing.css:964` | @media (max-width: 760px) |
+| `.project-team-current-editor` | `styles/11-lifecycle-feedback-and-staffing.css:538` | base |
+| `.project-team-current-editor` | `styles/11-lifecycle-feedback-and-staffing.css:736` | @media (max-width: 760px) |
 | `.project-team-empty` | `styles/06-project-references.css:805` | base |
-| `.project-team-foreman-row` | `styles/11-lifecycle-feedback-and-staffing.css:766` | base |
-| `.project-team-foreman-row` | `styles/11-lifecycle-feedback-and-staffing.css:964` | @media (max-width: 760px) |
-| `.project-team-foremen-editor` | `styles/11-lifecycle-feedback-and-staffing.css:773` | base |
+| `.project-team-foreman-row` | `styles/11-lifecycle-feedback-and-staffing.css:538` | base |
+| `.project-team-foreman-row` | `styles/11-lifecycle-feedback-and-staffing.css:736` | @media (max-width: 760px) |
+| `.project-team-foremen-editor` | `styles/11-lifecycle-feedback-and-staffing.css:545` | base |
 | `.project-team-member` | `styles/06-project-references.css:778` | base |
 | `.project-team-name` | `styles/06-project-references.css:795` | base |
-| `.project-team-office-grid` | `styles/11-lifecycle-feedback-and-staffing.css:704` | base |
-| `.project-team-organizer-editor` | `styles/11-lifecycle-feedback-and-staffing.css:872` | base |
-| `.project-team-organizer-effective` | `styles/11-lifecycle-feedback-and-staffing.css:934` | base |
-| `.project-team-organizer-effective > span:not(.staffing-projection-badge)` | `styles/11-lifecycle-feedback-and-staffing.css:946` | base |
-| `.project-team-organizer-effective small` | `styles/11-lifecycle-feedback-and-staffing.css:942` | base |
-| `.project-team-organizer-footer` | `styles/11-lifecycle-feedback-and-staffing.css:926` | base |
-| `.project-team-organizer-footer` | `styles/11-lifecycle-feedback-and-staffing.css:959` | @media (max-width: 760px) |
-| `.project-team-organizer-grid` | `styles/11-lifecycle-feedback-and-staffing.css:915` | base |
-| `.project-team-organizer-grid` | `styles/11-lifecycle-feedback-and-staffing.css:953` | @media (max-width: 980px) |
-| `.project-team-organizer-grid` | `styles/11-lifecycle-feedback-and-staffing.css:964` | @media (max-width: 760px) |
-| `.project-team-organizer-heading` | `styles/11-lifecycle-feedback-and-staffing.css:880` | base |
-| `.project-team-organizer-heading` | `styles/11-lifecycle-feedback-and-staffing.css:959` | @media (max-width: 760px) |
-| `.project-team-organizer-heading small` | `styles/11-lifecycle-feedback-and-staffing.css:888` | base |
-| `.project-team-organizer-heading small` | `styles/11-lifecycle-feedback-and-staffing.css:896` | base |
-| `.project-team-organizer-heading strong` | `styles/11-lifecycle-feedback-and-staffing.css:888` | base |
-| `.project-team-organizer-heading strong` | `styles/11-lifecycle-feedback-and-staffing.css:892` | base |
-| `.project-team-organizer-list` | `styles/11-lifecycle-feedback-and-staffing.css:903` | base |
-| `.project-team-organizer-row` | `styles/11-lifecycle-feedback-and-staffing.css:908` | base |
-| `.project-team-person-select` | `styles/11-lifecycle-feedback-and-staffing.css:807` | base |
-| `.project-team-person-select:disabled` | `styles/11-lifecycle-feedback-and-staffing.css:824` | base |
-| `.project-team-person-select:focus` | `styles/11-lifecycle-feedback-and-staffing.css:819` | base |
+| `.project-team-office-grid` | `styles/11-lifecycle-feedback-and-staffing.css:476` | base |
+| `.project-team-organizer-editor` | `styles/11-lifecycle-feedback-and-staffing.css:644` | base |
+| `.project-team-organizer-effective` | `styles/11-lifecycle-feedback-and-staffing.css:706` | base |
+| `.project-team-organizer-effective > span:not(.staffing-projection-badge)` | `styles/11-lifecycle-feedback-and-staffing.css:718` | base |
+| `.project-team-organizer-effective small` | `styles/11-lifecycle-feedback-and-staffing.css:714` | base |
+| `.project-team-organizer-footer` | `styles/11-lifecycle-feedback-and-staffing.css:698` | base |
+| `.project-team-organizer-footer` | `styles/11-lifecycle-feedback-and-staffing.css:731` | @media (max-width: 760px) |
+| `.project-team-organizer-grid` | `styles/11-lifecycle-feedback-and-staffing.css:687` | base |
+| `.project-team-organizer-grid` | `styles/11-lifecycle-feedback-and-staffing.css:725` | @media (max-width: 980px) |
+| `.project-team-organizer-grid` | `styles/11-lifecycle-feedback-and-staffing.css:736` | @media (max-width: 760px) |
+| `.project-team-organizer-heading` | `styles/11-lifecycle-feedback-and-staffing.css:652` | base |
+| `.project-team-organizer-heading` | `styles/11-lifecycle-feedback-and-staffing.css:731` | @media (max-width: 760px) |
+| `.project-team-organizer-heading small` | `styles/11-lifecycle-feedback-and-staffing.css:660` | base |
+| `.project-team-organizer-heading small` | `styles/11-lifecycle-feedback-and-staffing.css:668` | base |
+| `.project-team-organizer-heading strong` | `styles/11-lifecycle-feedback-and-staffing.css:660` | base |
+| `.project-team-organizer-heading strong` | `styles/11-lifecycle-feedback-and-staffing.css:664` | base |
+| `.project-team-organizer-list` | `styles/11-lifecycle-feedback-and-staffing.css:675` | base |
+| `.project-team-organizer-row` | `styles/11-lifecycle-feedback-and-staffing.css:680` | base |
+| `.project-team-person-select` | `styles/11-lifecycle-feedback-and-staffing.css:579` | base |
+| `.project-team-person-select:disabled` | `styles/11-lifecycle-feedback-and-staffing.css:596` | base |
+| `.project-team-person-select:focus` | `styles/11-lifecycle-feedback-and-staffing.css:591` | base |
 | `.project-team-role` | `styles/06-project-references.css:786` | base |
-| `.project-team-role-editor + .project-team-role-editor` | `styles/11-lifecycle-feedback-and-staffing.css:762` | base |
-| `.project-team-staffing-field` | `styles/11-lifecycle-feedback-and-staffing.css:783` | base |
-| `.project-team-staffing-field > small` | `styles/11-lifecycle-feedback-and-staffing.css:797` | base |
-| `.project-team-staffing-field > span` | `styles/11-lifecycle-feedback-and-staffing.css:789` | base |
-| `.project-team-staffing-field input` | `styles/11-lifecycle-feedback-and-staffing.css:803` | base |
-| `.project-team-staffing-field select` | `styles/11-lifecycle-feedback-and-staffing.css:803` | base |
-| `.project-team-staffing-field textarea` | `styles/11-lifecycle-feedback-and-staffing.css:803` | base |
-| `.project-team-staffing-heading` | `styles/11-lifecycle-feedback-and-staffing.css:714` | base |
-| `.project-team-staffing-heading` | `styles/11-lifecycle-feedback-and-staffing.css:959` | @media (max-width: 760px) |
-| `.project-team-staffing-heading h4` | `styles/11-lifecycle-feedback-and-staffing.css:722` | base |
-| `.project-team-staffing-heading-meta` | `styles/11-lifecycle-feedback-and-staffing.css:729` | base |
-| `.project-team-staffing-help` | `styles/11-lifecycle-feedback-and-staffing.css:797` | base |
-| `.project-team-staffing-list` | `styles/11-lifecycle-feedback-and-staffing.css:778` | base |
-| `.project-team-staffing-shell` | `styles/11-lifecycle-feedback-and-staffing.css:708` | base |
-| `.project-team-staffing-state` | `styles/11-lifecycle-feedback-and-staffing.css:829` | base |
-| `.project-team-staffing-state` | `styles/11-lifecycle-feedback-and-staffing.css:968` | @media (max-width: 760px) |
-| `.project-team-staffing-state small` | `styles/11-lifecycle-feedback-and-staffing.css:838` | base |
-| `.project-title-ellipsis` | `styles/12-table-teams-and-zebra.css:201` | base |
-| `.project-title-ellipsis` | `styles/12-table-teams-and-zebra.css:214` | base |
-| `.projected-breakdown-table` | `styles/06-project-references.css:820` | base |
-| `.projected-breakdown-table .gc-table-cell` | `styles/08-notifications-and-inputs.css:436` | base |
-| `.projected-breakdown-table .project-cell` | `styles/12-table-teams-and-zebra.css:220` | base |
-| `.projected-export-button` | `styles/12-table-teams-and-zebra.css:114` | base |
-| `.projected-export-button` | `styles/12-table-teams-and-zebra.css:336` | @media (max-width: 760px) |
-| `.projected-filter-panel` | `styles/12-table-teams-and-zebra.css:119` | base |
-| `.projected-filter-panel .filter-actions button` | `styles/12-table-teams-and-zebra.css:133` | base |
-| `.projected-filter-panel .filter-field` | `styles/12-table-teams-and-zebra.css:124` | base |
-| `.projected-filter-panel .filter-field input` | `styles/12-table-teams-and-zebra.css:128` | base |
-| `.projected-filter-panel .filter-field select` | `styles/12-table-teams-and-zebra.css:128` | base |
-| `.projected-heading-controls` | `styles/12-table-teams-and-zebra.css:314` | @media (max-width: 1100px) |
-| `.projected-heading-controls` | `styles/12-table-teams-and-zebra.css:322` | @media (max-width: 760px) |
-| `.projected-heading-controls` | `styles/12-table-teams-and-zebra.css:86` | base |
-| `.projected-heading-source-toggles` | `styles/12-table-teams-and-zebra.css:314` | @media (max-width: 1100px) |
-| `.projected-heading-source-toggles` | `styles/12-table-teams-and-zebra.css:327` | @media (max-width: 760px) |
-| `.projected-heading-source-toggles` | `styles/12-table-teams-and-zebra.css:95` | base |
-| `.projected-heading-source-toggles .toggle-label small` | `styles/12-table-teams-and-zebra.css:110` | base |
-| `.projected-heading-source-toggles .toggle-label strong` | `styles/12-table-teams-and-zebra.css:106` | base |
-| `.projected-heading-source-toggles button` | `styles/12-table-teams-and-zebra.css:100` | base |
-| `.projected-heading-source-toggles button` | `styles/12-table-teams-and-zebra.css:332` | @media (max-width: 760px) |
+| `.project-team-role-editor + .project-team-role-editor` | `styles/11-lifecycle-feedback-and-staffing.css:534` | base |
+| `.project-team-staffing-field` | `styles/11-lifecycle-feedback-and-staffing.css:555` | base |
+| `.project-team-staffing-field > small` | `styles/11-lifecycle-feedback-and-staffing.css:569` | base |
+| `.project-team-staffing-field > span` | `styles/11-lifecycle-feedback-and-staffing.css:561` | base |
+| `.project-team-staffing-field input` | `styles/11-lifecycle-feedback-and-staffing.css:575` | base |
+| `.project-team-staffing-field select` | `styles/11-lifecycle-feedback-and-staffing.css:575` | base |
+| `.project-team-staffing-field textarea` | `styles/11-lifecycle-feedback-and-staffing.css:575` | base |
+| `.project-team-staffing-heading` | `styles/11-lifecycle-feedback-and-staffing.css:486` | base |
+| `.project-team-staffing-heading` | `styles/11-lifecycle-feedback-and-staffing.css:731` | @media (max-width: 760px) |
+| `.project-team-staffing-heading h4` | `styles/11-lifecycle-feedback-and-staffing.css:494` | base |
+| `.project-team-staffing-heading-meta` | `styles/11-lifecycle-feedback-and-staffing.css:501` | base |
+| `.project-team-staffing-help` | `styles/11-lifecycle-feedback-and-staffing.css:569` | base |
+| `.project-team-staffing-list` | `styles/11-lifecycle-feedback-and-staffing.css:550` | base |
+| `.project-team-staffing-shell` | `styles/11-lifecycle-feedback-and-staffing.css:480` | base |
+| `.project-team-staffing-state` | `styles/11-lifecycle-feedback-and-staffing.css:601` | base |
+| `.project-team-staffing-state` | `styles/11-lifecycle-feedback-and-staffing.css:740` | @media (max-width: 760px) |
+| `.project-team-staffing-state small` | `styles/11-lifecycle-feedback-and-staffing.css:610` | base |
+| `.project-title-ellipsis` | `styles/12-table-teams-and-zebra.css:156` | base |
+| `.projected-breakdown-table` | `styles/06-project-references.css:813` | base |
+| `.projected-breakdown-table .gc-table-cell` | `styles/08-notifications-and-inputs.css:429` | base |
+| `.projected-breakdown-table .project-cell` | `styles/12-table-teams-and-zebra.css:166` | base |
+| `.projected-export-button` | `styles/12-table-teams-and-zebra.css:201` | @media (max-width: 760px) |
+| `.projected-export-button` | `styles/12-table-teams-and-zebra.css:80` | base |
+| `.projected-filter-panel` | `styles/12-table-teams-and-zebra.css:85` | base |
+| `.projected-filter-panel .filter-actions button` | `styles/12-table-teams-and-zebra.css:99` | base |
+| `.projected-filter-panel .filter-field` | `styles/12-table-teams-and-zebra.css:90` | base |
+| `.projected-filter-panel .filter-field input` | `styles/12-table-teams-and-zebra.css:94` | base |
+| `.projected-filter-panel .filter-field select` | `styles/12-table-teams-and-zebra.css:94` | base |
+| `.projected-heading-controls` | `styles/12-table-teams-and-zebra.css:179` | @media (max-width: 1100px) |
+| `.projected-heading-controls` | `styles/12-table-teams-and-zebra.css:187` | @media (max-width: 760px) |
+| `.projected-heading-controls` | `styles/12-table-teams-and-zebra.css:52` | base |
+| `.projected-heading-source-toggles` | `styles/12-table-teams-and-zebra.css:179` | @media (max-width: 1100px) |
+| `.projected-heading-source-toggles` | `styles/12-table-teams-and-zebra.css:192` | @media (max-width: 760px) |
+| `.projected-heading-source-toggles` | `styles/12-table-teams-and-zebra.css:61` | base |
+| `.projected-heading-source-toggles .toggle-label small` | `styles/12-table-teams-and-zebra.css:76` | base |
+| `.projected-heading-source-toggles .toggle-label strong` | `styles/12-table-teams-and-zebra.css:72` | base |
+| `.projected-heading-source-toggles button` | `styles/12-table-teams-and-zebra.css:197` | @media (max-width: 760px) |
+| `.projected-heading-source-toggles button` | `styles/12-table-teams-and-zebra.css:66` | base |
 | `.projected-monthly-table tfoot td` | `styles/04-projected-workspace.css:98` | base |
 | `.projected-monthly-table tfoot th` | `styles/04-projected-workspace.css:109` | base |
 | `.projected-monthly-table tfoot th` | `styles/04-projected-workspace.css:98` | base |
-| `.projected-page-heading` | `styles/12-table-teams-and-zebra.css:309` | @media (max-width: 1100px) |
-| `.projected-page-heading` | `styles/12-table-teams-and-zebra.css:76` | base |
-| `.projected-page-heading h1` | `styles/12-table-teams-and-zebra.css:81` | base |
+| `.projected-page-heading` | `styles/12-table-teams-and-zebra.css:174` | @media (max-width: 1100px) |
+| `.projected-page-heading` | `styles/12-table-teams-and-zebra.css:42` | base |
+| `.projected-page-heading h1` | `styles/12-table-teams-and-zebra.css:47` | base |
 | `.projection-attention-message` | `styles/02-billing-drawers.css:1494` | base |
 | `.projection-basis-controls` | `ProjectionDisplay.css:4` | base |
 | `.projection-basis-controls label` | `ProjectionDisplay.css:5` | base |
@@ -2359,7 +2344,7 @@ Selector occurrences: **2510**.
 | `.sortable-column` | `styles/04-projected-workspace.css:53` | base |
 | `.source-chip` | `styles/01-foundations.css:463` | base |
 | `.source-chip.bid` | `styles/01-foundations.css:479` | base |
-| `.source-chip.completed` | `styles/12-table-teams-and-zebra.css:53` | base |
+| `.source-chip.completed` | `styles/12-table-teams-and-zebra.css:19` | base |
 | `.source-chip.current` | `styles/01-foundations.css:474` | base |
 | `.source-comparison` | `styles/02-billing-drawers.css:1195` | base |
 | `.source-comparison` | `styles/02-billing-drawers.css:1289` | @media print |
@@ -2387,52 +2372,52 @@ Selector occurrences: **2510**.
 | `.source-toggles button` | `styles/01-foundations.css:1776` | @media (max-width: 760px) |
 | `.source-toggles button:hover` | `styles/01-foundations.css:1498` | base |
 | `.source-toggles button.active` | `styles/01-foundations.css:1503` | base |
-| `.staffing-add-button` | `styles/11-lifecycle-feedback-and-staffing.css:865` | base |
-| `.staffing-assignment-meta` | `styles/11-lifecycle-feedback-and-staffing.css:617` | base |
-| `.staffing-assignment-meta` | `styles/11-lifecycle-feedback-and-staffing.css:696` | @media (max-width: 760px) |
-| `.staffing-assignment-row` | `styles/11-lifecycle-feedback-and-staffing.css:594` | base |
-| `.staffing-assignment-row` | `styles/11-lifecycle-feedback-and-staffing.css:692` | @media (max-width: 760px) |
-| `.staffing-assignment-row + .staffing-assignment-row` | `styles/11-lifecycle-feedback-and-staffing.css:601` | base |
-| `.staffing-assignment-row small` | `styles/11-lifecycle-feedback-and-staffing.css:607` | base |
-| `.staffing-assignment-row small` | `styles/11-lifecycle-feedback-and-staffing.css:611` | base |
-| `.staffing-assignment-row strong` | `styles/11-lifecycle-feedback-and-staffing.css:607` | base |
-| `.staffing-current-assignment-row` | `styles/11-lifecycle-feedback-and-staffing.css:975` | base |
-| `.staffing-current-block` | `styles/11-lifecycle-feedback-and-staffing.css:576` | base |
-| `.staffing-current-label` | `styles/11-lifecycle-feedback-and-staffing.css:584` | base |
-| `.staffing-current-readout` | `styles/11-lifecycle-feedback-and-staffing.css:980` | base |
-| `.staffing-current-readout > small` | `styles/11-lifecycle-feedback-and-staffing.css:1002` | base |
-| `.staffing-current-readout > span` | `styles/11-lifecycle-feedback-and-staffing.css:987` | base |
-| `.staffing-current-readout > strong` | `styles/11-lifecycle-feedback-and-staffing.css:995` | base |
-| `.staffing-current-status` | `styles/11-lifecycle-feedback-and-staffing.css:1008` | base |
-| `.staffing-date-range` | `styles/11-lifecycle-feedback-and-staffing.css:647` | base |
-| `.staffing-empty-note` | `styles/11-lifecycle-feedback-and-staffing.css:684` | base |
-| `.staffing-inline-action` | `styles/11-lifecycle-feedback-and-staffing.css:843` | base |
-| `.staffing-inline-action:disabled` | `styles/11-lifecycle-feedback-and-staffing.css:860` | base |
-| `.staffing-inline-action:hover:not(:disabled)` | `styles/11-lifecycle-feedback-and-staffing.css:852` | base |
-| `.staffing-inline-action.danger:hover:not(:disabled)` | `styles/11-lifecycle-feedback-and-staffing.css:856` | base |
-| `.staffing-organizer-list` | `styles/11-lifecycle-feedback-and-staffing.css:635` | base |
-| `.staffing-organizer-note` | `styles/11-lifecycle-feedback-and-staffing.css:553` | base |
-| `.staffing-plan-empty-state` | `styles/11-lifecycle-feedback-and-staffing.css:1021` | base |
-| `.staffing-plan-empty-state span` | `styles/11-lifecycle-feedback-and-staffing.css:1037` | base |
-| `.staffing-plan-empty-state strong` | `styles/11-lifecycle-feedback-and-staffing.css:1032` | base |
-| `.staffing-preview-badge` | `styles/11-lifecycle-feedback-and-staffing.css:738` | base |
-| `.staffing-preview-note` | `styles/11-lifecycle-feedback-and-staffing.css:751` | base |
-| `.staffing-projection-badge` | `styles/11-lifecycle-feedback-and-staffing.css:621` | base |
-| `.staffing-role-group + .staffing-role-group` | `styles/11-lifecycle-feedback-and-staffing.css:557` | base |
-| `.staffing-role-heading` | `styles/11-lifecycle-feedback-and-staffing.css:561` | base |
-| `.staffing-role-heading small` | `styles/11-lifecycle-feedback-and-staffing.css:568` | base |
-| `.staffing-row-flags` | `styles/11-lifecycle-feedback-and-staffing.css:651` | base |
-| `.staffing-row-flags` | `styles/11-lifecycle-feedback-and-staffing.css:696` | @media (max-width: 760px) |
-| `.staffing-row-flags > span:not(.staffing-projection-badge)` | `styles/11-lifecycle-feedback-and-staffing.css:659` | base |
-| `.staffing-schedule-details` | `styles/11-lifecycle-feedback-and-staffing.css:666` | base |
-| `.staffing-schedule-details p` | `styles/11-lifecycle-feedback-and-staffing.css:675` | base |
-| `.staffing-schedule-details small` | `styles/11-lifecycle-feedback-and-staffing.css:611` | base |
-| `.staffing-schedule-main` | `styles/11-lifecycle-feedback-and-staffing.css:594` | base |
-| `.staffing-schedule-main` | `styles/11-lifecycle-feedback-and-staffing.css:692` | @media (max-width: 760px) |
-| `.staffing-schedule-main small` | `styles/11-lifecycle-feedback-and-staffing.css:607` | base |
-| `.staffing-schedule-main small` | `styles/11-lifecycle-feedback-and-staffing.css:611` | base |
-| `.staffing-schedule-main strong` | `styles/11-lifecycle-feedback-and-staffing.css:607` | base |
-| `.staffing-schedule-row` | `styles/11-lifecycle-feedback-and-staffing.css:640` | base |
+| `.staffing-add-button` | `styles/11-lifecycle-feedback-and-staffing.css:637` | base |
+| `.staffing-assignment-meta` | `styles/11-lifecycle-feedback-and-staffing.css:389` | base |
+| `.staffing-assignment-meta` | `styles/11-lifecycle-feedback-and-staffing.css:468` | @media (max-width: 760px) |
+| `.staffing-assignment-row` | `styles/11-lifecycle-feedback-and-staffing.css:366` | base |
+| `.staffing-assignment-row` | `styles/11-lifecycle-feedback-and-staffing.css:464` | @media (max-width: 760px) |
+| `.staffing-assignment-row + .staffing-assignment-row` | `styles/11-lifecycle-feedback-and-staffing.css:373` | base |
+| `.staffing-assignment-row small` | `styles/11-lifecycle-feedback-and-staffing.css:379` | base |
+| `.staffing-assignment-row small` | `styles/11-lifecycle-feedback-and-staffing.css:383` | base |
+| `.staffing-assignment-row strong` | `styles/11-lifecycle-feedback-and-staffing.css:379` | base |
+| `.staffing-current-assignment-row` | `styles/11-lifecycle-feedback-and-staffing.css:747` | base |
+| `.staffing-current-block` | `styles/11-lifecycle-feedback-and-staffing.css:348` | base |
+| `.staffing-current-label` | `styles/11-lifecycle-feedback-and-staffing.css:356` | base |
+| `.staffing-current-readout` | `styles/11-lifecycle-feedback-and-staffing.css:752` | base |
+| `.staffing-current-readout > small` | `styles/11-lifecycle-feedback-and-staffing.css:774` | base |
+| `.staffing-current-readout > span` | `styles/11-lifecycle-feedback-and-staffing.css:759` | base |
+| `.staffing-current-readout > strong` | `styles/11-lifecycle-feedback-and-staffing.css:767` | base |
+| `.staffing-current-status` | `styles/11-lifecycle-feedback-and-staffing.css:780` | base |
+| `.staffing-date-range` | `styles/11-lifecycle-feedback-and-staffing.css:419` | base |
+| `.staffing-empty-note` | `styles/11-lifecycle-feedback-and-staffing.css:456` | base |
+| `.staffing-inline-action` | `styles/11-lifecycle-feedback-and-staffing.css:615` | base |
+| `.staffing-inline-action:disabled` | `styles/11-lifecycle-feedback-and-staffing.css:632` | base |
+| `.staffing-inline-action:hover:not(:disabled)` | `styles/11-lifecycle-feedback-and-staffing.css:624` | base |
+| `.staffing-inline-action.danger:hover:not(:disabled)` | `styles/11-lifecycle-feedback-and-staffing.css:628` | base |
+| `.staffing-organizer-list` | `styles/11-lifecycle-feedback-and-staffing.css:407` | base |
+| `.staffing-organizer-note` | `styles/11-lifecycle-feedback-and-staffing.css:325` | base |
+| `.staffing-plan-empty-state` | `styles/11-lifecycle-feedback-and-staffing.css:793` | base |
+| `.staffing-plan-empty-state span` | `styles/11-lifecycle-feedback-and-staffing.css:809` | base |
+| `.staffing-plan-empty-state strong` | `styles/11-lifecycle-feedback-and-staffing.css:804` | base |
+| `.staffing-preview-badge` | `styles/11-lifecycle-feedback-and-staffing.css:510` | base |
+| `.staffing-preview-note` | `styles/11-lifecycle-feedback-and-staffing.css:523` | base |
+| `.staffing-projection-badge` | `styles/11-lifecycle-feedback-and-staffing.css:393` | base |
+| `.staffing-role-group + .staffing-role-group` | `styles/11-lifecycle-feedback-and-staffing.css:329` | base |
+| `.staffing-role-heading` | `styles/11-lifecycle-feedback-and-staffing.css:333` | base |
+| `.staffing-role-heading small` | `styles/11-lifecycle-feedback-and-staffing.css:340` | base |
+| `.staffing-row-flags` | `styles/11-lifecycle-feedback-and-staffing.css:423` | base |
+| `.staffing-row-flags` | `styles/11-lifecycle-feedback-and-staffing.css:468` | @media (max-width: 760px) |
+| `.staffing-row-flags > span:not(.staffing-projection-badge)` | `styles/11-lifecycle-feedback-and-staffing.css:431` | base |
+| `.staffing-schedule-details` | `styles/11-lifecycle-feedback-and-staffing.css:438` | base |
+| `.staffing-schedule-details p` | `styles/11-lifecycle-feedback-and-staffing.css:447` | base |
+| `.staffing-schedule-details small` | `styles/11-lifecycle-feedback-and-staffing.css:383` | base |
+| `.staffing-schedule-main` | `styles/11-lifecycle-feedback-and-staffing.css:366` | base |
+| `.staffing-schedule-main` | `styles/11-lifecycle-feedback-and-staffing.css:464` | @media (max-width: 760px) |
+| `.staffing-schedule-main small` | `styles/11-lifecycle-feedback-and-staffing.css:379` | base |
+| `.staffing-schedule-main small` | `styles/11-lifecycle-feedback-and-staffing.css:383` | base |
+| `.staffing-schedule-main strong` | `styles/11-lifecycle-feedback-and-staffing.css:379` | base |
+| `.staffing-schedule-row` | `styles/11-lifecycle-feedback-and-staffing.css:412` | base |
 | `.stat-card` | `styles/01-foundations.css:1528` | base |
 | `.stat-card` | `styles/01-foundations.css:1611` | base |
 | `.stat-card` | `styles/01-foundations.css:245` | base |
@@ -2457,16 +2442,16 @@ Selector occurrences: **2510**.
 | `.stats-grid` | `styles/01-foundations.css:1606` | base |
 | `.stats-grid` | `styles/01-foundations.css:1786` | @media (max-width: 760px) |
 | `.stats-grid` | `styles/01-foundations.css:344` | base |
-| `.stats-grid.stats-grid-potential-only` | `styles/08-notifications-and-inputs.css:734` | base |
-| `.stats-grid.stats-grid-potential-only` | `styles/08-notifications-and-inputs.css:775` | @media (max-width: 1180px) |
-| `.stats-grid.stats-grid-potential-only` | `styles/08-notifications-and-inputs.css:785` | @media (max-width: 760px) |
+| `.stats-grid.stats-grid-potential-only` | `styles/08-notifications-and-inputs.css:727` | base |
+| `.stats-grid.stats-grid-potential-only` | `styles/08-notifications-and-inputs.css:739` | @media (max-width: 1180px) |
+| `.stats-grid.stats-grid-potential-only` | `styles/08-notifications-and-inputs.css:749` | @media (max-width: 760px) |
 | `.strong-cell` | `styles/01-foundations.css:432` | base |
 | `.table-sort-button` | `styles/04-projected-workspace.css:170` | @media print |
 | `.table-sort-button` | `styles/04-projected-workspace.css:57` | base |
 | `.table-sort-button:hover` | `styles/04-projected-workspace.css:80` | base |
-| `.table-sort-button:hover .pivot-header-total-value` | `styles/11-lifecycle-feedback-and-staffing.css:544` | base |
+| `.table-sort-button:hover .pivot-header-total-value` | `styles/05-project-pivot.css:984` | base |
 | `.table-sort-button.active` | `styles/04-projected-workspace.css:80` | base |
-| `.table-sort-button.active .pivot-header-total-value` | `styles/11-lifecycle-feedback-and-staffing.css:544` | base |
+| `.table-sort-button.active .pivot-header-total-value` | `styles/05-project-pivot.css:984` | base |
 | `.table-sort-button.active .table-sort-indicator` | `styles/04-projected-workspace.css:92` | base |
 | `.table-sort-indicator` | `styles/04-projected-workspace.css:166` | @media print |
 | `.table-sort-indicator` | `styles/04-projected-workspace.css:86` | base |

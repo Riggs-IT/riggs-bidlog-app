@@ -426,13 +426,6 @@
   max-width: 230px;
 }
 
-.project-pivot-table
-.pivot-gc-column {
-  width: 200px;
-  min-width: 200px;
-  max-width: 200px;
-}
-
 .projected-breakdown-table
 .gc-table-cell,
 .monthly-project-table
@@ -729,7 +722,7 @@
   }
 }
 
-/* PROJECTED BILLINGS - SOURCE-AWARE SUMMARY + PIVOT STICKY CORRECTIONS */
+/* PROJECTED BILLINGS - SOURCE-AWARE SUMMARY (pivot geometry lives in 05) */
 
 .stats-grid.stats-grid-potential-only {
   grid-template-columns: repeat( 3, minmax(0, 1fr) );
@@ -740,35 +733,6 @@
   min-width: 0;
   max-width: none;
   justify-self: stretch;
-}
-
-.project-pivot-table.pivot-source-active
-th.pivot-job-column,
-.project-pivot-table.pivot-source-active
-td.pivot-job-column {
-  left: 0;
-}
-
-.project-pivot-table.pivot-source-active
-th.pivot-project-column,
-.project-pivot-table.pivot-source-active
-td.pivot-project-column {
-  left: 94px;
-}
-
-.project-pivot-table.pivot-source-potential
-th.pivot-project-column,
-.project-pivot-table.pivot-source-potential
-td.pivot-project-column {
-  left: 0;
-}
-
-.project-pivot-table
-th.pivot-project-column,
-.project-pivot-table
-td.pivot-project-column {
-  border-right: 1px solid var(--border-strong);
-  background-clip: padding-box;
 }
 
 @media (max-width: 1180px) {

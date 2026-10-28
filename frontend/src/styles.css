@@ -20,7 +20,7 @@
 /* PROJECTED BILLINGS — landing table, sorting and financial sign utility */
 @import './styles/04-projected-workspace.css';
 
-/* PROJECT PIVOT — columns, frozen headers, and financial value cells */
+/* PROJECT PIVOT — column geometry, normal/floating controls, headers and metric tracks */
 @import './styles/05-project-pivot.css';
 
 /* PROJECT REFERENCES — reference-card layout, originating bid, change orders and team display */
@@ -38,13 +38,13 @@
 /* ACTIVE PROJECTS — directory and Form 19 editor layout */
 @import './styles/10-active-projects.css';
 
-/* WORKSPACE FEEDBACK — lifecycle navigation, toasts, pivot controls, and staffing */
+/* WORKSPACE FEEDBACK — lifecycle navigation, toasts and staffing; pivot controls belong to 05 */
 @import './styles/11-lifecycle-feedback-and-staffing.css';
 
-/* TABLE FINISHES — compact headers, employee badges, and row states */
+/* TABLE FINISHES — compact page heading, shared employee badges and row states */
 @import './styles/12-table-teams-and-zebra.css';
 
-/* FINANCIAL REVIEW — status flags and shared metric lanes */
+/* FINANCIAL REVIEW — semantic flags, notification actions and view-only notices; metric lanes in 05 */
 @import './styles/13-financial-review-and-metrics.css';
 
 /* COMPLETED CLOSEOUT — contract ledger, progression, and historical context */

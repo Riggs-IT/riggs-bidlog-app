@@ -1,11 +1,22 @@
 /* ==========================================================================
-   PROJECT PIVOT — columns, frozen headers, and financial value cells
+   PROJECT PIVOT — one owner for columns, frozen offsets, controls and values
 
-   Edit here: Monthly project pivot layout, sticky column geometry, names, metadata, and metric modes.
-   Related: Final toolbar/metric-lane adjustments are in 11 and 13. Preserve import order.
+   Edit here:
+   - base/active/potential/combined column widths and sticky offsets
+   - project name, metadata, project-value column and monthly value cells
+   - normal/floating Values toolbar, month navigation and coverage controls
+   - month/Total headers, shared metric rail, no-margin and completed-history tracks
 
-   Loaded by ../styles.css in explicit cascade order. Do not alphabetize imports.
+   Related:
+   - 12: shared employee badges and zebra/hover states across all tables
+   - 13/15: semantic financial flags, right-aligned balance amounts and balance card
+   - theme-surfaces.css: shared typography and OLED colors
    Colors: theme-tokens.css. Editing map: docs/BIDLOG_CSS_EDITING_GUIDE.md.
+
+   C3 preserves all values and the conditional cascade. Widths/left offsets work
+   with ProjectBillingPivot.jsx and useStickyTableHeader.js; do not change one
+   without checking scroll, compact rail, clones and the 760px breakpoint.
+   CSS is presentation only: no calculation, authorization or edit policy here.
    ========================================================================== */
 
 /* PROJECTED BILLINGS TABLE VIEWS / STICKY TABLE HEADERS */
@@ -230,6 +241,146 @@ th.pivot-project-column {
   }
 }
 
+/* AUXILIARY COLUMNS — accepted Team / GC widths; no frozen offset is derived here. */
+
+.project-pivot-table
+.pivot-team-column {
+  width: 220px;
+  min-width: 220px;
+  max-width: 220px;
+}
+
+.project-pivot-table
+.pivot-gc-column {
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+}
+
+/* SOURCE-AWARE IDENTITIES — active jobs omit Source; potential-only omits Job #.
+   Combined defaults remain above. Width/offset pairs are a contract with
+   useStickyTableHeader.js and ProjectBillingPivot.jsx; do not edit one alone. */
+
+.project-pivot-table.pivot-source-active
+th.pivot-job-column,
+.project-pivot-table.pivot-source-active
+td.pivot-job-column {
+  left: 0;
+}
+
+.project-pivot-table.pivot-source-active
+th.pivot-project-column,
+.project-pivot-table.pivot-source-active
+td.pivot-project-column {
+  left: 94px;
+}
+
+.project-pivot-table.pivot-source-potential
+th.pivot-project-column,
+.project-pivot-table.pivot-source-potential
+td.pivot-project-column {
+  left: 0;
+}
+
+/* Header finishing order is deliberate: the shared TH background shorthand
+   above resets background-clip. Keep this after it; merging into the first
+   sticky-column rule would change painting even when values look identical. */
+
+.project-pivot-table
+th.pivot-project-column,
+.project-pivot-table
+td.pivot-project-column {
+  border-right: 1px solid var(--border-strong);
+  background-clip: padding-box;
+}
+
+/* PROBABILITY LANE — frozen after Project in Potential/Combined views.
+   Keep desktop and narrow-screen left offsets together; the cloned header
+   deliberately paints above the preceding frozen column shadow. */
+
+.project-pivot-table .pivot-probability-column {
+  width: 142px;
+  min-width: 142px;
+  max-width: 142px;
+}
+
+.project-pivot-table.pivot-source-potential
+th.pivot-project-column,
+.project-pivot-table.pivot-source-potential
+td.pivot-project-column,
+.project-pivot-table.pivot-source-combined
+th.pivot-project-column,
+.project-pivot-table.pivot-source-combined
+td.pivot-project-column {
+  border-right: 0;
+  box-shadow: none;
+}
+
+.project-pivot-table.pivot-source-potential
+th.pivot-probability-column,
+.project-pivot-table.pivot-source-potential
+td.pivot-probability-column,
+.project-pivot-table.pivot-source-combined
+th.pivot-probability-column,
+.project-pivot-table.pivot-source-combined
+td.pivot-probability-column {
+  position: sticky;
+  left: 300px;
+  z-index: 6;
+  border-right: 1px solid var(--border-strong);
+  background: var(--surface);
+  background-clip: padding-box;
+  box-shadow: 8px 0 12px rgba(0, 0, 0, 0.14);
+}
+
+.project-pivot-table.pivot-source-combined
+th.pivot-probability-column,
+.project-pivot-table.pivot-source-combined
+td.pivot-probability-column {
+  left: 476px;
+}
+
+.project-pivot-table.pivot-source-potential
+th.pivot-probability-column,
+.project-pivot-table.pivot-source-combined
+th.pivot-probability-column {
+  z-index: 9;
+  background: var(--surface-2);
+}
+
+.project-pivot-table.pivot-source-potential
+.pivot-project-row:hover
+td.pivot-probability-column,
+.project-pivot-table.pivot-source-combined
+.pivot-project-row:hover
+td.pivot-probability-column {
+  background: color-mix( in srgb, var(--surface) 92%, var(--accent) 8% );
+}
+
+.floating-table-header-table
+th.pivot-probability-column {
+  /* Paint the Probability header above the shadow of the preceding
+     frozen Project / Bid header in the cloned sticky table. */
+  z-index: 13;
+}
+
+@media (max-width: 760px) {
+
+  .project-pivot-table.pivot-source-potential
+  th.pivot-probability-column,
+.project-pivot-table.pivot-source-potential
+  td.pivot-probability-column {
+    left: 260px;
+  }
+
+  .project-pivot-table.pivot-source-combined
+  th.pivot-probability-column,
+.project-pivot-table.pivot-source-combined
+  td.pivot-probability-column {
+    left: 436px;
+  }
+}
+
 /* PROJECT PIVOT - COMPACT METRIC / PM + GC META */
 
 /* The original pivot used fixed 162px month cells because
@@ -285,6 +436,7 @@ th.pivot-project-column {
   align-items: center;
   justify-content: flex-end;
   gap: 7px;
+  flex-wrap: wrap;
 }
 
 .project-pivot-toolbar-label {
@@ -332,6 +484,7 @@ th.pivot-project-column {
 .pivot-project-info {
   display: grid;
   gap: 3px;
+  min-width: 0;
 }
 
 .pivot-project-name {
@@ -339,6 +492,12 @@ th.pivot-project-column {
   font-size: 13px;
   font-weight: 600;
   line-height: 1.3;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+  flex: 1 1 auto;
 }
 
 .pivot-project-pm-line {
@@ -424,6 +583,49 @@ th.pivot-project-column {
   white-space: nowrap;
 }
 
+.pivot-project-name-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+
+/* PROJECT VALUES — contract / SF / CY column; amounts remain API/React-owned. */
+
+.project-pivot-table .pivot-project-values-column {
+  width: 154px;
+  min-width: 154px;
+  max-width: 154px;
+}
+
+.pivot-project-values {
+  display: grid;
+  gap: 4px;
+}
+
+.pivot-project-value-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.pivot-project-value-line small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.pivot-project-value-line strong {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 /* Billing cells */
 
 .pivot-billing-cell {
@@ -466,8 +668,9 @@ th.pivot-project-column {
   color: var(--negative);
 }
 
-/* ALL = original three-value comparison.
-   Single metric = compact spreadsheet view. */
+/* Single-metric modes retain their accepted widths below.
+   All uses the shared metric lane further down: four tracks normally,
+   three without margin access, or two in completed-history mode. */
 
 .project-pivot-table:not(.pivot-metric-all)
 .pivot-month-column,
@@ -549,4 +752,478 @@ tbody td {
   .floating-table-controls {
     display: none !important;
   }
+}
+
+/* PROJECT PIVOT - COMPACT MONTH NAVIGATION */
+
+.project-pivot-month-scroll {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 33px;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.project-pivot-month-scroll-label {
+  margin-right: 2px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.project-pivot-month-scroll-button {
+  width: 25px;
+  height: 25px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-soft);
+  font: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.project-pivot-month-scroll-button:hover {
+  border-color: var(--border);
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.project-pivot-month-scroll-range {
+  width: 150px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: ew-resize;
+}
+
+.project-pivot-toolbar.horizontal-scroll-disabled
+.project-pivot-month-scroll {
+  opacity: 0.45;
+}
+
+.project-pivot-toolbar.horizontal-scroll-disabled
+.project-pivot-month-scroll-button,
+.project-pivot-toolbar.horizontal-scroll-disabled
+.project-pivot-month-scroll-range {
+  cursor: default;
+}
+
+/* Keep the table horizontally scrollable with a trackpad,
+   mouse gesture, or the new Values control, but remove the
+   old bottom scrollbar. */
+
+.project-pivot-wrap {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.project-pivot-wrap::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.floating-table-controls
+.project-pivot-month-scroll {
+  background: var(--surface-3);
+}
+
+@media (max-width: 760px) {
+  .project-pivot-month-scroll-range {
+    width: 110px;
+  }
+}
+
+@media print {
+  .project-pivot-month-scroll {
+    display: none !important;
+  }
+}
+
+/* Sticky-only projection coverage controls.
+   The real toolbar owns the React handlers but keeps this copy hidden;
+   useStickyTableHeader clones it into the floating toolbar and forwards
+   clicks back to the real controls. */
+
+.project-pivot-sticky-coverage {
+  display: none;
+}
+
+.floating-table-controls
+.project-pivot-sticky-coverage {
+  display: inline-flex;
+  flex: 0 0 auto;
+  margin-right: auto;
+  /* The third source filter must remain a selectable single-line control. */
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.floating-table-controls
+.project-pivot-sticky-coverage
+.projection-source-count-toggle {
+  min-height: 27px;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* PROJECT PIVOT - HEADER TOTALS */
+
+.pivot-header-total {
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pivot-header-total-label {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.pivot-header-total-value {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.05;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.pivot-header-total-values {
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  white-space: normal;
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+
+.pivot-header-total-values-all {
+  display: grid;
+  grid-template-columns: max-content;
+  justify-content: end;
+  gap: 2px;
+}
+
+.pivot-header-activity-counts {
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+
+.pivot-header-activity-counts
+.pivot-header-billed-count {
+  white-space: nowrap;
+}
+
+/* The All header carries four numeric tracks; show the projection count on
+   one secondary line, retaining the complete activity breakdown on hover. */
+
+.project-pivot-table.pivot-metric-all .pivot-header-activity-counts {
+  display: block;
+  max-width: 100%;
+  text-align: right;
+  min-height: 12px;
+  line-height: 12px;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-activity-counts
+.pivot-header-billed-count {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 9px;
+  line-height: 12px;
+}
+
+.pivot-header-activity-separator {
+  color: var(--muted);
+  display: none;
+}
+
+.pivot-header-total-value-actual {
+  color: var(--text);
+}
+
+.pivot-header-total-value-variance.variance-negative {
+  color: var(--negative);
+}
+
+.pivot-header-billed-count {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.1;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.table-sort-button:hover
+.pivot-header-total-value,
+.table-sort-button.active
+.pivot-header-total-value {
+  color: var(--text);
+}
+
+/* Projected Billings / Values All — sticky shared metric labels */
+
+/* One label track per project replaces repeated labels in every month. */
+
+/* All other value modes keep their original table structure. */
+
+.project-pivot-table.pivot-metric-all .pivot-metric-labels-column {
+  position: sticky;
+  left: 394px;
+  /* Active: Job # (94) + Project (300) */
+  z-index: 7;
+  width: 128px;
+  min-width: 128px;
+  max-width: 128px;
+  box-sizing: border-box;
+  background: var(--surface);
+  border-right: 1px solid var(--border-strong);
+  box-shadow: 5px 0 10px rgba(0, 0, 0, .09);
+}
+
+.project-pivot-table.pivot-metric-all.pivot-source-combined
+.pivot-metric-labels-column {
+  left: 618px;
+  /* Source (82) + Job # (94) + Project (300) + Probability (142) */
+}
+
+.project-pivot-table.pivot-metric-all th.pivot-metric-labels-column {
+  z-index: 10;
+  background: var(--surface-2);
+  color: var(--muted);
+  text-align: left;
+  font-size: 9px;
+  letter-spacing: .045em;
+  white-space: nowrap;
+  padding: 0 14px;
+  vertical-align: top;
+}
+
+/* Reclaim space but retain a 15px gap before adjacent month values.
+   The pin threshold depends only on preceding stable column widths,
+   with hysteresis preventing pin/unpin feedback during the resize. */
+
+.project-pivot-table.pivot-metric-all.pivot-metric-labels-pinned
+.pivot-metric-labels-column {
+  width: 63px;
+  min-width: 63px;
+  max-width: 63px;
+  padding-left: 12px;
+  padding-right: 15px;
+}
+
+/* Identical row tracks in the shared label column and each month, so
+   PROJECTED / ACTUAL / VARIANCE / MARGIN always align with their values. */
+
+.pivot-metric-label-list,
+.pivot-billing-amounts {
+  display: grid;
+  grid-template-rows: repeat(4, 15px);
+  row-gap: 3px;
+  min-width: 0;
+}
+
+/* Users without margin access still retain All (P/A/Δ); the margin track
+   is absent from both the labels and values, not merely hidden by CSS. */
+
+.project-pivot-table.pivot-metric-all.pivot-no-margin .pivot-metric-label-list,
+.project-pivot-table.pivot-metric-all.pivot-no-margin .pivot-billing-amounts {
+  grid-template-rows: repeat(3, 15px);
+}
+
+/* Completed history All has exactly two tracks: Actual and authorized Margin.
+   Do not leave the four-track projected billing grid's empty rows behind. */
+
+.project-pivot-table.pivot-metric-all.pivot-history-only .pivot-metric-label-list,
+.project-pivot-table.pivot-metric-all.pivot-history-only .pivot-billing-amounts {
+  grid-template-rows: repeat(2, 15px);
+}
+
+.pivot-metric-label,
+.pivot-billing-amount-line {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  line-height: 15px;
+}
+
+.pivot-metric-label {
+  font-size: 9px;
+  font-weight: 650;
+  color: var(--muted);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pivot-metric-label abbr {
+  color: var(--text-soft);
+  text-decoration: none;
+  cursor: help;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.pivot-billing-amount-line {
+  justify-content: flex-end;
+}
+
+.pivot-billing-amount-line strong {
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 650;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.pivot-billing-amount-line.variance-negative strong {
+  color: var(--negative);
+}
+
+/* The full labels now live in the shared column, making All month cells
+   value-only rather than two-column label/value mini tables. */
+
+.project-pivot-table.pivot-metric-all .pivot-month-column,
+.project-pivot-table.pivot-metric-all .pivot-total-column {
+  width: 154px;
+  min-width: 154px;
+  max-width: 154px;
+}
+
+/* Keep the frozen label lane striped/highlighted with its own project row. */
+
+.project-pivot-table.pivot-metric-all
+tbody > tr:nth-child(even of .pivot-project-row)
+> td.pivot-metric-labels-column {
+  background: var(--table-row-alt);
+}
+
+.project-pivot-table.pivot-metric-all
+.pivot-project-row:hover > td.pivot-metric-labels-column {
+  background: color-mix(in srgb, var(--surface) 92%, var(--accent) 8%);
+}
+
+/* A System Estimate comparison note may add height under a month; align
+   all four metric tracks at the top instead of vertically centering only
+   the label column and shifting P/A/Δ/M away from their amounts. */
+
+.project-pivot-table.pivot-metric-all tbody td.pivot-metric-labels-column,
+.project-pivot-table.pivot-metric-all tbody td.pivot-month-column,
+.project-pivot-table.pivot-metric-all tbody td.pivot-total-column {
+  vertical-align: top;
+}
+
+/* Values -> All: a single financial legend lives in the frozen Metric header.
+   Each month and Total show the full values only. Identical grid row heights
+   align the shared legend with each number, even for unavailable values. */
+
+.project-pivot-table.pivot-metric-all .pivot-header-total-label {
+  min-height: 18px;
+  line-height: 18px;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-total-values-all {
+  grid-auto-rows: 15px;
+  row-gap: 2px;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-total-values-all
+.pivot-header-total-value {
+  display: block;
+  line-height: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Match the 12px vertical / 14px horizontal padding of sortable month headers.
+   In the compact state the existing 12px/15px inset is retained. */
+
+.project-pivot-table.pivot-metric-all th.pivot-metric-labels-column
+.pivot-header-metric-rail {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  justify-items: start;
+  gap: 3px;
+  text-transform: none;
+  text-align: left;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-metric-rail
+.pivot-header-total-label {
+  font-size: 10px;
+  font-weight: 650;
+  color: var(--muted);
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-metric-rail
+.pivot-header-total-values-all {
+  justify-content: start;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-metric-rail
+.pivot-header-metric-label {
+  font-size: 10px;
+  font-weight: 650;
+  color: var(--muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-metric-rail
+.pivot-header-activity-counts {
+  justify-self: start;
+  text-align: left;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-metric-rail
+.pivot-header-metric-count {
+  text-overflow: ellipsis;
+  font-size: 9px;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-header-metric-rail
+.pivot-header-metric-baseline {
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.project-pivot-table.pivot-metric-all .pivot-month-column .table-sort-button,
+.project-pivot-table.pivot-metric-all .pivot-total-column .table-sort-button {
+  align-items: flex-start;
+}
+
+.pivot-variance-mode-indicator {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 650;
+  margin-left: 3px;
+  vertical-align: super;
+  line-height: 0;
 }
