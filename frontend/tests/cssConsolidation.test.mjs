@@ -30,7 +30,8 @@ test('shared cascade order preserves base, workspace, metric and final balance s
     './styles/05-project-pivot.css', './styles/06-project-references.css',
     './styles/07-detail-layout-and-filters.css', './styles/08-notifications-and-inputs.css',
     './styles/09-bid-log.css', './styles/10-active-projects.css',
-    './styles/11-lifecycle-feedback-and-staffing.css', './styles/12-table-teams-and-zebra.css',
+    './styles/11-lifecycle-feedback.css', './styles/11a-active-project-staffing.css',
+    './styles/12-table-teams-and-zebra.css',
     './styles/13-financial-review-and-metrics.css', './styles/14-completed-closeout.css',
     './styles/15-balance-presentation.css',
   ]);

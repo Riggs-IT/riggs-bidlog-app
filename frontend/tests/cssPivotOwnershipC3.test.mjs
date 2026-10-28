@@ -19,10 +19,10 @@ test('C3 pivot owns auxiliary and source-aware columns instead of inputs/referen
 });
 test('month navigation and floating coverage controls have a single component owner',()=>{
  for(const selector of ['.project-pivot-month-scroll','.project-pivot-month-scroll-range','.project-pivot-sticky-coverage','.floating-table-controls'])assert.ok(pivot.includes(selector),selector);
- assert.doesNotMatch(other('11-lifecycle-feedback-and-staffing.css'),/\.project-pivot-|\.pivot-header-/);
+ assert.doesNotMatch(other('11-lifecycle-feedback.css'),/\.project-pivot-|\.pivot-header-/);
 });
 test('pivot header totals are no longer split across table-finish and lifecycle files',()=>{
- for(const f of ['11-lifecycle-feedback-and-staffing.css','12-table-teams-and-zebra.css'])assert.doesNotMatch(other(f),/\.pivot-header-/);
+ for(const f of ['11-lifecycle-feedback.css','12-table-teams-and-zebra.css'])assert.doesNotMatch(other(f),/\.pivot-header-/);
  for(const s of ['.pivot-header-total-values','.pivot-header-activity-counts','.pivot-header-activity-separator'])one(s);
 });
 test('toolbar and project identity have one shared base definition each',()=>{
@@ -80,9 +80,9 @@ test('semantic balance colors and right-aligned amount stack are not migrated in
  assert.match(balance,/color:\s*var\(--warning\)/);
  assert.doesNotMatch(pivot,/\.needs-rebalance-flag\s*\{|\.balance-review-amount-line\s*\{/);
 });
-test('entry point retains 15 imports and resolves the actual modules in order',()=>{
+test('entry point retains 16 imports and resolves the actual modules in order',()=>{
  const entry=raw('styles.css'),full=readSource(new URL('styles.css',src));
- assert.equal([...entry.matchAll(/^@import\b/gm)].length,15);
+ assert.equal([...entry.matchAll(/^@import\b/gm)].length,16);
  assert.doesNotMatch(uncomment(entry).replace(/@import\s+(['"])[^'"]+\1\s*;/g,''),/[{}]/);
  assert.ok(full.includes('.project-pivot-sticky-coverage'));
  assert.ok(full.indexOf('.pivot-billing-amount-line')<full.indexOf('.notification-count'));

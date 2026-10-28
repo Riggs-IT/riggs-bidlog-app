@@ -29,22 +29,25 @@
 /* FILTERS / DIRECTORY — side drawer and completed filters; billing cards belong to 02 */
 @import './styles/07-detail-layout-and-filters.css';
 
-/* NOTIFICATIONS AND INPUTS — bell, PM corrections, and potential-bid settings */
+/* NOTIFICATIONS AND INPUTS — complete bell/panel/action cards; PM/bid inputs */
 @import './styles/08-notifications-and-inputs.css';
 
 /* BID LOG — directory, notes, edit fields, and GC picker */
 @import './styles/09-bid-log.css';
 
-/* ACTIVE PROJECTS — directory and Form 19 editor layout */
+/* ACTIVE PROJECTS — directory, Form 19 layout and Management view-only notices */
 @import './styles/10-active-projects.css';
 
-/* WORKSPACE FEEDBACK — lifecycle navigation, toasts and staffing; pivot controls belong to 05 */
-@import './styles/11-lifecycle-feedback-and-staffing.css';
+/* WORKSPACE FEEDBACK — lifecycle navigation and refresh toasts */
+@import './styles/11-lifecycle-feedback.css';
+
+/* FIELD STAFFING — current assignments and future Organizer; same cascade position */
+@import './styles/11a-active-project-staffing.css';
 
 /* TABLE FINISHES — compact page heading, shared employee badges and row states */
 @import './styles/12-table-teams-and-zebra.css';
 
-/* FINANCIAL REVIEW — semantic flags, notification actions and view-only notices; metric lanes in 05 */
+/* FINANCIAL REVIEW — semantic balance/schedule flags and selection states */
 @import './styles/13-financial-review-and-metrics.css';
 
 /* COMPLETED CLOSEOUT — contract ledger, progression, and historical context */

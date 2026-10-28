@@ -1,8 +1,8 @@
 /* ==========================================================================
-   FINANCIAL REVIEW — status flags, notification actions, and view-only notices
+   FINANCIAL REVIEW — financial and schedule status presentation
 
-   Edit here: Needs Rebalance/Pending Foundation, exclusive filters, projection-jump highlight, notification actions and Management read-only notices.
-   Related: Pivot metric lanes now live in 05; amounts and final clickable balance-card layout are in 15. This is presentation, not classification logic.
+   Edit here: Needs Rebalance/Pending Foundation, schedule-review flags, exclusive filters, and projection-jump highlight.
+   Related: Pivot metric lanes live in 05; balance amounts/cards in 15; notification cards in 08; Active Projects notices in 10. No classification or authorization logic lives here.
 
    Loaded by ../styles.css in explicit cascade order. Do not alphabetize imports.
    Colors: theme-tokens.css. Editing map: docs/BIDLOG_CSS_EDITING_GUIDE.md.
@@ -84,89 +84,6 @@
   border-radius: 8px;
 }
 
-/* Both alert families have the same full-card interaction and one scroll owner. */
-
-.notification-action-card {
-  display: block;
-  box-sizing: border-box;
-  width: 100%;
-  min-width: 0;
-  margin: 0;
-  padding: 12px 14px;
-  border: 0;
-  border-bottom: 1px solid var(--border);
-  border-radius: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.notification-action-card:last-child {
-  border-bottom: 0;
-}
-
-.notification-action-card:hover,
-.notification-action-card:focus-visible {
-  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
-}
-
-.notification-card-heading-copy {
-  display: block;
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.notification-card-heading-copy > span {
-  display: block;
-  margin-bottom: 2px;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 600;
-}
-
-.notification-card-heading-copy > strong {
-  display: block;
-  overflow: hidden;
-  color: var(--text);
-  font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.notification-card-description,
-.notification-card-context,
-.notification-card-reason {
-  display: block;
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: 10px;
-  line-height: 1.45;
-}
-
-.notification-card-context {
-  margin-top: 4px;
-}
-
-.notification-card-reason {
-  color: var(--text);
-}
-
-.notification-card-action {
-  display: block;
-  margin-top: 9px;
-  color: var(--accent);
-  font-size: 11px;
-  font-weight: 600;
-  text-align: right;
-}
-
-.notification-grace-note {
-  margin: 0;
-}
-
 /* A schedule extension is distinct from a financial contract mismatch. */
 
 .schedule-review-flag {
@@ -244,80 +161,3 @@
   border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
   background: color-mix(in srgb, var(--accent) 11%, var(--surface));
 }
-
-/* Management administrators review Active Projects while write mapping is incomplete. */
-
-.active-projects-workspace.management-admin-preview {
-  position: relative;
-  isolation: isolate;
-}
-
-.active-projects-workspace.management-admin-preview::after {
-  content: 'UNDER DEVELOPMENT · VIEW ONLY';
-  position: fixed;
-  top: 51%;
-  left: 28%;
-  transform: translateY(-50%) rotate(-16deg);
-  font-size: clamp(1.7rem, 4.4vw, 5.25rem);
-  line-height: 1.2;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  opacity: 0.075;
-  color: var(--text-primary, #cbd5e1);
-  pointer-events: none;
-  z-index: 30;
-  white-space: nowrap;
-  user-select: none;
-}
-
-.management-preview-notice {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  padding: 0.8rem 1rem;
-  margin-bottom: 1rem;
-  border: 1px solid var(--border-color, #55616e);
-  border-radius: 0.65rem;
-  background: var(--surface-secondary, rgba(110, 126, 141, 0.11));
-  font-size: 0.86rem;
-}
-
-.management-preview-notice strong {
-  font-size: 0.76rem;
-  letter-spacing: 0.075em;
-  flex: 0 0 auto;
-}
-
-.management-preview-notice span {
-  flex: 1 1 20rem;
-  min-width: 0;
-}
-
-.management-preview-drawer-notice {
-  margin: 0 0 1rem;
-}
-
-.management-preview-cognito-guide {
-  display: grid;
-  gap: 0.35rem;
-  margin: 1rem 0 0.7rem;
-  padding: 0.85rem 1rem;
-  border: 1px dashed var(--border-color, #65717b);
-  border-radius: 0.6rem;
-  font-size: 0.83rem;
-}
-
-.management-preview-cognito-guide strong {
-  font-size: 0.9rem;
-}
-
-@media (max-width: 760px) {
-  .active-projects-workspace.management-admin-preview::after {
-    left: 10%;
-    font-size: 1.55rem;
-  }
-}
-
-/* A tiny C differentiates pre-15th comparable variance without crowding month figures.
-   Mixed multi-month totals use * and explain the rollup in their tooltip. */

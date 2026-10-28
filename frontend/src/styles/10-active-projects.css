@@ -837,3 +837,82 @@
     flex: 1 1 100%;
   }
 }
+
+/* MANAGEMENT VIEW-ONLY PRESENTATION
+   These notices describe the existing application state; they do not grant or
+   deny access. Keep the watermark non-interactive and its 760px placement here.
+   General Information and Save Review keep their own component stylesheets. */
+
+/* Management administrators review Active Projects while write mapping is incomplete. */
+
+.active-projects-workspace.management-admin-preview {
+  position: relative;
+  isolation: isolate;
+}
+
+.active-projects-workspace.management-admin-preview::after {
+  content: 'UNDER DEVELOPMENT · VIEW ONLY';
+  position: fixed;
+  top: 51%;
+  left: 28%;
+  transform: translateY(-50%) rotate(-16deg);
+  font-size: clamp(1.7rem, 4.4vw, 5.25rem);
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  opacity: 0.075;
+  color: var(--text-primary, #cbd5e1);
+  pointer-events: none;
+  z-index: 30;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.management-preview-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.8rem 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color, #55616e);
+  border-radius: 0.65rem;
+  background: var(--surface-secondary, rgba(110, 126, 141, 0.11));
+  font-size: 0.86rem;
+}
+
+.management-preview-notice strong {
+  font-size: 0.76rem;
+  letter-spacing: 0.075em;
+  flex: 0 0 auto;
+}
+
+.management-preview-notice span {
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+
+.management-preview-drawer-notice {
+  margin: 0 0 1rem;
+}
+
+.management-preview-cognito-guide {
+  display: grid;
+  gap: 0.35rem;
+  margin: 1rem 0 0.7rem;
+  padding: 0.85rem 1rem;
+  border: 1px dashed var(--border-color, #65717b);
+  border-radius: 0.6rem;
+  font-size: 0.83rem;
+}
+
+.management-preview-cognito-guide strong {
+  font-size: 0.9rem;
+}
+
+@media (max-width: 760px) {
+  .active-projects-workspace.management-admin-preview::after {
+    left: 10%;
+    font-size: 1.55rem;
+  }
+}

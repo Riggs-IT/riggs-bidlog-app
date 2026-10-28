@@ -70,7 +70,7 @@ test('independent financial, PM and closeout owners are not absorbed into drawer
 });
 test('import entry stays structural with no new overlay stylesheet',()=>{
  const entry=raw('styles.css');
- assert.equal([...entry.matchAll(/^@import\b/gm)].length,15);
+ assert.equal([...entry.matchAll(/^@import\b/gm)].length,16);
  assert.doesNotMatch(uncomment(entry).replace(/@import\s+(['"])[^'"]+\1\s*;/g,''),/[{}]/);
  assert.ok(rootRules.length>30);
 });

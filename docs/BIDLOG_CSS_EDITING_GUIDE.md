@@ -1,8 +1,8 @@
 # Bid Log CSS editing guide
 
-**Current editing map: C3 — October 27, 2026.**
-**Starting release:** accepted C2 `8e477a9f80e01c67c719e0b10d03d797ebf89a36`.
-C3 gives the project pivot one layout owner, preserving the accepted light/OLED design and C2 drawer ownership.
+**Current editing map: C4 / CSS workstream closeout — October 27, 2026.**
+**Starting release:** accepted C3. The installer binds its actual clean host SHA only after verifying the complete C3 source tree and its C2 parent.
+C4 finishes notification, staffing and view-only notice ownership; it preserves the accepted OLED/light appearance and C1–C3 layout contracts.
 
 ## Start here
 
@@ -38,12 +38,13 @@ Paths below are under `frontend/src/`.
 | `styles/05-project-pivot.css` | Pivot columns/sticky offsets, project names and values, normal/floating controls, month navigation, header totals and shared metric tracks | C3 owns these together, including 760px and print variants. Shared row states stay in 12; flags in 13/15. |
 | `styles/06-project-references.css` | Three reference cards, originating-bid finder/disclosure, change-order popovers and basic team metadata | The final reference-card grid and spacing now live here too. Curve-help geometry lives in 02. |
 | `styles/07-detail-layout-and-filters.css` | Side-filter drawer and completed-directory filters, sorting and lifecycle cells | Filename retained to avoid import churn. It no longer owns billing-card or reference-card overrides. |
-| `styles/08-notifications-and-inputs.css` | Bell/count geometry, notification panel, PM correction fields, probability/GC controls and potential-bid drawer | OLED counter ink/fill is in `theme-surfaces.css`. |
+| `styles/08-notifications-and-inputs.css` | Complete bell/count/panel/action-card presentation; separate PM correction and potential-bid input sections | OLED counter ink/fill is in `theme-surfaces.css`; alert classification is not CSS. |
 | `styles/09-bid-log.css` | Bid Log directory, summaries, table, notes, editor fields and GC picker | Lifecycle component polish stays in its existing separate file. |
-| `styles/10-active-projects.css` | Active Projects directory, floating job editor and Form 19 read-only sections | This file does not control write permission or test-job eligibility. |
-| `styles/11-lifecycle-feedback-and-staffing.css` | Lifecycle navigation, refresh toasts and Organizer | Month controls and header totals now live in 05. |
+| `styles/10-active-projects.css` | Active Projects directory, floating job editor, Form 19 read-only sections and Management notices/watermark | Does not control write permission or test-job eligibility; staffing is in 11a. |
+| `styles/11-lifecycle-feedback.css` | Lifecycle navigation and refresh toasts | Renamed in C4; no staffing rules remain here. Month controls/header totals stay in 05. |
+| `styles/11a-active-project-staffing.css` | Current Superintendent/Foremen, future Organizer plans, readouts, disabled states and 980px/760px variants | Loaded immediately after 11, at the original staffing position. Current assignments and scheduled plans are distinct. |
 | `styles/12-table-teams-and-zebra.css` | Compact page heading, shared employee badges/title ellipsis, cross-workspace widths, zebra and hover/completed states | Pivot column geometry moved to 05. Keep row shading continuous on frozen identity cells. |
-| `styles/13-financial-review-and-metrics.css` | Needs Rebalance/Pending Foundation and schedule flags, selection states, notification actions, Management view-only notices | Metric lanes now live in 05. No classification, calculation or authorization is performed in CSS. |
+| `styles/13-financial-review-and-metrics.css` | Needs Rebalance/Pending Foundation and schedule flags, selection states, projection-jump highlighting | Metric lanes stay in 05; notification cards in 08; Management notices in 10. No classification, calculation or authorization is performed in CSS. |
 | `styles/14-completed-closeout.css` | Completed contract ledger, progress chart, historical context and directory hints | Scoped to the completed report; do not turn it into a generic drawer reset. |
 | `styles/15-balance-presentation.css` | Final right-aligned flag/whole-dollar amount stack and clickable balance card | Role-dependent click actions remain in the existing React components. |
 
@@ -174,6 +175,22 @@ There is a nearby comment describing that dependency. Source count controls in
 `ProjectionDisplay.css` still own their selected color; C3 only owns their
 floating-toolbar geometry. Semantic status/amount styles remain in 13/15.
 
+## Notification and staffing editing recipes — C4
+
+| You want to change… | File / section |
+|---|---|
+| Bell, counter position, panel size or list scrolling | `08-notifications-and-inputs.css`: TOPBAR NOTIFICATIONS |
+| Full-card notification action, heading, supporting copy or context | Same file: NOTIFICATION ACTION CARDS; keep the basic item rules before their refinements |
+| Management preview notice, watermark or Cognito guide | `10-active-projects.css`: MANAGEMENT VIEW-ONLY PRESENTATION |
+| Current Superintendent/Foreman readouts and select controls | `11a-active-project-staffing.css`: current assignment and Project Team sections |
+| Future Organizer row fields, notes and effective date/status | Same file: Project Team staffing editor and Organizer grid |
+| Staffing narrow layout | Same file: 980px and 760px media queries, retaining their order |
+| Lifecycle navigation or refresh feedback | `11-lifecycle-feedback.css` |
+
+The old `11-lifecycle-feedback-and-staffing.css` is removed, not left as a second
+copy. The new staffing import directly follows the lifecycle/feedback import;
+this preserves the original global position of the extracted block.
+
 ## What has actually been consolidated
 
 **C1, accepted:** removed 255 earlier declarations, 54 resulting empty rule blocks
@@ -202,6 +219,30 @@ selector-specific declarations. Physical rule blocks decrease from 1,622 to
 lists are separated to give each component a single editable definition. This
 is a maintainability change, not a performance or payload-reduction claim.
 
+**C4:** action-card notification styles move from 13 into 08; Management notices
+move from 13 into 10; the contiguous staffing/Organizer block is extracted from
+11 into 11a at the same cascade position. The remaining 11 file is renamed to
+match its purpose. No selector-specific declarations are deleted or changed;
+this final pass is ownership cleanup, not a size/performance improvement.
+
+## CSS workstream closeout
+
+After C4 full QA, local acceptance and production verification, close this CSS
+consolidation workstream and proceed to read-only Active Projects exploration.
+Do not create another generic cleanup stage solely because selectors repeat.
+Base/state/responsive/print selectors, theme mappings, shared badges, shared row
+states, completed closeout refinements and documented sticky dependencies are
+intentional. Dead-CSS removal cannot be justified by a literal text search alone.
+
+Keep the two user-created Git checkpoint tags: `backup-pre-css-consolidation-2026-10-27`
+(accepted OLED before structural consolidation) and `backup-pre-oled-theme-2026-10-27`
+(accepted balance UI before the theme experiments). Do not move those tags.
+They preserve tracked application source, not SQL data, secrets or cloud configuration.
+
+Before a future edit, find the owner here or in `BIDLOG_CSS_SELECTOR_INDEX.md`,
+inspect the winning rule, and change that rule. Do not add overrides to the entry
+points. Revalidate your actual change rather than reusing a historical QA marker.
+
 ## How to add or adjust a rule
 
 Edit an existing rule where that property belongs. Add a nearby comment describing
@@ -217,16 +258,18 @@ header clones construct some class names dynamically.
 
 ## Validation and release
 
-The C3 package has a separate local apply/QA/rebuild gate and optional commit/push
+The C4 package has a separate local apply/QA/rebuild gate and optional commit/push
 gates. Its source hashes certify this exact refactor; do not reuse that QA marker
 for your own subsequent edits.
+
+The three existing structural tests now expect 16 imports instead of 15 and the renamed module; their semantic assertions remain intact.
 
 Normal source tests live in `frontend/tests`. The existing `helpers/readSource.mjs`
 resolves the real CSS imports for the existing source-contract assertions; it does
 not keep a duplicate legacy stylesheet or disable those assertions.
 
-A complete C3 host QA run includes the per-selector/conditional declaration contract, focused and full
-frontend tests, the Vite production build, the backend test suite, and both Docker
+A complete C4 host QA run includes the per-selector/conditional declaration contract, focused and full
+frontend tests (minimum 683), the Vite production build, the backend suite (minimum 352), and both Docker
 image targets. Tests run against sanitized source, without production credentials
 or SQL writes. The build proof checks that local CSS imports have been inlined.
 

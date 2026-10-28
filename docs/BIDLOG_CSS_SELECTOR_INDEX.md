@@ -1,6 +1,6 @@
 # Bid Log CSS selector index
 
-Generated for C3 from accepted C2 `8e477a9f80e01c67c719e0b10d03d797ebf89a36`. Paths are relative to `frontend/src/`. Line numbers are a navigation snapshot. Base, state, responsive and print selectors may intentionally repeat; consult their owning-file comments.
+Generated for C4 / CSS closeout from the verified C3 tree. Paths are relative to `frontend/src/`. Line numbers are a navigation snapshot. Base, state, responsive and print selectors may intentionally repeat; consult the owning-file comments.
 
 Selector occurrences: **2495**.
 
@@ -8,10 +8,10 @@ Selector occurrences: **2495**.
 |---|---|---|
 | `:is( .monthly-table tbody tr, .detail-table tbody tr, .monthly-comparison-row, .month-current-project-row, .completed-project-row, .bid-log-data-row, .active-project-data-row, .pivot-project-row ):hover` | `styles/12-table-teams-and-zebra.css:302` | base |
 | `:is( .monthly-table, .detail-table, .billing-monthly-table, .monthly-project-table, .completed-project-table, .completed-monthly-table, .project-pivot-table, .bid-log-table, .active-bid-monthly-table, .active-project-table ) tbody > tr:nth-child( even of :not(.monthly-project-detail-row):not(.bid-log-notes-row) )` | `styles/12-table-teams-and-zebra.css:260` | base |
-| `:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line) > :is(.needs-rebalance-flag, .schedule-review-flag)` | `styles/13-financial-review-and-metrics.css:217` | base |
-| `:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line) > .needs-rebalance-flag` | `styles/13-financial-review-and-metrics.css:225` | base |
+| `:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line) > :is(.needs-rebalance-flag, .schedule-review-flag)` | `styles/13-financial-review-and-metrics.css:134` | base |
+| `:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line) > .needs-rebalance-flag` | `styles/13-financial-review-and-metrics.css:142` | base |
 | `:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line) > .needs-rebalance-flag.pending-foundation-flag` | `styles/13-financial-review-and-metrics.css:55` | base |
-| `:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line) > .schedule-review-flag` | `styles/13-financial-review-and-metrics.css:239` | base |
+| `:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line) > .schedule-review-flag` | `styles/13-financial-review-and-metrics.css:156` | base |
 | `:is(.project-cell, .active-project-name-cell, .pivot-project-info) .balance-review-status-stack > .balance-review-amount-line` | `styles/15-balance-presentation.css:24` | base |
 | `:is(.project-name-status-line, .pivot-project-name-line, .active-project-name-line) .balance-review-status-stack > .needs-rebalance-flag` | `styles/15-balance-presentation.css:43` | base |
 | `:is(.project-name-status-line, .pivot-project-name-line, .active-project-name-line) .balance-review-status-stack > .needs-rebalance-flag.pending-foundation-flag` | `styles/15-balance-presentation.css:50` | base |
@@ -128,75 +128,75 @@ Selector occurrences: **2495**.
 | `.accountability-table td:first-child` | `styles/01-foundations.css:1156` | base |
 | `.accountability-table th:first-child` | `styles/01-foundations.css:1156` | base |
 | `.accountability-tabs` | `styles/01-foundations.css:1144` | base |
-| `.action-toast` | `styles/11-lifecycle-feedback-and-staffing.css:207` | base |
-| `.action-toast` | `styles/11-lifecycle-feedback-and-staffing.css:315` | @media (max-width: 760px) |
-| `.action-toast-action` | `styles/11-lifecycle-feedback-and-staffing.css:274` | base |
-| `.action-toast-action:focus-visible` | `styles/11-lifecycle-feedback-and-staffing.css:288` | base |
-| `.action-toast-action:hover` | `styles/11-lifecycle-feedback-and-staffing.css:288` | base |
-| `.action-toast-close` | `styles/11-lifecycle-feedback-and-staffing.css:294` | base |
-| `.action-toast-close:focus-visible` | `styles/11-lifecycle-feedback-and-staffing.css:309` | base |
-| `.action-toast-close:hover` | `styles/11-lifecycle-feedback-and-staffing.css:309` | base |
-| `.action-toast-content` | `styles/11-lifecycle-feedback-and-staffing.css:253` | base |
-| `.action-toast-content span` | `styles/11-lifecycle-feedback-and-staffing.css:268` | base |
-| `.action-toast-content strong` | `styles/11-lifecycle-feedback-and-staffing.css:261` | base |
-| `.action-toast-icon` | `styles/11-lifecycle-feedback-and-staffing.css:233` | base |
-| `.action-toast.error` | `styles/11-lifecycle-feedback-and-staffing.css:229` | base |
-| `.action-toast.error .action-toast-icon` | `styles/11-lifecycle-feedback-and-staffing.css:249` | base |
+| `.action-toast` | `styles/11-lifecycle-feedback.css:207` | base |
+| `.action-toast` | `styles/11-lifecycle-feedback.css:315` | @media (max-width: 760px) |
+| `.action-toast-action` | `styles/11-lifecycle-feedback.css:274` | base |
+| `.action-toast-action:focus-visible` | `styles/11-lifecycle-feedback.css:288` | base |
+| `.action-toast-action:hover` | `styles/11-lifecycle-feedback.css:288` | base |
+| `.action-toast-close` | `styles/11-lifecycle-feedback.css:294` | base |
+| `.action-toast-close:focus-visible` | `styles/11-lifecycle-feedback.css:309` | base |
+| `.action-toast-close:hover` | `styles/11-lifecycle-feedback.css:309` | base |
+| `.action-toast-content` | `styles/11-lifecycle-feedback.css:253` | base |
+| `.action-toast-content span` | `styles/11-lifecycle-feedback.css:268` | base |
+| `.action-toast-content strong` | `styles/11-lifecycle-feedback.css:261` | base |
+| `.action-toast-icon` | `styles/11-lifecycle-feedback.css:233` | base |
+| `.action-toast.error` | `styles/11-lifecycle-feedback.css:229` | base |
+| `.action-toast.error .action-toast-icon` | `styles/11-lifecycle-feedback.css:249` | base |
 | `.action-toast.info` | `BidLogLifecyclePolish.css:46` | base |
 | `.action-toast.info .action-toast-icon` | `BidLogLifecyclePolish.css:50` | base |
-| `.action-toast.refresh-feedback` | `styles/11-lifecycle-feedback-and-staffing.css:178` | base |
-| `.action-toast.success` | `styles/11-lifecycle-feedback-and-staffing.css:225` | base |
-| `.action-toast.success .action-toast-icon` | `styles/11-lifecycle-feedback-and-staffing.css:245` | base |
-| `.active-bid-billing-drawer` | `styles/08-notifications-and-inputs.css:461` | base |
-| `.active-bid-drawer-message` | `styles/08-notifications-and-inputs.css:465` | base |
-| `.active-bid-drawer-message.error` | `styles/08-notifications-and-inputs.css:475` | base |
-| `.active-bid-drawer-message.success` | `styles/08-notifications-and-inputs.css:479` | base |
-| `.active-bid-duration-input` | `styles/08-notifications-and-inputs.css:636` | base |
-| `.active-bid-duration-input > span` | `styles/08-notifications-and-inputs.css:651` | base |
-| `.active-bid-duration-input input` | `styles/08-notifications-and-inputs.css:645` | base |
-| `.active-bid-missing-field` | `styles/08-notifications-and-inputs.css:512` | base |
-| `.active-bid-missing-field` | `styles/08-notifications-and-inputs.css:709` | @media (max-width: 800px) |
-| `.active-bid-missing-field small` | `styles/08-notifications-and-inputs.css:518` | base |
-| `.active-bid-monthly-heading` | `styles/08-notifications-and-inputs.css:536` | base |
-| `.active-bid-monthly-heading` | `styles/08-notifications-and-inputs.css:702` | @media (max-width: 800px) |
-| `.active-bid-monthly-table` | `styles/08-notifications-and-inputs.css:693` | base |
-| `.active-bid-monthly-totals` | `styles/08-notifications-and-inputs.css:665` | base |
-| `.active-bid-monthly-totals` | `styles/08-notifications-and-inputs.css:716` | @media (max-width: 800px) |
-| `.active-bid-monthly-totals > span` | `styles/08-notifications-and-inputs.css:671` | base |
-| `.active-bid-monthly-totals > span` | `styles/08-notifications-and-inputs.css:720` | @media (max-width: 800px) |
-| `.active-bid-monthly-totals small` | `styles/08-notifications-and-inputs.css:675` | base |
-| `.active-bid-monthly-totals small` | `styles/08-notifications-and-inputs.css:680` | base |
-| `.active-bid-monthly-totals strong` | `styles/08-notifications-and-inputs.css:675` | base |
-| `.active-bid-monthly-totals strong` | `styles/08-notifications-and-inputs.css:689` | base |
-| `.active-bid-notes-field` | `styles/08-notifications-and-inputs.css:588` | base |
-| `.active-bid-notes-field > span` | `styles/08-notifications-and-inputs.css:595` | base |
-| `.active-bid-notes-field textarea` | `styles/08-notifications-and-inputs.css:617` | base |
-| `.active-bid-notes-field textarea` | `styles/08-notifications-and-inputs.css:631` | base |
-| `.active-bid-readiness-card` | `styles/08-notifications-and-inputs.css:483` | base |
-| `.active-bid-readiness-card` | `styles/08-notifications-and-inputs.css:702` | @media (max-width: 800px) |
-| `.active-bid-readiness-card > div:first-child` | `styles/08-notifications-and-inputs.css:495` | base |
-| `.active-bid-readiness-card p` | `styles/08-notifications-and-inputs.css:505` | base |
-| `.active-bid-readiness-card strong` | `styles/08-notifications-and-inputs.css:499` | base |
-| `.active-bid-settings-actions` | `styles/08-notifications-and-inputs.css:658` | base |
-| `.active-bid-settings-form` | `styles/08-notifications-and-inputs.css:544` | base |
-| `.active-bid-settings-grid` | `styles/08-notifications-and-inputs.css:582` | base |
-| `.active-bid-settings-grid` | `styles/08-notifications-and-inputs.css:698` | @media (max-width: 800px) |
-| `.active-bid-settings-grid > label` | `styles/08-notifications-and-inputs.css:588` | base |
-| `.active-bid-settings-grid > label > span` | `styles/08-notifications-and-inputs.css:595` | base |
-| `.active-bid-settings-grid input` | `styles/08-notifications-and-inputs.css:617` | base |
-| `.active-bid-settings-grid input[type="number"]` | `styles/08-notifications-and-inputs.css:606` | base |
-| `.active-bid-settings-grid input[type="number"]::-webkit-inner-spin-button` | `styles/08-notifications-and-inputs.css:611` | base |
-| `.active-bid-settings-grid input[type="number"]::-webkit-outer-spin-button` | `styles/08-notifications-and-inputs.css:611` | base |
-| `.active-bid-settings-grid small` | `styles/08-notifications-and-inputs.css:574` | base |
-| `.active-bid-settings-heading` | `styles/08-notifications-and-inputs.css:536` | base |
-| `.active-bid-settings-heading` | `styles/08-notifications-and-inputs.css:702` | @media (max-width: 800px) |
-| `.active-bid-settings-section` | `styles/08-notifications-and-inputs.css:528` | base |
-| `.active-bid-settings-toggle` | `styles/08-notifications-and-inputs.css:549` | base |
-| `.active-bid-settings-toggle input` | `styles/08-notifications-and-inputs.css:559` | base |
-| `.active-bid-settings-toggle small` | `styles/08-notifications-and-inputs.css:565` | base |
-| `.active-bid-settings-toggle small` | `styles/08-notifications-and-inputs.css:574` | base |
-| `.active-bid-settings-toggle strong` | `styles/08-notifications-and-inputs.css:565` | base |
-| `.active-bid-settings-toggle strong` | `styles/08-notifications-and-inputs.css:570` | base |
+| `.action-toast.refresh-feedback` | `styles/11-lifecycle-feedback.css:178` | base |
+| `.action-toast.success` | `styles/11-lifecycle-feedback.css:225` | base |
+| `.action-toast.success .action-toast-icon` | `styles/11-lifecycle-feedback.css:245` | base |
+| `.active-bid-billing-drawer` | `styles/08-notifications-and-inputs.css:549` | base |
+| `.active-bid-drawer-message` | `styles/08-notifications-and-inputs.css:553` | base |
+| `.active-bid-drawer-message.error` | `styles/08-notifications-and-inputs.css:563` | base |
+| `.active-bid-drawer-message.success` | `styles/08-notifications-and-inputs.css:567` | base |
+| `.active-bid-duration-input` | `styles/08-notifications-and-inputs.css:724` | base |
+| `.active-bid-duration-input > span` | `styles/08-notifications-and-inputs.css:739` | base |
+| `.active-bid-duration-input input` | `styles/08-notifications-and-inputs.css:733` | base |
+| `.active-bid-missing-field` | `styles/08-notifications-and-inputs.css:600` | base |
+| `.active-bid-missing-field` | `styles/08-notifications-and-inputs.css:797` | @media (max-width: 800px) |
+| `.active-bid-missing-field small` | `styles/08-notifications-and-inputs.css:606` | base |
+| `.active-bid-monthly-heading` | `styles/08-notifications-and-inputs.css:624` | base |
+| `.active-bid-monthly-heading` | `styles/08-notifications-and-inputs.css:790` | @media (max-width: 800px) |
+| `.active-bid-monthly-table` | `styles/08-notifications-and-inputs.css:781` | base |
+| `.active-bid-monthly-totals` | `styles/08-notifications-and-inputs.css:753` | base |
+| `.active-bid-monthly-totals` | `styles/08-notifications-and-inputs.css:804` | @media (max-width: 800px) |
+| `.active-bid-monthly-totals > span` | `styles/08-notifications-and-inputs.css:759` | base |
+| `.active-bid-monthly-totals > span` | `styles/08-notifications-and-inputs.css:808` | @media (max-width: 800px) |
+| `.active-bid-monthly-totals small` | `styles/08-notifications-and-inputs.css:763` | base |
+| `.active-bid-monthly-totals small` | `styles/08-notifications-and-inputs.css:768` | base |
+| `.active-bid-monthly-totals strong` | `styles/08-notifications-and-inputs.css:763` | base |
+| `.active-bid-monthly-totals strong` | `styles/08-notifications-and-inputs.css:777` | base |
+| `.active-bid-notes-field` | `styles/08-notifications-and-inputs.css:676` | base |
+| `.active-bid-notes-field > span` | `styles/08-notifications-and-inputs.css:683` | base |
+| `.active-bid-notes-field textarea` | `styles/08-notifications-and-inputs.css:705` | base |
+| `.active-bid-notes-field textarea` | `styles/08-notifications-and-inputs.css:719` | base |
+| `.active-bid-readiness-card` | `styles/08-notifications-and-inputs.css:571` | base |
+| `.active-bid-readiness-card` | `styles/08-notifications-and-inputs.css:790` | @media (max-width: 800px) |
+| `.active-bid-readiness-card > div:first-child` | `styles/08-notifications-and-inputs.css:583` | base |
+| `.active-bid-readiness-card p` | `styles/08-notifications-and-inputs.css:593` | base |
+| `.active-bid-readiness-card strong` | `styles/08-notifications-and-inputs.css:587` | base |
+| `.active-bid-settings-actions` | `styles/08-notifications-and-inputs.css:746` | base |
+| `.active-bid-settings-form` | `styles/08-notifications-and-inputs.css:632` | base |
+| `.active-bid-settings-grid` | `styles/08-notifications-and-inputs.css:670` | base |
+| `.active-bid-settings-grid` | `styles/08-notifications-and-inputs.css:786` | @media (max-width: 800px) |
+| `.active-bid-settings-grid > label` | `styles/08-notifications-and-inputs.css:676` | base |
+| `.active-bid-settings-grid > label > span` | `styles/08-notifications-and-inputs.css:683` | base |
+| `.active-bid-settings-grid input` | `styles/08-notifications-and-inputs.css:705` | base |
+| `.active-bid-settings-grid input[type="number"]` | `styles/08-notifications-and-inputs.css:694` | base |
+| `.active-bid-settings-grid input[type="number"]::-webkit-inner-spin-button` | `styles/08-notifications-and-inputs.css:699` | base |
+| `.active-bid-settings-grid input[type="number"]::-webkit-outer-spin-button` | `styles/08-notifications-and-inputs.css:699` | base |
+| `.active-bid-settings-grid small` | `styles/08-notifications-and-inputs.css:662` | base |
+| `.active-bid-settings-heading` | `styles/08-notifications-and-inputs.css:624` | base |
+| `.active-bid-settings-heading` | `styles/08-notifications-and-inputs.css:790` | @media (max-width: 800px) |
+| `.active-bid-settings-section` | `styles/08-notifications-and-inputs.css:616` | base |
+| `.active-bid-settings-toggle` | `styles/08-notifications-and-inputs.css:637` | base |
+| `.active-bid-settings-toggle input` | `styles/08-notifications-and-inputs.css:647` | base |
+| `.active-bid-settings-toggle small` | `styles/08-notifications-and-inputs.css:653` | base |
+| `.active-bid-settings-toggle small` | `styles/08-notifications-and-inputs.css:662` | base |
+| `.active-bid-settings-toggle strong` | `styles/08-notifications-and-inputs.css:653` | base |
+| `.active-bid-settings-toggle strong` | `styles/08-notifications-and-inputs.css:658` | base |
 | `.active-project-contract-cell` | `styles/10-active-projects.css:83` | base |
 | `.active-project-data-row` | `styles/10-active-projects.css:89` | base |
 | `.active-project-data-row:focus-visible` | `styles/10-active-projects.css:93` | base |
@@ -213,11 +213,11 @@ Selector occurrences: **2495**.
 | `.active-project-edit-drawer .floating-editor-body.bid-log-edit-body` | `styles/10-active-projects.css:428` | base |
 | `.active-project-edit-drawer .floating-editor-footer-status small` | `ActiveProjectSaveReview.css:8` | base |
 | `.active-project-edit-drawer .section-kicker` | `styles/10-active-projects.css:465` | base |
-| `.active-project-filter-actions` | `styles/10-active-projects.css:206` | @media (max-width: 760px) |
 | `.active-project-filter-actions` | `styles/10-active-projects.css:34` | base |
+| `.active-project-filter-actions` | `styles/10-active-projects.css:206` | @media (max-width: 760px) |
 | `.active-project-filter-actions > button` | `styles/10-active-projects.css:210` | @media (max-width: 760px) |
-| `.active-project-filter-grid` | `styles/10-active-projects.css:200` | @media (max-width: 1280px) |
 | `.active-project-filter-grid` | `styles/10-active-projects.css:21` | base |
+| `.active-project-filter-grid` | `styles/10-active-projects.css:200` | @media (max-width: 1280px) |
 | `.active-project-filter-note` | `styles/10-active-projects.css:30` | base |
 | `.active-project-filter-toolbar` | `styles/10-active-projects.css:25` | base |
 | `.active-project-gc-cell` | `styles/10-active-projects.css:73` | base |
@@ -233,8 +233,8 @@ Selector occurrences: **2495**.
 | `.active-project-name-line` | `styles/12-table-teams-and-zebra.css:208` | base |
 | `.active-project-name-line .project-title-ellipsis` | `styles/12-table-teams-and-zebra.css:212` | base |
 | `.active-project-name-line strong` | `styles/10-active-projects.css:803` | base |
-| `.active-project-name-line:has(.needs-rebalance-flag)` | `styles/13-financial-review-and-metrics.css:208` | base |
-| `.active-project-name-line:has(.schedule-review-flag)` | `styles/13-financial-review-and-metrics.css:208` | base |
+| `.active-project-name-line:has(.needs-rebalance-flag)` | `styles/13-financial-review-and-metrics.css:125` | base |
+| `.active-project-name-line:has(.schedule-review-flag)` | `styles/13-financial-review-and-metrics.css:125` | base |
 | `.active-project-pm-cell` | `styles/10-active-projects.css:77` | base |
 | `.active-project-quantity-cell` | `styles/10-active-projects.css:83` | base |
 | `.active-project-readonly-value` | `styles/10-active-projects.css:100` | base |
@@ -262,9 +262,9 @@ Selector occurrences: **2495**.
 | `.active-project-table thead th` | `styles/10-active-projects.css:48` | base |
 | `.active-project-team-cell` | `styles/12-table-teams-and-zebra.css:216` | base |
 | `.active-projects-workspace` | `styles/10-active-projects.css:13` | base |
-| `.active-projects-workspace.management-admin-preview` | `styles/13-financial-review-and-metrics.css:250` | base |
-| `.active-projects-workspace.management-admin-preview::after` | `styles/13-financial-review-and-metrics.css:255` | base |
-| `.active-projects-workspace.management-admin-preview::after` | `styles/13-financial-review-and-metrics.css:316` | @media (max-width: 760px) |
+| `.active-projects-workspace.management-admin-preview` | `styles/10-active-projects.css:848` | base |
+| `.active-projects-workspace.management-admin-preview::after` | `styles/10-active-projects.css:853` | base |
+| `.active-projects-workspace.management-admin-preview::after` | `styles/10-active-projects.css:914` | @media (max-width: 760px) |
 | `.admin-source-hint` | `styles/02-billing-drawers.css:1184` | base |
 | `.administration-advanced-details` | `AdministrationDashboard.css:120` | base |
 | `.administration-advanced-details>.administration-section` | `AdministrationDashboard.css:123` | base |
@@ -350,9 +350,9 @@ Selector occurrences: **2495**.
 | `.administration-presence-app` | `AdministrationPresence.css:3` | base |
 | `.administration-presence-app .administration-tile-detail` | `AdministrationPresence.css:6` | base |
 | `.administration-presence-app small` | `AdministrationPresence.css:7` | base |
+| `.administration-presence-apps` | `AdministrationPresence.css:2` | base |
 | `.administration-presence-apps` | `AdministrationPresence.css:15` | @media (max-width: 950px) |
 | `.administration-presence-apps` | `AdministrationPresence.css:16` | @media (max-width: 600px) |
-| `.administration-presence-apps` | `AdministrationPresence.css:2` | base |
 | `.administration-presence-controls` | `AdministrationPresence.css:9` | base |
 | `.administration-presence-controls input` | `AdministrationPresence.css:11` | base |
 | `.administration-presence-controls label` | `AdministrationPresence.css:10` | base |
@@ -400,8 +400,8 @@ Selector occurrences: **2495**.
 | `.administration-section-heading h2` | `AdministrationDashboard.css:12` | base |
 | `.administration-section-heading span` | `AdministrationDashboard.css:13` | base |
 | `.administration-source-age` | `AdministrationDashboard.css:107` | base |
-| `.administration-source-header` | `AdministrationDashboard.css:108` | @media (max-width: 650px) |
 | `.administration-source-header` | `AdministrationDashboard.css:98` | base |
+| `.administration-source-header` | `AdministrationDashboard.css:108` | @media (max-width: 650px) |
 | `.administration-source-header .administration-detail` | `AdministrationDashboard.css:99` | base |
 | `.administration-source-header button` | `AdministrationDashboard.css:100` | base |
 | `.administration-source-header button:disabled` | `AdministrationDashboard.css:104` | base |
@@ -515,8 +515,8 @@ Selector occurrences: **2495**.
 | `.balance-review-detail` | `styles/15-balance-presentation.css:63` | base |
 | `.balance-review-detail-amount` | `styles/15-balance-presentation.css:115` | base |
 | `.balance-review-detail-amount > strong` | `styles/15-balance-presentation.css:120` | base |
-| `.balance-review-detail-heading` | `styles/15-balance-presentation.css:166` | @media (max-width: 630px) |
 | `.balance-review-detail-heading` | `styles/15-balance-presentation.css:99` | base |
+| `.balance-review-detail-heading` | `styles/15-balance-presentation.css:166` | @media (max-width: 630px) |
 | `.balance-review-detail-heading .section-kicker` | `styles/15-balance-presentation.css:111` | base |
 | `.balance-review-detail-note` | `styles/15-balance-presentation.css:131` | base |
 | `.balance-review-detail-note` | `styles/15-balance-presentation.css:160` | base |
@@ -583,7 +583,7 @@ Selector occurrences: **2495**.
 | `.bid-edit-grid.two-column` | `styles/09-bid-log.css:793` | @media (max-width: 760px) |
 | `.bid-edit-message` | `styles/09-bid-log.css:542` | base |
 | `.bid-edit-message.error` | `styles/09-bid-log.css:556` | base |
-| `.bid-edit-message.outcome` | `styles/11-lifecycle-feedback-and-staffing.css:157` | base |
+| `.bid-edit-message.outcome` | `styles/11-lifecycle-feedback.css:157` | base |
 | `.bid-edit-message.success` | `styles/09-bid-log.css:566` | base |
 | `.bid-edit-message.warning` | `styles/09-bid-log.css:561` | base |
 | `.bid-edit-notes-textarea` | `styles/09-bid-log.css:677` | base |
@@ -657,15 +657,15 @@ Selector occurrences: **2495**.
 | `.bid-lifecycle-field.required-attention input` | `BidLogLifecyclePolish.css:369` | base |
 | `.bid-lifecycle-field.required-attention select` | `BidLogLifecyclePolish.css:369` | base |
 | `.bid-lifecycle-field.required-attention textarea` | `BidLogLifecyclePolish.css:369` | base |
+| `.bid-lifecycle-required-banner` | `BidLogLifecyclePolish.css:54` | base |
 | `.bid-lifecycle-required-banner` | `BidLogLifecyclePolish.css:119` | @media (max-width: 760px) |
 | `.bid-lifecycle-required-banner` | `BidLogLifecyclePolish.css:343` | base |
-| `.bid-lifecycle-required-banner` | `BidLogLifecyclePolish.css:54` | base |
 | `.bid-lifecycle-required-banner > button` | `BidLogLifecyclePolish.css:124` | @media (max-width: 760px) |
 | `.bid-lifecycle-required-banner > div` | `BidLogLifecyclePolish.css:67` | base |
 | `.bid-lifecycle-required-banner span` | `BidLogLifecyclePolish.css:80` | base |
-| `.bid-lifecycle-required-banner strong` | `BidLogLifecyclePolish.css:359` | base |
 | `.bid-lifecycle-required-banner strong` | `BidLogLifecyclePolish.css:74` | base |
-| `.bid-log-create-drawer .bid-edit-section:first-of-type` | `styles/11-lifecycle-feedback-and-staffing.css:67` | base |
+| `.bid-lifecycle-required-banner strong` | `BidLogLifecyclePolish.css:359` | base |
+| `.bid-log-create-drawer .bid-edit-section:first-of-type` | `styles/11-lifecycle-feedback.css:67` | base |
 | `.bid-log-data-row` | `styles/09-bid-log.css:518` | base |
 | `.bid-log-data-row:focus-visible` | `styles/09-bid-log.css:522` | base |
 | `.bid-log-due-cell` | `styles/09-bid-log.css:304` | base |
@@ -688,29 +688,29 @@ Selector occurrences: **2495**.
 | `.bid-log-edit-footer-actions` | `styles/09-bid-log.css:805` | @media (max-width: 760px) |
 | `.bid-log-edit-footer-actions > button` | `styles/09-bid-log.css:809` | @media (max-width: 760px) |
 | `.bid-log-edit-header` | `styles/09-bid-log.css:533` | base |
-| `.bid-log-filter-actions` | `styles/11-lifecycle-feedback-and-staffing.css:13` | base |
-| `.bid-log-filter-actions` | `styles/11-lifecycle-feedback-and-staffing.css:72` | @media (max-width: 760px) |
-| `.bid-log-filter-actions > button` | `styles/11-lifecycle-feedback-and-staffing.css:76` | @media (max-width: 760px) |
+| `.bid-log-filter-actions` | `styles/11-lifecycle-feedback.css:13` | base |
+| `.bid-log-filter-actions` | `styles/11-lifecycle-feedback.css:72` | @media (max-width: 760px) |
+| `.bid-log-filter-actions > button` | `styles/11-lifecycle-feedback.css:76` | @media (max-width: 760px) |
 | `.bid-log-filter-grid` | `styles/09-bid-log.css:147` | base |
 | `.bid-log-filter-grid` | `styles/09-bid-log.css:469` | @media (max-width: 1280px) |
 | `.bid-log-filter-grid` | `styles/09-bid-log.css:492` | @media (max-width: 760px) |
 | `.bid-log-filter-toolbar` | `styles/09-bid-log.css:182` | base |
 | `.bid-log-filter-toolbar` | `styles/09-bid-log.css:497` | @media (max-width: 760px) |
 | `.bid-log-filter-toolbar > button` | `styles/09-bid-log.css:502` | @media (max-width: 760px) |
-| `.bid-log-heading-actions` | `styles/09-bid-log.css:487` | @media (max-width: 760px) |
 | `.bid-log-heading-actions` | `styles/09-bid-log.css:62` | base |
+| `.bid-log-heading-actions` | `styles/09-bid-log.css:487` | @media (max-width: 760px) |
 | `.bid-log-heading-title-row` | `styles/09-bid-log.css:17` | base |
 | `.bid-log-heading-title-row` | `styles/09-bid-log.css:479` | @media (max-width: 760px) |
 | `.bid-log-heading-title-row h1` | `styles/09-bid-log.css:24` | base |
-| `.bid-log-lifecycle-dot` | `styles/11-lifecycle-feedback-and-staffing.css:134` | base |
-| `.bid-log-lifecycle-tab` | `styles/11-lifecycle-feedback-and-staffing.css:116` | base |
-| `.bid-log-lifecycle-tab` | `styles/11-lifecycle-feedback-and-staffing.css:97` | base |
-| `.bid-log-lifecycle-tab:focus-visible` | `styles/11-lifecycle-feedback-and-staffing.css:120` | base |
-| `.bid-log-lifecycle-tab:hover` | `styles/11-lifecycle-feedback-and-staffing.css:120` | base |
-| `.bid-log-lifecycle-tab.active` | `styles/11-lifecycle-feedback-and-staffing.css:127` | base |
-| `.bid-log-lifecycle-tab.active .bid-log-lifecycle-dot` | `styles/11-lifecycle-feedback-and-staffing.css:142` | base |
-| `.bid-log-lifecycle-tabs` | `styles/11-lifecycle-feedback-and-staffing.css:163` | @media (max-width: 760px) |
-| `.bid-log-lifecycle-tabs` | `styles/11-lifecycle-feedback-and-staffing.css:83` | base |
+| `.bid-log-lifecycle-dot` | `styles/11-lifecycle-feedback.css:134` | base |
+| `.bid-log-lifecycle-tab` | `styles/11-lifecycle-feedback.css:97` | base |
+| `.bid-log-lifecycle-tab` | `styles/11-lifecycle-feedback.css:116` | base |
+| `.bid-log-lifecycle-tab:focus-visible` | `styles/11-lifecycle-feedback.css:120` | base |
+| `.bid-log-lifecycle-tab:hover` | `styles/11-lifecycle-feedback.css:120` | base |
+| `.bid-log-lifecycle-tab.active` | `styles/11-lifecycle-feedback.css:127` | base |
+| `.bid-log-lifecycle-tab.active .bid-log-lifecycle-dot` | `styles/11-lifecycle-feedback.css:142` | base |
+| `.bid-log-lifecycle-tabs` | `styles/11-lifecycle-feedback.css:83` | base |
+| `.bid-log-lifecycle-tabs` | `styles/11-lifecycle-feedback.css:163` | @media (max-width: 760px) |
 | `.bid-log-list-card` | `styles/09-bid-log.css:235` | base |
 | `.bid-log-list-heading` | `styles/09-bid-log.css:239` | base |
 | `.bid-log-merge-from-editor` | `BidLogMergeDialog.css:22` | base |
@@ -724,13 +724,13 @@ Selector occurrences: **2495**.
 | `.bid-log-name-line .project-title-ellipsis` | `styles/12-table-teams-and-zebra.css:248` | base |
 | `.bid-log-name-line > strong` | `styles/09-bid-log.css:345` | base |
 | `.bid-log-new-bid-button` | `BidLogLifecyclePolish.css:5` | base |
-| `.bid-log-new-bid-button` | `styles/11-lifecycle-feedback-and-staffing.css:19` | base |
+| `.bid-log-new-bid-button` | `styles/11-lifecycle-feedback.css:19` | base |
 | `.bid-log-new-bid-button-header` | `styles/09-bid-log.css:487` | @media (max-width: 760px) |
-| `.bid-log-new-bid-button-header` | `styles/11-lifecycle-feedback-and-staffing.css:41` | base |
-| `.bid-log-new-bid-button:focus-visible` | `styles/11-lifecycle-feedback-and-staffing.css:46` | base |
-| `.bid-log-new-bid-button:hover` | `styles/11-lifecycle-feedback-and-staffing.css:46` | base |
+| `.bid-log-new-bid-button-header` | `styles/11-lifecycle-feedback.css:41` | base |
+| `.bid-log-new-bid-button:focus-visible` | `styles/11-lifecycle-feedback.css:46` | base |
+| `.bid-log-new-bid-button:hover` | `styles/11-lifecycle-feedback.css:46` | base |
 | `.bid-log-new-bid-plus` | `BidLogLifecyclePolish.css:11` | base |
-| `.bid-log-new-bid-plus` | `styles/11-lifecycle-feedback-and-staffing.css:53` | base |
+| `.bid-log-new-bid-plus` | `styles/11-lifecycle-feedback.css:53` | base |
 | `.bid-log-new-bid-plus::after` | `BidLogLifecyclePolish.css:20` | base |
 | `.bid-log-new-bid-plus::after` | `BidLogLifecyclePolish.css:37` | base |
 | `.bid-log-new-bid-plus::before` | `BidLogLifecyclePolish.css:20` | base |
@@ -753,9 +753,9 @@ Selector occurrences: **2495**.
 | `.bid-log-notes-message.error` | `styles/09-bid-log.css:444` | base |
 | `.bid-log-notes-panel` | `styles/09-bid-log.css:381` | base |
 | `.bid-log-notes-row td` | `styles/09-bid-log.css:376` | base |
-| `.bid-log-outcome-source-label` | `styles/11-lifecycle-feedback-and-staffing.css:148` | base |
-| `.bid-log-outcome-source-label` | `styles/11-lifecycle-feedback-and-staffing.css:97` | base |
-| `.bid-log-outcome-source-label .bid-log-real-bids-dot` | `styles/11-lifecycle-feedback-and-staffing.css:152` | base |
+| `.bid-log-outcome-source-label` | `styles/11-lifecycle-feedback.css:97` | base |
+| `.bid-log-outcome-source-label` | `styles/11-lifecycle-feedback.css:148` | base |
+| `.bid-log-outcome-source-label .bid-log-real-bids-dot` | `styles/11-lifecycle-feedback.css:152` | base |
 | `.bid-log-percent-input` | `styles/09-bid-log.css:153` | base |
 | `.bid-log-percent-input > span` | `styles/09-bid-log.css:161` | base |
 | `.bid-log-percent-input input` | `styles/09-bid-log.css:157` | base |
@@ -770,13 +770,13 @@ Selector occurrences: **2495**.
 | `.bid-log-real-bids-toggle:hover` | `styles/09-bid-log.css:208` | base |
 | `.bid-log-real-bids-toggle.active` | `styles/09-bid-log.css:214` | base |
 | `.bid-log-real-bids-toggle.active .bid-log-real-bids-dot` | `styles/09-bid-log.css:229` | base |
-| `.bid-log-render-sentinel` | `styles/11-lifecycle-feedback-and-staffing.css:168` | base |
+| `.bid-log-render-sentinel` | `styles/11-lifecycle-feedback.css:168` | base |
 | `.bid-log-save-button` | `styles/09-bid-log.css:850` | base |
 | `.bid-log-save-button:disabled` | `styles/09-bid-log.css:865` | base |
 | `.bid-log-save-button:hover:not(:disabled)` | `styles/09-bid-log.css:861` | base |
 | `.bid-log-status-pill` | `styles/09-bid-log.css:448` | base |
-| `.bid-log-summary-card` | `styles/09-bid-log.css:507` | @media (max-width: 760px) |
 | `.bid-log-summary-card` | `styles/09-bid-log.css:75` | base |
+| `.bid-log-summary-card` | `styles/09-bid-log.css:507` | @media (max-width: 760px) |
 | `.bid-log-summary-card > .bid-log-summary-label` | `styles/09-bid-log.css:105` | base |
 | `.bid-log-summary-card > .bid-log-summary-label` | `styles/09-bid-log.css:127` | base |
 | `.bid-log-summary-card small` | `styles/09-bid-log.css:105` | base |
@@ -785,9 +785,9 @@ Selector occurrences: **2495**.
 | `.bid-log-summary-card:focus-visible` | `styles/09-bid-log.css:93` | base |
 | `.bid-log-summary-card:hover` | `styles/09-bid-log.css:93` | base |
 | `.bid-log-summary-card.active` | `styles/09-bid-log.css:99` | base |
+| `.bid-log-summary-grid` | `styles/09-bid-log.css:68` | base |
 | `.bid-log-summary-grid` | `styles/09-bid-log.css:465` | @media (max-width: 1280px) |
 | `.bid-log-summary-grid` | `styles/09-bid-log.css:492` | @media (max-width: 760px) |
-| `.bid-log-summary-grid` | `styles/09-bid-log.css:68` | base |
 | `.bid-log-summary-icon` | `styles/09-bid-log.css:110` | base |
 | `.bid-log-summary-icon svg` | `styles/09-bid-log.css:122` | base |
 | `.bid-log-table` | `styles/09-bid-log.css:260` | base |
@@ -903,8 +903,8 @@ Selector occurrences: **2495**.
 | `.billing-curve-version` | `styles/02-billing-drawers.css:892` | base |
 | `.billing-detail-label` | `styles/02-billing-drawers.css:1059` | base |
 | `.billing-detail-label` | `styles/02-billing-drawers.css:1334` | base |
-| `.billing-drawer` | `styles/02-billing-drawers.css:229` | @media (max-width: 620px) |
 | `.billing-drawer` | `styles/02-billing-drawers.css:33` | base |
+| `.billing-drawer` | `styles/02-billing-drawers.css:229` | @media (max-width: 620px) |
 | `.billing-drawer` | `styles/03-pm-projections.css:398` | @media print |
 | `.billing-drawer .section-kicker` | `styles/03-pm-projections.css:471` | @media print |
 | `.billing-drawer .section-note` | `styles/03-pm-projections.css:471` | @media print |
@@ -912,40 +912,40 @@ Selector occurrences: **2495**.
 | `.billing-drawer small` | `styles/03-pm-projections.css:471` | @media print |
 | `.billing-drawer-backdrop` | `styles/02-billing-drawers.css:23` | base |
 | `.billing-drawer-backdrop` | `styles/03-pm-projections.css:388` | @media print |
-| `.billing-drawer-body` | `styles/02-billing-drawers.css:233` | @media (max-width: 620px) |
 | `.billing-drawer-body` | `styles/02-billing-drawers.css:88` | base |
+| `.billing-drawer-body` | `styles/02-billing-drawers.css:233` | @media (max-width: 620px) |
 | `.billing-drawer-body` | `styles/03-pm-projections.css:417` | @media print |
-| `.billing-drawer-close` | `styles/02-billing-drawers.css:1472` | base |
 | `.billing-drawer-close` | `styles/02-billing-drawers.css:76` | base |
+| `.billing-drawer-close` | `styles/02-billing-drawers.css:1472` | base |
 | `.billing-drawer-close` | `styles/03-pm-projections.css:426` | @media print |
 | `.billing-drawer-completed-date` | `styles/02-billing-drawers.css:70` | base |
 | `.billing-drawer-edit-button` | `styles/10-active-projects.css:746` | base |
-| `.billing-drawer-header` | `styles/02-billing-drawers.css:233` | @media (max-width: 620px) |
 | `.billing-drawer-header` | `styles/02-billing-drawers.css:44` | base |
+| `.billing-drawer-header` | `styles/02-billing-drawers.css:233` | @media (max-width: 620px) |
 | `.billing-drawer-header` | `styles/03-pm-projections.css:411` | @media print |
 | `.billing-drawer-header h2` | `styles/02-billing-drawers.css:52` | base |
 | `.billing-drawer-header p` | `styles/02-billing-drawers.css:57` | base |
 | `.billing-drawer-header-actions` | `styles/10-active-projects.css:739` | base |
 | `.billing-drawer-header-actions` | `styles/10-active-projects.css:831` | @media (max-width: 760px) |
 | `.billing-drawer-job-line` | `styles/02-billing-drawers.css:63` | base |
-| `.billing-drawer-meta` | `styles/02-billing-drawers.css:1298` | base |
+| `.billing-drawer-meta` | `styles/02-billing-drawers.css:97` | base |
 | `.billing-drawer-meta` | `styles/02-billing-drawers.css:221` | @media (max-width: 900px) |
 | `.billing-drawer-meta` | `styles/02-billing-drawers.css:239` | @media (max-width: 620px) |
-| `.billing-drawer-meta` | `styles/02-billing-drawers.css:97` | base |
+| `.billing-drawer-meta` | `styles/02-billing-drawers.css:1298` | base |
 | `.billing-drawer-meta > span` | `styles/03-pm-projections.css:456` | @media print |
 | `.billing-drawer-meta span` | `styles/02-billing-drawers.css:103` | base |
 | `.billing-drawer-meta strong` | `styles/02-billing-drawers.css:112` | base |
 | `.billing-drawer-meta strong` | `styles/02-billing-drawers.css:118` | base |
+| `.billing-drawer-meta-five` | `styles/02-billing-drawers.css:997` | base |
 | `.billing-drawer-meta-five` | `styles/02-billing-drawers.css:1146` | @media (max-width: 1050px) |
 | `.billing-drawer-meta-five` | `styles/02-billing-drawers.css:1161` | @media (max-width: 700px) |
 | `.billing-drawer-meta-five` | `styles/02-billing-drawers.css:1432` | @media (max-width: 1280px) |
 | `.billing-drawer-meta-five` | `styles/02-billing-drawers.css:1439` | @media (max-width: 900px) |
 | `.billing-drawer-meta-five` | `styles/02-billing-drawers.css:1451` | @media (max-width: 640px) |
-| `.billing-drawer-meta-five` | `styles/02-billing-drawers.css:997` | base |
 | `.billing-kpi-grid` | `styles/02-billing-drawers.css:127` | base |
-| `.billing-kpi-grid` | `styles/02-billing-drawers.css:1298` | base |
 | `.billing-kpi-grid` | `styles/02-billing-drawers.css:221` | @media (max-width: 900px) |
 | `.billing-kpi-grid` | `styles/02-billing-drawers.css:239` | @media (max-width: 620px) |
+| `.billing-kpi-grid` | `styles/02-billing-drawers.css:1298` | base |
 | `.billing-kpi-grid .date-kpi` | `styles/02-billing-drawers.css:1349` | base |
 | `.billing-kpi-grid > article` | `styles/02-billing-drawers.css:1316` | base |
 | `.billing-kpi-grid > article > .billing-variance-label` | `styles/02-billing-drawers.css:1377` | base |
@@ -995,20 +995,20 @@ Selector occurrences: **2495**.
 | `.billing-section-explainer` | `styles/02-billing-drawers.css:1462` | base |
 | `.billing-state` | `styles/02-billing-drawers.css:160` | base |
 | `.billing-state.ready` | `styles/02-billing-drawers.css:168` | base |
-| `.brand` | `styles/01-foundations.css:1312` | base |
 | `.brand` | `styles/01-foundations.css:65` | base |
-| `.brand-area` | `styles/01-foundations.css:1308` | base |
-| `.brand-area` | `styles/01-foundations.css:1708` | @media (max-width: 900px) |
-| `.brand-area` | `styles/01-foundations.css:1736` | @media (max-width: 760px) |
+| `.brand` | `styles/01-foundations.css:1312` | base |
 | `.brand-area` | `styles/01-foundations.css:65` | base |
 | `.brand-area` | `styles/01-foundations.css:72` | base |
 | `.brand-area` | `styles/01-foundations.css:995` | @media (max-width: 760px) |
+| `.brand-area` | `styles/01-foundations.css:1308` | base |
+| `.brand-area` | `styles/01-foundations.css:1708` | @media (max-width: 900px) |
+| `.brand-area` | `styles/01-foundations.css:1736` | @media (max-width: 760px) |
 | `.brand-copy` | `styles/01-foundations.css:90` | base |
-| `.brand-copy span` | `styles/01-foundations.css:1329` | base |
 | `.brand-copy span` | `styles/01-foundations.css:96` | base |
+| `.brand-copy span` | `styles/01-foundations.css:1329` | base |
 | `.brand-copy strong` | `styles/01-foundations.css:1324` | base |
-| `.brand-mark` | `styles/01-foundations.css:1316` | base |
 | `.brand-mark` | `styles/01-foundations.css:76` | base |
+| `.brand-mark` | `styles/01-foundations.css:1316` | base |
 | `.brand-mark.large` | `styles/01-foundations.css:84` | base |
 | `.cell-subtext` | `styles/01-foundations.css:1165` | base |
 | `.cell-subtext` | `styles/01-foundations.css:1176` | base |
@@ -1105,8 +1105,8 @@ Selector occurrences: **2495**.
 | `.comparison-bar.actual` | `styles/01-foundations.css:459` | base |
 | `.comparison-bar.expected` | `styles/01-foundations.css:455` | base |
 | `.comparison-bars` | `styles/01-foundations.css:441` | base |
-| `.comparison-view-toggle` | `styles/05-project-pivot.css:238` | @media print |
 | `.comparison-view-toggle` | `styles/05-project-pivot.css:24` | base |
+| `.comparison-view-toggle` | `styles/05-project-pivot.css:238` | @media print |
 | `.comparison-view-toggle button` | `styles/05-project-pivot.css:33` | base |
 | `.comparison-view-toggle button:hover` | `styles/05-project-pivot.css:46` | base |
 | `.comparison-view-toggle button.active` | `styles/05-project-pivot.css:50` | base |
@@ -1144,13 +1144,13 @@ Selector occurrences: **2495**.
 | `.completed-closeout-extra` | `styles/14-completed-closeout.css:198` | base |
 | `.completed-closeout-extra > summary` | `styles/14-completed-closeout.css:202` | base |
 | `.completed-closeout-extra > summary:hover` | `styles/14-completed-closeout.css:209` | base |
+| `.completed-closeout-location` | `styles/14-completed-closeout.css:50` | base |
 | `.completed-closeout-location` | `styles/14-completed-closeout.css:345` | @media (max-width: 760px) |
 | `.completed-closeout-location` | `styles/14-completed-closeout.css:363` | @media (max-width: 480px) |
-| `.completed-closeout-location` | `styles/14-completed-closeout.css:50` | base |
 | `.completed-closeout-report .completed-closeout-contract-ledger` | `styles/14-completed-closeout.css:92` | base |
 | `.completed-closeout-report .completed-closeout-contract-ledger .source-comparison > summary` | `styles/14-completed-closeout.css:157` | base |
-| `.completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value` | `styles/14-completed-closeout.css:367` | @media (max-width: 480px) |
 | `.completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value` | `styles/14-completed-closeout.css:98` | base |
+| `.completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value` | `styles/14-completed-closeout.css:367` | @media (max-width: 480px) |
 | `.completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value > .completed-data-pill` | `styles/14-completed-closeout.css:163` | base |
 | `.completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value > .source-comparison` | `styles/14-completed-closeout.css:142` | base |
 | `.completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value > .source-comparison` | `styles/14-completed-closeout.css:471` | @media (max-width: 650px) |
@@ -1169,10 +1169,10 @@ Selector occurrences: **2495**.
 | `.completed-closeout-report .completed-closeout-extra > .completed-detail-value > small` | `styles/14-completed-closeout.css:133` | base |
 | `.completed-closeout-report .completed-closeout-extra > .completed-detail-value > span:first-child` | `styles/14-completed-closeout.css:113` | base |
 | `.completed-closeout-report .completed-closeout-extra > .completed-detail-value > strong` | `styles/14-completed-closeout.css:123` | base |
-| `.completed-closeout-report .completed-closeout-financial-outcome` | `styles/14-completed-closeout.css:176` | base |
 | `.completed-closeout-report .completed-closeout-financial-outcome` | `styles/14-completed-closeout.css:92` | base |
-| `.completed-closeout-report .completed-closeout-financial-outcome > .completed-detail-value` | `styles/14-completed-closeout.css:367` | @media (max-width: 480px) |
+| `.completed-closeout-report .completed-closeout-financial-outcome` | `styles/14-completed-closeout.css:176` | base |
 | `.completed-closeout-report .completed-closeout-financial-outcome > .completed-detail-value` | `styles/14-completed-closeout.css:98` | base |
+| `.completed-closeout-report .completed-closeout-financial-outcome > .completed-detail-value` | `styles/14-completed-closeout.css:367` | @media (max-width: 480px) |
 | `.completed-closeout-report .completed-closeout-financial-outcome > .completed-detail-value > small` | `styles/14-completed-closeout.css:133` | base |
 | `.completed-closeout-report .completed-closeout-financial-outcome > .completed-detail-value > span:first-child` | `styles/14-completed-closeout.css:113` | base |
 | `.completed-closeout-report .completed-closeout-financial-outcome > .completed-detail-value > strong` | `styles/14-completed-closeout.css:123` | base |
@@ -1213,15 +1213,15 @@ Selector occurrences: **2495**.
 | `.completed-data-pill.operations` | `styles/02-billing-drawers.css:576` | base |
 | `.completed-data-pill.success` | `styles/02-billing-drawers.css:549` | base |
 | `.completed-data-pill.warning` | `styles/02-billing-drawers.css:555` | base |
-| `.completed-derived-note` | `styles/02-billing-drawers.css:1401` | base |
 | `.completed-derived-note` | `styles/02-billing-drawers.css:710` | base |
+| `.completed-derived-note` | `styles/02-billing-drawers.css:1401` | base |
 | `.completed-derived-note span` | `styles/02-billing-drawers.css:695` | base |
+| `.completed-detail-grid` | `styles/02-billing-drawers.css:680` | base |
+| `.completed-detail-grid` | `styles/02-billing-drawers.css:794` | @media ( max-width: 760px ) |
 | `.completed-detail-grid` | `styles/02-billing-drawers.css:1298` | base |
 | `.completed-detail-grid` | `styles/02-billing-drawers.css:1308` | base |
 | `.completed-detail-grid` | `styles/02-billing-drawers.css:1439` | @media (max-width: 900px) |
 | `.completed-detail-grid` | `styles/02-billing-drawers.css:1451` | @media (max-width: 640px) |
-| `.completed-detail-grid` | `styles/02-billing-drawers.css:680` | base |
-| `.completed-detail-grid` | `styles/02-billing-drawers.css:794` | @media ( max-width: 760px ) |
 | `.completed-detail-value` | `styles/02-billing-drawers.css:1316` | base |
 | `.completed-detail-value > small` | `styles/02-billing-drawers.css:1367` | base |
 | `.completed-detail-value > span:first-child` | `styles/02-billing-drawers.css:1334` | base |
@@ -1231,16 +1231,16 @@ Selector occurrences: **2495**.
 | `.completed-drawer` | `styles/02-billing-drawers.css:783` | @media ( max-width: 760px ) |
 | `.completed-drawer .completed-closeout-report` | `styles/14-completed-closeout.css:54` | base |
 | `.completed-drawer-backdrop` | `styles/02-billing-drawers.css:584` | base |
-| `.completed-drawer-close` | `styles/02-billing-drawers.css:1472` | base |
 | `.completed-drawer-close` | `styles/02-billing-drawers.css:628` | base |
+| `.completed-drawer-close` | `styles/02-billing-drawers.css:1472` | base |
 | `.completed-drawer-close:hover` | `styles/02-billing-drawers.css:639` | base |
 | `.completed-drawer-header` | `styles/02-billing-drawers.css:605` | base |
 | `.completed-drawer-header` | `styles/02-billing-drawers.css:787` | @media ( max-width: 760px ) |
 | `.completed-drawer-header h2` | `styles/02-billing-drawers.css:614` | base |
 | `.completed-drawer-header p` | `styles/02-billing-drawers.css:622` | base |
+| `.completed-drawer-meta` | `styles/02-billing-drawers.css:787` | @media ( max-width: 760px ) |
 | `.completed-drawer-meta` | `styles/02-billing-drawers.css:1298` | base |
 | `.completed-drawer-meta` | `styles/02-billing-drawers.css:1391` | base |
-| `.completed-drawer-meta` | `styles/02-billing-drawers.css:787` | @media ( max-width: 760px ) |
 | `.completed-drawer-meta-five` | `styles/02-billing-drawers.css:1273` | base |
 | `.completed-drawer-meta.billing-drawer-meta-five` | `styles/02-billing-drawers.css:1432` | @media (max-width: 1280px) |
 | `.completed-drawer-meta.billing-drawer-meta-five` | `styles/02-billing-drawers.css:1439` | @media (max-width: 900px) |
@@ -1249,8 +1249,8 @@ Selector occurrences: **2495**.
 | `.completed-drawer-scroll` | `styles/02-billing-drawers.css:787` | @media ( max-width: 760px ) |
 | `.completed-drawer-section` | `styles/02-billing-drawers.css:1420` | base |
 | `.completed-drawer-section` | `styles/02-billing-drawers.css:1426` | base |
-| `.completed-empty-panel` | `styles/02-billing-drawers.css:1401` | base |
 | `.completed-empty-panel` | `styles/02-billing-drawers.css:710` | base |
+| `.completed-empty-panel` | `styles/02-billing-drawers.css:1401` | base |
 | `.completed-empty-panel span` | `styles/02-billing-drawers.css:695` | base |
 | `.completed-estimator-cell` | `styles/02-billing-drawers.css:496` | base |
 | `.completed-estimator-cell span` | `styles/02-billing-drawers.css:502` | base |
@@ -1259,19 +1259,19 @@ Selector occurrences: **2495**.
 | `.completed-estimator-flags` | `styles/02-billing-drawers.css:703` | base |
 | `.completed-filter-reset` | `styles/02-billing-drawers.css:478` | base |
 | `.completed-filter-reset` | `styles/07-detail-layout-and-filters.css:214` | base |
-| `.completed-gc-column` | `styles/08-notifications-and-inputs.css:454` | base |
+| `.completed-gc-column` | `styles/08-notifications-and-inputs.css:542` | base |
 | `.completed-heading-count` | `styles/02-billing-drawers.css:421` | base |
 | `.completed-heading-title` | `styles/02-billing-drawers.css:414` | base |
-| `.completed-inline-warning` | `styles/02-billing-drawers.css:1401` | base |
 | `.completed-inline-warning` | `styles/02-billing-drawers.css:685` | base |
+| `.completed-inline-warning` | `styles/02-billing-drawers.css:1401` | base |
 | `.completed-inline-warning span` | `styles/02-billing-drawers.css:695` | base |
 | `.completed-job-number` | `styles/07-detail-layout-and-filters.css:234` | base |
 | `.completed-job-number` | `styles/07-detail-layout-and-filters.css:240` | base |
 | `.completed-job-number-column` | `styles/07-detail-layout-and-filters.css:234` | base |
-| `.completed-kpi-grid` | `styles/02-billing-drawers.css:1298` | base |
 | `.completed-kpi-grid` | `styles/02-billing-drawers.css:655` | base |
 | `.completed-kpi-grid` | `styles/02-billing-drawers.css:773` | @media ( max-width: 1200px ) |
 | `.completed-kpi-grid` | `styles/02-billing-drawers.css:794` | @media ( max-width: 760px ) |
+| `.completed-kpi-grid` | `styles/02-billing-drawers.css:1298` | base |
 | `.completed-lifecycle-cell` | `styles/02-billing-drawers.css:496` | base |
 | `.completed-lifecycle-cell` | `styles/07-detail-layout-and-filters.css:254` | base |
 | `.completed-lifecycle-cell span` | `styles/02-billing-drawers.css:502` | base |
@@ -1331,7 +1331,7 @@ Selector occurrences: **2495**.
 | `.completed-project-stats .stat-card` | `styles/02-billing-drawers.css:438` | base |
 | `.completed-project-stats .stat-card small` | `styles/02-billing-drawers.css:449` | base |
 | `.completed-project-stats .stat-card strong` | `styles/02-billing-drawers.css:443` | base |
-| `.completed-project-table` | `styles/08-notifications-and-inputs.css:450` | base |
+| `.completed-project-table` | `styles/08-notifications-and-inputs.css:538` | base |
 | `.completed-project-table .admin-source-hint` | `styles/02-billing-drawers.css:1281` | base |
 | `.completed-project-table .commercial-source-note` | `styles/02-billing-drawers.css:1281` | base |
 | `.completed-project-table .completed-directory-contract-total` | `styles/14-completed-closeout.css:481` | base |
@@ -1343,16 +1343,16 @@ Selector occurrences: **2495**.
 | `.completed-section-heading` | `styles/02-billing-drawers.css:667` | base |
 | `.completed-section-heading` | `styles/02-billing-drawers.css:799` | @media ( max-width: 760px ) |
 | `.completed-section-heading h3` | `styles/02-billing-drawers.css:675` | base |
-| `.content-card` | `styles/01-foundations.css:1528` | base |
-| `.content-card` | `styles/01-foundations.css:1632` | base |
 | `.content-card` | `styles/01-foundations.css:245` | base |
 | `.content-card` | `styles/01-foundations.css:376` | base |
+| `.content-card` | `styles/01-foundations.css:1528` | base |
+| `.content-card` | `styles/01-foundations.css:1632` | base |
 | `.csv-export-backdrop` | `CsvExportDialog.css:1` | base |
 | `.csv-export-backdrop` | `CsvExportDialog.css:14` | @media (max-width:560px) |
 | `.csv-export-close` | `CsvExportDialog.css:6` | base |
 | `.csv-export-close:hover` | `CsvExportDialog.css:7` | base |
-| `.csv-export-dialog` | `CsvExportDialog.css:14` | @media (max-width:560px) |
 | `.csv-export-dialog` | `CsvExportDialog.css:2` | base |
+| `.csv-export-dialog` | `CsvExportDialog.css:14` | @media (max-width:560px) |
 | `.csv-export-footer` | `CsvExportDialog.css:13` | base |
 | `.csv-export-footer` | `CsvExportDialog.css:14` | @media (max-width:560px) |
 | `.csv-export-footer button` | `CsvExportDialog.css:14` | @media (max-width:560px) |
@@ -1364,12 +1364,12 @@ Selector occurrences: **2495**.
 | `.csv-export-option strong` | `CsvExportDialog.css:11` | base |
 | `.csv-export-option:hover` | `CsvExportDialog.css:10` | base |
 | `.csv-export-options` | `CsvExportDialog.css:8` | base |
-| `.current-user` | `styles/01-foundations.css:1003` | @media (max-width: 760px) |
 | `.current-user` | `styles/01-foundations.css:134` | base |
+| `.current-user` | `styles/01-foundations.css:1003` | @media (max-width: 760px) |
 | `.current-user` | `styles/01-foundations.css:1370` | base |
 | `.current-user` | `styles/01-foundations.css:1758` | @media (max-width: 760px) |
-| `.current-user span` | `styles/01-foundations.css:1383` | base |
 | `.current-user span` | `styles/01-foundations.css:141` | base |
+| `.current-user span` | `styles/01-foundations.css:1383` | base |
 | `.current-user strong` | `styles/01-foundations.css:1375` | base |
 | `.curve-assumption-card` | `styles/02-billing-drawers.css:807` | base |
 | `.curve-method-badge` | `styles/02-billing-drawers.css:817` | base |
@@ -1378,49 +1378,49 @@ Selector occurrences: **2495**.
 | `.curve-version` | `styles/02-billing-drawers.css:811` | base |
 | `.detail-heading-actions` | `styles/02-billing-drawers.css:248` | base |
 | `.detail-heading-actions` | `styles/02-billing-drawers.css:348` | @media (max-width: 700px) |
+| `.detail-table` | `styles/01-foundations.css:396` | base |
 | `.detail-table` | `styles/01-foundations.css:1645` | base |
 | `.detail-table` | `styles/01-foundations.css:1654` | base |
-| `.detail-table` | `styles/01-foundations.css:396` | base |
 | `.detail-table tbody tr:hover` | `styles/01-foundations.css:427` | base |
 | `.detail-table tbody tr:last-child td` | `styles/01-foundations.css:422` | base |
-| `.detail-table td` | `styles/01-foundations.css:1658` | base |
 | `.detail-table td` | `styles/01-foundations.css:402` | base |
-| `.detail-table th` | `styles/01-foundations.css:1658` | base |
-| `.detail-table th` | `styles/01-foundations.css:1665` | base |
+| `.detail-table td` | `styles/01-foundations.css:1658` | base |
 | `.detail-table th` | `styles/01-foundations.css:402` | base |
 | `.detail-table th` | `styles/01-foundations.css:411` | base |
+| `.detail-table th` | `styles/01-foundations.css:1658` | base |
+| `.detail-table th` | `styles/01-foundations.css:1665` | base |
 | `.detail-table-wrap` | `styles/01-foundations.css:391` | base |
 | `.drawer-tbd-value` | `styles/02-billing-drawers.css:1025` | base |
 | `.empty-cell` | `styles/01-foundations.css:541` | base |
-| `.eyebrow` | `styles/01-foundations.css:1401` | base |
 | `.eyebrow` | `styles/01-foundations.css:155` | base |
-| `.filter-actions` | `styles/01-foundations.css:1019` | @media (max-width: 760px) |
-| `.filter-actions` | `styles/01-foundations.css:1572` | base |
+| `.eyebrow` | `styles/01-foundations.css:1401` | base |
 | `.filter-actions` | `styles/01-foundations.css:295` | base |
 | `.filter-actions` | `styles/01-foundations.css:989` | @media (max-width: 1180px) |
-| `.filter-field` | `styles/01-foundations.css:1549` | base |
+| `.filter-actions` | `styles/01-foundations.css:1019` | @media (max-width: 760px) |
+| `.filter-actions` | `styles/01-foundations.css:1572` | base |
 | `.filter-field` | `styles/01-foundations.css:260` | base |
-| `.filter-field > span` | `styles/01-foundations.css:1553` | base |
+| `.filter-field` | `styles/01-foundations.css:1549` | base |
 | `.filter-field > span` | `styles/01-foundations.css:265` | base |
-| `.filter-field input` | `styles/01-foundations.css:1558` | base |
+| `.filter-field > span` | `styles/01-foundations.css:1553` | base |
 | `.filter-field input` | `styles/01-foundations.css:273` | base |
+| `.filter-field input` | `styles/01-foundations.css:1558` | base |
 | `.filter-field input:focus` | `styles/01-foundations.css:1566` | base |
 | `.filter-field input[type="month"]` | `styles/01-foundations.css:282` | base |
 | `.filter-field input[type="month"]::-webkit-calendar-picker-indicator` | `styles/01-foundations.css:290` | base |
-| `.filter-field select` | `styles/01-foundations.css:1558` | base |
 | `.filter-field select` | `styles/01-foundations.css:273` | base |
+| `.filter-field select` | `styles/01-foundations.css:1558` | base |
 | `.filter-field select:focus` | `styles/01-foundations.css:1566` | base |
+| `.filter-grid` | `styles/01-foundations.css:255` | base |
+| `.filter-grid` | `styles/01-foundations.css:984` | @media (max-width: 1180px) |
 | `.filter-grid` | `styles/01-foundations.css:1541` | base |
 | `.filter-grid` | `styles/01-foundations.css:1721` | @media (max-width: 900px) |
 | `.filter-grid` | `styles/01-foundations.css:1781` | @media (max-width: 760px) |
-| `.filter-grid` | `styles/01-foundations.css:255` | base |
-| `.filter-grid` | `styles/01-foundations.css:984` | @media (max-width: 1180px) |
+| `.filter-group-title` | `styles/01-foundations.css:265` | base |
 | `.filter-group-title` | `styles/01-foundations.css:1553` | base |
 | `.filter-group-title` | `styles/01-foundations.css:1582` | base |
-| `.filter-group-title` | `styles/01-foundations.css:265` | base |
+| `.filter-panel` | `styles/01-foundations.css:245` | base |
 | `.filter-panel` | `styles/01-foundations.css:1528` | base |
 | `.filter-panel` | `styles/01-foundations.css:1536` | base |
-| `.filter-panel` | `styles/01-foundations.css:245` | base |
 | `.filter-toggle-buttons` | `ViewControls.css:19` | base |
 | `.filter-toggle-buttons button` | `ViewControls.css:20` | base |
 | `.filter-toggle-buttons button:focus-visible` | `ViewControls.css:6` | base |
@@ -1485,15 +1485,15 @@ Selector occurrences: **2495**.
 | `.floating-table-header.controls-visible .floating-table-controls.project-pivot-toolbar` | `styles/05-project-pivot.css:720` | base |
 | `.floating-table-header.visible` | `styles/05-project-pivot.css:185` | base |
 | `.gc-cell` | `styles/01-foundations.css:500` | base |
-| `.gc-chip` | `styles/08-notifications-and-inputs.css:400` | base |
-| `.gc-chip-more` | `styles/08-notifications-and-inputs.css:415` | base |
-| `.gc-display` | `styles/08-notifications-and-inputs.css:389` | base |
-| `.gc-display.compact` | `styles/08-notifications-and-inputs.css:396` | base |
-| `.gc-empty` | `styles/08-notifications-and-inputs.css:420` | base |
-| `.gc-table-cell` | `styles/08-notifications-and-inputs.css:424` | base |
+| `.gc-chip` | `styles/08-notifications-and-inputs.css:488` | base |
+| `.gc-chip-more` | `styles/08-notifications-and-inputs.css:503` | base |
+| `.gc-display` | `styles/08-notifications-and-inputs.css:477` | base |
+| `.gc-display.compact` | `styles/08-notifications-and-inputs.css:484` | base |
+| `.gc-empty` | `styles/08-notifications-and-inputs.css:508` | base |
+| `.gc-table-cell` | `styles/08-notifications-and-inputs.css:512` | base |
+| `.heading-actions` | `styles/01-foundations.css:150` | base |
 | `.heading-actions` | `styles/01-foundations.css:1011` | @media (max-width: 760px) |
 | `.heading-actions` | `styles/01-foundations.css:1425` | base |
-| `.heading-actions` | `styles/01-foundations.css:150` | base |
 | `.info-icon-button` | `ViewControls.css:14` | base |
 | `.info-icon-button:focus-visible` | `ViewControls.css:6` | base |
 | `.info-icon-button:hover` | `ViewControls.css:15` | base |
@@ -1503,31 +1503,31 @@ Selector occurrences: **2495**.
 | `.information-sheet-section` | `styles/10-active-projects.css:472` | base |
 | `.information-sheet-subheading` | `styles/10-active-projects.css:481` | base |
 | `.job-number-cell` | `styles/04-projected-workspace.css:34` | base |
+| `.loading-panel` | `styles/01-foundations.css:245` | base |
 | `.loading-panel` | `styles/01-foundations.css:1528` | base |
 | `.loading-panel` | `styles/01-foundations.css:1593` | base |
-| `.loading-panel` | `styles/01-foundations.css:245` | base |
-| `.loading-panel > div:first-child` | `styles/01-foundations.css:1598` | base |
 | `.loading-panel > div:first-child` | `styles/01-foundations.css:318` | base |
-| `.loading-panel small` | `styles/01-foundations.css:1602` | base |
+| `.loading-panel > div:first-child` | `styles/01-foundations.css:1598` | base |
 | `.loading-panel small` | `styles/01-foundations.css:324` | base |
+| `.loading-panel small` | `styles/01-foundations.css:1602` | base |
 | `.loading-screen` | `styles/01-foundations.css:45` | base |
-| `.management-preview-cognito-guide` | `styles/13-financial-review-and-metrics.css:301` | base |
-| `.management-preview-cognito-guide strong` | `styles/13-financial-review-and-metrics.css:311` | base |
-| `.management-preview-drawer-notice` | `styles/13-financial-review-and-metrics.css:297` | base |
-| `.management-preview-notice` | `styles/13-financial-review-and-metrics.css:273` | base |
-| `.management-preview-notice span` | `styles/13-financial-review-and-metrics.css:292` | base |
-| `.management-preview-notice strong` | `styles/13-financial-review-and-metrics.css:286` | base |
+| `.management-preview-cognito-guide` | `styles/10-active-projects.css:899` | base |
+| `.management-preview-cognito-guide strong` | `styles/10-active-projects.css:909` | base |
+| `.management-preview-drawer-notice` | `styles/10-active-projects.css:895` | base |
+| `.management-preview-notice` | `styles/10-active-projects.css:871` | base |
+| `.management-preview-notice span` | `styles/10-active-projects.css:890` | base |
+| `.management-preview-notice strong` | `styles/10-active-projects.css:884` | base |
 | `.microsoft-mark` | `styles/01-foundations.css:816` | base |
 | `.microsoft-mark span:nth-child(1)` | `styles/01-foundations.css:826` | base |
 | `.microsoft-mark span:nth-child(2)` | `styles/01-foundations.css:830` | base |
 | `.microsoft-mark span:nth-child(3)` | `styles/01-foundations.css:834` | base |
 | `.microsoft-mark span:nth-child(4)` | `styles/01-foundations.css:838` | base |
-| `.mode-tabs` | `styles/01-foundations.css:1015` | @media (max-width: 760px) |
 | `.mode-tabs` | `styles/01-foundations.css:210` | base |
+| `.mode-tabs` | `styles/01-foundations.css:1015` | @media (max-width: 760px) |
 | `.mode-tabs button` | `styles/01-foundations.css:216` | base |
 | `.mode-tabs button span` | `styles/01-foundations.css:230` | base |
 | `.mode-tabs button.active` | `styles/01-foundations.css:239` | base |
-| `.money-input` | `styles/08-notifications-and-inputs.css:274` | base |
+| `.money-input` | `styles/08-notifications-and-inputs.css:362` | base |
 | `.money-negative` | `styles/04-projected-workspace.css:176` | base |
 | `.month-cell` | `styles/01-foundations.css:432` | base |
 | `.month-current-project-row` | `styles/02-billing-drawers.css:339` | base |
@@ -1553,28 +1553,28 @@ Selector occurrences: **2495**.
 | `.monthly-project-detail-row > td` | `styles/02-billing-drawers.css:396` | base |
 | `.monthly-project-table` | `styles/02-billing-drawers.css:316` | base |
 | `.monthly-project-table` | `styles/06-project-references.css:809` | base |
-| `.monthly-project-table .gc-table-cell` | `styles/08-notifications-and-inputs.css:429` | base |
+| `.monthly-project-table .gc-table-cell` | `styles/08-notifications-and-inputs.css:517` | base |
 | `.monthly-project-table .numeric` | `styles/02-billing-drawers.css:335` | base |
 | `.monthly-project-table .project-cell` | `styles/12-table-teams-and-zebra.css:166` | base |
 | `.monthly-project-table td` | `styles/02-billing-drawers.css:321` | base |
 | `.monthly-project-table th` | `styles/02-billing-drawers.css:321` | base |
 | `.monthly-project-table th` | `styles/02-billing-drawers.css:328` | base |
 | `.monthly-project-table-wrap` | `styles/02-billing-drawers.css:310` | base |
+| `.monthly-table` | `styles/01-foundations.css:396` | base |
 | `.monthly-table` | `styles/01-foundations.css:1645` | base |
 | `.monthly-table` | `styles/01-foundations.css:1650` | base |
-| `.monthly-table` | `styles/01-foundations.css:396` | base |
 | `.monthly-table tbody tr:hover` | `styles/01-foundations.css:427` | base |
 | `.monthly-table tbody tr:last-child td` | `styles/01-foundations.css:422` | base |
-| `.monthly-table td` | `styles/01-foundations.css:1658` | base |
 | `.monthly-table td` | `styles/01-foundations.css:402` | base |
-| `.monthly-table th` | `styles/01-foundations.css:1658` | base |
-| `.monthly-table th` | `styles/01-foundations.css:1665` | base |
+| `.monthly-table td` | `styles/01-foundations.css:1658` | base |
 | `.monthly-table th` | `styles/01-foundations.css:402` | base |
 | `.monthly-table th` | `styles/01-foundations.css:411` | base |
+| `.monthly-table th` | `styles/01-foundations.css:1658` | base |
+| `.monthly-table th` | `styles/01-foundations.css:1665` | base |
 | `.monthly-table-wrap` | `styles/01-foundations.css:391` | base |
 | `.monthly-total-row` | `styles/04-projected-workspace.css:117` | base |
-| `.more-filters` | `styles/01-foundations.css:1576` | base |
 | `.more-filters` | `styles/01-foundations.css:300` | base |
+| `.more-filters` | `styles/01-foundations.css:1576` | base |
 | `.muted-value` | `styles/01-foundations.css:1230` | base |
 | `.needs-rebalance-action` | `styles/13-financial-review-and-metrics.css:28` | base |
 | `.needs-rebalance-action:focus-visible` | `styles/13-financial-review-and-metrics.css:33` | base |
@@ -1584,29 +1584,29 @@ Selector occurrences: **2495**.
 | `.needs-rebalance-flag` | `styles/13-financial-review-and-metrics.css:13` | base |
 | `.needs-rebalance-flag.balance-review-quick-selected` | `styles/13-financial-review-and-metrics.css:48` | base |
 | `.needs-rebalance-flag.pending-foundation-flag` | `styles/13-financial-review-and-metrics.css:55` | base |
-| `.notification-action-card` | `styles/13-financial-review-and-metrics.css:89` | base |
-| `.notification-action-card:focus-visible` | `styles/13-financial-review-and-metrics.css:110` | base |
-| `.notification-action-card:hover` | `styles/13-financial-review-and-metrics.css:110` | base |
-| `.notification-action-card:last-child` | `styles/13-financial-review-and-metrics.css:106` | base |
+| `.notification-action-card` | `styles/08-notifications-and-inputs.css:259` | base |
+| `.notification-action-card:focus-visible` | `styles/08-notifications-and-inputs.css:280` | base |
+| `.notification-action-card:hover` | `styles/08-notifications-and-inputs.css:280` | base |
+| `.notification-action-card:last-child` | `styles/08-notifications-and-inputs.css:276` | base |
 | `.notification-button` | `styles/08-notifications-and-inputs.css:64` | base |
 | `.notification-button svg` | `styles/08-notifications-and-inputs.css:88` | base |
 | `.notification-button:hover` | `styles/08-notifications-and-inputs.css:78` | base |
 | `.notification-button.has-attention` | `styles/08-notifications-and-inputs.css:84` | base |
 | `.notification-button[aria-expanded="true"]` | `styles/08-notifications-and-inputs.css:78` | base |
-| `.notification-card-action` | `styles/13-financial-review-and-metrics.css:157` | base |
-| `.notification-card-context` | `styles/13-financial-review-and-metrics.css:139` | base |
-| `.notification-card-context` | `styles/13-financial-review-and-metrics.css:149` | base |
-| `.notification-card-description` | `styles/13-financial-review-and-metrics.css:139` | base |
-| `.notification-card-heading-copy` | `styles/13-financial-review-and-metrics.css:115` | base |
-| `.notification-card-heading-copy > span` | `styles/13-financial-review-and-metrics.css:122` | base |
-| `.notification-card-heading-copy > strong` | `styles/13-financial-review-and-metrics.css:130` | base |
-| `.notification-card-reason` | `styles/13-financial-review-and-metrics.css:139` | base |
-| `.notification-card-reason` | `styles/13-financial-review-and-metrics.css:153` | base |
-| `.notification-center` | `styles/08-notifications-and-inputs.css:268` | @media print |
+| `.notification-card-action` | `styles/08-notifications-and-inputs.css:327` | base |
+| `.notification-card-context` | `styles/08-notifications-and-inputs.css:309` | base |
+| `.notification-card-context` | `styles/08-notifications-and-inputs.css:319` | base |
+| `.notification-card-description` | `styles/08-notifications-and-inputs.css:309` | base |
+| `.notification-card-heading-copy` | `styles/08-notifications-and-inputs.css:285` | base |
+| `.notification-card-heading-copy > span` | `styles/08-notifications-and-inputs.css:292` | base |
+| `.notification-card-heading-copy > strong` | `styles/08-notifications-and-inputs.css:300` | base |
+| `.notification-card-reason` | `styles/08-notifications-and-inputs.css:309` | base |
+| `.notification-card-reason` | `styles/08-notifications-and-inputs.css:323` | base |
 | `.notification-center` | `styles/08-notifications-and-inputs.css:59` | base |
+| `.notification-center` | `styles/08-notifications-and-inputs.css:356` | @media print |
 | `.notification-count` | `styles/08-notifications-and-inputs.css:98` | base |
 | `.notification-empty` | `styles/08-notifications-and-inputs.css:240` | base |
-| `.notification-grace-note` | `styles/13-financial-review-and-metrics.css:166` | base |
+| `.notification-grace-note` | `styles/08-notifications-and-inputs.css:336` | base |
 | `.notification-item` | `styles/08-notifications-and-inputs.css:169` | base |
 | `.notification-item p` | `styles/08-notifications-and-inputs.css:214` | base |
 | `.notification-item p strong` | `styles/08-notifications-and-inputs.css:221` | base |
@@ -1621,7 +1621,7 @@ Selector occurrences: **2495**.
 | `.notification-message` | `styles/08-notifications-and-inputs.css:240` | base |
 | `.notification-message.error` | `styles/08-notifications-and-inputs.css:248` | base |
 | `.notification-panel` | `styles/08-notifications-and-inputs.css:119` | base |
-| `.notification-panel` | `styles/08-notifications-and-inputs.css:258` | @media (max-width: 700px) |
+| `.notification-panel` | `styles/08-notifications-and-inputs.css:346` | @media (max-width: 700px) |
 | `.notification-panel-header` | `styles/08-notifications-and-inputs.css:132` | base |
 | `.notification-panel-header > div` | `styles/08-notifications-and-inputs.css:142` | base |
 | `.notification-panel-header span` | `styles/08-notifications-and-inputs.css:146` | base |
@@ -1633,7 +1633,7 @@ Selector occurrences: **2495**.
 | `.notification-view-project` | `styles/08-notifications-and-inputs.css:232` | base |
 | `.numeric` | `styles/01-foundations.css:528` | base |
 | `.numeric .table-sort-button` | `styles/04-projected-workspace.css:74` | base |
-| `.organizer-notes-field` | `styles/11-lifecycle-feedback-and-staffing.css:694` | base |
+| `.organizer-notes-field` | `styles/11a-active-project-staffing.css:387` | base |
 | `.originating-bid-attention-drawer` | `styles/08-notifications-and-inputs.css:236` | base |
 | `.originating-bid-candidate` | `styles/06-project-references.css:375` | base |
 | `.originating-bid-candidate-facts` | `styles/06-project-references.css:181` | base |
@@ -1668,8 +1668,8 @@ Selector occurrences: **2495**.
 | `.originating-bid-finder-head small` | `styles/06-project-references.css:258` | base |
 | `.originating-bid-finder-head strong` | `styles/06-project-references.css:252` | base |
 | `.originating-bid-help` | `styles/06-project-references.css:123` | base |
-| `.originating-bid-help > summary` | `styles/06-project-references.css:129` | base |
 | `.originating-bid-help > summary` | `styles/06-project-references.css:85` | base |
+| `.originating-bid-help > summary` | `styles/06-project-references.css:129` | base |
 | `.originating-bid-help > summary::-webkit-details-marker` | `styles/06-project-references.css:134` | base |
 | `.originating-bid-help > summary:hover` | `styles/06-project-references.css:105` | base |
 | `.originating-bid-help-address` | `styles/06-project-references.css:219` | base |
@@ -1713,18 +1713,18 @@ Selector occurrences: **2495**.
 | `.originating-bid-text-button` | `styles/06-project-references.css:289` | base |
 | `.originating-bid-text-button` | `styles/06-project-references.css:319` | base |
 | `.originating-bid-wide-fact` | `styles/06-project-references.css:445` | base |
-| `.page-alert` | `styles/01-foundations.css:1528` | base |
-| `.page-alert` | `styles/01-foundations.css:1586` | base |
 | `.page-alert` | `styles/01-foundations.css:245` | base |
 | `.page-alert` | `styles/01-foundations.css:308` | base |
+| `.page-alert` | `styles/01-foundations.css:1528` | base |
+| `.page-alert` | `styles/01-foundations.css:1586` | base |
 | `.page-alert span` | `styles/01-foundations.css:314` | base |
+| `.page-heading` | `styles/01-foundations.css:145` | base |
 | `.page-heading` | `styles/01-foundations.css:1007` | @media (max-width: 760px) |
 | `.page-heading` | `styles/01-foundations.css:1395` | base |
-| `.page-heading` | `styles/01-foundations.css:145` | base |
 | `.page-heading` | `styles/01-foundations.css:1716` | @media (max-width: 900px) |
-| `.page-heading p` | `styles/01-foundations.css:1419` | base |
 | `.page-heading p` | `styles/01-foundations.css:165` | base |
 | `.page-heading p` | `styles/01-foundations.css:170` | base |
+| `.page-heading p` | `styles/01-foundations.css:1419` | base |
 | `.page-shell` | `styles/01-foundations.css:1388` | base |
 | `.page-shell` | `styles/01-foundations.css:1712` | @media (max-width: 900px) |
 | `.page-shell` | `styles/01-foundations.css:1764` | @media (max-width: 760px) |
@@ -1773,8 +1773,8 @@ Selector occurrences: **2495**.
 | `.pivot-project-meta-separator` | `styles/05-project-pivot.css:422` | base |
 | `.pivot-project-name` | `styles/05-project-pivot.css:490` | base |
 | `.pivot-project-name-line` | `styles/05-project-pivot.css:586` | base |
-| `.pivot-project-name-line:has(.needs-rebalance-flag)` | `styles/13-financial-review-and-metrics.css:208` | base |
-| `.pivot-project-name-line:has(.schedule-review-flag)` | `styles/13-financial-review-and-metrics.css:208` | base |
+| `.pivot-project-name-line:has(.needs-rebalance-flag)` | `styles/13-financial-review-and-metrics.css:125` | base |
+| `.pivot-project-name-line:has(.schedule-review-flag)` | `styles/13-financial-review-and-metrics.css:125` | base |
 | `.pivot-project-pm-line` | `styles/05-project-pivot.css:503` | base |
 | `.pivot-project-role-label` | `styles/05-project-pivot.css:534` | base |
 | `.pivot-project-row:hover td.pivot-job-column` | `styles/05-project-pivot.css:128` | base |
@@ -1798,7 +1798,7 @@ Selector occurrences: **2495**.
 | `.pm-accountability-table td small` | `styles/03-pm-projections.css:92` | base |
 | `.pm-accountability-table td strong` | `styles/03-pm-projections.css:87` | base |
 | `.pm-admin-correction-button` | `styles/08-notifications-and-inputs.css:19` | base |
-| `.pm-admin-correction-button` | `styles/08-notifications-and-inputs.css:268` | @media print |
+| `.pm-admin-correction-button` | `styles/08-notifications-and-inputs.css:356` | @media print |
 | `.pm-admin-correction-reason textarea` | `styles/08-notifications-and-inputs.css:23` | base |
 | `.pm-badge-cell` | `styles/04-projected-workspace.css:30` | base |
 | `.pm-badge-empty` | `styles/04-projected-workspace.css:26` | base |
@@ -1810,7 +1810,7 @@ Selector occurrences: **2495**.
 | `.pm-forecast-heading` | `styles/03-pm-projections.css:18` | base |
 | `.pm-forecast-heading` | `styles/03-pm-projections.css:335` | @media (max-width: 620px) |
 | `.pm-forecast-heading-actions` | `styles/08-notifications-and-inputs.css:13` | base |
-| `.pm-forecast-heading-actions` | `styles/08-notifications-and-inputs.css:253` | @media (max-width: 700px) |
+| `.pm-forecast-heading-actions` | `styles/08-notifications-and-inputs.css:341` | @media (max-width: 700px) |
 | `.pm-forecast-jump-target` | `styles/13-financial-review-and-metrics.css:77` | base |
 | `.pm-forecast-jump-target > .balance-review-detail` | `styles/15-balance-presentation.css:59` | base |
 | `.pm-forecast-jump-target.pm-forecast-highlight > .pm-forecast-section` | `styles/13-financial-review-and-metrics.css:81` | base |
@@ -1844,7 +1844,7 @@ Selector occurrences: **2495**.
 | `.pm-history-totals strong` | `styles/03-pm-projections.css:315` | base |
 | `.pm-history-version-title` | `styles/08-notifications-and-inputs.css:27` | base |
 | `.pm-initials-badge` | `styles/04-projected-workspace.css:13` | base |
-| `.pm-inline-edit-control` | `styles/08-notifications-and-inputs.css:286` | base |
+| `.pm-inline-edit-control` | `styles/08-notifications-and-inputs.css:374` | base |
 | `.pm-inline-edit-intro` | `styles/03-pm-projections.css:153` | base |
 | `.pm-inline-edit-intro span` | `styles/03-pm-projections.css:165` | base |
 | `.pm-inline-edit-intro strong` | `styles/03-pm-projections.css:161` | base |
@@ -1857,10 +1857,10 @@ Selector occurrences: **2495**.
 | `.pm-inline-note > span` | `styles/03-pm-projections.css:217` | base |
 | `.pm-inline-note > span small` | `styles/03-pm-projections.css:228` | base |
 | `.pm-inline-note textarea` | `styles/03-pm-projections.css:235` | base |
-| `.pm-inline-reset-button` | `styles/08-notifications-and-inputs.css:294` | base |
-| `.pm-inline-reset-button svg` | `styles/08-notifications-and-inputs.css:318` | base |
-| `.pm-inline-reset-button:disabled` | `styles/08-notifications-and-inputs.css:313` | base |
-| `.pm-inline-reset-button:hover:not(:disabled)` | `styles/08-notifications-and-inputs.css:307` | base |
+| `.pm-inline-reset-button` | `styles/08-notifications-and-inputs.css:382` | base |
+| `.pm-inline-reset-button svg` | `styles/08-notifications-and-inputs.css:406` | base |
+| `.pm-inline-reset-button:disabled` | `styles/08-notifications-and-inputs.css:401` | base |
+| `.pm-inline-reset-button:hover:not(:disabled)` | `styles/08-notifications-and-inputs.css:395` | base |
 | `.pm-inline-totals` | `styles/03-pm-projections.css:170` | base |
 | `.pm-inline-totals` | `styles/03-pm-projections.css:341` | @media (max-width: 620px) |
 | `.pm-inline-totals > div` | `styles/03-pm-projections.css:180` | base |
@@ -1899,25 +1899,25 @@ Selector occurrences: **2495**.
 | `.pm-policy-updated` | `styles/03-pm-projections.css:522` | base |
 | `.pm-save-button` | `styles/03-pm-projections.css:255` | base |
 | `.pm-save-button:hover:not(:disabled)` | `styles/03-pm-projections.css:266` | base |
-| `.primary-button` | `styles/01-foundations.css:1429` | base |
 | `.primary-button` | `styles/01-foundations.css:187` | base |
+| `.primary-button` | `styles/01-foundations.css:1429` | base |
+| `.primary-filters` | `styles/01-foundations.css:984` | @media (max-width: 1180px) |
 | `.primary-filters` | `styles/01-foundations.css:1545` | base |
 | `.primary-filters` | `styles/01-foundations.css:1721` | @media (max-width: 900px) |
 | `.primary-filters` | `styles/01-foundations.css:1781` | @media (max-width: 760px) |
-| `.primary-filters` | `styles/01-foundations.css:984` | @media (max-width: 1180px) |
 | `.primary-projection-amount` | `ProjectionDisplay.css:2` | base |
-| `.probability-input` | `styles/08-notifications-and-inputs.css:330` | base |
-| `.probability-input` | `styles/08-notifications-and-inputs.css:437` | @media (max-width: 1180px) |
-| `.probability-input` | `styles/08-notifications-and-inputs.css:443` | @media (max-width: 900px) |
-| `.probability-input > span` | `styles/08-notifications-and-inputs.css:337` | base |
-| `.probability-input-control` | `styles/08-notifications-and-inputs.css:346` | base |
-| `.probability-input-control > span` | `styles/08-notifications-and-inputs.css:378` | base |
-| `.probability-input-control input` | `styles/08-notifications-and-inputs.css:358` | base |
-| `.probability-input-control input::-webkit-inner-spin-button` | `styles/08-notifications-and-inputs.css:372` | base |
-| `.probability-input-control input::-webkit-outer-spin-button` | `styles/08-notifications-and-inputs.css:372` | base |
-| `.probability-input:focus-within .probability-input-control` | `styles/08-notifications-and-inputs.css:384` | base |
-| `.probability-input.compact` | `styles/08-notifications-and-inputs.css:731` | base |
-| `.probability-input.compact` | `styles/08-notifications-and-inputs.css:743` | @media (max-width: 1180px) |
+| `.probability-input` | `styles/08-notifications-and-inputs.css:418` | base |
+| `.probability-input` | `styles/08-notifications-and-inputs.css:525` | @media (max-width: 1180px) |
+| `.probability-input` | `styles/08-notifications-and-inputs.css:531` | @media (max-width: 900px) |
+| `.probability-input > span` | `styles/08-notifications-and-inputs.css:425` | base |
+| `.probability-input-control` | `styles/08-notifications-and-inputs.css:434` | base |
+| `.probability-input-control > span` | `styles/08-notifications-and-inputs.css:466` | base |
+| `.probability-input-control input` | `styles/08-notifications-and-inputs.css:446` | base |
+| `.probability-input-control input::-webkit-inner-spin-button` | `styles/08-notifications-and-inputs.css:460` | base |
+| `.probability-input-control input::-webkit-outer-spin-button` | `styles/08-notifications-and-inputs.css:460` | base |
+| `.probability-input:focus-within .probability-input-control` | `styles/08-notifications-and-inputs.css:472` | base |
+| `.probability-input.compact` | `styles/08-notifications-and-inputs.css:819` | base |
+| `.probability-input.compact` | `styles/08-notifications-and-inputs.css:831` | @media (max-width: 1180px) |
 | `.progress-fill` | `styles/01-foundations.css:338` | base |
 | `.progress-track` | `styles/01-foundations.css:330` | base |
 | `.project-cell` | `styles/01-foundations.css:484` | base |
@@ -1932,12 +1932,12 @@ Selector occurrences: **2495**.
 | `.project-directory-completed-toggle:hover` | `styles/10-active-projects.css:770` | base |
 | `.project-directory-completed-toggle.active` | `styles/10-active-projects.css:776` | base |
 | `.project-directory-completed-toggle.active .project-directory-completed-dot` | `styles/10-active-projects.css:791` | base |
-| `.project-location-line` | `styles/04-projected-workspace.css:160` | @media (max-width: 900px) |
 | `.project-location-line` | `styles/04-projected-workspace.css:39` | base |
+| `.project-location-line` | `styles/04-projected-workspace.css:160` | @media (max-width: 900px) |
 | `.project-month-cell` | `styles/04-projected-workspace.css:46` | base |
 | `.project-name-status-line` | `styles/12-table-teams-and-zebra.css:11` | base |
-| `.project-name-status-line:has(.needs-rebalance-flag)` | `styles/13-financial-review-and-metrics.css:208` | base |
-| `.project-name-status-line:has(.schedule-review-flag)` | `styles/13-financial-review-and-metrics.css:208` | base |
+| `.project-name-status-line:has(.needs-rebalance-flag)` | `styles/13-financial-review-and-metrics.css:125` | base |
+| `.project-name-status-line:has(.schedule-review-flag)` | `styles/13-financial-review-and-metrics.css:125` | base |
 | `.project-pivot-metric-toggle` | `styles/05-project-pivot.css:450` | base |
 | `.project-pivot-metric-toggle button` | `styles/05-project-pivot.css:459` | base |
 | `.project-pivot-metric-toggle button:hover` | `styles/05-project-pivot.css:472` | base |
@@ -1956,8 +1956,8 @@ Selector occurrences: **2495**.
 | `.project-pivot-table .pivot-job-column` | `styles/05-project-pivot.css:73` | base |
 | `.project-pivot-table .pivot-month-column` | `styles/05-project-pivot.css:392` | base |
 | `.project-pivot-table .pivot-probability-column` | `styles/05-project-pivot.css:301` | base |
-| `.project-pivot-table .pivot-project-column` | `styles/05-project-pivot.css:229` | @media (max-width: 760px) |
 | `.project-pivot-table .pivot-project-column` | `styles/05-project-pivot.css:80` | base |
+| `.project-pivot-table .pivot-project-column` | `styles/05-project-pivot.css:229` | @media (max-width: 760px) |
 | `.project-pivot-table .pivot-project-row:hover > :is( td.pivot-source-column, td.pivot-job-column, td.pivot-project-column, td.pivot-probability-column )` | `styles/12-table-teams-and-zebra.css:315` | base |
 | `.project-pivot-table .pivot-project-values-column` | `styles/05-project-pivot.css:596` | base |
 | `.project-pivot-table .pivot-source-column` | `styles/05-project-pivot.css:66` | base |
@@ -1970,13 +1970,13 @@ Selector occurrences: **2495**.
 | `.project-pivot-table td.pivot-project-column` | `styles/05-project-pivot.css:289` | base |
 | `.project-pivot-table td.pivot-source-column` | `styles/05-project-pivot.css:87` | base |
 | `.project-pivot-table th` | `styles/05-project-pivot.css:61` | base |
-| `.project-pivot-table th.pivot-job-column` | `styles/05-project-pivot.css:118` | base |
 | `.project-pivot-table th.pivot-job-column` | `styles/05-project-pivot.css:97` | base |
+| `.project-pivot-table th.pivot-job-column` | `styles/05-project-pivot.css:118` | base |
 | `.project-pivot-table th.pivot-project-column` | `styles/05-project-pivot.css:107` | base |
 | `.project-pivot-table th.pivot-project-column` | `styles/05-project-pivot.css:118` | base |
 | `.project-pivot-table th.pivot-project-column` | `styles/05-project-pivot.css:289` | base |
-| `.project-pivot-table th.pivot-source-column` | `styles/05-project-pivot.css:118` | base |
 | `.project-pivot-table th.pivot-source-column` | `styles/05-project-pivot.css:87` | base |
+| `.project-pivot-table th.pivot-source-column` | `styles/05-project-pivot.css:118` | base |
 | `.project-pivot-table:not(.pivot-metric-all) .pivot-month-column` | `styles/05-project-pivot.css:675` | base |
 | `.project-pivot-table:not(.pivot-metric-all) .pivot-month-column` | `styles/05-project-pivot.css:740` | @media (max-width: 760px) |
 | `.project-pivot-table:not(.pivot-metric-all) .pivot-total-column` | `styles/05-project-pivot.css:675` | base |
@@ -2048,8 +2048,8 @@ Selector occurrences: **2495**.
 | `.project-pivot-wrap` | `styles/05-project-pivot.css:826` | base |
 | `.project-pivot-wrap::-webkit-scrollbar` | `styles/05-project-pivot.css:831` | base |
 | `.project-reference-refresh-note` | `ActiveProjectSaveReview.css:9` | base |
-| `.project-save-comparison` | `ActiveProjectSaveReview.css:11` | @media (max-width: 640px) |
 | `.project-save-comparison` | `ActiveProjectSaveReview.css:4` | base |
+| `.project-save-comparison` | `ActiveProjectSaveReview.css:11` | @media (max-width: 640px) |
 | `.project-save-comparison pre` | `ActiveProjectSaveReview.css:6` | base |
 | `.project-save-comparison span` | `ActiveProjectSaveReview.css:5` | base |
 | `.project-save-conflict` | `ActiveProjectSaveReview.css:3` | base |
@@ -2069,8 +2069,8 @@ Selector occurrences: **2495**.
 | `.project-setup-flags > .project-setup-flag + .project-setup-flag` | `styles/06-project-references.css:527` | @media (max-width: 760px) |
 | `.project-setup-flags > .project-setup-flag + .project-setup-flag` | `styles/06-project-references.css:843` | base |
 | `.project-setup-help` | `styles/06-project-references.css:123` | base |
-| `.project-setup-help > summary` | `styles/06-project-references.css:129` | base |
 | `.project-setup-help > summary` | `styles/06-project-references.css:85` | base |
+| `.project-setup-help > summary` | `styles/06-project-references.css:129` | base |
 | `.project-setup-help > summary::-webkit-details-marker` | `styles/06-project-references.css:134` | base |
 | `.project-setup-help > summary:hover` | `styles/06-project-references.css:105` | base |
 | `.project-setup-info-button` | `styles/06-project-references.css:85` | base |
@@ -2095,79 +2095,79 @@ Selector occurrences: **2495**.
 | `.project-team-badges.compact .project-team-badge strong` | `styles/12-table-teams-and-zebra.css:145` | base |
 | `.project-team-cell` | `styles/06-project-references.css:772` | base |
 | `.project-team-column` | `styles/06-project-references.css:768` | base |
-| `.project-team-current-editor` | `styles/11-lifecycle-feedback-and-staffing.css:538` | base |
-| `.project-team-current-editor` | `styles/11-lifecycle-feedback-and-staffing.css:736` | @media (max-width: 760px) |
+| `.project-team-current-editor` | `styles/11a-active-project-staffing.css:231` | base |
+| `.project-team-current-editor` | `styles/11a-active-project-staffing.css:429` | @media (max-width: 760px) |
 | `.project-team-empty` | `styles/06-project-references.css:805` | base |
-| `.project-team-foreman-row` | `styles/11-lifecycle-feedback-and-staffing.css:538` | base |
-| `.project-team-foreman-row` | `styles/11-lifecycle-feedback-and-staffing.css:736` | @media (max-width: 760px) |
-| `.project-team-foremen-editor` | `styles/11-lifecycle-feedback-and-staffing.css:545` | base |
+| `.project-team-foreman-row` | `styles/11a-active-project-staffing.css:231` | base |
+| `.project-team-foreman-row` | `styles/11a-active-project-staffing.css:429` | @media (max-width: 760px) |
+| `.project-team-foremen-editor` | `styles/11a-active-project-staffing.css:238` | base |
 | `.project-team-member` | `styles/06-project-references.css:778` | base |
 | `.project-team-name` | `styles/06-project-references.css:795` | base |
-| `.project-team-office-grid` | `styles/11-lifecycle-feedback-and-staffing.css:476` | base |
-| `.project-team-organizer-editor` | `styles/11-lifecycle-feedback-and-staffing.css:644` | base |
-| `.project-team-organizer-effective` | `styles/11-lifecycle-feedback-and-staffing.css:706` | base |
-| `.project-team-organizer-effective > span:not(.staffing-projection-badge)` | `styles/11-lifecycle-feedback-and-staffing.css:718` | base |
-| `.project-team-organizer-effective small` | `styles/11-lifecycle-feedback-and-staffing.css:714` | base |
-| `.project-team-organizer-footer` | `styles/11-lifecycle-feedback-and-staffing.css:698` | base |
-| `.project-team-organizer-footer` | `styles/11-lifecycle-feedback-and-staffing.css:731` | @media (max-width: 760px) |
-| `.project-team-organizer-grid` | `styles/11-lifecycle-feedback-and-staffing.css:687` | base |
-| `.project-team-organizer-grid` | `styles/11-lifecycle-feedback-and-staffing.css:725` | @media (max-width: 980px) |
-| `.project-team-organizer-grid` | `styles/11-lifecycle-feedback-and-staffing.css:736` | @media (max-width: 760px) |
-| `.project-team-organizer-heading` | `styles/11-lifecycle-feedback-and-staffing.css:652` | base |
-| `.project-team-organizer-heading` | `styles/11-lifecycle-feedback-and-staffing.css:731` | @media (max-width: 760px) |
-| `.project-team-organizer-heading small` | `styles/11-lifecycle-feedback-and-staffing.css:660` | base |
-| `.project-team-organizer-heading small` | `styles/11-lifecycle-feedback-and-staffing.css:668` | base |
-| `.project-team-organizer-heading strong` | `styles/11-lifecycle-feedback-and-staffing.css:660` | base |
-| `.project-team-organizer-heading strong` | `styles/11-lifecycle-feedback-and-staffing.css:664` | base |
-| `.project-team-organizer-list` | `styles/11-lifecycle-feedback-and-staffing.css:675` | base |
-| `.project-team-organizer-row` | `styles/11-lifecycle-feedback-and-staffing.css:680` | base |
-| `.project-team-person-select` | `styles/11-lifecycle-feedback-and-staffing.css:579` | base |
-| `.project-team-person-select:disabled` | `styles/11-lifecycle-feedback-and-staffing.css:596` | base |
-| `.project-team-person-select:focus` | `styles/11-lifecycle-feedback-and-staffing.css:591` | base |
+| `.project-team-office-grid` | `styles/11a-active-project-staffing.css:169` | base |
+| `.project-team-organizer-editor` | `styles/11a-active-project-staffing.css:337` | base |
+| `.project-team-organizer-effective` | `styles/11a-active-project-staffing.css:399` | base |
+| `.project-team-organizer-effective > span:not(.staffing-projection-badge)` | `styles/11a-active-project-staffing.css:411` | base |
+| `.project-team-organizer-effective small` | `styles/11a-active-project-staffing.css:407` | base |
+| `.project-team-organizer-footer` | `styles/11a-active-project-staffing.css:391` | base |
+| `.project-team-organizer-footer` | `styles/11a-active-project-staffing.css:424` | @media (max-width: 760px) |
+| `.project-team-organizer-grid` | `styles/11a-active-project-staffing.css:380` | base |
+| `.project-team-organizer-grid` | `styles/11a-active-project-staffing.css:418` | @media (max-width: 980px) |
+| `.project-team-organizer-grid` | `styles/11a-active-project-staffing.css:429` | @media (max-width: 760px) |
+| `.project-team-organizer-heading` | `styles/11a-active-project-staffing.css:345` | base |
+| `.project-team-organizer-heading` | `styles/11a-active-project-staffing.css:424` | @media (max-width: 760px) |
+| `.project-team-organizer-heading small` | `styles/11a-active-project-staffing.css:353` | base |
+| `.project-team-organizer-heading small` | `styles/11a-active-project-staffing.css:361` | base |
+| `.project-team-organizer-heading strong` | `styles/11a-active-project-staffing.css:353` | base |
+| `.project-team-organizer-heading strong` | `styles/11a-active-project-staffing.css:357` | base |
+| `.project-team-organizer-list` | `styles/11a-active-project-staffing.css:368` | base |
+| `.project-team-organizer-row` | `styles/11a-active-project-staffing.css:373` | base |
+| `.project-team-person-select` | `styles/11a-active-project-staffing.css:272` | base |
+| `.project-team-person-select:disabled` | `styles/11a-active-project-staffing.css:289` | base |
+| `.project-team-person-select:focus` | `styles/11a-active-project-staffing.css:284` | base |
 | `.project-team-role` | `styles/06-project-references.css:786` | base |
-| `.project-team-role-editor + .project-team-role-editor` | `styles/11-lifecycle-feedback-and-staffing.css:534` | base |
-| `.project-team-staffing-field` | `styles/11-lifecycle-feedback-and-staffing.css:555` | base |
-| `.project-team-staffing-field > small` | `styles/11-lifecycle-feedback-and-staffing.css:569` | base |
-| `.project-team-staffing-field > span` | `styles/11-lifecycle-feedback-and-staffing.css:561` | base |
-| `.project-team-staffing-field input` | `styles/11-lifecycle-feedback-and-staffing.css:575` | base |
-| `.project-team-staffing-field select` | `styles/11-lifecycle-feedback-and-staffing.css:575` | base |
-| `.project-team-staffing-field textarea` | `styles/11-lifecycle-feedback-and-staffing.css:575` | base |
-| `.project-team-staffing-heading` | `styles/11-lifecycle-feedback-and-staffing.css:486` | base |
-| `.project-team-staffing-heading` | `styles/11-lifecycle-feedback-and-staffing.css:731` | @media (max-width: 760px) |
-| `.project-team-staffing-heading h4` | `styles/11-lifecycle-feedback-and-staffing.css:494` | base |
-| `.project-team-staffing-heading-meta` | `styles/11-lifecycle-feedback-and-staffing.css:501` | base |
-| `.project-team-staffing-help` | `styles/11-lifecycle-feedback-and-staffing.css:569` | base |
-| `.project-team-staffing-list` | `styles/11-lifecycle-feedback-and-staffing.css:550` | base |
-| `.project-team-staffing-shell` | `styles/11-lifecycle-feedback-and-staffing.css:480` | base |
-| `.project-team-staffing-state` | `styles/11-lifecycle-feedback-and-staffing.css:601` | base |
-| `.project-team-staffing-state` | `styles/11-lifecycle-feedback-and-staffing.css:740` | @media (max-width: 760px) |
-| `.project-team-staffing-state small` | `styles/11-lifecycle-feedback-and-staffing.css:610` | base |
+| `.project-team-role-editor + .project-team-role-editor` | `styles/11a-active-project-staffing.css:227` | base |
+| `.project-team-staffing-field` | `styles/11a-active-project-staffing.css:248` | base |
+| `.project-team-staffing-field > small` | `styles/11a-active-project-staffing.css:262` | base |
+| `.project-team-staffing-field > span` | `styles/11a-active-project-staffing.css:254` | base |
+| `.project-team-staffing-field input` | `styles/11a-active-project-staffing.css:268` | base |
+| `.project-team-staffing-field select` | `styles/11a-active-project-staffing.css:268` | base |
+| `.project-team-staffing-field textarea` | `styles/11a-active-project-staffing.css:268` | base |
+| `.project-team-staffing-heading` | `styles/11a-active-project-staffing.css:179` | base |
+| `.project-team-staffing-heading` | `styles/11a-active-project-staffing.css:424` | @media (max-width: 760px) |
+| `.project-team-staffing-heading h4` | `styles/11a-active-project-staffing.css:187` | base |
+| `.project-team-staffing-heading-meta` | `styles/11a-active-project-staffing.css:194` | base |
+| `.project-team-staffing-help` | `styles/11a-active-project-staffing.css:262` | base |
+| `.project-team-staffing-list` | `styles/11a-active-project-staffing.css:243` | base |
+| `.project-team-staffing-shell` | `styles/11a-active-project-staffing.css:173` | base |
+| `.project-team-staffing-state` | `styles/11a-active-project-staffing.css:294` | base |
+| `.project-team-staffing-state` | `styles/11a-active-project-staffing.css:433` | @media (max-width: 760px) |
+| `.project-team-staffing-state small` | `styles/11a-active-project-staffing.css:303` | base |
 | `.project-title-ellipsis` | `styles/12-table-teams-and-zebra.css:156` | base |
 | `.projected-breakdown-table` | `styles/06-project-references.css:813` | base |
-| `.projected-breakdown-table .gc-table-cell` | `styles/08-notifications-and-inputs.css:429` | base |
+| `.projected-breakdown-table .gc-table-cell` | `styles/08-notifications-and-inputs.css:517` | base |
 | `.projected-breakdown-table .project-cell` | `styles/12-table-teams-and-zebra.css:166` | base |
-| `.projected-export-button` | `styles/12-table-teams-and-zebra.css:201` | @media (max-width: 760px) |
 | `.projected-export-button` | `styles/12-table-teams-and-zebra.css:80` | base |
+| `.projected-export-button` | `styles/12-table-teams-and-zebra.css:201` | @media (max-width: 760px) |
 | `.projected-filter-panel` | `styles/12-table-teams-and-zebra.css:85` | base |
 | `.projected-filter-panel .filter-actions button` | `styles/12-table-teams-and-zebra.css:99` | base |
 | `.projected-filter-panel .filter-field` | `styles/12-table-teams-and-zebra.css:90` | base |
 | `.projected-filter-panel .filter-field input` | `styles/12-table-teams-and-zebra.css:94` | base |
 | `.projected-filter-panel .filter-field select` | `styles/12-table-teams-and-zebra.css:94` | base |
+| `.projected-heading-controls` | `styles/12-table-teams-and-zebra.css:52` | base |
 | `.projected-heading-controls` | `styles/12-table-teams-and-zebra.css:179` | @media (max-width: 1100px) |
 | `.projected-heading-controls` | `styles/12-table-teams-and-zebra.css:187` | @media (max-width: 760px) |
-| `.projected-heading-controls` | `styles/12-table-teams-and-zebra.css:52` | base |
+| `.projected-heading-source-toggles` | `styles/12-table-teams-and-zebra.css:61` | base |
 | `.projected-heading-source-toggles` | `styles/12-table-teams-and-zebra.css:179` | @media (max-width: 1100px) |
 | `.projected-heading-source-toggles` | `styles/12-table-teams-and-zebra.css:192` | @media (max-width: 760px) |
-| `.projected-heading-source-toggles` | `styles/12-table-teams-and-zebra.css:61` | base |
 | `.projected-heading-source-toggles .toggle-label small` | `styles/12-table-teams-and-zebra.css:76` | base |
 | `.projected-heading-source-toggles .toggle-label strong` | `styles/12-table-teams-and-zebra.css:72` | base |
-| `.projected-heading-source-toggles button` | `styles/12-table-teams-and-zebra.css:197` | @media (max-width: 760px) |
 | `.projected-heading-source-toggles button` | `styles/12-table-teams-and-zebra.css:66` | base |
+| `.projected-heading-source-toggles button` | `styles/12-table-teams-and-zebra.css:197` | @media (max-width: 760px) |
 | `.projected-monthly-table tfoot td` | `styles/04-projected-workspace.css:98` | base |
-| `.projected-monthly-table tfoot th` | `styles/04-projected-workspace.css:109` | base |
 | `.projected-monthly-table tfoot th` | `styles/04-projected-workspace.css:98` | base |
-| `.projected-page-heading` | `styles/12-table-teams-and-zebra.css:174` | @media (max-width: 1100px) |
+| `.projected-monthly-table tfoot th` | `styles/04-projected-workspace.css:109` | base |
 | `.projected-page-heading` | `styles/12-table-teams-and-zebra.css:42` | base |
+| `.projected-page-heading` | `styles/12-table-teams-and-zebra.css:174` | @media (max-width: 1100px) |
 | `.projected-page-heading h1` | `styles/12-table-teams-and-zebra.css:47` | base |
 | `.projection-attention-message` | `styles/02-billing-drawers.css:1494` | base |
 | `.projection-basis-controls` | `ProjectionDisplay.css:4` | base |
@@ -2194,9 +2194,9 @@ Selector occurrences: **2495**.
 | `.refresh-icon-button:hover:not(:disabled)` | `ViewControls.css:4` | base |
 | `.refresh-icon-button.is-refreshing svg` | `ViewControls.css:7` | base |
 | `.refresh-icon-button.is-refreshing svg` | `ViewControls.css:9` | @media (prefers-reduced-motion:reduce) |
-| `.refresh-toast-indicator` | `styles/11-lifecycle-feedback-and-staffing.css:188` | base |
-| `.refresh-toast-indicator.is-progress` | `styles/11-lifecycle-feedback-and-staffing.css:197` | base |
-| `.refresh-toast-indicator.is-progress` | `styles/11-lifecycle-feedback-and-staffing.css:202` | @media (prefers-reduced-motion: reduce) |
+| `.refresh-toast-indicator` | `styles/11-lifecycle-feedback.css:188` | base |
+| `.refresh-toast-indicator.is-progress` | `styles/11-lifecycle-feedback.css:197` | base |
+| `.refresh-toast-indicator.is-progress` | `styles/11-lifecycle-feedback.css:202` | @media (prefers-reduced-motion: reduce) |
 | `.riggs-flow-actions` | `AdministrationPowerAutomate.css:2` | base |
 | `.riggs-flow-actions small` | `AdministrationPowerAutomate.css:4` | base |
 | `.riggs-flow-actions strong` | `AdministrationPowerAutomate.css:3` | base |
@@ -2217,8 +2217,8 @@ Selector occurrences: **2495**.
 | `.riggs-flow-directory-heading small` | `AdministrationPowerAutomate.css:4` | base |
 | `.riggs-flow-directory-heading strong` | `AdministrationPowerAutomate.css:3` | base |
 | `.riggs-flow-directory-summary` | `AdministrationPowerAutomate.css:17` | base |
-| `.riggs-flow-directory-table` | `AdministrationPowerAutomate.css:109` | base |
 | `.riggs-flow-directory-table` | `AdministrationPowerAutomate.css:18` | base |
+| `.riggs-flow-directory-table` | `AdministrationPowerAutomate.css:109` | base |
 | `.riggs-flow-directory-table .riggs-flow-clickable-row` | `AdministrationPowerAutomate.css:32` | base |
 | `.riggs-flow-directory-table .riggs-flow-clickable-row:focus-visible` | `AdministrationPowerAutomate.css:36` | base |
 | `.riggs-flow-directory-table .riggs-flow-clickable-row:focus-visible .riggs-flow-row-name` | `AdministrationPowerAutomate.css:37` | base |
@@ -2235,24 +2235,24 @@ Selector occurrences: **2495**.
 | `.riggs-flow-inspection-dialog .riggs-flow-inspection-facts-compact` | `AdministrationPowerAutomate.css:118` | base |
 | `.riggs-flow-inspection-dialog .riggs-flow-portal-button` | `AdministrationPowerAutomate.css:116` | base |
 | `.riggs-flow-inspection-dialog .riggs-flow-portal-button:hover` | `AdministrationPowerAutomate.css:117` | base |
-| `.riggs-flow-inspection-dialog .riggs-flow-runs-heading` | `AdministrationPowerAutomate.css:105` | @media (max-width:640px) |
 | `.riggs-flow-inspection-dialog .riggs-flow-runs-heading` | `AdministrationPowerAutomate.css:80` | base |
+| `.riggs-flow-inspection-dialog .riggs-flow-runs-heading` | `AdministrationPowerAutomate.css:105` | @media (max-width:640px) |
 | `.riggs-flow-inspection-dialog .riggs-flow-runs-heading h3` | `AdministrationPowerAutomate.css:89` | base |
 | `.riggs-flow-inspection-dialog a:focus-visible` | `AdministrationPowerAutomate.css:99` | base |
 | `.riggs-flow-inspection-dialog button` | `AdministrationPowerAutomate.css:90` | base |
 | `.riggs-flow-inspection-dialog button:focus-visible` | `AdministrationPowerAutomate.css:99` | base |
 | `.riggs-flow-inspection-dialog button:hover` | `AdministrationPowerAutomate.css:101` | base |
 | `.riggs-flow-inspection-dialog::backdrop` | `AdministrationPowerAutomate.css:79` | base |
-| `.riggs-flow-inspection-dialog.riggs-flow-runs` | `AdministrationPowerAutomate.css:104` | @media (max-width:640px) |
 | `.riggs-flow-inspection-dialog.riggs-flow-runs` | `AdministrationPowerAutomate.css:60` | base |
+| `.riggs-flow-inspection-dialog.riggs-flow-runs` | `AdministrationPowerAutomate.css:104` | @media (max-width:640px) |
 | `.riggs-flow-inspection-disclaimer` | `AdministrationPowerAutomate.css:53` | base |
 | `.riggs-flow-inspection-facts` | `AdministrationPowerAutomate.css:49` | base |
 | `.riggs-flow-inspection-facts small` | `AdministrationPowerAutomate.css:53` | base |
 | `.riggs-flow-inspection-facts span` | `AdministrationPowerAutomate.css:51` | base |
 | `.riggs-flow-inspection-facts strong` | `AdministrationPowerAutomate.css:52` | base |
 | `.riggs-flow-inspection-facts>div` | `AdministrationPowerAutomate.css:50` | base |
-| `.riggs-flow-inspection-message` | `AdministrationPowerAutomate.css:119` | base |
 | `.riggs-flow-inspection-message` | `AdministrationPowerAutomate.css:54` | base |
+| `.riggs-flow-inspection-message` | `AdministrationPowerAutomate.css:119` | base |
 | `.riggs-flow-inspection-qualification` | `AdministrationPowerAutomate.css:55` | base |
 | `.riggs-flow-monitor` | `AdministrationPowerAutomate.css:1` | base |
 | `.riggs-flow-monitor button` | `AdministrationPowerAutomate.css:5` | base |
@@ -2289,28 +2289,28 @@ Selector occurrences: **2495**.
 | `.riggs-flow-state` | `AdministrationPowerAutomate.css:10` | base |
 | `.riggs-flow-success-text` | `AdministrationPowerAutomate.css:113` | base |
 | `.role-chip` | `styles/01-foundations.css:174` | base |
-| `.schedule-review-action` | `styles/13-financial-review-and-metrics.css:187` | base |
-| `.schedule-review-action:focus-visible` | `styles/13-financial-review-and-metrics.css:192` | base |
-| `.schedule-review-action:hover` | `styles/13-financial-review-and-metrics.css:192` | base |
-| `.schedule-review-flag` | `styles/13-financial-review-and-metrics.css:172` | base |
-| `.schedule-review-info-drawer` | `styles/13-financial-review-and-metrics.css:196` | base |
-| `.schedule-review-info-message` | `styles/13-financial-review-and-metrics.css:200` | base |
-| `.secondary-button` | `styles/01-foundations.css:1429` | base |
-| `.secondary-button` | `styles/01-foundations.css:1435` | base |
+| `.schedule-review-action` | `styles/13-financial-review-and-metrics.css:104` | base |
+| `.schedule-review-action:focus-visible` | `styles/13-financial-review-and-metrics.css:109` | base |
+| `.schedule-review-action:hover` | `styles/13-financial-review-and-metrics.css:109` | base |
+| `.schedule-review-flag` | `styles/13-financial-review-and-metrics.css:89` | base |
+| `.schedule-review-info-drawer` | `styles/13-financial-review-and-metrics.css:113` | base |
+| `.schedule-review-info-message` | `styles/13-financial-review-and-metrics.css:117` | base |
 | `.secondary-button` | `styles/01-foundations.css:187` | base |
 | `.secondary-button` | `styles/01-foundations.css:194` | base |
+| `.secondary-button` | `styles/01-foundations.css:1429` | base |
+| `.secondary-button` | `styles/01-foundations.css:1435` | base |
 | `.secondary-button:hover:not(:disabled)` | `styles/01-foundations.css:200` | base |
 | `.section-collapse-button` | `styles/02-billing-drawers.css:363` | base |
 | `.section-collapse-button:hover` | `styles/02-billing-drawers.css:376` | base |
+| `.section-heading` | `styles/01-foundations.css:380` | base |
 | `.section-heading` | `styles/01-foundations.css:1023` | @media (max-width: 760px) |
 | `.section-heading` | `styles/01-foundations.css:1636` | base |
-| `.section-heading` | `styles/01-foundations.css:380` | base |
 | `.section-heading.compact` | `styles/02-billing-drawers.css:151` | base |
 | `.section-heading.compact h3` | `styles/02-billing-drawers.css:155` | base |
-| `.section-kicker` | `styles/01-foundations.css:1401` | base |
 | `.section-kicker` | `styles/01-foundations.css:155` | base |
-| `.section-note` | `styles/01-foundations.css:1641` | base |
+| `.section-kicker` | `styles/01-foundations.css:1401` | base |
 | `.section-note` | `styles/01-foundations.css:387` | base |
+| `.section-note` | `styles/01-foundations.css:1641` | base |
 | `.show-controls` | `ViewControls.css:10` | base |
 | `.show-controls > span` | `ViewControls.css:11` | base |
 | `.show-controls button` | `ViewControls.css:12` | base |
@@ -2356,8 +2356,8 @@ Selector occurrences: **2495**.
 | `.source-comparison-row > span` | `styles/02-billing-drawers.css:1238` | base |
 | `.source-comparison-row > strong` | `styles/02-billing-drawers.css:1247` | base |
 | `.source-comparison[open] > summary::after` | `styles/02-billing-drawers.css:1218` | base |
-| `.source-filter-group` | `styles/01-foundations.css:1576` | base |
 | `.source-filter-group` | `styles/01-foundations.css:304` | base |
+| `.source-filter-group` | `styles/01-foundations.css:1576` | base |
 | `.source-selector` | `styles/01-foundations.css:1446` | base |
 | `.source-selector` | `styles/01-foundations.css:1687` | @media (max-width: 1180px) |
 | `.source-selector` | `styles/01-foundations.css:1768` | @media (max-width: 760px) |
@@ -2372,61 +2372,61 @@ Selector occurrences: **2495**.
 | `.source-toggles button` | `styles/01-foundations.css:1776` | @media (max-width: 760px) |
 | `.source-toggles button:hover` | `styles/01-foundations.css:1498` | base |
 | `.source-toggles button.active` | `styles/01-foundations.css:1503` | base |
-| `.staffing-add-button` | `styles/11-lifecycle-feedback-and-staffing.css:637` | base |
-| `.staffing-assignment-meta` | `styles/11-lifecycle-feedback-and-staffing.css:389` | base |
-| `.staffing-assignment-meta` | `styles/11-lifecycle-feedback-and-staffing.css:468` | @media (max-width: 760px) |
-| `.staffing-assignment-row` | `styles/11-lifecycle-feedback-and-staffing.css:366` | base |
-| `.staffing-assignment-row` | `styles/11-lifecycle-feedback-and-staffing.css:464` | @media (max-width: 760px) |
-| `.staffing-assignment-row + .staffing-assignment-row` | `styles/11-lifecycle-feedback-and-staffing.css:373` | base |
-| `.staffing-assignment-row small` | `styles/11-lifecycle-feedback-and-staffing.css:379` | base |
-| `.staffing-assignment-row small` | `styles/11-lifecycle-feedback-and-staffing.css:383` | base |
-| `.staffing-assignment-row strong` | `styles/11-lifecycle-feedback-and-staffing.css:379` | base |
-| `.staffing-current-assignment-row` | `styles/11-lifecycle-feedback-and-staffing.css:747` | base |
-| `.staffing-current-block` | `styles/11-lifecycle-feedback-and-staffing.css:348` | base |
-| `.staffing-current-label` | `styles/11-lifecycle-feedback-and-staffing.css:356` | base |
-| `.staffing-current-readout` | `styles/11-lifecycle-feedback-and-staffing.css:752` | base |
-| `.staffing-current-readout > small` | `styles/11-lifecycle-feedback-and-staffing.css:774` | base |
-| `.staffing-current-readout > span` | `styles/11-lifecycle-feedback-and-staffing.css:759` | base |
-| `.staffing-current-readout > strong` | `styles/11-lifecycle-feedback-and-staffing.css:767` | base |
-| `.staffing-current-status` | `styles/11-lifecycle-feedback-and-staffing.css:780` | base |
-| `.staffing-date-range` | `styles/11-lifecycle-feedback-and-staffing.css:419` | base |
-| `.staffing-empty-note` | `styles/11-lifecycle-feedback-and-staffing.css:456` | base |
-| `.staffing-inline-action` | `styles/11-lifecycle-feedback-and-staffing.css:615` | base |
-| `.staffing-inline-action:disabled` | `styles/11-lifecycle-feedback-and-staffing.css:632` | base |
-| `.staffing-inline-action:hover:not(:disabled)` | `styles/11-lifecycle-feedback-and-staffing.css:624` | base |
-| `.staffing-inline-action.danger:hover:not(:disabled)` | `styles/11-lifecycle-feedback-and-staffing.css:628` | base |
-| `.staffing-organizer-list` | `styles/11-lifecycle-feedback-and-staffing.css:407` | base |
-| `.staffing-organizer-note` | `styles/11-lifecycle-feedback-and-staffing.css:325` | base |
-| `.staffing-plan-empty-state` | `styles/11-lifecycle-feedback-and-staffing.css:793` | base |
-| `.staffing-plan-empty-state span` | `styles/11-lifecycle-feedback-and-staffing.css:809` | base |
-| `.staffing-plan-empty-state strong` | `styles/11-lifecycle-feedback-and-staffing.css:804` | base |
-| `.staffing-preview-badge` | `styles/11-lifecycle-feedback-and-staffing.css:510` | base |
-| `.staffing-preview-note` | `styles/11-lifecycle-feedback-and-staffing.css:523` | base |
-| `.staffing-projection-badge` | `styles/11-lifecycle-feedback-and-staffing.css:393` | base |
-| `.staffing-role-group + .staffing-role-group` | `styles/11-lifecycle-feedback-and-staffing.css:329` | base |
-| `.staffing-role-heading` | `styles/11-lifecycle-feedback-and-staffing.css:333` | base |
-| `.staffing-role-heading small` | `styles/11-lifecycle-feedback-and-staffing.css:340` | base |
-| `.staffing-row-flags` | `styles/11-lifecycle-feedback-and-staffing.css:423` | base |
-| `.staffing-row-flags` | `styles/11-lifecycle-feedback-and-staffing.css:468` | @media (max-width: 760px) |
-| `.staffing-row-flags > span:not(.staffing-projection-badge)` | `styles/11-lifecycle-feedback-and-staffing.css:431` | base |
-| `.staffing-schedule-details` | `styles/11-lifecycle-feedback-and-staffing.css:438` | base |
-| `.staffing-schedule-details p` | `styles/11-lifecycle-feedback-and-staffing.css:447` | base |
-| `.staffing-schedule-details small` | `styles/11-lifecycle-feedback-and-staffing.css:383` | base |
-| `.staffing-schedule-main` | `styles/11-lifecycle-feedback-and-staffing.css:366` | base |
-| `.staffing-schedule-main` | `styles/11-lifecycle-feedback-and-staffing.css:464` | @media (max-width: 760px) |
-| `.staffing-schedule-main small` | `styles/11-lifecycle-feedback-and-staffing.css:379` | base |
-| `.staffing-schedule-main small` | `styles/11-lifecycle-feedback-and-staffing.css:383` | base |
-| `.staffing-schedule-main strong` | `styles/11-lifecycle-feedback-and-staffing.css:379` | base |
-| `.staffing-schedule-row` | `styles/11-lifecycle-feedback-and-staffing.css:412` | base |
+| `.staffing-add-button` | `styles/11a-active-project-staffing.css:330` | base |
+| `.staffing-assignment-meta` | `styles/11a-active-project-staffing.css:82` | base |
+| `.staffing-assignment-meta` | `styles/11a-active-project-staffing.css:161` | @media (max-width: 760px) |
+| `.staffing-assignment-row` | `styles/11a-active-project-staffing.css:59` | base |
+| `.staffing-assignment-row` | `styles/11a-active-project-staffing.css:157` | @media (max-width: 760px) |
+| `.staffing-assignment-row + .staffing-assignment-row` | `styles/11a-active-project-staffing.css:66` | base |
+| `.staffing-assignment-row small` | `styles/11a-active-project-staffing.css:72` | base |
+| `.staffing-assignment-row small` | `styles/11a-active-project-staffing.css:76` | base |
+| `.staffing-assignment-row strong` | `styles/11a-active-project-staffing.css:72` | base |
+| `.staffing-current-assignment-row` | `styles/11a-active-project-staffing.css:440` | base |
+| `.staffing-current-block` | `styles/11a-active-project-staffing.css:41` | base |
+| `.staffing-current-label` | `styles/11a-active-project-staffing.css:49` | base |
+| `.staffing-current-readout` | `styles/11a-active-project-staffing.css:445` | base |
+| `.staffing-current-readout > small` | `styles/11a-active-project-staffing.css:467` | base |
+| `.staffing-current-readout > span` | `styles/11a-active-project-staffing.css:452` | base |
+| `.staffing-current-readout > strong` | `styles/11a-active-project-staffing.css:460` | base |
+| `.staffing-current-status` | `styles/11a-active-project-staffing.css:473` | base |
+| `.staffing-date-range` | `styles/11a-active-project-staffing.css:112` | base |
+| `.staffing-empty-note` | `styles/11a-active-project-staffing.css:149` | base |
+| `.staffing-inline-action` | `styles/11a-active-project-staffing.css:308` | base |
+| `.staffing-inline-action:disabled` | `styles/11a-active-project-staffing.css:325` | base |
+| `.staffing-inline-action:hover:not(:disabled)` | `styles/11a-active-project-staffing.css:317` | base |
+| `.staffing-inline-action.danger:hover:not(:disabled)` | `styles/11a-active-project-staffing.css:321` | base |
+| `.staffing-organizer-list` | `styles/11a-active-project-staffing.css:100` | base |
+| `.staffing-organizer-note` | `styles/11a-active-project-staffing.css:18` | base |
+| `.staffing-plan-empty-state` | `styles/11a-active-project-staffing.css:486` | base |
+| `.staffing-plan-empty-state span` | `styles/11a-active-project-staffing.css:502` | base |
+| `.staffing-plan-empty-state strong` | `styles/11a-active-project-staffing.css:497` | base |
+| `.staffing-preview-badge` | `styles/11a-active-project-staffing.css:203` | base |
+| `.staffing-preview-note` | `styles/11a-active-project-staffing.css:216` | base |
+| `.staffing-projection-badge` | `styles/11a-active-project-staffing.css:86` | base |
+| `.staffing-role-group + .staffing-role-group` | `styles/11a-active-project-staffing.css:22` | base |
+| `.staffing-role-heading` | `styles/11a-active-project-staffing.css:26` | base |
+| `.staffing-role-heading small` | `styles/11a-active-project-staffing.css:33` | base |
+| `.staffing-row-flags` | `styles/11a-active-project-staffing.css:116` | base |
+| `.staffing-row-flags` | `styles/11a-active-project-staffing.css:161` | @media (max-width: 760px) |
+| `.staffing-row-flags > span:not(.staffing-projection-badge)` | `styles/11a-active-project-staffing.css:124` | base |
+| `.staffing-schedule-details` | `styles/11a-active-project-staffing.css:131` | base |
+| `.staffing-schedule-details p` | `styles/11a-active-project-staffing.css:140` | base |
+| `.staffing-schedule-details small` | `styles/11a-active-project-staffing.css:76` | base |
+| `.staffing-schedule-main` | `styles/11a-active-project-staffing.css:59` | base |
+| `.staffing-schedule-main` | `styles/11a-active-project-staffing.css:157` | @media (max-width: 760px) |
+| `.staffing-schedule-main small` | `styles/11a-active-project-staffing.css:72` | base |
+| `.staffing-schedule-main small` | `styles/11a-active-project-staffing.css:76` | base |
+| `.staffing-schedule-main strong` | `styles/11a-active-project-staffing.css:72` | base |
+| `.staffing-schedule-row` | `styles/11a-active-project-staffing.css:105` | base |
+| `.stat-card` | `styles/01-foundations.css:245` | base |
 | `.stat-card` | `styles/01-foundations.css:1528` | base |
 | `.stat-card` | `styles/01-foundations.css:1611` | base |
-| `.stat-card` | `styles/01-foundations.css:245` | base |
-| `.stat-card > span` | `styles/01-foundations.css:1616` | base |
 | `.stat-card > span` | `styles/01-foundations.css:349` | base |
-| `.stat-card small` | `styles/01-foundations.css:1626` | base |
+| `.stat-card > span` | `styles/01-foundations.css:1616` | base |
 | `.stat-card small` | `styles/01-foundations.css:362` | base |
-| `.stat-card strong` | `styles/01-foundations.css:1620` | base |
+| `.stat-card small` | `styles/01-foundations.css:1626` | base |
 | `.stat-card strong` | `styles/01-foundations.css:357` | base |
+| `.stat-card strong` | `styles/01-foundations.css:1620` | base |
 | `.stat-card.emphasis` | `styles/01-foundations.css:368` | base |
 | `.stat-card.emphasis strong` | `styles/01-foundations.css:372` | base |
 | `.stat-card.tone-critical` | `styles/01-foundations.css:1122` | base |
@@ -2439,26 +2439,26 @@ Selector occurrences: **2495**.
 | `.state-cell small` | `styles/01-foundations.css:511` | base |
 | `.state-dot` | `styles/01-foundations.css:516` | base |
 | `.state-dot.ready` | `styles/01-foundations.css:524` | base |
+| `.stats-grid` | `styles/01-foundations.css:344` | base |
 | `.stats-grid` | `styles/01-foundations.css:1606` | base |
 | `.stats-grid` | `styles/01-foundations.css:1786` | @media (max-width: 760px) |
-| `.stats-grid` | `styles/01-foundations.css:344` | base |
-| `.stats-grid.stats-grid-potential-only` | `styles/08-notifications-and-inputs.css:727` | base |
-| `.stats-grid.stats-grid-potential-only` | `styles/08-notifications-and-inputs.css:739` | @media (max-width: 1180px) |
-| `.stats-grid.stats-grid-potential-only` | `styles/08-notifications-and-inputs.css:749` | @media (max-width: 760px) |
+| `.stats-grid.stats-grid-potential-only` | `styles/08-notifications-and-inputs.css:815` | base |
+| `.stats-grid.stats-grid-potential-only` | `styles/08-notifications-and-inputs.css:827` | @media (max-width: 1180px) |
+| `.stats-grid.stats-grid-potential-only` | `styles/08-notifications-and-inputs.css:837` | @media (max-width: 760px) |
 | `.strong-cell` | `styles/01-foundations.css:432` | base |
-| `.table-sort-button` | `styles/04-projected-workspace.css:170` | @media print |
 | `.table-sort-button` | `styles/04-projected-workspace.css:57` | base |
+| `.table-sort-button` | `styles/04-projected-workspace.css:170` | @media print |
 | `.table-sort-button:hover` | `styles/04-projected-workspace.css:80` | base |
 | `.table-sort-button:hover .pivot-header-total-value` | `styles/05-project-pivot.css:984` | base |
 | `.table-sort-button.active` | `styles/04-projected-workspace.css:80` | base |
 | `.table-sort-button.active .pivot-header-total-value` | `styles/05-project-pivot.css:984` | base |
 | `.table-sort-button.active .table-sort-indicator` | `styles/04-projected-workspace.css:92` | base |
-| `.table-sort-indicator` | `styles/04-projected-workspace.css:166` | @media print |
 | `.table-sort-indicator` | `styles/04-projected-workspace.css:86` | base |
-| `.text-button` | `styles/01-foundations.css:1429` | base |
-| `.text-button` | `styles/01-foundations.css:1441` | base |
+| `.table-sort-indicator` | `styles/04-projected-workspace.css:166` | @media print |
 | `.text-button` | `styles/01-foundations.css:187` | base |
 | `.text-button` | `styles/01-foundations.css:204` | base |
+| `.text-button` | `styles/01-foundations.css:1429` | base |
+| `.text-button` | `styles/01-foundations.css:1441` | base |
 | `.theme-toggle` | `styles/01-foundations.css:119` | base |
 | `.theme-toggle` | `styles/01-foundations.css:1344` | base |
 | `.theme-toggle` | `styles/01-foundations.css:1353` | base |
@@ -2468,34 +2468,34 @@ Selector occurrences: **2495**.
 | `.toggle-label strong` | `styles/01-foundations.css:1516` | base |
 | `.top-button` | `styles/01-foundations.css:119` | base |
 | `.top-button` | `styles/01-foundations.css:128` | base |
+| `.topbar` | `styles/01-foundations.css:56` | base |
 | `.topbar` | `styles/01-foundations.css:1298` | base |
 | `.topbar` | `styles/01-foundations.css:1704` | @media (max-width: 900px) |
 | `.topbar` | `styles/01-foundations.css:1728` | @media (max-width: 760px) |
-| `.topbar` | `styles/01-foundations.css:56` | base |
-| `.topbar-actions` | `styles/01-foundations.css:1340` | base |
-| `.topbar-actions` | `styles/01-foundations.css:1752` | @media (max-width: 760px) |
 | `.topbar-actions` | `styles/01-foundations.css:65` | base |
 | `.topbar-actions` | `styles/01-foundations.css:999` | @media (max-width: 760px) |
+| `.topbar-actions` | `styles/01-foundations.css:1340` | base |
+| `.topbar-actions` | `styles/01-foundations.css:1752` | @media (max-width: 760px) |
 | `.topbar-actions .refresh-icon-button` | `ViewControls.css:27` | base |
 | `.topbar-actions .refresh-icon-button:hover:not(:disabled)` | `ViewControls.css:28` | base |
 | `.variance-negative` | `styles/01-foundations.css:537` | base |
 | `.variance-positive` | `styles/01-foundations.css:533` | base |
-| `.visual-column` | `styles/01-foundations.css:1028` | @media (max-width: 760px) |
 | `.visual-column` | `styles/01-foundations.css:437` | base |
+| `.visual-column` | `styles/01-foundations.css:1028` | @media (max-width: 760px) |
 | `*` | `styles/01-foundations.css:11` | base |
 | `#root` | `styles/01-foundations.css:15` | base |
 | `#root` | `styles/03-pm-projections.css:369` | @media print |
 | `a` | `styles/01-foundations.css:29` | base |
-| `body` | `styles/01-foundations.css:1293` | base |
 | `body` | `styles/01-foundations.css:15` | base |
 | `body` | `styles/01-foundations.css:22` | base |
+| `body` | `styles/01-foundations.css:1293` | base |
 | `body` | `styles/03-pm-projections.css:369` | @media print |
 | `button` | `styles/01-foundations.css:29` | base |
 | `button` | `styles/01-foundations.css:36` | base |
 | `button:disabled` | `styles/01-foundations.css:40` | base |
 | `h1` | `styles/01-foundations.css:1407` | base |
-| `h2` | `styles/01-foundations.css:1414` | base |
 | `h2` | `styles/01-foundations.css:161` | base |
+| `h2` | `styles/01-foundations.css:1414` | base |
 | `html` | `styles/01-foundations.css:15` | base |
 | `html` | `styles/03-pm-projections.css:369` | @media print |
 | `input` | `styles/01-foundations.css:29` | base |
