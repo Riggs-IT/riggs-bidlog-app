@@ -481,10 +481,43 @@ th.pivot-probability-column {
 
 /* Project / Bid identity */
 
+/* IDENTITY ROW RHYTHM
+   The left column owns the name and initials. A visible balance stack spans
+   both rows in the right column, so adding an amount cannot stretch the name
+   row or change the name-to-initials gap. Keep this in flow: absolute placement
+   would let a large amount overlap a wrapped team. Status colors stay in 15. */
 .pivot-project-info {
   display: grid;
   gap: 3px;
   min-width: 0;
+}
+
+.pivot-project-info:has(> .pivot-project-statuses :is(.needs-rebalance-flag, .schedule-review-flag)) {
+  grid-template-columns: minmax(0, 1fr) max-content;
+  column-gap: 6px;
+}
+
+.pivot-project-info > :is(.pivot-project-name-line, .project-team-badges, .project-team-empty) {
+  grid-column: 1;
+}
+
+/* Keep balance and schedule flags in their existing left-to-right order. */
+.pivot-project-statuses {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: start;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Deferred cold-start classification renders an empty stack; do not reserve
+   a blank column or an extra row while waiting for a verified result. */
+.pivot-project-statuses:not(:has(.needs-rebalance-flag, .schedule-review-flag)),
+.pivot-project-statuses > .balance-review-status-stack:empty {
+  display: none;
 }
 
 .pivot-project-name {
@@ -540,6 +573,8 @@ th.pivot-probability-column {
 }
 
 .pivot-project-context-line {
+  /* Context spans the identity and review columns, below the initials. */
+  grid-column: 1 / -1;
   min-width: 0;
   display: flex;
   align-items: center;

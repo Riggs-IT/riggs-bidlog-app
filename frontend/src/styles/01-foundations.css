@@ -292,6 +292,126 @@ h2 {
   opacity: 0.82;
 }
 
+/* Firefox desktop does not render a native month calendar. MonthInput.jsx
+   supplies a month-only popup there; Chromium retains the native control.
+   This is intentionally shared by primary/side filters and completed history. */
+.month-picker-fallback {
+  width: 100%;
+  min-width: 0;
+}
+
+.filter-field .month-picker-trigger {
+  width: 100%;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+}
+
+.projected-filter-panel .month-picker-trigger {
+  min-height: 36px;
+}
+
+.month-picker-trigger:hover {
+  border-color: var(--border-strong);
+}
+
+.month-picker-trigger:focus-visible,
+.month-picker-popup button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.month-picker-trigger svg {
+  flex: 0 0 auto;
+  opacity: 0.82;
+}
+
+/* Portal to body prevents a picker from being clipped by filter drawers. */
+.month-picker-popup {
+  position: fixed;
+  z-index: 150;
+  width: 254px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.3);
+}
+
+.month-picker-year-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 8px;
+}
+
+.month-picker-year-row strong {
+  font-size: 13px;
+}
+
+.month-picker-year-row button {
+  min-width: 31px;
+  height: 29px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 21px;
+  line-height: 1;
+}
+
+.month-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.month-picker-grid button {
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.month-picker-grid button:hover {
+  border-color: var(--accent);
+}
+
+.month-picker-grid button.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.month-picker-this-month {
+  width: 100%;
+  min-height: 29px;
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 11px;
+}
+
 .filter-actions {
   display: flex;
   align-items: flex-end;

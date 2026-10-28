@@ -1,5 +1,6 @@
 import {useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react';
 import ProjectBillingPivot from './ProjectBillingPivot.jsx';
+import MonthInput from './MonthInput.jsx';
 import {
   completedHistoryView,
   completedMonthLabel,
@@ -153,14 +154,14 @@ export default function CompletedMonthlyHistory({
           <div className="project-pivot-toolbar" data-sticky-table-controls>
             <label className="filter-field">
               <span>From Month</span>
-              <input type="month" value={fromMonth} onChange={event => {
-                setFromMonth(event.target.value); setFocusedMonth(null);
+              <MonthInput value={fromMonth} label="From Month" onChange={month => {
+                setFromMonth(month); setFocusedMonth(null);
               }} />
             </label>
             <label className="filter-field">
               <span>Through Month</span>
-              <input type="month" value={throughMonth} onChange={event => {
-                setThroughMonth(event.target.value); setFocusedMonth(null);
+              <MonthInput value={throughMonth} label="Through Month" onChange={month => {
+                setThroughMonth(month); setFocusedMonth(null);
               }} />
             </label>
             <span className="section-note">Foundation actuals · read-only · Refresh from the page header</span>

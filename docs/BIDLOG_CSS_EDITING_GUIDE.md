@@ -1,6 +1,6 @@
 # Bid Log CSS editing guide
 
-**Current editing map: C4 / CSS workstream closeout — October 27, 2026.**
+**Current editing map: C4 plus Balance Spacing Finish — October 28, 2026.**
 **Starting release:** accepted C3. The installer binds its actual clean host SHA only after verifying the complete C3 source tree and its C2 parent.
 C4 finishes notification, staffing and view-only notice ownership; it preserves the accepted OLED/light appearance and C1–C3 layout contracts.
 
@@ -242,6 +242,27 @@ They preserve tracked application source, not SQL data, secrets or cloud configu
 Before a future edit, find the owner here or in `BIDLOG_CSS_SELECTOR_INDEX.md`,
 inspect the winning rule, and change that rule. Do not add overrides to the entry
 points. Revalidate your actual change rather than reusing a historical QA marker.
+
+## Balance spacing finish — October 28, 2026
+
+This is a small appearance correction after C4, not another consolidation pass.
+
+- `05-project-pivot.css` owns the identity grid. The name and initials occupy the
+  left column. `.pivot-project-statuses` spans both rows on the right, preserving
+  the balance-before-schedule order. An extra amount line must not stretch the
+  title row. Team badges may still wrap naturally; do not force a fixed row height.
+- The status group in `ProjectBillingPivot.jsx` is a presentation wrapper only.
+  Existing visibility conditions, financial values and callbacks are unchanged.
+  Empty/deferred groups do not reserve a phantom column or row.
+- `15-balance-presentation.css` owns the flag/amount colors and alignment. Its pivot
+  selector now targets `.pivot-project-statuses`, not the old title flex row.
+- `.pm-forecast-jump-target > .balance-review-detail` has **12px above**, matching
+  `.projection-detail-grid` tile spacing, and the existing **16px below**. Only
+  an actual card receives the top margin; no-card projects are unaffected.
+
+Check normal, over, short, Pending Foundation and deferred rows together. Check
+long names, three/four initials, simultaneous schedule flags, horizontal scroll,
+light/OLED, and narrow widths. Preserve badge dimensions and exact drawer cents.
 
 ## How to add or adjust a rule
 

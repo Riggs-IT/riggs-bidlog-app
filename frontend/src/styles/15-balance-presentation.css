@@ -8,9 +8,11 @@
    Colors: theme-tokens.css. Editing map: docs/BIDLOG_CSS_EDITING_GUIDE.md.
    ========================================================================== */
 
-/* Balance pill + amount share one right-aligned slot in all project tables. */
+/* Balance pill + amount share one right-aligned slot in all project tables.
+   In the pivot this is inside .pivot-project-statuses (layout in 05),
+   beside the name and initials. Other tables retain their inline status slot. */
 
-:is(.project-name-status-line, .pivot-project-name-line, .active-project-name-line)
+:is(.project-name-status-line, .pivot-project-statuses, .active-project-name-line)
 > .balance-review-status-stack {
   display: inline-flex;
   flex: 0 0 auto;
@@ -40,14 +42,14 @@
 /* Keep the entire status amount in the exact warning color used by the pill.
    A single text node avoids inherited table <strong> color overrides. */
 
-:is(.project-name-status-line, .pivot-project-name-line, .active-project-name-line)
+:is(.project-name-status-line, .pivot-project-statuses, .active-project-name-line)
 .balance-review-status-stack > .needs-rebalance-flag {
   display: inline-flex;
   margin: 0;
   flex: 0 0 auto;
 }
 
-:is(.project-name-status-line, .pivot-project-name-line, .active-project-name-line)
+:is(.project-name-status-line, .pivot-project-statuses, .active-project-name-line)
 .balance-review-status-stack > .needs-rebalance-flag.pending-foundation-flag {
   color: var(--pending-foundation);
   border-color: color-mix(in srgb, var(--pending-foundation) 36%, var(--border));
@@ -56,7 +58,10 @@
 
 /* The card is the action: no nested button, no duplicate gap figure. */
 
+/* Match the 12px gap between the preceding forecast tiles. Apply it only
+   when the balance card exists; no-card projects keep their existing spacing. */
 .pm-forecast-jump-target > .balance-review-detail {
+  margin-top: 12px;
   margin-bottom: 16px;
 }
 

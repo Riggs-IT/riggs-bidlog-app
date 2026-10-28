@@ -7,6 +7,7 @@ import {facetRows, hasMonthlyValues, isCompleted} from './viewFilters.js';
 import {resolveSignedInPmOption} from './pmScope.js';
 import {resolveVisiblePortfolioReviews, VISIBLE_REVIEW_SOURCE} from './acceptedReviewPair.js';
 import ForecastBalanceFlag from './ForecastBalanceFlag.jsx';
+import MonthInput from './MonthInput.jsx';
 import {BalanceReviewAmount} from './BalanceReviewSummary.jsx';
 import {balanceReviewFacetValues, isBalanceReviewFilter, matchesBalanceReviewFacet,
   toggleExclusiveBalanceReview} from './balanceReviewQuickFilter.js';
@@ -5884,16 +5885,7 @@ export default function App() {
                 From Month
               </span>
 
-              <input
-                type="month"
-                value={fromMonth}
-                onChange={
-                  event =>
-                    setFromMonth(
-                      event.target.value
-                    )
-                }
-              />
+              <MonthInput value={fromMonth} onChange={setFromMonth} label="From Month" />
             </label>
 
             <label className="filter-field">
@@ -5901,16 +5893,7 @@ export default function App() {
                 Through Month
               </span>
 
-              <input
-                type="month"
-                value={throughMonth}
-                onChange={
-                  event =>
-                    setThroughMonth(
-                      event.target.value
-                    )
-                }
-              />
+              <MonthInput value={throughMonth} onChange={setThroughMonth} label="Through Month" />
             </label>
 
             <div className="filter-actions">
@@ -6379,16 +6362,7 @@ export default function App() {
                         From Month
                       </span>
 
-                      <input
-                        type="month"
-                        value={fromMonth}
-                        onChange={
-                          event =>
-                            setFromMonth(
-                              event.target.value
-                            )
-                        }
-                      />
+                      <MonthInput value={fromMonth} onChange={setFromMonth} label="From Month" />
                     </label>
 
                     <label className="filter-field">
@@ -6396,16 +6370,7 @@ export default function App() {
                         Through Month
                       </span>
 
-                      <input
-                        type="month"
-                        value={throughMonth}
-                        onChange={
-                          event =>
-                            setThroughMonth(
-                              event.target.value
-                            )
-                        }
-                      />
+                      <MonthInput value={throughMonth} onChange={setThroughMonth} label="Through Month" />
                     </label>
 
                     <SelectField

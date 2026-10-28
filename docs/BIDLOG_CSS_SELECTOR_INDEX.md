@@ -1,87 +1,14 @@
 # Bid Log CSS selector index
 
-Generated for C4 / CSS closeout from the verified C3 tree. Paths are relative to `frontend/src/`. Line numbers are a navigation snapshot. Base, state, responsive and print selectors may intentionally repeat; consult the owning-file comments.
+Generated for C4 + Balance Spacing Finish from the refreshed `8619df5a` source. Paths are relative to `frontend/src/`. Line numbers are a navigation snapshot. Base, state, responsive and print selectors may intentionally repeat; consult the owning-file comments.
 
-Selector occurrences: **2495**.
+Selector occurrences: **2500**.
 
 | Selector | File and line | Context |
 |---|---|---|
-| `:is( .monthly-table tbody tr, .detail-table tbody tr, .monthly-comparison-row, .month-current-project-row, .completed-project-row, .bid-log-data-row, .active-project-data-row, .pivot-project-row ):hover` | `styles/12-table-teams-and-zebra.css:302` | base |
-| `:is( .monthly-table, .detail-table, .billing-monthly-table, .monthly-project-table, .completed-project-table, .completed-monthly-table, .project-pivot-table, .bid-log-table, .active-bid-monthly-table, .active-project-table ) tbody > tr:nth-child( even of :not(.monthly-project-detail-row):not(.bid-log-notes-row) )` | `styles/12-table-teams-and-zebra.css:260` | base |
-| `:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line) > :is(.needs-rebalance-flag, .schedule-review-flag)` | `styles/13-financial-review-and-metrics.css:134` | base |
-| `:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line) > .needs-rebalance-flag` | `styles/13-financial-review-and-metrics.css:142` | base |
-| `:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line) > .needs-rebalance-flag.pending-foundation-flag` | `styles/13-financial-review-and-metrics.css:55` | base |
-| `:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line) > .schedule-review-flag` | `styles/13-financial-review-and-metrics.css:156` | base |
-| `:is(.project-cell, .active-project-name-cell, .pivot-project-info) .balance-review-status-stack > .balance-review-amount-line` | `styles/15-balance-presentation.css:24` | base |
-| `:is(.project-name-status-line, .pivot-project-name-line, .active-project-name-line) .balance-review-status-stack > .needs-rebalance-flag` | `styles/15-balance-presentation.css:43` | base |
-| `:is(.project-name-status-line, .pivot-project-name-line, .active-project-name-line) .balance-review-status-stack > .needs-rebalance-flag.pending-foundation-flag` | `styles/15-balance-presentation.css:50` | base |
-| `:is(.project-name-status-line, .pivot-project-name-line, .active-project-name-line) > .balance-review-status-stack` | `styles/15-balance-presentation.css:13` | base |
-| `:root` | `styles/theme-tokens.css:17` | base |
-| `:root :is( .bid-log-workspace-count span, .bid-log-workspace-count small, .bid-log-summary-card small, .bid-log-notes-heading span, .bid-log-status-pill, .bid-edit-section-heading > small, .bid-edit-field > small, .bid-edit-toggle small, .bid-log-edit-footer small, .bid-gc-option-copy small, .bid-gc-picker-tip, .active-project-schedule-callout small, .active-project-reference-grid dt, .cognito-file-row small, .originating-bid-inline-success, .originating-bid-help-title span, .originating-bid-help-title small, .originating-bid-help-facts span, .originating-bid-help-address, .originating-bid-finder-head small, .originating-bid-results-summary small, .originating-bid-candidate-head small, .originating-bid-confidence, .originating-bid-match-reasons > span, .originating-bid-link-warning span, .originating-bid-confirmation p, .change-orders-popover-head span, .change-orders-popover-head small, .change-orders-summary-grid span, .change-orders-context, .change-orders-message, .change-orders-empty, .project-team-role, .side-filter-source-toggles small, .pm-history-admin-badge, .notification-panel-header span, .active-bid-settings-toggle small )` | `styles/theme-surfaces.css:19` | base |
-| `:root[data-theme="dark"]` | `styles/theme-tokens.css:88` | base |
-| `:root[data-theme="dark"] :is( .auth-company-copy span, .auth-header-note, .auth-intro-copy )` | `styles/theme-surfaces.css:461` | base |
-| `:root[data-theme="dark"] :is( .bid-log-summary-card:hover, .bid-log-summary-card:focus-visible, .content-card:hover )` | `styles/theme-surfaces.css:180` | base |
-| `:root[data-theme="dark"] :is( .bid-log-workspace-count span, .bid-log-workspace-count small, .bid-log-summary-card small, .bid-log-notes-heading span, .bid-log-status-pill, .bid-edit-section-heading > small, .bid-edit-field > small, .bid-edit-toggle small, .bid-log-edit-footer small, .bid-gc-option-copy small, .bid-gc-picker-tip, .active-project-schedule-callout small, .active-project-reference-grid dt, .cognito-file-row small )` | `styles/theme-surfaces.css:329` | base |
-| `:root[data-theme="dark"] :is( .filter-field > span, .filter-group-title, .toggle-label small, .compact-sort-field > span, .project-pivot-toolbar-label, .billing-detail-label, .bid-edit-field > span, .active-bid-notes-field > span, .cognito-read-field > span, .section-note )` | `styles/theme-surfaces.css:213` | base |
-| `:root[data-theme="dark"] :is( .filter-panel, .content-card, .loading-panel, .stat-card, .page-alert, .accountability-card, .completed-project-card, .curve-assumption-card, .completed-benchmark-card, .pm-history-card, .notification-panel, .bid-log-summary-card, .bid-log-list-card, .active-bid-readiness-card, .action-toast )` | `styles/theme-surfaces.css:159` | base |
-| `:root[data-theme="dark"] :is( .mode-tabs button, .role-chip, .secondary-button, .source-chip, .bid-log-real-bids-toggle, .bid-log-lifecycle-tab, .bid-log-outcome-source-label, .action-toast-action )` | `styles/theme-surfaces.css:404` | base |
-| `:root[data-theme="dark"] :is( .monthly-table tbody tr:hover, .detail-table tbody tr:hover, .monthly-comparison-row:hover, .month-current-project-row:hover, .completed-project-row:hover, .bid-log-table tbody tr:hover, .active-project-data-row:hover )` | `styles/theme-surfaces.css:299` | base |
-| `:root[data-theme="dark"] :is( .monthly-table th, .detail-table th, .billing-monthly-table th, .monthly-project-table th, .completed-project-table th, .completed-monthly-table th, .project-pivot-table th, .floating-table-header-table th, .bid-log-table thead th, .active-bid-monthly-table th, .active-project-table thead th )` | `styles/theme-surfaces.css:282` | base |
-| `:root[data-theme="dark"] :is( .monthly-table th, .monthly-table td, .detail-table th, .detail-table td, .billing-monthly-table th, .billing-monthly-table td, .monthly-project-table th, .monthly-project-table td, .completed-project-table th, .completed-project-table td, .completed-monthly-table th, .completed-monthly-table td, .project-pivot-table th, .project-pivot-table td, .floating-table-header-table th, .bid-log-table th, .bid-log-table td, .active-bid-monthly-table th, .active-bid-monthly-table td, .active-project-table th, .active-project-table td )` | `styles/theme-surfaces.css:256` | base |
-| `:root[data-theme="dark"] :is( .originating-bid-inline-success, .originating-bid-help-title span, .originating-bid-help-title small, .originating-bid-help-facts span, .originating-bid-help-address, .originating-bid-finder-head small, .originating-bid-results-summary small, .originating-bid-candidate-head small, .originating-bid-confidence, .originating-bid-match-reasons > span, .originating-bid-link-warning span, .originating-bid-confirmation p, .change-orders-popover-head span, .change-orders-popover-head small, .change-orders-summary-grid span, .change-orders-context, .change-orders-message, .change-orders-empty, .project-team-role, .side-filter-source-toggles small, .pm-history-admin-badge, .notification-panel-header span, .active-bid-settings-toggle small )` | `styles/theme-surfaces.css:367` | base |
-| `:root[data-theme="dark"] :is( .pivot-billing-cell small, .pivot-billing-line small )` | `styles/theme-surfaces.css:395` | base |
-| `:root[data-theme="dark"] :is( h1, h2, h3, .section-heading strong, .project-cell strong, .bid-log-name-cell strong, .active-project-name-cell strong, .floating-editor-title-row h2, .pivot-header-total-label, .bid-log-summary-card strong )` | `styles/theme-surfaces.css:79` | base |
-| `:root[data-theme="dark"] :is(.auth-company-copy strong, .auth-intro h1)` | `styles/theme-surfaces.css:457` | base |
-| `:root[data-theme="dark"] :is(.eyebrow, .section-kicker)` | `styles/theme-surfaces.css:230` | base |
-| `:root[data-theme="dark"] :is(.signout-button, .notification-button)` | `styles/theme-surfaces.css:133` | base |
-| `:root[data-theme="dark"] :is(.signout-button, .notification-button):hover` | `styles/theme-surfaces.css:139` | base |
-| `:root[data-theme="dark"] :is(.theme-toggle, .top-button)` | `styles/theme-surfaces.css:111` | base |
-| `:root[data-theme="dark"] :is(.theme-toggle, .top-button):hover:not(:disabled)` | `styles/theme-surfaces.css:117` | base |
-| `:root[data-theme="dark"] :is(button, a, input, select, textarea):focus-visible` | `styles/theme-surfaces.css:506` | base |
-| `:root[data-theme="dark"] .app-nav button` | `styles/theme-surfaces.css:101` | base |
-| `:root[data-theme="dark"] .app-nav button.active` | `styles/theme-surfaces.css:106` | base |
-| `:root[data-theme="dark"] .auth-access-column` | `styles/theme-surfaces.css:493` | base |
-| `:root[data-theme="dark"] .auth-blueprint-grid` | `styles/theme-surfaces.css:479` | base |
-| `:root[data-theme="dark"] .auth-header` | `styles/theme-surfaces.css:447` | base |
-| `:root[data-theme="dark"] .auth-kicker` | `styles/theme-surfaces.css:483` | base |
-| `:root[data-theme="dark"] .auth-page` | `styles/theme-surfaces.css:442` | base |
-| `:root[data-theme="dark"] .auth-product-title` | `styles/theme-surfaces.css:469` | base |
-| `:root[data-theme="dark"] .auth-riggs-mark` | `styles/theme-surfaces.css:451` | base |
-| `:root[data-theme="dark"] .auth-state-label` | `styles/theme-surfaces.css:498` | base |
-| `:root[data-theme="dark"] .auth-trust-icon` | `styles/theme-surfaces.css:487` | base |
-| `:root[data-theme="dark"] .auth-trust-list` | `styles/theme-surfaces.css:473` | base |
-| `:root[data-theme="dark"] .bid-log-lifecycle-tab.active` | `styles/theme-surfaces.css:417` | base |
-| `:root[data-theme="dark"] .bid-log-notes-content` | `styles/theme-surfaces.css:348` | base |
-| `:root[data-theme="dark"] .bid-log-notes-panel` | `styles/theme-surfaces.css:359` | base |
-| `:root[data-theme="dark"] .bid-log-real-bids-toggle.active` | `styles/theme-surfaces.css:417` | base |
-| `:root[data-theme="dark"] .bid-log-status-pill` | `styles/theme-surfaces.css:352` | base |
-| `:root[data-theme="dark"] .bid-log-summary-card` | `styles/theme-surfaces.css:313` | base |
-| `:root[data-theme="dark"] .bid-log-summary-card.active` | `styles/theme-surfaces.css:317` | base |
-| `:root[data-theme="dark"] .bid-log-summary-icon` | `styles/theme-surfaces.css:323` | base |
-| `:root[data-theme="dark"] .brand-mark` | `styles/theme-surfaces.css:96` | base |
-| `:root[data-theme="dark"] .current-user span` | `styles/theme-surfaces.css:126` | base |
-| `:root[data-theme="dark"] .current-user strong` | `styles/theme-surfaces.css:122` | base |
-| `:root[data-theme="dark"] .mode-tabs button.active` | `styles/theme-surfaces.css:417` | base |
-| `:root[data-theme="dark"] .notification-button.has-attention` | `styles/theme-surfaces.css:144` | base |
-| `:root[data-theme="dark"] .notification-count` | `styles/theme-surfaces.css:151` | base |
-| `:root[data-theme="dark"] .projection-source-count-toggle:not(.active):not(:disabled):hover` | `styles/theme-surfaces.css:65` | base |
-| `:root[data-theme="dark"] *` | `styles/theme-surfaces.css:428` | base |
-| `:root[data-theme="dark"] *::-webkit-scrollbar-thumb` | `styles/theme-surfaces.css:432` | base |
-| `:root[data-theme="dark"] *::-webkit-scrollbar-track` | `styles/theme-surfaces.css:436` | base |
-| `:root[data-theme="dark"] body` | `styles/theme-surfaces.css:72` | base |
-| `:root[data-theme="dark"] input::placeholder` | `styles/theme-surfaces.css:199` | base |
-| `:root[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"])` | `styles/theme-surfaces.css:190` | base |
-| `:root[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus` | `styles/theme-surfaces.css:205` | base |
-| `:root[data-theme="dark"] select` | `styles/theme-surfaces.css:190` | base |
-| `:root[data-theme="dark"] select:focus` | `styles/theme-surfaces.css:205` | base |
-| `:root[data-theme="dark"] small` | `styles/theme-surfaces.css:235` | base |
-| `:root[data-theme="dark"] table` | `styles/theme-surfaces.css:241` | base |
-| `:root[data-theme="dark"] table td` | `styles/theme-surfaces.css:251` | base |
-| `:root[data-theme="dark"] table th` | `styles/theme-surfaces.css:245` | base |
-| `:root[data-theme="dark"] textarea` | `styles/theme-surfaces.css:190` | base |
-| `:root[data-theme="dark"] textarea::placeholder` | `styles/theme-surfaces.css:199` | base |
-| `:root[data-theme="dark"] textarea:focus` | `styles/theme-surfaces.css:205` | base |
-| `:root[data-theme="light"] .filter-field input[type="month"]` | `styles/01-foundations.css:286` | base |
+| `#root` | `styles/01-foundations.css:15` | base |
+| `#root` | `styles/03-pm-projections.css:369` | @media print |
+| `*` | `styles/01-foundations.css:11` | base |
 | `.accountability-card` | `styles/01-foundations.css:1130` | base |
 | `.accountability-controls` | `styles/01-foundations.css:1138` | base |
 | `.accountability-explainer` | `styles/01-foundations.css:1039` | base |
@@ -436,9 +363,9 @@ Selector occurrences: **2495**.
 | `.administration-top-grid>.administration-section` | `AdministrationDashboard.css:112` | base |
 | `.administration-top-grid>.administration-section` | `AdministrationDashboard.css:116` | @media (max-width:1200px) |
 | `.administration-usage-tab` | `AdministrationUsagePanel.css:3` | base |
+| `.administration-usage-tab.is-active` | `AdministrationUsagePanel.css:5` | base |
 | `.administration-usage-tab:focus-visible` | `AdministrationUsagePanel.css:6` | base |
 | `.administration-usage-tab:hover` | `AdministrationUsagePanel.css:4` | base |
-| `.administration-usage-tab.is-active` | `AdministrationUsagePanel.css:5` | base |
 | `.administration-usage-tabs` | `AdministrationUsagePanel.css:2` | base |
 | `.app-nav` | `styles/01-foundations.css:101` | base |
 | `.app-nav` | `styles/01-foundations.css:1742` | @media (max-width: 760px) |
@@ -512,26 +439,26 @@ Selector occurrences: **2495**.
 | `.auth-trust-list` | `styles/01-foundations.css:681` | base |
 | `.auth-trust-list` | `styles/01-foundations.css:953` | @media (max-width: 620px) |
 | `.auth-trust-list > div` | `styles/01-foundations.css:690` | base |
-| `.balance-review-detail` | `styles/15-balance-presentation.css:63` | base |
-| `.balance-review-detail-amount` | `styles/15-balance-presentation.css:115` | base |
-| `.balance-review-detail-amount > strong` | `styles/15-balance-presentation.css:120` | base |
-| `.balance-review-detail-heading` | `styles/15-balance-presentation.css:99` | base |
-| `.balance-review-detail-heading` | `styles/15-balance-presentation.css:166` | @media (max-width: 630px) |
-| `.balance-review-detail-heading .section-kicker` | `styles/15-balance-presentation.css:111` | base |
-| `.balance-review-detail-note` | `styles/15-balance-presentation.css:131` | base |
-| `.balance-review-detail-note` | `styles/15-balance-presentation.css:160` | base |
-| `.balance-review-detail-title` | `styles/15-balance-presentation.css:106` | base |
-| `.balance-review-detail-values` | `styles/15-balance-presentation.css:138` | base |
-| `.balance-review-detail-values` | `styles/15-balance-presentation.css:170` | @media (max-width: 630px) |
-| `.balance-review-detail-values > span` | `styles/15-balance-presentation.css:145` | base |
-| `.balance-review-detail-values > span > span` | `styles/15-balance-presentation.css:131` | base |
-| `.balance-review-detail-values strong` | `styles/15-balance-presentation.css:152` | base |
-| `.balance-review-detail.is-actionable` | `styles/15-balance-presentation.css:80` | base |
-| `.balance-review-detail.is-actionable:focus-visible` | `styles/15-balance-presentation.css:94` | base |
-| `.balance-review-detail.is-actionable:hover` | `styles/15-balance-presentation.css:84` | base |
-| `.balance-review-detail.is-pending` | `styles/15-balance-presentation.css:75` | base |
-| `.balance-review-detail.is-pending .balance-review-detail-amount > strong` | `styles/15-balance-presentation.css:127` | base |
-| `.balance-review-detail.is-pending.is-actionable:hover` | `styles/15-balance-presentation.css:89` | base |
+| `.balance-review-detail` | `styles/15-balance-presentation.css:68` | base |
+| `.balance-review-detail-amount` | `styles/15-balance-presentation.css:120` | base |
+| `.balance-review-detail-amount > strong` | `styles/15-balance-presentation.css:125` | base |
+| `.balance-review-detail-heading` | `styles/15-balance-presentation.css:104` | base |
+| `.balance-review-detail-heading` | `styles/15-balance-presentation.css:171` | @media (max-width: 630px) |
+| `.balance-review-detail-heading .section-kicker` | `styles/15-balance-presentation.css:116` | base |
+| `.balance-review-detail-note` | `styles/15-balance-presentation.css:136` | base |
+| `.balance-review-detail-note` | `styles/15-balance-presentation.css:165` | base |
+| `.balance-review-detail-title` | `styles/15-balance-presentation.css:111` | base |
+| `.balance-review-detail-values` | `styles/15-balance-presentation.css:143` | base |
+| `.balance-review-detail-values` | `styles/15-balance-presentation.css:175` | @media (max-width: 630px) |
+| `.balance-review-detail-values > span` | `styles/15-balance-presentation.css:150` | base |
+| `.balance-review-detail-values > span > span` | `styles/15-balance-presentation.css:136` | base |
+| `.balance-review-detail-values strong` | `styles/15-balance-presentation.css:157` | base |
+| `.balance-review-detail.is-actionable` | `styles/15-balance-presentation.css:85` | base |
+| `.balance-review-detail.is-actionable:focus-visible` | `styles/15-balance-presentation.css:99` | base |
+| `.balance-review-detail.is-actionable:hover` | `styles/15-balance-presentation.css:89` | base |
+| `.balance-review-detail.is-pending` | `styles/15-balance-presentation.css:80` | base |
+| `.balance-review-detail.is-pending .balance-review-detail-amount > strong` | `styles/15-balance-presentation.css:132` | base |
+| `.balance-review-detail.is-pending.is-actionable:hover` | `styles/15-balance-presentation.css:94` | base |
 | `.baseline-reference` | `ProjectionDisplay.css:3` | base |
 | `.bid-confirm-actions` | `BidLogLifecyclePolish.css:165` | base |
 | `.bid-confirm-actions` | `BidLogLifecyclePolish.css:328` | @media (max-width: 620px) |
@@ -624,11 +551,11 @@ Selector occurrences: **2495**.
 | `.bid-gc-option-copy strong` | `styles/09-bid-log.css:1076` | base |
 | `.bid-gc-option-copy strong` | `styles/09-bid-log.css:1081` | base |
 | `.bid-gc-option-list` | `styles/09-bid-log.css:1025` | base |
-| `.bid-gc-option:hover` | `styles/09-bid-log.css:1049` | base |
-| `.bid-gc-option:last-child` | `styles/09-bid-log.css:1045` | base |
 | `.bid-gc-option.keyboard-active` | `ReviewControls.css:2` | base |
 | `.bid-gc-option.selected` | `styles/09-bid-log.css:1049` | base |
 | `.bid-gc-option.selected .bid-gc-option-check` | `styles/09-bid-log.css:1067` | base |
+| `.bid-gc-option:hover` | `styles/09-bid-log.css:1049` | base |
+| `.bid-gc-option:last-child` | `styles/09-bid-log.css:1045` | base |
 | `.bid-gc-picker` | `styles/09-bid-log.css:872` | base |
 | `.bid-gc-picker-control` | `styles/09-bid-log.css:877` | base |
 | `.bid-gc-picker-menu` | `styles/09-bid-log.css:999` | base |
@@ -640,9 +567,9 @@ Selector occurrences: **2495**.
 | `.bid-gc-picker.open .bid-gc-picker-control` | `styles/09-bid-log.css:886` | base |
 | `.bid-gc-search-icon` | `styles/09-bid-log.css:954` | base |
 | `.bid-gc-search-row` | `styles/09-bid-log.css:947` | base |
-| `.bid-gc-search-row input[type='search']` | `styles/09-bid-log.css:961` | base |
-| `.bid-gc-search-row input[type='search']::-webkit-search-cancel-button` | `styles/09-bid-log.css:976` | base |
-| `.bid-gc-search-row input[type='search']:focus` | `styles/09-bid-log.css:971` | base |
+| `.bid-gc-search-row input[type="search"]` | `styles/09-bid-log.css:961` | base |
+| `.bid-gc-search-row input[type="search"]::-webkit-search-cancel-button` | `styles/09-bid-log.css:976` | base |
+| `.bid-gc-search-row input[type="search"]:focus` | `styles/09-bid-log.css:971` | base |
 | `.bid-gc-selected-chip` | `styles/09-bid-log.css:903` | base |
 | `.bid-gc-selected-chip > span` | `styles/09-bid-log.css:923` | base |
 | `.bid-gc-selected-chip button` | `styles/09-bid-log.css:929` | base |
@@ -678,9 +605,9 @@ Selector occurrences: **2495**.
 | `.bid-log-edit-drawer` | `styles/09-bid-log.css:789` | @media (max-width: 760px) |
 | `.bid-log-edit-drawer .bid-edit-section-heading > .bid-log-merge-from-editor` | `BidLogMergeDialog.css:25` | base |
 | `.bid-log-edit-drawer [aria-invalid="true"]` | `BidLogLifecyclePolish.css:369` | base |
-| `.bid-log-edit-drawer input[type='number']` | `styles/09-bid-log.css:845` | base |
-| `.bid-log-edit-drawer input[type='number']::-webkit-inner-spin-button` | `styles/09-bid-log.css:839` | base |
-| `.bid-log-edit-drawer input[type='number']::-webkit-outer-spin-button` | `styles/09-bid-log.css:839` | base |
+| `.bid-log-edit-drawer input[type="number"]` | `styles/09-bid-log.css:845` | base |
+| `.bid-log-edit-drawer input[type="number"]::-webkit-inner-spin-button` | `styles/09-bid-log.css:839` | base |
+| `.bid-log-edit-drawer input[type="number"]::-webkit-outer-spin-button` | `styles/09-bid-log.css:839` | base |
 | `.bid-log-edit-footer` | `styles/09-bid-log.css:758` | base |
 | `.bid-log-edit-footer` | `styles/09-bid-log.css:799` | @media (max-width: 760px) |
 | `.bid-log-edit-footer small` | `styles/09-bid-log.css:770` | base |
@@ -705,10 +632,10 @@ Selector occurrences: **2495**.
 | `.bid-log-lifecycle-dot` | `styles/11-lifecycle-feedback.css:134` | base |
 | `.bid-log-lifecycle-tab` | `styles/11-lifecycle-feedback.css:97` | base |
 | `.bid-log-lifecycle-tab` | `styles/11-lifecycle-feedback.css:116` | base |
-| `.bid-log-lifecycle-tab:focus-visible` | `styles/11-lifecycle-feedback.css:120` | base |
-| `.bid-log-lifecycle-tab:hover` | `styles/11-lifecycle-feedback.css:120` | base |
 | `.bid-log-lifecycle-tab.active` | `styles/11-lifecycle-feedback.css:127` | base |
 | `.bid-log-lifecycle-tab.active .bid-log-lifecycle-dot` | `styles/11-lifecycle-feedback.css:142` | base |
+| `.bid-log-lifecycle-tab:focus-visible` | `styles/11-lifecycle-feedback.css:120` | base |
+| `.bid-log-lifecycle-tab:hover` | `styles/11-lifecycle-feedback.css:120` | base |
 | `.bid-log-lifecycle-tabs` | `styles/11-lifecycle-feedback.css:83` | base |
 | `.bid-log-lifecycle-tabs` | `styles/11-lifecycle-feedback.css:163` | @media (max-width: 760px) |
 | `.bid-log-list-card` | `styles/09-bid-log.css:235` | base |
@@ -737,9 +664,9 @@ Selector occurrences: **2495**.
 | `.bid-log-new-bid-plus::before` | `BidLogLifecyclePolish.css:32` | base |
 | `.bid-log-notes-button` | `styles/09-bid-log.css:349` | base |
 | `.bid-log-notes-button svg` | `styles/09-bid-log.css:363` | base |
+| `.bid-log-notes-button.active` | `styles/09-bid-log.css:368` | base |
 | `.bid-log-notes-button:focus-visible` | `styles/09-bid-log.css:368` | base |
 | `.bid-log-notes-button:hover` | `styles/09-bid-log.css:368` | base |
-| `.bid-log-notes-button.active` | `styles/09-bid-log.css:368` | base |
 | `.bid-log-notes-close` | `styles/09-bid-log.css:415` | base |
 | `.bid-log-notes-close:focus-visible` | `styles/09-bid-log.css:426` | base |
 | `.bid-log-notes-close:hover` | `styles/09-bid-log.css:426` | base |
@@ -759,17 +686,17 @@ Selector occurrences: **2495**.
 | `.bid-log-percent-input` | `styles/09-bid-log.css:153` | base |
 | `.bid-log-percent-input > span` | `styles/09-bid-log.css:161` | base |
 | `.bid-log-percent-input input` | `styles/09-bid-log.css:157` | base |
-| `.bid-log-probability-field input[type='number']` | `styles/09-bid-log.css:171` | base |
-| `.bid-log-probability-field input[type='number']::-webkit-inner-spin-button` | `styles/09-bid-log.css:176` | base |
-| `.bid-log-probability-field input[type='number']::-webkit-outer-spin-button` | `styles/09-bid-log.css:176` | base |
+| `.bid-log-probability-field input[type="number"]` | `styles/09-bid-log.css:171` | base |
+| `.bid-log-probability-field input[type="number"]::-webkit-inner-spin-button` | `styles/09-bid-log.css:176` | base |
+| `.bid-log-probability-field input[type="number"]::-webkit-outer-spin-button` | `styles/09-bid-log.css:176` | base |
 | `.bid-log-probability-field small` | `BidLogLifecyclePolish.css:42` | base |
 | `.bid-log-read-only-note` | `styles/09-bid-log.css:248` | base |
 | `.bid-log-real-bids-dot` | `styles/09-bid-log.css:221` | base |
 | `.bid-log-real-bids-toggle` | `styles/09-bid-log.css:190` | base |
-| `.bid-log-real-bids-toggle:focus-visible` | `styles/09-bid-log.css:208` | base |
-| `.bid-log-real-bids-toggle:hover` | `styles/09-bid-log.css:208` | base |
 | `.bid-log-real-bids-toggle.active` | `styles/09-bid-log.css:214` | base |
 | `.bid-log-real-bids-toggle.active .bid-log-real-bids-dot` | `styles/09-bid-log.css:229` | base |
+| `.bid-log-real-bids-toggle:focus-visible` | `styles/09-bid-log.css:208` | base |
+| `.bid-log-real-bids-toggle:hover` | `styles/09-bid-log.css:208` | base |
 | `.bid-log-render-sentinel` | `styles/11-lifecycle-feedback.css:168` | base |
 | `.bid-log-save-button` | `styles/09-bid-log.css:850` | base |
 | `.bid-log-save-button:disabled` | `styles/09-bid-log.css:865` | base |
@@ -782,9 +709,9 @@ Selector occurrences: **2495**.
 | `.bid-log-summary-card small` | `styles/09-bid-log.css:105` | base |
 | `.bid-log-summary-card small` | `styles/09-bid-log.css:139` | base |
 | `.bid-log-summary-card strong` | `styles/09-bid-log.css:133` | base |
+| `.bid-log-summary-card.active` | `styles/09-bid-log.css:99` | base |
 | `.bid-log-summary-card:focus-visible` | `styles/09-bid-log.css:93` | base |
 | `.bid-log-summary-card:hover` | `styles/09-bid-log.css:93` | base |
-| `.bid-log-summary-card.active` | `styles/09-bid-log.css:99` | base |
 | `.bid-log-summary-grid` | `styles/09-bid-log.css:68` | base |
 | `.bid-log-summary-grid` | `styles/09-bid-log.css:465` | @media (max-width: 1280px) |
 | `.bid-log-summary-grid` | `styles/09-bid-log.css:492` | @media (max-width: 760px) |
@@ -1108,8 +1035,8 @@ Selector occurrences: **2495**.
 | `.comparison-view-toggle` | `styles/05-project-pivot.css:24` | base |
 | `.comparison-view-toggle` | `styles/05-project-pivot.css:238` | @media print |
 | `.comparison-view-toggle button` | `styles/05-project-pivot.css:33` | base |
-| `.comparison-view-toggle button:hover` | `styles/05-project-pivot.css:46` | base |
 | `.comparison-view-toggle button.active` | `styles/05-project-pivot.css:50` | base |
+| `.comparison-view-toggle button:hover` | `styles/05-project-pivot.css:46` | base |
 | `.completed-benchmark-card` | `styles/02-billing-drawers.css:922` | base |
 | `.completed-benchmark-card p` | `styles/02-billing-drawers.css:949` | base |
 | `.completed-benchmark-card small` | `styles/02-billing-drawers.css:956` | base |
@@ -1423,9 +1350,9 @@ Selector occurrences: **2495**.
 | `.filter-panel` | `styles/01-foundations.css:1536` | base |
 | `.filter-toggle-buttons` | `ViewControls.css:19` | base |
 | `.filter-toggle-buttons button` | `ViewControls.css:20` | base |
+| `.filter-toggle-buttons button.active` | `ViewControls.css:22` | base |
 | `.filter-toggle-buttons button:focus-visible` | `ViewControls.css:6` | base |
 | `.filter-toggle-buttons button:hover` | `ViewControls.css:21` | base |
-| `.filter-toggle-buttons button.active` | `ViewControls.css:22` | base |
 | `.filter-toggle-group` | `ViewControls.css:17` | base |
 | `.filter-toggle-label` | `ViewControls.css:18` | base |
 | `.floating-editor-back` | `styles/10-active-projects.css:279` | base |
@@ -1466,12 +1393,12 @@ Selector occurrences: **2495**.
 | `.floating-filter-tab` | `styles/07-detail-layout-and-filters.css:194` | @media (max-width: 640px) |
 | `.floating-filter-tab span` | `styles/07-detail-layout-and-filters.css:34` | base |
 | `.floating-filter-tab:hover` | `styles/07-detail-layout-and-filters.css:40` | base |
-| `.floating-table-controls` | `styles/05-project-pivot.css:751` | @media print |
-| `.floating-table-controls .project-pivot-metric-toggle` | `styles/05-project-pivot.css:730` | base |
-| `.floating-table-controls .project-pivot-month-scroll` | `styles/05-project-pivot.css:836` | base |
-| `.floating-table-controls .project-pivot-sticky-coverage` | `styles/05-project-pivot.css:862` | base |
-| `.floating-table-controls .project-pivot-sticky-coverage .projection-source-count-toggle` | `styles/05-project-pivot.css:872` | base |
-| `.floating-table-controls.project-pivot-toolbar` | `styles/05-project-pivot.css:707` | base |
+| `.floating-table-controls` | `styles/05-project-pivot.css:786` | @media print |
+| `.floating-table-controls .project-pivot-metric-toggle` | `styles/05-project-pivot.css:765` | base |
+| `.floating-table-controls .project-pivot-month-scroll` | `styles/05-project-pivot.css:871` | base |
+| `.floating-table-controls .project-pivot-sticky-coverage` | `styles/05-project-pivot.css:897` | base |
+| `.floating-table-controls .project-pivot-sticky-coverage .projection-source-count-toggle` | `styles/05-project-pivot.css:907` | base |
+| `.floating-table-controls.project-pivot-toolbar` | `styles/05-project-pivot.css:742` | base |
 | `.floating-table-header` | `styles/05-project-pivot.css:175` | base |
 | `.floating-table-header` | `styles/05-project-pivot.css:238` | @media print |
 | `.floating-table-header-table` | `styles/05-project-pivot.css:202` | base |
@@ -1482,7 +1409,7 @@ Selector occurrences: **2495**.
 | `.floating-table-header-table th.pivot-source-column` | `styles/05-project-pivot.css:211` | base |
 | `.floating-table-header-viewport` | `styles/05-project-pivot.css:189` | base |
 | `.floating-table-header-viewport::-webkit-scrollbar` | `styles/05-project-pivot.css:197` | base |
-| `.floating-table-header.controls-visible .floating-table-controls.project-pivot-toolbar` | `styles/05-project-pivot.css:720` | base |
+| `.floating-table-header.controls-visible .floating-table-controls.project-pivot-toolbar` | `styles/05-project-pivot.css:755` | base |
 | `.floating-table-header.visible` | `styles/05-project-pivot.css:185` | base |
 | `.gc-cell` | `styles/01-foundations.css:500` | base |
 | `.gc-chip` | `styles/08-notifications-and-inputs.css:488` | base |
@@ -1534,8 +1461,8 @@ Selector occurrences: **2495**.
 | `.month-current-project-row:hover` | `styles/02-billing-drawers.css:343` | base |
 | `.monthly-comparison-body[hidden]` | `styles/02-billing-drawers.css:383` | base |
 | `.monthly-comparison-row` | `styles/02-billing-drawers.css:277` | base |
-| `.monthly-comparison-row:hover` | `styles/02-billing-drawers.css:282` | base |
 | `.monthly-comparison-row.selected` | `styles/12-table-teams-and-zebra.css:294` | base |
+| `.monthly-comparison-row:hover` | `styles/02-billing-drawers.css:282` | base |
 | `.monthly-heading-actions` | `styles/02-billing-drawers.css:356` | base |
 | `.monthly-heading-actions` | `styles/02-billing-drawers.css:388` | @media (max-width: 700px) |
 | `.monthly-heading-actions` | `styles/05-project-pivot.css:221` | @media (max-width: 900px) |
@@ -1577,10 +1504,10 @@ Selector occurrences: **2495**.
 | `.more-filters` | `styles/01-foundations.css:1576` | base |
 | `.muted-value` | `styles/01-foundations.css:1230` | base |
 | `.needs-rebalance-action` | `styles/13-financial-review-and-metrics.css:28` | base |
-| `.needs-rebalance-action:focus-visible` | `styles/13-financial-review-and-metrics.css:33` | base |
-| `.needs-rebalance-action:hover` | `styles/13-financial-review-and-metrics.css:33` | base |
 | `.needs-rebalance-action.pending-foundation-flag:focus-visible` | `styles/13-financial-review-and-metrics.css:63` | base |
 | `.needs-rebalance-action.pending-foundation-flag:hover` | `styles/13-financial-review-and-metrics.css:63` | base |
+| `.needs-rebalance-action:focus-visible` | `styles/13-financial-review-and-metrics.css:33` | base |
+| `.needs-rebalance-action:hover` | `styles/13-financial-review-and-metrics.css:33` | base |
 | `.needs-rebalance-flag` | `styles/13-financial-review-and-metrics.css:13` | base |
 | `.needs-rebalance-flag.balance-review-quick-selected` | `styles/13-financial-review-and-metrics.css:48` | base |
 | `.needs-rebalance-flag.pending-foundation-flag` | `styles/13-financial-review-and-metrics.css:55` | base |
@@ -1590,8 +1517,8 @@ Selector occurrences: **2495**.
 | `.notification-action-card:last-child` | `styles/08-notifications-and-inputs.css:276` | base |
 | `.notification-button` | `styles/08-notifications-and-inputs.css:64` | base |
 | `.notification-button svg` | `styles/08-notifications-and-inputs.css:88` | base |
-| `.notification-button:hover` | `styles/08-notifications-and-inputs.css:78` | base |
 | `.notification-button.has-attention` | `styles/08-notifications-and-inputs.css:84` | base |
+| `.notification-button:hover` | `styles/08-notifications-and-inputs.css:78` | base |
 | `.notification-button[aria-expanded="true"]` | `styles/08-notifications-and-inputs.css:78` | base |
 | `.notification-card-action` | `styles/08-notifications-and-inputs.css:327` | base |
 | `.notification-card-context` | `styles/08-notifications-and-inputs.css:309` | base |
@@ -1728,65 +1655,70 @@ Selector occurrences: **2495**.
 | `.page-shell` | `styles/01-foundations.css:1388` | base |
 | `.page-shell` | `styles/01-foundations.css:1712` | @media (max-width: 900px) |
 | `.page-shell` | `styles/01-foundations.css:1764` | @media (max-width: 760px) |
-| `.pivot-billing-amount-line` | `styles/05-project-pivot.css:1069` | base |
-| `.pivot-billing-amount-line` | `styles/05-project-pivot.css:1093` | base |
-| `.pivot-billing-amount-line strong` | `styles/05-project-pivot.css:1097` | base |
-| `.pivot-billing-amount-line.variance-negative strong` | `styles/05-project-pivot.css:1105` | base |
-| `.pivot-billing-amounts` | `styles/05-project-pivot.css:1045` | base |
-| `.pivot-billing-cell` | `styles/05-project-pivot.css:631` | base |
+| `.pivot-billing-amount-line` | `styles/05-project-pivot.css:1104` | base |
+| `.pivot-billing-amount-line` | `styles/05-project-pivot.css:1128` | base |
+| `.pivot-billing-amount-line strong` | `styles/05-project-pivot.css:1132` | base |
+| `.pivot-billing-amount-line.variance-negative strong` | `styles/05-project-pivot.css:1140` | base |
+| `.pivot-billing-amounts` | `styles/05-project-pivot.css:1080` | base |
+| `.pivot-billing-cell` | `styles/05-project-pivot.css:666` | base |
 | `.pivot-billing-cell .variance-negative strong` | `styles/05-project-pivot.css:164` | base |
 | `.pivot-billing-cell .variance-positive strong` | `styles/05-project-pivot.css:159` | base |
 | `.pivot-billing-cell > span` | `styles/05-project-pivot.css:137` | base |
 | `.pivot-billing-cell small` | `styles/05-project-pivot.css:144` | base |
 | `.pivot-billing-cell strong` | `styles/05-project-pivot.css:152` | base |
-| `.pivot-billing-line` | `styles/05-project-pivot.css:636` | base |
-| `.pivot-billing-line small` | `styles/05-project-pivot.css:643` | base |
-| `.pivot-billing-line strong` | `styles/05-project-pivot.css:651` | base |
-| `.pivot-billing-line.variance-negative strong` | `styles/05-project-pivot.css:666` | base |
+| `.pivot-billing-line` | `styles/05-project-pivot.css:671` | base |
+| `.pivot-billing-line small` | `styles/05-project-pivot.css:678` | base |
+| `.pivot-billing-line strong` | `styles/05-project-pivot.css:686` | base |
+| `.pivot-billing-line.variance-negative strong` | `styles/05-project-pivot.css:701` | base |
 | `.pivot-empty-value` | `styles/05-project-pivot.css:169` | base |
-| `.pivot-header-activity-counts` | `styles/05-project-pivot.css:925` | base |
-| `.pivot-header-activity-counts .pivot-header-billed-count` | `styles/05-project-pivot.css:934` | base |
-| `.pivot-header-activity-separator` | `styles/05-project-pivot.css:961` | base |
-| `.pivot-header-billed-count` | `styles/05-project-pivot.css:974` | base |
-| `.pivot-header-total` | `styles/05-project-pivot.css:883` | base |
-| `.pivot-header-total-label` | `styles/05-project-pivot.css:890` | base |
-| `.pivot-header-total-value` | `styles/05-project-pivot.css:898` | base |
-| `.pivot-header-total-value-actual` | `styles/05-project-pivot.css:966` | base |
-| `.pivot-header-total-value-variance.variance-negative` | `styles/05-project-pivot.css:970` | base |
-| `.pivot-header-total-values` | `styles/05-project-pivot.css:908` | base |
-| `.pivot-header-total-values-all` | `styles/05-project-pivot.css:918` | base |
-| `.pivot-metric-label` | `styles/05-project-pivot.css:1069` | base |
-| `.pivot-metric-label` | `styles/05-project-pivot.css:1077` | base |
-| `.pivot-metric-label abbr` | `styles/05-project-pivot.css:1085` | base |
-| `.pivot-metric-label-list` | `styles/05-project-pivot.css:1045` | base |
+| `.pivot-header-activity-counts` | `styles/05-project-pivot.css:960` | base |
+| `.pivot-header-activity-counts .pivot-header-billed-count` | `styles/05-project-pivot.css:969` | base |
+| `.pivot-header-activity-separator` | `styles/05-project-pivot.css:996` | base |
+| `.pivot-header-billed-count` | `styles/05-project-pivot.css:1009` | base |
+| `.pivot-header-total` | `styles/05-project-pivot.css:918` | base |
+| `.pivot-header-total-label` | `styles/05-project-pivot.css:925` | base |
+| `.pivot-header-total-value` | `styles/05-project-pivot.css:933` | base |
+| `.pivot-header-total-value-actual` | `styles/05-project-pivot.css:1001` | base |
+| `.pivot-header-total-value-variance.variance-negative` | `styles/05-project-pivot.css:1005` | base |
+| `.pivot-header-total-values` | `styles/05-project-pivot.css:943` | base |
+| `.pivot-header-total-values-all` | `styles/05-project-pivot.css:953` | base |
+| `.pivot-metric-label` | `styles/05-project-pivot.css:1104` | base |
+| `.pivot-metric-label` | `styles/05-project-pivot.css:1112` | base |
+| `.pivot-metric-label abbr` | `styles/05-project-pivot.css:1120` | base |
+| `.pivot-metric-label-list` | `styles/05-project-pivot.css:1080` | base |
 | `.pivot-needs-rebalance` | `styles/13-financial-review-and-metrics.css:38` | base |
-| `.pivot-pm-color-dot` | `styles/05-project-pivot.css:513` | base |
-| `.pivot-pm-initials` | `styles/05-project-pivot.css:523` | base |
+| `.pivot-pm-color-dot` | `styles/05-project-pivot.css:546` | base |
+| `.pivot-pm-initials` | `styles/05-project-pivot.css:556` | base |
 | `.pivot-pm-meta` | `styles/05-project-pivot.css:415` | base |
-| `.pivot-project-context-group` | `styles/05-project-pivot.css:554` | base |
-| `.pivot-project-context-item` | `styles/05-project-pivot.css:560` | base |
-| `.pivot-project-context-line` | `styles/05-project-pivot.css:542` | base |
-| `.pivot-project-context-separator` | `styles/05-project-pivot.css:567` | base |
-| `.pivot-project-gc` | `styles/05-project-pivot.css:572` | base |
-| `.pivot-project-info` | `styles/05-project-pivot.css:484` | base |
+| `.pivot-project-context-group` | `styles/05-project-pivot.css:589` | base |
+| `.pivot-project-context-item` | `styles/05-project-pivot.css:595` | base |
+| `.pivot-project-context-line` | `styles/05-project-pivot.css:575` | base |
+| `.pivot-project-context-separator` | `styles/05-project-pivot.css:602` | base |
+| `.pivot-project-gc` | `styles/05-project-pivot.css:607` | base |
+| `.pivot-project-info` | `styles/05-project-pivot.css:489` | base |
+| `.pivot-project-info > :is(.pivot-project-name-line, .project-team-badges, .project-team-empty)` | `styles/05-project-pivot.css:500` | base |
+| `.pivot-project-info:has(> .pivot-project-statuses :is(.needs-rebalance-flag, .schedule-review-flag))` | `styles/05-project-pivot.css:495` | base |
 | `.pivot-project-meta` | `styles/05-project-pivot.css:404` | base |
 | `.pivot-project-meta-separator` | `styles/05-project-pivot.css:422` | base |
-| `.pivot-project-name` | `styles/05-project-pivot.css:490` | base |
-| `.pivot-project-name-line` | `styles/05-project-pivot.css:586` | base |
+| `.pivot-project-name` | `styles/05-project-pivot.css:523` | base |
+| `.pivot-project-name-line` | `styles/05-project-pivot.css:621` | base |
 | `.pivot-project-name-line:has(.needs-rebalance-flag)` | `styles/13-financial-review-and-metrics.css:125` | base |
 | `.pivot-project-name-line:has(.schedule-review-flag)` | `styles/13-financial-review-and-metrics.css:125` | base |
-| `.pivot-project-pm-line` | `styles/05-project-pivot.css:503` | base |
-| `.pivot-project-role-label` | `styles/05-project-pivot.css:534` | base |
+| `.pivot-project-pm-line` | `styles/05-project-pivot.css:536` | base |
+| `.pivot-project-role-label` | `styles/05-project-pivot.css:567` | base |
 | `.pivot-project-row:hover td.pivot-job-column` | `styles/05-project-pivot.css:128` | base |
 | `.pivot-project-row:hover td.pivot-project-column` | `styles/05-project-pivot.css:128` | base |
 | `.pivot-project-row:hover td.pivot-source-column` | `styles/05-project-pivot.css:128` | base |
-| `.pivot-project-value-line` | `styles/05-project-pivot.css:607` | base |
-| `.pivot-project-value-line small` | `styles/05-project-pivot.css:615` | base |
-| `.pivot-project-value-line strong` | `styles/05-project-pivot.css:623` | base |
-| `.pivot-project-values` | `styles/05-project-pivot.css:602` | base |
-| `.pivot-single-value` | `styles/05-project-pivot.css:658` | base |
-| `.pivot-single-value.variance-negative` | `styles/05-project-pivot.css:666` | base |
-| `.pivot-variance-mode-indicator` | `styles/05-project-pivot.css:1222` | base |
+| `.pivot-project-statuses` | `styles/05-project-pivot.css:505` | base |
+| `.pivot-project-statuses > .balance-review-status-stack:empty` | `styles/05-project-pivot.css:518` | base |
+| `.pivot-project-statuses:not(:has(.needs-rebalance-flag, .schedule-review-flag))` | `styles/05-project-pivot.css:518` | base |
+| `.pivot-project-value-line` | `styles/05-project-pivot.css:642` | base |
+| `.pivot-project-value-line small` | `styles/05-project-pivot.css:650` | base |
+| `.pivot-project-value-line strong` | `styles/05-project-pivot.css:658` | base |
+| `.pivot-project-values` | `styles/05-project-pivot.css:637` | base |
+| `.pivot-single-value` | `styles/05-project-pivot.css:693` | base |
+| `.pivot-single-value.variance-negative` | `styles/05-project-pivot.css:701` | base |
+| `.pivot-variance-mode-indicator` | `styles/05-project-pivot.css:1257` | base |
 | `.place-1 .administration-podium-step` | `AdministrationUsagePanel.css:21` | base |
 | `.place-1 .administration-podium-step` | `AdministrationUsagePanel.css:38` | @media (max-width:650px) |
 | `.place-2 .administration-podium-step` | `AdministrationUsagePanel.css:22` | base |
@@ -1812,7 +1744,7 @@ Selector occurrences: **2495**.
 | `.pm-forecast-heading-actions` | `styles/08-notifications-and-inputs.css:13` | base |
 | `.pm-forecast-heading-actions` | `styles/08-notifications-and-inputs.css:341` | @media (max-width: 700px) |
 | `.pm-forecast-jump-target` | `styles/13-financial-review-and-metrics.css:77` | base |
-| `.pm-forecast-jump-target > .balance-review-detail` | `styles/15-balance-presentation.css:59` | base |
+| `.pm-forecast-jump-target > .balance-review-detail` | `styles/15-balance-presentation.css:63` | base |
 | `.pm-forecast-jump-target.pm-forecast-highlight > .pm-forecast-section` | `styles/13-financial-review-and-metrics.css:81` | base |
 | `.pm-forecast-message` | `styles/03-pm-projections.css:64` | base |
 | `.pm-forecast-message.error` | `styles/03-pm-projections.css:75` | base |
@@ -1890,12 +1822,12 @@ Selector occurrences: **2495**.
 | `.pm-policy-switch strong` | `styles/03-pm-projections.css:552` | base |
 | `.pm-policy-switch-thumb` | `styles/03-pm-projections.css:567` | base |
 | `.pm-policy-switch-track` | `styles/03-pm-projections.css:558` | base |
-| `.pm-policy-switch:disabled` | `styles/03-pm-projections.css:594` | base |
-| `.pm-policy-switch:focus-visible` | `styles/03-pm-projections.css:547` | base |
-| `.pm-policy-switch:hover:not(:disabled)` | `styles/03-pm-projections.css:543` | base |
 | `.pm-policy-switch.is-on` | `styles/03-pm-projections.css:578` | base |
 | `.pm-policy-switch.is-on .pm-policy-switch-thumb` | `styles/03-pm-projections.css:588` | base |
 | `.pm-policy-switch.is-on .pm-policy-switch-track` | `styles/03-pm-projections.css:583` | base |
+| `.pm-policy-switch:disabled` | `styles/03-pm-projections.css:594` | base |
+| `.pm-policy-switch:focus-visible` | `styles/03-pm-projections.css:547` | base |
+| `.pm-policy-switch:hover:not(:disabled)` | `styles/03-pm-projections.css:543` | base |
 | `.pm-policy-updated` | `styles/03-pm-projections.css:522` | base |
 | `.pm-save-button` | `styles/03-pm-projections.css:255` | base |
 | `.pm-save-button:hover:not(:disabled)` | `styles/03-pm-projections.css:266` | base |
@@ -1915,9 +1847,9 @@ Selector occurrences: **2495**.
 | `.probability-input-control input` | `styles/08-notifications-and-inputs.css:446` | base |
 | `.probability-input-control input::-webkit-inner-spin-button` | `styles/08-notifications-and-inputs.css:460` | base |
 | `.probability-input-control input::-webkit-outer-spin-button` | `styles/08-notifications-and-inputs.css:460` | base |
-| `.probability-input:focus-within .probability-input-control` | `styles/08-notifications-and-inputs.css:472` | base |
 | `.probability-input.compact` | `styles/08-notifications-and-inputs.css:819` | base |
 | `.probability-input.compact` | `styles/08-notifications-and-inputs.css:831` | @media (max-width: 1180px) |
+| `.probability-input:focus-within .probability-input-control` | `styles/08-notifications-and-inputs.css:472` | base |
 | `.progress-fill` | `styles/01-foundations.css:338` | base |
 | `.progress-track` | `styles/01-foundations.css:330` | base |
 | `.project-cell` | `styles/01-foundations.css:484` | base |
@@ -1928,10 +1860,10 @@ Selector occurrences: **2495**.
 | `.project-directory-completed-dot` | `styles/10-active-projects.css:783` | base |
 | `.project-directory-completed-toggle` | `styles/10-active-projects.css:752` | base |
 | `.project-directory-completed-toggle` | `styles/10-active-projects.css:836` | @media (max-width: 760px) |
-| `.project-directory-completed-toggle:focus-visible` | `styles/10-active-projects.css:770` | base |
-| `.project-directory-completed-toggle:hover` | `styles/10-active-projects.css:770` | base |
 | `.project-directory-completed-toggle.active` | `styles/10-active-projects.css:776` | base |
 | `.project-directory-completed-toggle.active .project-directory-completed-dot` | `styles/10-active-projects.css:791` | base |
+| `.project-directory-completed-toggle:focus-visible` | `styles/10-active-projects.css:770` | base |
+| `.project-directory-completed-toggle:hover` | `styles/10-active-projects.css:770` | base |
 | `.project-location-line` | `styles/04-projected-workspace.css:39` | base |
 | `.project-location-line` | `styles/04-projected-workspace.css:160` | @media (max-width: 900px) |
 | `.project-month-cell` | `styles/04-projected-workspace.css:46` | base |
@@ -1940,17 +1872,17 @@ Selector occurrences: **2495**.
 | `.project-name-status-line:has(.schedule-review-flag)` | `styles/13-financial-review-and-metrics.css:125` | base |
 | `.project-pivot-metric-toggle` | `styles/05-project-pivot.css:450` | base |
 | `.project-pivot-metric-toggle button` | `styles/05-project-pivot.css:459` | base |
-| `.project-pivot-metric-toggle button:hover` | `styles/05-project-pivot.css:472` | base |
 | `.project-pivot-metric-toggle button.active` | `styles/05-project-pivot.css:476` | base |
-| `.project-pivot-month-scroll` | `styles/05-project-pivot.css:759` | base |
-| `.project-pivot-month-scroll` | `styles/05-project-pivot.css:848` | @media print |
-| `.project-pivot-month-scroll-button` | `styles/05-project-pivot.css:779` | base |
-| `.project-pivot-month-scroll-button:hover` | `styles/05-project-pivot.css:796` | base |
-| `.project-pivot-month-scroll-label` | `styles/05-project-pivot.css:770` | base |
-| `.project-pivot-month-scroll-range` | `styles/05-project-pivot.css:802` | base |
-| `.project-pivot-month-scroll-range` | `styles/05-project-pivot.css:842` | @media (max-width: 760px) |
+| `.project-pivot-metric-toggle button:hover` | `styles/05-project-pivot.css:472` | base |
+| `.project-pivot-month-scroll` | `styles/05-project-pivot.css:794` | base |
+| `.project-pivot-month-scroll` | `styles/05-project-pivot.css:883` | @media print |
+| `.project-pivot-month-scroll-button` | `styles/05-project-pivot.css:814` | base |
+| `.project-pivot-month-scroll-button:hover` | `styles/05-project-pivot.css:831` | base |
+| `.project-pivot-month-scroll-label` | `styles/05-project-pivot.css:805` | base |
+| `.project-pivot-month-scroll-range` | `styles/05-project-pivot.css:837` | base |
+| `.project-pivot-month-scroll-range` | `styles/05-project-pivot.css:877` | @media (max-width: 760px) |
 | `.project-pivot-shell` | `styles/05-project-pivot.css:428` | base |
-| `.project-pivot-sticky-coverage` | `styles/05-project-pivot.css:858` | base |
+| `.project-pivot-sticky-coverage` | `styles/05-project-pivot.css:893` | base |
 | `.project-pivot-table` | `styles/05-project-pivot.css:56` | base |
 | `.project-pivot-table .pivot-gc-column` | `styles/05-project-pivot.css:253` | base |
 | `.project-pivot-table .pivot-job-column` | `styles/05-project-pivot.css:73` | base |
@@ -1959,7 +1891,7 @@ Selector occurrences: **2495**.
 | `.project-pivot-table .pivot-project-column` | `styles/05-project-pivot.css:80` | base |
 | `.project-pivot-table .pivot-project-column` | `styles/05-project-pivot.css:229` | @media (max-width: 760px) |
 | `.project-pivot-table .pivot-project-row:hover > :is( td.pivot-source-column, td.pivot-job-column, td.pivot-project-column, td.pivot-probability-column )` | `styles/12-table-teams-and-zebra.css:315` | base |
-| `.project-pivot-table .pivot-project-values-column` | `styles/05-project-pivot.css:596` | base |
+| `.project-pivot-table .pivot-project-values-column` | `styles/05-project-pivot.css:631` | base |
 | `.project-pivot-table .pivot-source-column` | `styles/05-project-pivot.css:66` | base |
 | `.project-pivot-table .pivot-team-column` | `styles/05-project-pivot.css:246` | base |
 | `.project-pivot-table .pivot-total-column` | `styles/05-project-pivot.css:392` | base |
@@ -1977,43 +1909,38 @@ Selector occurrences: **2495**.
 | `.project-pivot-table th.pivot-project-column` | `styles/05-project-pivot.css:289` | base |
 | `.project-pivot-table th.pivot-source-column` | `styles/05-project-pivot.css:87` | base |
 | `.project-pivot-table th.pivot-source-column` | `styles/05-project-pivot.css:118` | base |
-| `.project-pivot-table:not(.pivot-metric-all) .pivot-month-column` | `styles/05-project-pivot.css:675` | base |
-| `.project-pivot-table:not(.pivot-metric-all) .pivot-month-column` | `styles/05-project-pivot.css:740` | @media (max-width: 760px) |
-| `.project-pivot-table:not(.pivot-metric-all) .pivot-total-column` | `styles/05-project-pivot.css:675` | base |
-| `.project-pivot-table:not(.pivot-metric-all) .pivot-total-column` | `styles/05-project-pivot.css:740` | @media (max-width: 760px) |
-| `.project-pivot-table:not(.pivot-metric-all) tbody td` | `styles/05-project-pivot.css:699` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-activity-counts` | `styles/05-project-pivot.css:942` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-activity-counts .pivot-header-billed-count` | `styles/05-project-pivot.css:950` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-activity-counts` | `styles/05-project-pivot.css:1199` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-metric-baseline` | `styles/05-project-pivot.css:1211` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-metric-count` | `styles/05-project-pivot.css:1205` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-metric-label` | `styles/05-project-pivot.css:1188` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-total-label` | `styles/05-project-pivot.css:1176` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-total-values-all` | `styles/05-project-pivot.css:1183` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-total-label` | `styles/05-project-pivot.css:1146` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-total-values-all` | `styles/05-project-pivot.css:1151` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-header-total-values-all .pivot-header-total-value` | `styles/05-project-pivot.css:1156` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-metric-labels-column` | `styles/05-project-pivot.css:997` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-month-column` | `styles/05-project-pivot.css:1112` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-month-column .table-sort-button` | `styles/05-project-pivot.css:1217` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-project-row:hover > td.pivot-metric-labels-column` | `styles/05-project-pivot.css:1127` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-total-column` | `styles/05-project-pivot.css:1112` | base |
-| `.project-pivot-table.pivot-metric-all .pivot-total-column .table-sort-button` | `styles/05-project-pivot.css:1217` | base |
-| `.project-pivot-table.pivot-metric-all tbody > tr:nth-child(even of .pivot-project-row) > td.pivot-metric-labels-column` | `styles/05-project-pivot.css:1121` | base |
-| `.project-pivot-table.pivot-metric-all tbody td` | `styles/05-project-pivot.css:693` | base |
-| `.project-pivot-table.pivot-metric-all tbody td.pivot-metric-labels-column` | `styles/05-project-pivot.css:1136` | base |
-| `.project-pivot-table.pivot-metric-all tbody td.pivot-month-column` | `styles/05-project-pivot.css:1136` | base |
-| `.project-pivot-table.pivot-metric-all tbody td.pivot-total-column` | `styles/05-project-pivot.css:1136` | base |
-| `.project-pivot-table.pivot-metric-all th.pivot-metric-labels-column` | `styles/05-project-pivot.css:1017` | base |
-| `.project-pivot-table.pivot-metric-all th.pivot-metric-labels-column .pivot-header-metric-rail` | `styles/05-project-pivot.css:1166` | base |
-| `.project-pivot-table.pivot-metric-all.pivot-history-only .pivot-billing-amounts` | `styles/05-project-pivot.css:1064` | base |
-| `.project-pivot-table.pivot-metric-all.pivot-history-only .pivot-metric-label-list` | `styles/05-project-pivot.css:1064` | base |
-| `.project-pivot-table.pivot-metric-all.pivot-metric-labels-pinned .pivot-metric-labels-column` | `styles/05-project-pivot.css:1033` | base |
-| `.project-pivot-table.pivot-metric-all.pivot-no-margin .pivot-billing-amounts` | `styles/05-project-pivot.css:1056` | base |
-| `.project-pivot-table.pivot-metric-all.pivot-no-margin .pivot-metric-label-list` | `styles/05-project-pivot.css:1056` | base |
-| `.project-pivot-table.pivot-metric-all.pivot-source-combined .pivot-metric-labels-column` | `styles/05-project-pivot.css:1011` | base |
-| `.project-pivot-table.pivot-metric-variance .pivot-month-column` | `styles/05-project-pivot.css:684` | base |
-| `.project-pivot-table.pivot-metric-variance .pivot-total-column` | `styles/05-project-pivot.css:684` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-header-activity-counts` | `styles/05-project-pivot.css:977` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-header-activity-counts .pivot-header-billed-count` | `styles/05-project-pivot.css:985` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-activity-counts` | `styles/05-project-pivot.css:1234` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-metric-baseline` | `styles/05-project-pivot.css:1246` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-metric-count` | `styles/05-project-pivot.css:1240` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-metric-label` | `styles/05-project-pivot.css:1223` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-total-label` | `styles/05-project-pivot.css:1211` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-header-metric-rail .pivot-header-total-values-all` | `styles/05-project-pivot.css:1218` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-header-total-label` | `styles/05-project-pivot.css:1181` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-header-total-values-all` | `styles/05-project-pivot.css:1186` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-header-total-values-all .pivot-header-total-value` | `styles/05-project-pivot.css:1191` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-metric-labels-column` | `styles/05-project-pivot.css:1032` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-month-column` | `styles/05-project-pivot.css:1147` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-month-column .table-sort-button` | `styles/05-project-pivot.css:1252` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-project-row:hover > td.pivot-metric-labels-column` | `styles/05-project-pivot.css:1162` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-total-column` | `styles/05-project-pivot.css:1147` | base |
+| `.project-pivot-table.pivot-metric-all .pivot-total-column .table-sort-button` | `styles/05-project-pivot.css:1252` | base |
+| `.project-pivot-table.pivot-metric-all tbody > tr:nth-child(even of .pivot-project-row) > td.pivot-metric-labels-column` | `styles/05-project-pivot.css:1156` | base |
+| `.project-pivot-table.pivot-metric-all tbody td` | `styles/05-project-pivot.css:728` | base |
+| `.project-pivot-table.pivot-metric-all tbody td.pivot-metric-labels-column` | `styles/05-project-pivot.css:1171` | base |
+| `.project-pivot-table.pivot-metric-all tbody td.pivot-month-column` | `styles/05-project-pivot.css:1171` | base |
+| `.project-pivot-table.pivot-metric-all tbody td.pivot-total-column` | `styles/05-project-pivot.css:1171` | base |
+| `.project-pivot-table.pivot-metric-all th.pivot-metric-labels-column` | `styles/05-project-pivot.css:1052` | base |
+| `.project-pivot-table.pivot-metric-all th.pivot-metric-labels-column .pivot-header-metric-rail` | `styles/05-project-pivot.css:1201` | base |
+| `.project-pivot-table.pivot-metric-all.pivot-history-only .pivot-billing-amounts` | `styles/05-project-pivot.css:1099` | base |
+| `.project-pivot-table.pivot-metric-all.pivot-history-only .pivot-metric-label-list` | `styles/05-project-pivot.css:1099` | base |
+| `.project-pivot-table.pivot-metric-all.pivot-metric-labels-pinned .pivot-metric-labels-column` | `styles/05-project-pivot.css:1068` | base |
+| `.project-pivot-table.pivot-metric-all.pivot-no-margin .pivot-billing-amounts` | `styles/05-project-pivot.css:1091` | base |
+| `.project-pivot-table.pivot-metric-all.pivot-no-margin .pivot-metric-label-list` | `styles/05-project-pivot.css:1091` | base |
+| `.project-pivot-table.pivot-metric-all.pivot-source-combined .pivot-metric-labels-column` | `styles/05-project-pivot.css:1046` | base |
+| `.project-pivot-table.pivot-metric-variance .pivot-month-column` | `styles/05-project-pivot.css:719` | base |
+| `.project-pivot-table.pivot-metric-variance .pivot-total-column` | `styles/05-project-pivot.css:719` | base |
 | `.project-pivot-table.pivot-source-active td.pivot-job-column` | `styles/05-project-pivot.css:264` | base |
 | `.project-pivot-table.pivot-source-active td.pivot-project-column` | `styles/05-project-pivot.css:271` | base |
 | `.project-pivot-table.pivot-source-active th.pivot-job-column` | `styles/05-project-pivot.css:264` | base |
@@ -2038,15 +1965,20 @@ Selector occurrences: **2495**.
 | `.project-pivot-table.pivot-source-potential th.pivot-probability-column` | `styles/05-project-pivot.css:369` | @media (max-width: 760px) |
 | `.project-pivot-table.pivot-source-potential th.pivot-project-column` | `styles/05-project-pivot.css:278` | base |
 | `.project-pivot-table.pivot-source-potential th.pivot-project-column` | `styles/05-project-pivot.css:307` | base |
+| `.project-pivot-table:not(.pivot-metric-all) .pivot-month-column` | `styles/05-project-pivot.css:710` | base |
+| `.project-pivot-table:not(.pivot-metric-all) .pivot-month-column` | `styles/05-project-pivot.css:775` | @media (max-width: 760px) |
+| `.project-pivot-table:not(.pivot-metric-all) .pivot-total-column` | `styles/05-project-pivot.css:710` | base |
+| `.project-pivot-table:not(.pivot-metric-all) .pivot-total-column` | `styles/05-project-pivot.css:775` | @media (max-width: 760px) |
+| `.project-pivot-table:not(.pivot-metric-all) tbody td` | `styles/05-project-pivot.css:734` | base |
 | `.project-pivot-toolbar` | `styles/05-project-pivot.css:433` | base |
-| `.project-pivot-toolbar` | `styles/05-project-pivot.css:736` | @media (max-width: 760px) |
-| `.project-pivot-toolbar` | `styles/05-project-pivot.css:751` | @media print |
+| `.project-pivot-toolbar` | `styles/05-project-pivot.css:771` | @media (max-width: 760px) |
+| `.project-pivot-toolbar` | `styles/05-project-pivot.css:786` | @media print |
 | `.project-pivot-toolbar-label` | `styles/05-project-pivot.css:442` | base |
-| `.project-pivot-toolbar.horizontal-scroll-disabled .project-pivot-month-scroll` | `styles/05-project-pivot.css:810` | base |
-| `.project-pivot-toolbar.horizontal-scroll-disabled .project-pivot-month-scroll-button` | `styles/05-project-pivot.css:815` | base |
-| `.project-pivot-toolbar.horizontal-scroll-disabled .project-pivot-month-scroll-range` | `styles/05-project-pivot.css:815` | base |
-| `.project-pivot-wrap` | `styles/05-project-pivot.css:826` | base |
-| `.project-pivot-wrap::-webkit-scrollbar` | `styles/05-project-pivot.css:831` | base |
+| `.project-pivot-toolbar.horizontal-scroll-disabled .project-pivot-month-scroll` | `styles/05-project-pivot.css:845` | base |
+| `.project-pivot-toolbar.horizontal-scroll-disabled .project-pivot-month-scroll-button` | `styles/05-project-pivot.css:850` | base |
+| `.project-pivot-toolbar.horizontal-scroll-disabled .project-pivot-month-scroll-range` | `styles/05-project-pivot.css:850` | base |
+| `.project-pivot-wrap` | `styles/05-project-pivot.css:861` | base |
+| `.project-pivot-wrap::-webkit-scrollbar` | `styles/05-project-pivot.css:866` | base |
 | `.project-reference-refresh-note` | `ActiveProjectSaveReview.css:9` | base |
 | `.project-save-comparison` | `ActiveProjectSaveReview.css:4` | base |
 | `.project-save-comparison` | `ActiveProjectSaveReview.css:11` | @media (max-width: 640px) |
@@ -2074,8 +2006,8 @@ Selector occurrences: **2495**.
 | `.project-setup-help > summary::-webkit-details-marker` | `styles/06-project-references.css:134` | base |
 | `.project-setup-help > summary:hover` | `styles/06-project-references.css:105` | base |
 | `.project-setup-info-button` | `styles/06-project-references.css:85` | base |
-| `.project-setup-info-button:hover` | `styles/06-project-references.css:105` | base |
 | `.project-setup-info-button.disabled` | `styles/06-project-references.css:112` | base |
+| `.project-setup-info-button:hover` | `styles/06-project-references.css:105` | base |
 | `.project-setup-tag` | `styles/06-project-references.css:33` | base |
 | `.project-setup-tag-button` | `styles/06-project-references.css:33` | base |
 | `.project-setup-tag-button` | `styles/06-project-references.css:53` | base |
@@ -2181,19 +2113,19 @@ Selector occurrences: **2495**.
 | `.projection-details-section > .section-heading.compact` | `styles/02-billing-drawers.css:1487` | base |
 | `.projection-estimate-marker` | `ProjectionDisplay.css:8` | base |
 | `.projection-source-count-toggle` | `ProjectionDisplay.css:10` | base |
-| `.projection-source-count-toggle:hover` | `ProjectionDisplay.css:11` | base |
 | `.projection-source-count-toggle.active` | `ProjectionDisplay.css:12` | base |
-| `.projection-source-count-toggle.rebalance-count:not(.active)` | `styles/13-financial-review-and-metrics.css:42` | base |
 | `.projection-source-count-toggle.rebalance-count.active` | `styles/13-financial-review-and-metrics.css:71` | base |
+| `.projection-source-count-toggle.rebalance-count:not(.active)` | `styles/13-financial-review-and-metrics.css:42` | base |
+| `.projection-source-count-toggle:hover` | `ProjectionDisplay.css:11` | base |
 | `.projection-source-divider` | `ProjectionDisplay.css:18` | base |
 | `.projection-source-filter-group` | `ProjectionDisplay.css:9` | base |
 | `.refresh-icon-button` | `ViewControls.css:2` | base |
 | `.refresh-icon-button svg` | `ViewControls.css:3` | base |
+| `.refresh-icon-button.is-refreshing svg` | `ViewControls.css:7` | base |
+| `.refresh-icon-button.is-refreshing svg` | `ViewControls.css:9` | @media (prefers-reduced-motion:reduce) |
 | `.refresh-icon-button:disabled` | `ViewControls.css:5` | base |
 | `.refresh-icon-button:focus-visible` | `ViewControls.css:6` | base |
 | `.refresh-icon-button:hover:not(:disabled)` | `ViewControls.css:4` | base |
-| `.refresh-icon-button.is-refreshing svg` | `ViewControls.css:7` | base |
-| `.refresh-icon-button.is-refreshing svg` | `ViewControls.css:9` | @media (prefers-reduced-motion:reduce) |
 | `.refresh-toast-indicator` | `styles/11-lifecycle-feedback.css:188` | base |
 | `.refresh-toast-indicator.is-progress` | `styles/11-lifecycle-feedback.css:197` | base |
 | `.refresh-toast-indicator.is-progress` | `styles/11-lifecycle-feedback.css:202` | @media (prefers-reduced-motion: reduce) |
@@ -2242,9 +2174,9 @@ Selector occurrences: **2495**.
 | `.riggs-flow-inspection-dialog button` | `AdministrationPowerAutomate.css:90` | base |
 | `.riggs-flow-inspection-dialog button:focus-visible` | `AdministrationPowerAutomate.css:99` | base |
 | `.riggs-flow-inspection-dialog button:hover` | `AdministrationPowerAutomate.css:101` | base |
-| `.riggs-flow-inspection-dialog::backdrop` | `AdministrationPowerAutomate.css:79` | base |
 | `.riggs-flow-inspection-dialog.riggs-flow-runs` | `AdministrationPowerAutomate.css:60` | base |
 | `.riggs-flow-inspection-dialog.riggs-flow-runs` | `AdministrationPowerAutomate.css:104` | @media (max-width:640px) |
+| `.riggs-flow-inspection-dialog::backdrop` | `AdministrationPowerAutomate.css:79` | base |
 | `.riggs-flow-inspection-disclaimer` | `AdministrationPowerAutomate.css:53` | base |
 | `.riggs-flow-inspection-facts` | `AdministrationPowerAutomate.css:49` | base |
 | `.riggs-flow-inspection-facts small` | `AdministrationPowerAutomate.css:53` | base |
@@ -2314,8 +2246,8 @@ Selector occurrences: **2495**.
 | `.show-controls` | `ViewControls.css:10` | base |
 | `.show-controls > span` | `ViewControls.css:11` | base |
 | `.show-controls button` | `ViewControls.css:12` | base |
-| `.show-controls button:focus-visible` | `ViewControls.css:6` | base |
 | `.show-controls button.active` | `ViewControls.css:13` | base |
+| `.show-controls button:focus-visible` | `ViewControls.css:6` | base |
 | `.side-filter-backdrop` | `styles/07-detail-layout-and-filters.css:45` | base |
 | `.side-filter-body` | `styles/07-detail-layout-and-filters.css:104` | base |
 | `.side-filter-close` | `styles/07-detail-layout-and-filters.css:85` | base |
@@ -2370,8 +2302,8 @@ Selector occurrences: **2495**.
 | `.source-toggles button` | `styles/01-foundations.css:1484` | base |
 | `.source-toggles button` | `styles/01-foundations.css:1698` | @media (max-width: 1180px) |
 | `.source-toggles button` | `styles/01-foundations.css:1776` | @media (max-width: 760px) |
-| `.source-toggles button:hover` | `styles/01-foundations.css:1498` | base |
 | `.source-toggles button.active` | `styles/01-foundations.css:1503` | base |
+| `.source-toggles button:hover` | `styles/01-foundations.css:1498` | base |
 | `.staffing-add-button` | `styles/11a-active-project-staffing.css:330` | base |
 | `.staffing-assignment-meta` | `styles/11a-active-project-staffing.css:82` | base |
 | `.staffing-assignment-meta` | `styles/11a-active-project-staffing.css:161` | @media (max-width: 760px) |
@@ -2392,9 +2324,9 @@ Selector occurrences: **2495**.
 | `.staffing-date-range` | `styles/11a-active-project-staffing.css:112` | base |
 | `.staffing-empty-note` | `styles/11a-active-project-staffing.css:149` | base |
 | `.staffing-inline-action` | `styles/11a-active-project-staffing.css:308` | base |
+| `.staffing-inline-action.danger:hover:not(:disabled)` | `styles/11a-active-project-staffing.css:321` | base |
 | `.staffing-inline-action:disabled` | `styles/11a-active-project-staffing.css:325` | base |
 | `.staffing-inline-action:hover:not(:disabled)` | `styles/11a-active-project-staffing.css:317` | base |
-| `.staffing-inline-action.danger:hover:not(:disabled)` | `styles/11a-active-project-staffing.css:321` | base |
 | `.staffing-organizer-list` | `styles/11a-active-project-staffing.css:100` | base |
 | `.staffing-organizer-note` | `styles/11a-active-project-staffing.css:18` | base |
 | `.staffing-plan-empty-state` | `styles/11a-active-project-staffing.css:486` | base |
@@ -2448,11 +2380,11 @@ Selector occurrences: **2495**.
 | `.strong-cell` | `styles/01-foundations.css:432` | base |
 | `.table-sort-button` | `styles/04-projected-workspace.css:57` | base |
 | `.table-sort-button` | `styles/04-projected-workspace.css:170` | @media print |
-| `.table-sort-button:hover` | `styles/04-projected-workspace.css:80` | base |
-| `.table-sort-button:hover .pivot-header-total-value` | `styles/05-project-pivot.css:984` | base |
 | `.table-sort-button.active` | `styles/04-projected-workspace.css:80` | base |
-| `.table-sort-button.active .pivot-header-total-value` | `styles/05-project-pivot.css:984` | base |
+| `.table-sort-button.active .pivot-header-total-value` | `styles/05-project-pivot.css:1019` | base |
 | `.table-sort-button.active .table-sort-indicator` | `styles/04-projected-workspace.css:92` | base |
+| `.table-sort-button:hover` | `styles/04-projected-workspace.css:80` | base |
+| `.table-sort-button:hover .pivot-header-total-value` | `styles/05-project-pivot.css:1019` | base |
 | `.table-sort-indicator` | `styles/04-projected-workspace.css:86` | base |
 | `.table-sort-indicator` | `styles/04-projected-workspace.css:166` | @media print |
 | `.text-button` | `styles/01-foundations.css:187` | base |
@@ -2482,9 +2414,82 @@ Selector occurrences: **2495**.
 | `.variance-positive` | `styles/01-foundations.css:533` | base |
 | `.visual-column` | `styles/01-foundations.css:437` | base |
 | `.visual-column` | `styles/01-foundations.css:1028` | @media (max-width: 760px) |
-| `*` | `styles/01-foundations.css:11` | base |
-| `#root` | `styles/01-foundations.css:15` | base |
-| `#root` | `styles/03-pm-projections.css:369` | @media print |
+| `:is( .monthly-table tbody tr, .detail-table tbody tr, .monthly-comparison-row, .month-current-project-row, .completed-project-row, .bid-log-data-row, .active-project-data-row, .pivot-project-row ):hover` | `styles/12-table-teams-and-zebra.css:302` | base |
+| `:is( .monthly-table, .detail-table, .billing-monthly-table, .monthly-project-table, .completed-project-table, .completed-monthly-table, .project-pivot-table, .bid-log-table, .active-bid-monthly-table, .active-project-table ) tbody > tr:nth-child( even of :not(.monthly-project-detail-row):not(.bid-log-notes-row) )` | `styles/12-table-teams-and-zebra.css:260` | base |
+| `:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line) > .needs-rebalance-flag` | `styles/13-financial-review-and-metrics.css:142` | base |
+| `:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line) > .needs-rebalance-flag.pending-foundation-flag` | `styles/13-financial-review-and-metrics.css:55` | base |
+| `:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line) > .schedule-review-flag` | `styles/13-financial-review-and-metrics.css:156` | base |
+| `:is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line) > :is(.needs-rebalance-flag, .schedule-review-flag)` | `styles/13-financial-review-and-metrics.css:134` | base |
+| `:is(.project-cell, .active-project-name-cell, .pivot-project-info) .balance-review-status-stack > .balance-review-amount-line` | `styles/15-balance-presentation.css:26` | base |
+| `:is(.project-name-status-line, .pivot-project-statuses, .active-project-name-line) .balance-review-status-stack > .needs-rebalance-flag` | `styles/15-balance-presentation.css:45` | base |
+| `:is(.project-name-status-line, .pivot-project-statuses, .active-project-name-line) .balance-review-status-stack > .needs-rebalance-flag.pending-foundation-flag` | `styles/15-balance-presentation.css:52` | base |
+| `:is(.project-name-status-line, .pivot-project-statuses, .active-project-name-line) > .balance-review-status-stack` | `styles/15-balance-presentation.css:15` | base |
+| `:root` | `styles/theme-tokens.css:17` | base |
+| `:root :is( .bid-log-workspace-count span, .bid-log-workspace-count small, .bid-log-summary-card small, .bid-log-notes-heading span, .bid-log-status-pill, .bid-edit-section-heading > small, .bid-edit-field > small, .bid-edit-toggle small, .bid-log-edit-footer small, .bid-gc-option-copy small, .bid-gc-picker-tip, .active-project-schedule-callout small, .active-project-reference-grid dt, .cognito-file-row small, .originating-bid-inline-success, .originating-bid-help-title span, .originating-bid-help-title small, .originating-bid-help-facts span, .originating-bid-help-address, .originating-bid-finder-head small, .originating-bid-results-summary small, .originating-bid-candidate-head small, .originating-bid-confidence, .originating-bid-match-reasons > span, .originating-bid-link-warning span, .originating-bid-confirmation p, .change-orders-popover-head span, .change-orders-popover-head small, .change-orders-summary-grid span, .change-orders-context, .change-orders-message, .change-orders-empty, .project-team-role, .side-filter-source-toggles small, .pm-history-admin-badge, .notification-panel-header span, .active-bid-settings-toggle small )` | `styles/theme-surfaces.css:19` | base |
+| `:root[data-theme="dark"]` | `styles/theme-tokens.css:88` | base |
+| `:root[data-theme="dark"] *` | `styles/theme-surfaces.css:428` | base |
+| `:root[data-theme="dark"] *::-webkit-scrollbar-thumb` | `styles/theme-surfaces.css:432` | base |
+| `:root[data-theme="dark"] *::-webkit-scrollbar-track` | `styles/theme-surfaces.css:436` | base |
+| `:root[data-theme="dark"] .app-nav button` | `styles/theme-surfaces.css:101` | base |
+| `:root[data-theme="dark"] .app-nav button.active` | `styles/theme-surfaces.css:106` | base |
+| `:root[data-theme="dark"] .auth-access-column` | `styles/theme-surfaces.css:493` | base |
+| `:root[data-theme="dark"] .auth-blueprint-grid` | `styles/theme-surfaces.css:479` | base |
+| `:root[data-theme="dark"] .auth-header` | `styles/theme-surfaces.css:447` | base |
+| `:root[data-theme="dark"] .auth-kicker` | `styles/theme-surfaces.css:483` | base |
+| `:root[data-theme="dark"] .auth-page` | `styles/theme-surfaces.css:442` | base |
+| `:root[data-theme="dark"] .auth-product-title` | `styles/theme-surfaces.css:469` | base |
+| `:root[data-theme="dark"] .auth-riggs-mark` | `styles/theme-surfaces.css:451` | base |
+| `:root[data-theme="dark"] .auth-state-label` | `styles/theme-surfaces.css:498` | base |
+| `:root[data-theme="dark"] .auth-trust-icon` | `styles/theme-surfaces.css:487` | base |
+| `:root[data-theme="dark"] .auth-trust-list` | `styles/theme-surfaces.css:473` | base |
+| `:root[data-theme="dark"] .bid-log-lifecycle-tab.active` | `styles/theme-surfaces.css:417` | base |
+| `:root[data-theme="dark"] .bid-log-notes-content` | `styles/theme-surfaces.css:348` | base |
+| `:root[data-theme="dark"] .bid-log-notes-panel` | `styles/theme-surfaces.css:359` | base |
+| `:root[data-theme="dark"] .bid-log-real-bids-toggle.active` | `styles/theme-surfaces.css:417` | base |
+| `:root[data-theme="dark"] .bid-log-status-pill` | `styles/theme-surfaces.css:352` | base |
+| `:root[data-theme="dark"] .bid-log-summary-card` | `styles/theme-surfaces.css:313` | base |
+| `:root[data-theme="dark"] .bid-log-summary-card.active` | `styles/theme-surfaces.css:317` | base |
+| `:root[data-theme="dark"] .bid-log-summary-icon` | `styles/theme-surfaces.css:323` | base |
+| `:root[data-theme="dark"] .brand-mark` | `styles/theme-surfaces.css:96` | base |
+| `:root[data-theme="dark"] .current-user span` | `styles/theme-surfaces.css:126` | base |
+| `:root[data-theme="dark"] .current-user strong` | `styles/theme-surfaces.css:122` | base |
+| `:root[data-theme="dark"] .mode-tabs button.active` | `styles/theme-surfaces.css:417` | base |
+| `:root[data-theme="dark"] .notification-button.has-attention` | `styles/theme-surfaces.css:144` | base |
+| `:root[data-theme="dark"] .notification-count` | `styles/theme-surfaces.css:151` | base |
+| `:root[data-theme="dark"] .projection-source-count-toggle:not(.active):not(:disabled):hover` | `styles/theme-surfaces.css:65` | base |
+| `:root[data-theme="dark"] :is( .auth-company-copy span, .auth-header-note, .auth-intro-copy )` | `styles/theme-surfaces.css:461` | base |
+| `:root[data-theme="dark"] :is( .bid-log-summary-card:hover, .bid-log-summary-card:focus-visible, .content-card:hover )` | `styles/theme-surfaces.css:180` | base |
+| `:root[data-theme="dark"] :is( .bid-log-workspace-count span, .bid-log-workspace-count small, .bid-log-summary-card small, .bid-log-notes-heading span, .bid-log-status-pill, .bid-edit-section-heading > small, .bid-edit-field > small, .bid-edit-toggle small, .bid-log-edit-footer small, .bid-gc-option-copy small, .bid-gc-picker-tip, .active-project-schedule-callout small, .active-project-reference-grid dt, .cognito-file-row small )` | `styles/theme-surfaces.css:329` | base |
+| `:root[data-theme="dark"] :is( .filter-field > span, .filter-group-title, .toggle-label small, .compact-sort-field > span, .project-pivot-toolbar-label, .billing-detail-label, .bid-edit-field > span, .active-bid-notes-field > span, .cognito-read-field > span, .section-note )` | `styles/theme-surfaces.css:213` | base |
+| `:root[data-theme="dark"] :is( .filter-panel, .content-card, .loading-panel, .stat-card, .page-alert, .accountability-card, .completed-project-card, .curve-assumption-card, .completed-benchmark-card, .pm-history-card, .notification-panel, .bid-log-summary-card, .bid-log-list-card, .active-bid-readiness-card, .action-toast )` | `styles/theme-surfaces.css:159` | base |
+| `:root[data-theme="dark"] :is( .mode-tabs button, .role-chip, .secondary-button, .source-chip, .bid-log-real-bids-toggle, .bid-log-lifecycle-tab, .bid-log-outcome-source-label, .action-toast-action )` | `styles/theme-surfaces.css:404` | base |
+| `:root[data-theme="dark"] :is( .monthly-table tbody tr:hover, .detail-table tbody tr:hover, .monthly-comparison-row:hover, .month-current-project-row:hover, .completed-project-row:hover, .bid-log-table tbody tr:hover, .active-project-data-row:hover )` | `styles/theme-surfaces.css:299` | base |
+| `:root[data-theme="dark"] :is( .monthly-table th, .detail-table th, .billing-monthly-table th, .monthly-project-table th, .completed-project-table th, .completed-monthly-table th, .project-pivot-table th, .floating-table-header-table th, .bid-log-table thead th, .active-bid-monthly-table th, .active-project-table thead th )` | `styles/theme-surfaces.css:282` | base |
+| `:root[data-theme="dark"] :is( .monthly-table th, .monthly-table td, .detail-table th, .detail-table td, .billing-monthly-table th, .billing-monthly-table td, .monthly-project-table th, .monthly-project-table td, .completed-project-table th, .completed-project-table td, .completed-monthly-table th, .completed-monthly-table td, .project-pivot-table th, .project-pivot-table td, .floating-table-header-table th, .bid-log-table th, .bid-log-table td, .active-bid-monthly-table th, .active-bid-monthly-table td, .active-project-table th, .active-project-table td )` | `styles/theme-surfaces.css:256` | base |
+| `:root[data-theme="dark"] :is( .originating-bid-inline-success, .originating-bid-help-title span, .originating-bid-help-title small, .originating-bid-help-facts span, .originating-bid-help-address, .originating-bid-finder-head small, .originating-bid-results-summary small, .originating-bid-candidate-head small, .originating-bid-confidence, .originating-bid-match-reasons > span, .originating-bid-link-warning span, .originating-bid-confirmation p, .change-orders-popover-head span, .change-orders-popover-head small, .change-orders-summary-grid span, .change-orders-context, .change-orders-message, .change-orders-empty, .project-team-role, .side-filter-source-toggles small, .pm-history-admin-badge, .notification-panel-header span, .active-bid-settings-toggle small )` | `styles/theme-surfaces.css:367` | base |
+| `:root[data-theme="dark"] :is( .pivot-billing-cell small, .pivot-billing-line small )` | `styles/theme-surfaces.css:395` | base |
+| `:root[data-theme="dark"] :is( h1, h2, h3, .section-heading strong, .project-cell strong, .bid-log-name-cell strong, .active-project-name-cell strong, .floating-editor-title-row h2, .pivot-header-total-label, .bid-log-summary-card strong )` | `styles/theme-surfaces.css:79` | base |
+| `:root[data-theme="dark"] :is(.auth-company-copy strong, .auth-intro h1)` | `styles/theme-surfaces.css:457` | base |
+| `:root[data-theme="dark"] :is(.eyebrow, .section-kicker)` | `styles/theme-surfaces.css:230` | base |
+| `:root[data-theme="dark"] :is(.signout-button, .notification-button)` | `styles/theme-surfaces.css:133` | base |
+| `:root[data-theme="dark"] :is(.signout-button, .notification-button):hover` | `styles/theme-surfaces.css:139` | base |
+| `:root[data-theme="dark"] :is(.theme-toggle, .top-button)` | `styles/theme-surfaces.css:111` | base |
+| `:root[data-theme="dark"] :is(.theme-toggle, .top-button):hover:not(:disabled)` | `styles/theme-surfaces.css:117` | base |
+| `:root[data-theme="dark"] :is(button, a, input, select, textarea):focus-visible` | `styles/theme-surfaces.css:506` | base |
+| `:root[data-theme="dark"] body` | `styles/theme-surfaces.css:72` | base |
+| `:root[data-theme="dark"] input::placeholder` | `styles/theme-surfaces.css:199` | base |
+| `:root[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"])` | `styles/theme-surfaces.css:190` | base |
+| `:root[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus` | `styles/theme-surfaces.css:205` | base |
+| `:root[data-theme="dark"] select` | `styles/theme-surfaces.css:190` | base |
+| `:root[data-theme="dark"] select:focus` | `styles/theme-surfaces.css:205` | base |
+| `:root[data-theme="dark"] small` | `styles/theme-surfaces.css:235` | base |
+| `:root[data-theme="dark"] table` | `styles/theme-surfaces.css:241` | base |
+| `:root[data-theme="dark"] table td` | `styles/theme-surfaces.css:251` | base |
+| `:root[data-theme="dark"] table th` | `styles/theme-surfaces.css:245` | base |
+| `:root[data-theme="dark"] textarea` | `styles/theme-surfaces.css:190` | base |
+| `:root[data-theme="dark"] textarea::placeholder` | `styles/theme-surfaces.css:199` | base |
+| `:root[data-theme="dark"] textarea:focus` | `styles/theme-surfaces.css:205` | base |
+| `:root[data-theme="light"] .filter-field input[type="month"]` | `styles/01-foundations.css:286` | base |
 | `a` | `styles/01-foundations.css:29` | base |
 | `body` | `styles/01-foundations.css:15` | base |
 | `body` | `styles/01-foundations.css:22` | base |

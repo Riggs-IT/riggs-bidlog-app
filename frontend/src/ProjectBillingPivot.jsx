@@ -530,6 +530,15 @@ function ProjectMeta({
           {row.name}
         </strong>
 
+        {row.raw?.projectCompleted && (
+          <span className="project-completed-pill">
+            Completed
+          </span>
+        )}
+      </div>
+
+      {/* Review badges span the name/team rows; preserve balance-before-schedule order. */}
+      <div className="pivot-project-statuses">
         {row.source === 'current' && row.raw?.needsRebalance && !isCompleted(row.raw) && (
           <span className="balance-review-status-stack">
             <ForecastBalanceFlag review={row.raw} className="pivot-needs-rebalance"
@@ -542,12 +551,6 @@ function ProjectMeta({
 
         {row.source === 'current' && !isCompleted(row.raw) && (
           <ScheduleReviewFlag review={row.raw?.scheduleReview} />
-        )}
-
-        {row.raw?.projectCompleted && (
-          <span className="project-completed-pill">
-            Completed
-          </span>
         )}
       </div>
 
