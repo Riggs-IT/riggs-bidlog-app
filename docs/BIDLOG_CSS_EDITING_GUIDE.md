@@ -1,7 +1,8 @@
 # Bid Log CSS editing guide
 
-**Baseline:** accepted OLED release `6cee03078f9d99b0525927bc6f34045c113d2901`.
-**Consolidation C1:** October 27, 2026. Structural change; the accepted appearance is unchanged.
+**Current editing map: C2 — October 27, 2026.**
+**Starting release:** accepted C1 `cf021ce296595b9871a5c04940ffcf38068ec6df`.
+C2 changes ownership of existing drawer CSS, not the accepted light/OLED design.
 
 ## Start here
 
@@ -31,12 +32,12 @@ Paths below are under `frontend/src/`.
 | `styles/theme-tokens.css` | Light/OLED surface and text colors, semantic colors, header colors, toggle tokens, font family | First root block is light/shared; second replaces values for dark. |
 | `styles/theme-surfaces.css` | Shared microtypography and dark component color mapping | Shared font sizes stay outside dark-only selectors. |
 | `styles/01-foundations.css` | App header/navigation, common buttons/inputs, base tables, login, shared page layout and accountability overview | Contains its own responsive rules. Notification-specific geometry is in 08. |
-| `styles/02-billing-drawers.css` | Base active/completed billing drawer structures, monthly rows and curve summaries | Shared card normalization in 07; completed closeout in 14. |
+| `styles/02-billing-drawers.css` | Active/completed drawer shells, shared cards, label/value/source typography, curve help, source comparison and forecast detail grids | Includes the former 04/07 card refinements and their breakpoints. PM editor stays in 03; closeout-specific layout stays in 14. |
 | `styles/03-pm-projections.css` | PM editor, history, print behavior, and ON/OFF policy-switch geometry | Toggle colors belong in theme tokens, not hardcoded here. |
-| `styles/04-projected-workspace.css` | Projected Billings landing layout, commercial summary, source comparison | Detailed pivot columns are in 05. |
+| `styles/04-projected-workspace.css` | Landing table metadata, sorting, monthly-margin display and negative-money utility | Drawer cards/source comparison moved to 02. Detailed pivot columns remain in 05. |
 | `styles/05-project-pivot.css` | Pivot columns, financial cells, project names/metadata, metric selection | Final compact header and shared metric lanes are in 11–13. |
-| `styles/06-project-references.css` | Originating-bid finder/disclosure, change-order popover, basic team metadata | Shared reference-card grid is in 07. |
-| `styles/07-detail-layout-and-filters.css` | Shared detail cards/spacing, side-filter drawer, completed filters, forecast control cards | These deliberately refine earlier drawer bases. |
+| `styles/06-project-references.css` | Three reference cards, originating-bid finder/disclosure, change-order popovers and basic team metadata | The final reference-card grid and spacing now live here too. Curve-help geometry lives in 02. |
+| `styles/07-detail-layout-and-filters.css` | Side-filter drawer and completed-directory filters, sorting and lifecycle cells | Filename retained to avoid import churn. It no longer owns billing-card or reference-card overrides. |
 | `styles/08-notifications-and-inputs.css` | Bell/count geometry, notification panel, PM correction fields, probability/GC controls and potential-bid drawer | OLED counter ink/fill is in `theme-surfaces.css`. |
 | `styles/09-bid-log.css` | Bid Log directory, summaries, table, notes, editor fields and GC picker | Lifecycle component polish stays in its existing separate file. |
 | `styles/10-active-projects.css` | Active Projects directory, floating job editor and Form 19 read-only sections | This file does not control write permission or test-job eligibility. |
@@ -122,24 +123,47 @@ lanes, column widths and floating-header clones form one layout contract. Do not
 change a visible header's width without testing its body cells and clone during
 horizontal scrolling. The consolidation intentionally preserves these contracts.
 
-## What was actually consolidated
+## Drawer editing recipes — C2
 
-C1 removed **255 earlier declarations** with a later declaration for the same
-property, importance, selector branch, and identical media/supports context. It
-removed **54 empty rules** and **2 empty media wrappers** left behind. It did not
-remove a rule merely because its selector appears twice.
+All paths in this table are relative to `frontend/src/styles/`.
 
-The shared stylesheet is now an explicitly ordered 15-module cascade. The 15,089-line
-entry file became a 54-line import map. Its module bodies total 11,376 lines,
-including comments and readable formatting. The theme has a 166-line palette file
-and a 509-line component-mapping file. Line reduction includes whitespace
-normalization; it is not a measured runtime speed improvement.
+| You want to change… | File and selector / section |
+|---|---|
+| Active drawer width or internal scrolling | `02-billing-drawers.css`: `.billing-drawer`, `.billing-drawer-body` |
+| Completed drawer scrolling/padding | `02-billing-drawers.css`: `.completed-drawer-scroll`; closeout-specific refinements remain in 14 |
+| PM/GC/location card spacing | `02-billing-drawers.css`: PROJECT IDENTITY GRID and SHARED CARD RHYTHM |
+| Card label, value or source-note typography | `02-billing-drawers.css`: CARD LABELS / CARD VALUES / shared supporting text |
+| Curve-help size, anchor or stacking | `02-billing-drawers.css`: `.billing-curve-help-popover` — one base definition |
+| Source comparison disclosure | `02-billing-drawers.css`: SOURCE COMPARISON DISCLOSURE |
+| Forecast start/duration/history grid | `02-billing-drawers.css`: `.projection-detail-grid` plus its existing media queries |
+| Three Curve / Original Bid / Change Order cards | `06-project-references.css`: REFERENCE CARDS, `.project-setup-flags`, direct-child rules |
+| The side-filter panel | `07-detail-layout-and-filters.css`: SIDE FILTER DRAWER |
+| Completed-directory advanced filters | `07-detail-layout-and-filters.css`: COMPLETED PROJECT ADVANCED FILTERS |
 
-Some selector fragments intentionally remain in more than one section. For example,
-a base drawer owns layout while a later shared card rule owns its final spacing;
-a media query owns a narrow-screen variant. Blindly merging those fragments can
-change which other selectors win. The selector index makes these relationships
-visible instead of hiding them behind another appended override.
+Do not copy a normal desktop grid rule below its narrow-screen variants. For
+example, `.projection-detail-grid` has five desktop columns and its existing
+1050px/700px variants. Moving the desktop declaration below those rules would
+change the layout even without changing a number.
+
+## What has actually been consolidated
+
+**C1, accepted:** removed 255 earlier declarations, 54 resulting empty rule blocks
+and 2 empty media wrappers; split the old monolith into 15 ordered modules and
+separated palette tokens from theme mappings. Those are historical C1 counts, not
+claims about future edits or measured runtime speed.
+
+**C2:** shared drawer cards, source comparison, forecast detail grids and their
+responsive variants now have one owning module. The three project-reference
+cards own their final geometry in module 06. Nine split top-level definitions
+were merged, and seven superseded selector-specific declarations were removed.
+Splitting one shared selector list adds one physical declaration, so the net
+shared stylesheet reduction is six declarations and ten rule blocks. Useful
+comments intentionally offset most of the byte reduction.
+
+The remaining responsive, print, child-versus-descendant and closeout-specific
+rules are intentional. C2 is not a global flattening of all CSS and does not
+change palette, fonts, financial calculations, roles, PM actions or API behavior.
+Use the regenerated selector index to find these relationships.
 
 ## How to add or adjust a rule
 
@@ -156,15 +180,15 @@ header clones construct some class names dynamically.
 
 ## Validation and release
 
-The C1 package has a separate local apply/QA/rebuild gate and optional commit/push
+The C2 package has a separate local apply/QA/rebuild gate and optional commit/push
 gates. Its source hashes certify this exact refactor; do not reuse that QA marker
 for your own subsequent edits.
 
-Normal source tests live in `frontend/tests`. The new `helpers/readSource.mjs`
+Normal source tests live in `frontend/tests`. The existing `helpers/readSource.mjs`
 resolves the real CSS imports for the existing source-contract assertions; it does
 not keep a duplicate legacy stylesheet or disable those assertions.
 
-A complete C1 host QA run includes the witnessed cascade proof, focused and full
+A complete C2 host QA run includes the per-selector/conditional declaration contract, focused and full
 frontend tests, the Vite production build, the backend test suite, and both Docker
 image targets. Tests run against sanitized source, without production credentials
 or SQL writes. The build proof checks that local CSS imports have been inlined.

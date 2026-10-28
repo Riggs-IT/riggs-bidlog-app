@@ -1,6 +1,8 @@
 # Bid Log CSS selector index
 
-Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f34045c113d2901`. Paths are relative to `frontend/src/`. Line numbers are a navigation snapshot and will move after your edits. Base, state and responsive entries can deliberately share a selector; consult the owning file comments and load order rather than deleting repeats.
+Generated for C2 from accepted C1 `cf021ce296595b9871a5c04940ffcf38068ec6df`. Paths are relative to `frontend/src/`. Line numbers are a navigation snapshot. Base, state, responsive and print selectors may intentionally repeat; consult their owning-file comments.
+
+Selector occurrences: **2510**.
 
 | Selector | File and line | Context |
 |---|---|---|
@@ -211,11 +213,11 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.active-project-edit-drawer .floating-editor-body.bid-log-edit-body` | `styles/10-active-projects.css:428` | base |
 | `.active-project-edit-drawer .floating-editor-footer-status small` | `ActiveProjectSaveReview.css:8` | base |
 | `.active-project-edit-drawer .section-kicker` | `styles/10-active-projects.css:465` | base |
-| `.active-project-filter-actions` | `styles/10-active-projects.css:34` | base |
 | `.active-project-filter-actions` | `styles/10-active-projects.css:206` | @media (max-width: 760px) |
+| `.active-project-filter-actions` | `styles/10-active-projects.css:34` | base |
 | `.active-project-filter-actions > button` | `styles/10-active-projects.css:210` | @media (max-width: 760px) |
-| `.active-project-filter-grid` | `styles/10-active-projects.css:21` | base |
 | `.active-project-filter-grid` | `styles/10-active-projects.css:200` | @media (max-width: 1280px) |
+| `.active-project-filter-grid` | `styles/10-active-projects.css:21` | base |
 | `.active-project-filter-note` | `styles/10-active-projects.css:30` | base |
 | `.active-project-filter-toolbar` | `styles/10-active-projects.css:25` | base |
 | `.active-project-gc-cell` | `styles/10-active-projects.css:73` | base |
@@ -263,7 +265,7 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.active-projects-workspace.management-admin-preview` | `styles/13-financial-review-and-metrics.css:494` | base |
 | `.active-projects-workspace.management-admin-preview::after` | `styles/13-financial-review-and-metrics.css:499` | base |
 | `.active-projects-workspace.management-admin-preview::after` | `styles/13-financial-review-and-metrics.css:560` | @media (max-width: 760px) |
-| `.admin-source-hint` | `styles/04-projected-workspace.css:372` | base |
+| `.admin-source-hint` | `styles/02-billing-drawers.css:1184` | base |
 | `.administration-advanced-details` | `AdministrationDashboard.css:120` | base |
 | `.administration-advanced-details>.administration-section` | `AdministrationDashboard.css:123` | base |
 | `.administration-advanced-details>summary` | `AdministrationDashboard.css:121` | base |
@@ -348,9 +350,9 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.administration-presence-app` | `AdministrationPresence.css:3` | base |
 | `.administration-presence-app .administration-tile-detail` | `AdministrationPresence.css:6` | base |
 | `.administration-presence-app small` | `AdministrationPresence.css:7` | base |
-| `.administration-presence-apps` | `AdministrationPresence.css:2` | base |
 | `.administration-presence-apps` | `AdministrationPresence.css:15` | @media (max-width: 950px) |
 | `.administration-presence-apps` | `AdministrationPresence.css:16` | @media (max-width: 600px) |
+| `.administration-presence-apps` | `AdministrationPresence.css:2` | base |
 | `.administration-presence-controls` | `AdministrationPresence.css:9` | base |
 | `.administration-presence-controls input` | `AdministrationPresence.css:11` | base |
 | `.administration-presence-controls label` | `AdministrationPresence.css:10` | base |
@@ -398,8 +400,8 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.administration-section-heading h2` | `AdministrationDashboard.css:12` | base |
 | `.administration-section-heading span` | `AdministrationDashboard.css:13` | base |
 | `.administration-source-age` | `AdministrationDashboard.css:107` | base |
-| `.administration-source-header` | `AdministrationDashboard.css:98` | base |
 | `.administration-source-header` | `AdministrationDashboard.css:108` | @media (max-width: 650px) |
+| `.administration-source-header` | `AdministrationDashboard.css:98` | base |
 | `.administration-source-header .administration-detail` | `AdministrationDashboard.css:99` | base |
 | `.administration-source-header button` | `AdministrationDashboard.css:100` | base |
 | `.administration-source-header button:disabled` | `AdministrationDashboard.css:104` | base |
@@ -513,8 +515,8 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.balance-review-detail` | `styles/15-balance-presentation.css:63` | base |
 | `.balance-review-detail-amount` | `styles/15-balance-presentation.css:115` | base |
 | `.balance-review-detail-amount > strong` | `styles/15-balance-presentation.css:120` | base |
-| `.balance-review-detail-heading` | `styles/15-balance-presentation.css:99` | base |
 | `.balance-review-detail-heading` | `styles/15-balance-presentation.css:166` | @media (max-width: 630px) |
+| `.balance-review-detail-heading` | `styles/15-balance-presentation.css:99` | base |
 | `.balance-review-detail-heading .section-kicker` | `styles/15-balance-presentation.css:111` | base |
 | `.balance-review-detail-note` | `styles/15-balance-presentation.css:131` | base |
 | `.balance-review-detail-note` | `styles/15-balance-presentation.css:160` | base |
@@ -655,14 +657,14 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.bid-lifecycle-field.required-attention input` | `BidLogLifecyclePolish.css:369` | base |
 | `.bid-lifecycle-field.required-attention select` | `BidLogLifecyclePolish.css:369` | base |
 | `.bid-lifecycle-field.required-attention textarea` | `BidLogLifecyclePolish.css:369` | base |
-| `.bid-lifecycle-required-banner` | `BidLogLifecyclePolish.css:54` | base |
 | `.bid-lifecycle-required-banner` | `BidLogLifecyclePolish.css:119` | @media (max-width: 760px) |
 | `.bid-lifecycle-required-banner` | `BidLogLifecyclePolish.css:343` | base |
+| `.bid-lifecycle-required-banner` | `BidLogLifecyclePolish.css:54` | base |
 | `.bid-lifecycle-required-banner > button` | `BidLogLifecyclePolish.css:124` | @media (max-width: 760px) |
 | `.bid-lifecycle-required-banner > div` | `BidLogLifecyclePolish.css:67` | base |
 | `.bid-lifecycle-required-banner span` | `BidLogLifecyclePolish.css:80` | base |
-| `.bid-lifecycle-required-banner strong` | `BidLogLifecyclePolish.css:74` | base |
 | `.bid-lifecycle-required-banner strong` | `BidLogLifecyclePolish.css:359` | base |
+| `.bid-lifecycle-required-banner strong` | `BidLogLifecyclePolish.css:74` | base |
 | `.bid-log-create-drawer .bid-edit-section:first-of-type` | `styles/11-lifecycle-feedback-and-staffing.css:67` | base |
 | `.bid-log-data-row` | `styles/09-bid-log.css:518` | base |
 | `.bid-log-data-row:focus-visible` | `styles/09-bid-log.css:522` | base |
@@ -695,20 +697,20 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.bid-log-filter-toolbar` | `styles/09-bid-log.css:182` | base |
 | `.bid-log-filter-toolbar` | `styles/09-bid-log.css:497` | @media (max-width: 760px) |
 | `.bid-log-filter-toolbar > button` | `styles/09-bid-log.css:502` | @media (max-width: 760px) |
-| `.bid-log-heading-actions` | `styles/09-bid-log.css:62` | base |
 | `.bid-log-heading-actions` | `styles/09-bid-log.css:487` | @media (max-width: 760px) |
+| `.bid-log-heading-actions` | `styles/09-bid-log.css:62` | base |
 | `.bid-log-heading-title-row` | `styles/09-bid-log.css:17` | base |
 | `.bid-log-heading-title-row` | `styles/09-bid-log.css:479` | @media (max-width: 760px) |
 | `.bid-log-heading-title-row h1` | `styles/09-bid-log.css:24` | base |
 | `.bid-log-lifecycle-dot` | `styles/11-lifecycle-feedback-and-staffing.css:134` | base |
-| `.bid-log-lifecycle-tab` | `styles/11-lifecycle-feedback-and-staffing.css:97` | base |
 | `.bid-log-lifecycle-tab` | `styles/11-lifecycle-feedback-and-staffing.css:116` | base |
+| `.bid-log-lifecycle-tab` | `styles/11-lifecycle-feedback-and-staffing.css:97` | base |
 | `.bid-log-lifecycle-tab:focus-visible` | `styles/11-lifecycle-feedback-and-staffing.css:120` | base |
 | `.bid-log-lifecycle-tab:hover` | `styles/11-lifecycle-feedback-and-staffing.css:120` | base |
 | `.bid-log-lifecycle-tab.active` | `styles/11-lifecycle-feedback-and-staffing.css:127` | base |
 | `.bid-log-lifecycle-tab.active .bid-log-lifecycle-dot` | `styles/11-lifecycle-feedback-and-staffing.css:142` | base |
-| `.bid-log-lifecycle-tabs` | `styles/11-lifecycle-feedback-and-staffing.css:83` | base |
 | `.bid-log-lifecycle-tabs` | `styles/11-lifecycle-feedback-and-staffing.css:163` | @media (max-width: 760px) |
+| `.bid-log-lifecycle-tabs` | `styles/11-lifecycle-feedback-and-staffing.css:83` | base |
 | `.bid-log-list-card` | `styles/09-bid-log.css:235` | base |
 | `.bid-log-list-heading` | `styles/09-bid-log.css:239` | base |
 | `.bid-log-merge-from-editor` | `BidLogMergeDialog.css:22` | base |
@@ -751,8 +753,8 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.bid-log-notes-message.error` | `styles/09-bid-log.css:444` | base |
 | `.bid-log-notes-panel` | `styles/09-bid-log.css:381` | base |
 | `.bid-log-notes-row td` | `styles/09-bid-log.css:376` | base |
-| `.bid-log-outcome-source-label` | `styles/11-lifecycle-feedback-and-staffing.css:97` | base |
 | `.bid-log-outcome-source-label` | `styles/11-lifecycle-feedback-and-staffing.css:148` | base |
+| `.bid-log-outcome-source-label` | `styles/11-lifecycle-feedback-and-staffing.css:97` | base |
 | `.bid-log-outcome-source-label .bid-log-real-bids-dot` | `styles/11-lifecycle-feedback-and-staffing.css:152` | base |
 | `.bid-log-percent-input` | `styles/09-bid-log.css:153` | base |
 | `.bid-log-percent-input > span` | `styles/09-bid-log.css:161` | base |
@@ -773,8 +775,8 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.bid-log-save-button:disabled` | `styles/09-bid-log.css:865` | base |
 | `.bid-log-save-button:hover:not(:disabled)` | `styles/09-bid-log.css:861` | base |
 | `.bid-log-status-pill` | `styles/09-bid-log.css:448` | base |
-| `.bid-log-summary-card` | `styles/09-bid-log.css:75` | base |
 | `.bid-log-summary-card` | `styles/09-bid-log.css:507` | @media (max-width: 760px) |
+| `.bid-log-summary-card` | `styles/09-bid-log.css:75` | base |
 | `.bid-log-summary-card > .bid-log-summary-label` | `styles/09-bid-log.css:105` | base |
 | `.bid-log-summary-card > .bid-log-summary-label` | `styles/09-bid-log.css:127` | base |
 | `.bid-log-summary-card small` | `styles/09-bid-log.css:105` | base |
@@ -783,9 +785,9 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.bid-log-summary-card:focus-visible` | `styles/09-bid-log.css:93` | base |
 | `.bid-log-summary-card:hover` | `styles/09-bid-log.css:93` | base |
 | `.bid-log-summary-card.active` | `styles/09-bid-log.css:99` | base |
-| `.bid-log-summary-grid` | `styles/09-bid-log.css:68` | base |
 | `.bid-log-summary-grid` | `styles/09-bid-log.css:465` | @media (max-width: 1280px) |
 | `.bid-log-summary-grid` | `styles/09-bid-log.css:492` | @media (max-width: 760px) |
+| `.bid-log-summary-grid` | `styles/09-bid-log.css:68` | base |
 | `.bid-log-summary-icon` | `styles/09-bid-log.css:110` | base |
 | `.bid-log-summary-icon svg` | `styles/09-bid-log.css:122` | base |
 | `.bid-log-table` | `styles/09-bid-log.css:260` | base |
@@ -849,62 +851,60 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.bid-pm-readonly-control small` | `BidLogLifecyclePolish.css:300` | base |
 | `.bid-pm-readonly-control:focus-visible` | `BidLogLifecyclePolish.css:294` | base |
 | `.bid-pm-readonly-control:hover:not(:disabled)` | `BidLogLifecyclePolish.css:294` | base |
-| `.billing-assumption-curve` | `styles/02-billing-drawers.css:972` | base |
-| `.billing-assumption-curve strong` | `styles/02-billing-drawers.css:976` | base |
-| `.billing-assumption-curve-description` | `styles/02-billing-drawers.css:980` | base |
-| `.billing-assumption-grid` | `styles/02-billing-drawers.css:167` | base |
-| `.billing-assumption-grid` | `styles/02-billing-drawers.css:216` | @media (max-width: 900px) |
-| `.billing-assumption-grid` | `styles/02-billing-drawers.css:234` | @media (max-width: 620px) |
-| `.billing-assumption-grid > div` | `styles/02-billing-drawers.css:98` | base |
+| `.billing-assumption-curve` | `styles/02-billing-drawers.css:974` | base |
+| `.billing-assumption-curve strong` | `styles/02-billing-drawers.css:978` | base |
+| `.billing-assumption-curve-description` | `styles/02-billing-drawers.css:982` | base |
+| `.billing-assumption-grid` | `styles/02-billing-drawers.css:172` | base |
+| `.billing-assumption-grid` | `styles/02-billing-drawers.css:221` | @media (max-width: 900px) |
+| `.billing-assumption-grid` | `styles/02-billing-drawers.css:239` | @media (max-width: 620px) |
+| `.billing-assumption-grid > div` | `styles/02-billing-drawers.css:103` | base |
 | `.billing-assumption-grid > div` | `styles/03-pm-projections.css:456` | @media print |
-| `.billing-assumption-grid small` | `styles/02-billing-drawers.css:107` | base |
-| `.billing-assumption-grid small` | `styles/02-billing-drawers.css:179` | base |
-| `.billing-assumption-grid span` | `styles/02-billing-drawers.css:107` | base |
-| `.billing-assumption-grid span` | `styles/02-billing-drawers.css:113` | base |
-| `.billing-assumption-grid strong` | `styles/02-billing-drawers.css:173` | base |
-| `.billing-assumption-note` | `styles/02-billing-drawers.css:842` | base |
-| `.billing-assumptions` | `styles/07-detail-layout-and-filters.css:156` | base |
-| `.billing-characteristics-grid` | `styles/04-projected-workspace.css:212` | base |
-| `.billing-characteristics-grid` | `styles/04-projected-workspace.css:333` | @media (max-width: 1050px) |
-| `.billing-characteristics-grid` | `styles/04-projected-workspace.css:344` | @media (max-width: 700px) |
-| `.billing-characteristics-grid` | `styles/07-detail-layout-and-filters.css:15` | base |
-| `.billing-characteristics-grid` | `styles/07-detail-layout-and-filters.css:29` | base |
-| `.billing-characteristics-grid` | `styles/07-detail-layout-and-filters.css:176` | @media (max-width: 900px) |
-| `.billing-characteristics-grid` | `styles/07-detail-layout-and-filters.css:188` | @media (max-width: 640px) |
-| `.billing-characteristics-grid > article` | `styles/07-detail-layout-and-filters.css:39` | base |
-| `.billing-characteristics-grid > article > span:first-child` | `styles/07-detail-layout-and-filters.css:57` | base |
-| `.billing-characteristics-grid > article > strong` | `styles/07-detail-layout-and-filters.css:72` | base |
-| `.billing-characteristics-grid article` | `styles/04-projected-workspace.css:182` | base |
-| `.billing-characteristics-grid span` | `styles/04-projected-workspace.css:191` | base |
-| `.billing-characteristics-grid strong` | `styles/04-projected-workspace.css:217` | base |
-| `.billing-curve-banner` | `styles/02-billing-drawers.css:853` | base |
-| `.billing-curve-banner p` | `styles/02-billing-drawers.css:910` | base |
-| `.billing-curve-banner-heading` | `styles/02-billing-drawers.css:870` | base |
-| `.billing-curve-banner-heading` | `styles/02-billing-drawers.css:964` | @media ( max-width: 700px ) |
-| `.billing-curve-banner-heading > div` | `styles/02-billing-drawers.css:877` | base |
-| `.billing-curve-banner-heading strong` | `styles/02-billing-drawers.css:883` | base |
-| `.billing-curve-banner.configured` | `styles/02-billing-drawers.css:861` | base |
-| `.billing-curve-banner.unconfigured` | `styles/02-billing-drawers.css:866` | base |
-| `.billing-curve-help` | `styles/04-projected-workspace.css:261` | base |
-| `.billing-curve-help` | `styles/04-projected-workspace.css:354` | @media print |
-| `.billing-curve-help summary` | `styles/04-projected-workspace.css:266` | base |
-| `.billing-curve-help summary::-webkit-details-marker` | `styles/04-projected-workspace.css:279` | base |
-| `.billing-curve-help summary:hover` | `styles/04-projected-workspace.css:283` | base |
-| `.billing-curve-help-popover` | `styles/04-projected-workspace.css:288` | base |
-| `.billing-curve-help-popover` | `styles/06-project-references.css:767` | base |
-| `.billing-curve-help-popover p` | `styles/04-projected-workspace.css:305` | base |
-| `.billing-curve-help-popover p:last-child` | `styles/04-projected-workspace.css:312` | base |
-| `.billing-curve-help-popover strong` | `styles/04-projected-workspace.css:299` | base |
-| `.billing-curve-summary` | `styles/04-projected-workspace.css:237` | base |
-| `.billing-curve-summary` | `styles/07-detail-layout-and-filters.css:135` | base |
-| `.billing-curve-summary` | `styles/07-detail-layout-and-filters.css:148` | base |
-| `.billing-curve-tag` | `styles/04-projected-workspace.css:251` | base |
-| `.billing-curve-token` | `styles/02-billing-drawers.css:896` | base |
-| `.billing-curve-version` | `styles/02-billing-drawers.css:890` | base |
-| `.billing-detail-label` | `styles/04-projected-workspace.css:246` | base |
-| `.billing-detail-label` | `styles/07-detail-layout-and-filters.css:57` | base |
+| `.billing-assumption-grid small` | `styles/02-billing-drawers.css:112` | base |
+| `.billing-assumption-grid small` | `styles/02-billing-drawers.css:184` | base |
+| `.billing-assumption-grid span` | `styles/02-billing-drawers.css:112` | base |
+| `.billing-assumption-grid span` | `styles/02-billing-drawers.css:118` | base |
+| `.billing-assumption-grid strong` | `styles/02-billing-drawers.css:178` | base |
+| `.billing-assumption-note` | `styles/02-billing-drawers.css:844` | base |
+| `.billing-assumptions` | `styles/02-billing-drawers.css:1420` | base |
+| `.billing-characteristics-grid` | `styles/02-billing-drawers.css:1034` | base |
+| `.billing-characteristics-grid` | `styles/02-billing-drawers.css:1150` | @media (max-width: 1050px) |
+| `.billing-characteristics-grid` | `styles/02-billing-drawers.css:1161` | @media (max-width: 700px) |
+| `.billing-characteristics-grid` | `styles/02-billing-drawers.css:1298` | base |
+| `.billing-characteristics-grid` | `styles/02-billing-drawers.css:1308` | base |
+| `.billing-characteristics-grid` | `styles/02-billing-drawers.css:1439` | @media (max-width: 900px) |
+| `.billing-characteristics-grid` | `styles/02-billing-drawers.css:1451` | @media (max-width: 640px) |
+| `.billing-characteristics-grid > article` | `styles/02-billing-drawers.css:1316` | base |
+| `.billing-characteristics-grid > article > span:first-child` | `styles/02-billing-drawers.css:1334` | base |
+| `.billing-characteristics-grid > article > strong` | `styles/02-billing-drawers.css:1349` | base |
+| `.billing-characteristics-grid article` | `styles/02-billing-drawers.css:1001` | base |
+| `.billing-characteristics-grid span` | `styles/02-billing-drawers.css:1010` | base |
+| `.billing-characteristics-grid strong` | `styles/02-billing-drawers.css:1039` | base |
+| `.billing-curve-banner` | `styles/02-billing-drawers.css:855` | base |
+| `.billing-curve-banner p` | `styles/02-billing-drawers.css:912` | base |
+| `.billing-curve-banner-heading` | `styles/02-billing-drawers.css:872` | base |
+| `.billing-curve-banner-heading` | `styles/02-billing-drawers.css:966` | @media ( max-width: 700px ) |
+| `.billing-curve-banner-heading > div` | `styles/02-billing-drawers.css:879` | base |
+| `.billing-curve-banner-heading strong` | `styles/02-billing-drawers.css:885` | base |
+| `.billing-curve-banner.configured` | `styles/02-billing-drawers.css:863` | base |
+| `.billing-curve-banner.unconfigured` | `styles/02-billing-drawers.css:868` | base |
+| `.billing-curve-help` | `styles/02-billing-drawers.css:1073` | base |
+| `.billing-curve-help` | `styles/02-billing-drawers.css:1171` | @media print |
+| `.billing-curve-help summary` | `styles/02-billing-drawers.css:1078` | base |
+| `.billing-curve-help summary::-webkit-details-marker` | `styles/02-billing-drawers.css:1091` | base |
+| `.billing-curve-help summary:hover` | `styles/02-billing-drawers.css:1095` | base |
+| `.billing-curve-help-popover` | `styles/02-billing-drawers.css:1104` | base |
+| `.billing-curve-help-popover p` | `styles/02-billing-drawers.css:1124` | base |
+| `.billing-curve-help-popover p:last-child` | `styles/02-billing-drawers.css:1131` | base |
+| `.billing-curve-help-popover strong` | `styles/02-billing-drawers.css:1118` | base |
+| `.billing-curve-summary` | `styles/02-billing-drawers.css:1401` | base |
+| `.billing-curve-summary` | `styles/02-billing-drawers.css:1408` | base |
+| `.billing-curve-tag` | `styles/02-billing-drawers.css:1063` | base |
+| `.billing-curve-token` | `styles/02-billing-drawers.css:898` | base |
+| `.billing-curve-version` | `styles/02-billing-drawers.css:892` | base |
+| `.billing-detail-label` | `styles/02-billing-drawers.css:1059` | base |
+| `.billing-detail-label` | `styles/02-billing-drawers.css:1334` | base |
+| `.billing-drawer` | `styles/02-billing-drawers.css:229` | @media (max-width: 620px) |
 | `.billing-drawer` | `styles/02-billing-drawers.css:33` | base |
-| `.billing-drawer` | `styles/02-billing-drawers.css:224` | @media (max-width: 620px) |
 | `.billing-drawer` | `styles/03-pm-projections.css:398` | @media print |
 | `.billing-drawer .section-kicker` | `styles/03-pm-projections.css:471` | @media print |
 | `.billing-drawer .section-note` | `styles/03-pm-projections.css:471` | @media print |
@@ -912,137 +912,136 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.billing-drawer small` | `styles/03-pm-projections.css:471` | @media print |
 | `.billing-drawer-backdrop` | `styles/02-billing-drawers.css:23` | base |
 | `.billing-drawer-backdrop` | `styles/03-pm-projections.css:388` | @media print |
+| `.billing-drawer-body` | `styles/02-billing-drawers.css:233` | @media (max-width: 620px) |
 | `.billing-drawer-body` | `styles/02-billing-drawers.css:88` | base |
-| `.billing-drawer-body` | `styles/02-billing-drawers.css:228` | @media (max-width: 620px) |
 | `.billing-drawer-body` | `styles/03-pm-projections.css:417` | @media print |
+| `.billing-drawer-close` | `styles/02-billing-drawers.css:1472` | base |
 | `.billing-drawer-close` | `styles/02-billing-drawers.css:76` | base |
 | `.billing-drawer-close` | `styles/03-pm-projections.css:426` | @media print |
-| `.billing-drawer-close` | `styles/07-detail-layout-and-filters.css:485` | base |
 | `.billing-drawer-completed-date` | `styles/02-billing-drawers.css:70` | base |
 | `.billing-drawer-edit-button` | `styles/10-active-projects.css:746` | base |
+| `.billing-drawer-header` | `styles/02-billing-drawers.css:233` | @media (max-width: 620px) |
 | `.billing-drawer-header` | `styles/02-billing-drawers.css:44` | base |
-| `.billing-drawer-header` | `styles/02-billing-drawers.css:228` | @media (max-width: 620px) |
 | `.billing-drawer-header` | `styles/03-pm-projections.css:411` | @media print |
 | `.billing-drawer-header h2` | `styles/02-billing-drawers.css:52` | base |
 | `.billing-drawer-header p` | `styles/02-billing-drawers.css:57` | base |
 | `.billing-drawer-header-actions` | `styles/10-active-projects.css:739` | base |
 | `.billing-drawer-header-actions` | `styles/10-active-projects.css:831` | @media (max-width: 760px) |
 | `.billing-drawer-job-line` | `styles/02-billing-drawers.css:63` | base |
-| `.billing-drawer-meta` | `styles/02-billing-drawers.css:93` | base |
-| `.billing-drawer-meta` | `styles/02-billing-drawers.css:216` | @media (max-width: 900px) |
-| `.billing-drawer-meta` | `styles/02-billing-drawers.css:234` | @media (max-width: 620px) |
-| `.billing-drawer-meta` | `styles/07-detail-layout-and-filters.css:15` | base |
-| `.billing-drawer-meta` | `styles/07-detail-layout-and-filters.css:25` | base |
+| `.billing-drawer-meta` | `styles/02-billing-drawers.css:1298` | base |
+| `.billing-drawer-meta` | `styles/02-billing-drawers.css:221` | @media (max-width: 900px) |
+| `.billing-drawer-meta` | `styles/02-billing-drawers.css:239` | @media (max-width: 620px) |
+| `.billing-drawer-meta` | `styles/02-billing-drawers.css:97` | base |
 | `.billing-drawer-meta > span` | `styles/03-pm-projections.css:456` | @media print |
-| `.billing-drawer-meta span` | `styles/02-billing-drawers.css:98` | base |
-| `.billing-drawer-meta strong` | `styles/02-billing-drawers.css:107` | base |
-| `.billing-drawer-meta strong` | `styles/02-billing-drawers.css:113` | base |
-| `.billing-drawer-meta-five` | `styles/04-projected-workspace.css:178` | base |
-| `.billing-drawer-meta-five` | `styles/04-projected-workspace.css:329` | @media (max-width: 1050px) |
-| `.billing-drawer-meta-five` | `styles/04-projected-workspace.css:344` | @media (max-width: 700px) |
-| `.billing-drawer-meta-five` | `styles/07-detail-layout-and-filters.css:169` | @media (max-width: 1280px) |
-| `.billing-drawer-meta-five` | `styles/07-detail-layout-and-filters.css:176` | @media (max-width: 900px) |
-| `.billing-drawer-meta-five` | `styles/07-detail-layout-and-filters.css:188` | @media (max-width: 640px) |
-| `.billing-kpi-grid` | `styles/02-billing-drawers.css:122` | base |
-| `.billing-kpi-grid` | `styles/02-billing-drawers.css:216` | @media (max-width: 900px) |
-| `.billing-kpi-grid` | `styles/02-billing-drawers.css:234` | @media (max-width: 620px) |
-| `.billing-kpi-grid` | `styles/07-detail-layout-and-filters.css:15` | base |
-| `.billing-kpi-grid .date-kpi` | `styles/07-detail-layout-and-filters.css:72` | base |
-| `.billing-kpi-grid > article` | `styles/07-detail-layout-and-filters.css:39` | base |
-| `.billing-kpi-grid > article > .billing-variance-label` | `styles/07-detail-layout-and-filters.css:104` | base |
-| `.billing-kpi-grid > article > .billing-variance-label > small` | `styles/07-detail-layout-and-filters.css:110` | base |
-| `.billing-kpi-grid > article > small` | `styles/07-detail-layout-and-filters.css:94` | base |
-| `.billing-kpi-grid > article > span:first-child` | `styles/07-detail-layout-and-filters.css:57` | base |
-| `.billing-kpi-grid > article > strong` | `styles/07-detail-layout-and-filters.css:72` | base |
-| `.billing-kpi-grid article` | `styles/02-billing-drawers.css:128` | base |
-| `.billing-kpi-grid article > small` | `styles/04-projected-workspace.css:229` | base |
-| `.billing-kpi-grid span` | `styles/02-billing-drawers.css:135` | base |
-| `.billing-kpi-grid strong` | `styles/02-billing-drawers.css:142` | base |
-| `.billing-kpi-primary-grid` | `styles/04-projected-workspace.css:221` | base |
-| `.billing-kpi-primary-grid` | `styles/04-projected-workspace.css:333` | @media (max-width: 1050px) |
-| `.billing-kpi-primary-grid` | `styles/04-projected-workspace.css:344` | @media (max-width: 700px) |
-| `.billing-kpi-primary-grid` | `styles/07-detail-layout-and-filters.css:29` | base |
-| `.billing-kpi-primary-grid` | `styles/07-detail-layout-and-filters.css:176` | @media (max-width: 900px) |
-| `.billing-kpi-primary-grid` | `styles/07-detail-layout-and-filters.css:188` | @media (max-width: 640px) |
-| `.billing-kpi-secondary-grid` | `styles/04-projected-workspace.css:225` | base |
-| `.billing-kpi-secondary-grid` | `styles/04-projected-workspace.css:344` | @media (max-width: 700px) |
-| `.billing-kpi-secondary-grid` | `styles/07-detail-layout-and-filters.css:29` | base |
-| `.billing-kpi-secondary-grid` | `styles/07-detail-layout-and-filters.css:176` | @media (max-width: 900px) |
-| `.billing-kpi-secondary-grid` | `styles/07-detail-layout-and-filters.css:188` | @media (max-width: 640px) |
-| `.billing-location-card > small:not(.billing-meta-label)` | `styles/04-projected-workspace.css:202` | base |
-| `.billing-location-card > small:not(.billing-meta-label)` | `styles/07-detail-layout-and-filters.css:94` | base |
-| `.billing-location-card > strong` | `styles/07-detail-layout-and-filters.css:87` | base |
-| `.billing-meta-card` | `styles/04-projected-workspace.css:182` | base |
-| `.billing-meta-card` | `styles/07-detail-layout-and-filters.css:39` | base |
-| `.billing-meta-card > strong` | `styles/07-detail-layout-and-filters.css:72` | base |
-| `.billing-meta-card > strong` | `styles/07-detail-layout-and-filters.css:87` | base |
-| `.billing-meta-label` | `styles/04-projected-workspace.css:191` | base |
-| `.billing-meta-label` | `styles/07-detail-layout-and-filters.css:57` | base |
+| `.billing-drawer-meta span` | `styles/02-billing-drawers.css:103` | base |
+| `.billing-drawer-meta strong` | `styles/02-billing-drawers.css:112` | base |
+| `.billing-drawer-meta strong` | `styles/02-billing-drawers.css:118` | base |
+| `.billing-drawer-meta-five` | `styles/02-billing-drawers.css:1146` | @media (max-width: 1050px) |
+| `.billing-drawer-meta-five` | `styles/02-billing-drawers.css:1161` | @media (max-width: 700px) |
+| `.billing-drawer-meta-five` | `styles/02-billing-drawers.css:1432` | @media (max-width: 1280px) |
+| `.billing-drawer-meta-five` | `styles/02-billing-drawers.css:1439` | @media (max-width: 900px) |
+| `.billing-drawer-meta-five` | `styles/02-billing-drawers.css:1451` | @media (max-width: 640px) |
+| `.billing-drawer-meta-five` | `styles/02-billing-drawers.css:997` | base |
+| `.billing-kpi-grid` | `styles/02-billing-drawers.css:127` | base |
+| `.billing-kpi-grid` | `styles/02-billing-drawers.css:1298` | base |
+| `.billing-kpi-grid` | `styles/02-billing-drawers.css:221` | @media (max-width: 900px) |
+| `.billing-kpi-grid` | `styles/02-billing-drawers.css:239` | @media (max-width: 620px) |
+| `.billing-kpi-grid .date-kpi` | `styles/02-billing-drawers.css:1349` | base |
+| `.billing-kpi-grid > article` | `styles/02-billing-drawers.css:1316` | base |
+| `.billing-kpi-grid > article > .billing-variance-label` | `styles/02-billing-drawers.css:1377` | base |
+| `.billing-kpi-grid > article > .billing-variance-label > small` | `styles/02-billing-drawers.css:1383` | base |
+| `.billing-kpi-grid > article > small` | `styles/02-billing-drawers.css:1367` | base |
+| `.billing-kpi-grid > article > span:first-child` | `styles/02-billing-drawers.css:1334` | base |
+| `.billing-kpi-grid > article > strong` | `styles/02-billing-drawers.css:1349` | base |
+| `.billing-kpi-grid article` | `styles/02-billing-drawers.css:133` | base |
+| `.billing-kpi-grid article > small` | `styles/02-billing-drawers.css:1051` | base |
+| `.billing-kpi-grid span` | `styles/02-billing-drawers.css:140` | base |
+| `.billing-kpi-grid strong` | `styles/02-billing-drawers.css:147` | base |
+| `.billing-kpi-primary-grid` | `styles/02-billing-drawers.css:1043` | base |
+| `.billing-kpi-primary-grid` | `styles/02-billing-drawers.css:1150` | @media (max-width: 1050px) |
+| `.billing-kpi-primary-grid` | `styles/02-billing-drawers.css:1161` | @media (max-width: 700px) |
+| `.billing-kpi-primary-grid` | `styles/02-billing-drawers.css:1308` | base |
+| `.billing-kpi-primary-grid` | `styles/02-billing-drawers.css:1439` | @media (max-width: 900px) |
+| `.billing-kpi-primary-grid` | `styles/02-billing-drawers.css:1451` | @media (max-width: 640px) |
+| `.billing-kpi-secondary-grid` | `styles/02-billing-drawers.css:1047` | base |
+| `.billing-kpi-secondary-grid` | `styles/02-billing-drawers.css:1161` | @media (max-width: 700px) |
+| `.billing-kpi-secondary-grid` | `styles/02-billing-drawers.css:1308` | base |
+| `.billing-kpi-secondary-grid` | `styles/02-billing-drawers.css:1439` | @media (max-width: 900px) |
+| `.billing-kpi-secondary-grid` | `styles/02-billing-drawers.css:1451` | @media (max-width: 640px) |
+| `.billing-location-card > small:not(.billing-meta-label)` | `styles/02-billing-drawers.css:1021` | base |
+| `.billing-location-card > small:not(.billing-meta-label)` | `styles/02-billing-drawers.css:1367` | base |
+| `.billing-location-card > strong` | `styles/02-billing-drawers.css:1362` | base |
+| `.billing-meta-card` | `styles/02-billing-drawers.css:1001` | base |
+| `.billing-meta-card` | `styles/02-billing-drawers.css:1316` | base |
+| `.billing-meta-card > strong` | `styles/02-billing-drawers.css:1349` | base |
+| `.billing-meta-card > strong` | `styles/02-billing-drawers.css:1362` | base |
+| `.billing-meta-label` | `styles/02-billing-drawers.css:1010` | base |
+| `.billing-meta-label` | `styles/02-billing-drawers.css:1334` | base |
 | `.billing-month-state` | `styles/03-pm-projections.css:98` | base |
-| `.billing-monthly-section` | `styles/07-detail-layout-and-filters.css:156` | base |
-| `.billing-monthly-table` | `styles/02-billing-drawers.css:190` | base |
+| `.billing-monthly-section` | `styles/02-billing-drawers.css:1420` | base |
+| `.billing-monthly-table` | `styles/02-billing-drawers.css:195` | base |
 | `.billing-monthly-table` | `styles/03-pm-projections.css:440` | @media print |
-| `.billing-monthly-table .numeric` | `styles/02-billing-drawers.css:211` | base |
-| `.billing-monthly-table td` | `styles/02-billing-drawers.css:196` | base |
+| `.billing-monthly-table .numeric` | `styles/02-billing-drawers.css:216` | base |
+| `.billing-monthly-table td` | `styles/02-billing-drawers.css:201` | base |
 | `.billing-monthly-table td` | `styles/03-pm-projections.css:465` | @media print |
 | `.billing-monthly-table td small` | `styles/03-pm-projections.css:471` | @media print |
-| `.billing-monthly-table th` | `styles/02-billing-drawers.css:196` | base |
-| `.billing-monthly-table th` | `styles/02-billing-drawers.css:204` | base |
+| `.billing-monthly-table th` | `styles/02-billing-drawers.css:201` | base |
+| `.billing-monthly-table th` | `styles/02-billing-drawers.css:209` | base |
 | `.billing-monthly-table th` | `styles/03-pm-projections.css:465` | @media print |
 | `.billing-monthly-table thead` | `styles/03-pm-projections.css:449` | @media print |
 | `.billing-monthly-table tr` | `styles/03-pm-projections.css:456` | @media print |
-| `.billing-monthly-table-wrap` | `styles/02-billing-drawers.css:184` | base |
+| `.billing-monthly-table-wrap` | `styles/02-billing-drawers.css:189` | base |
 | `.billing-monthly-table-wrap` | `styles/03-pm-projections.css:434` | @media print |
-| `.billing-section-explainer` | `styles/07-detail-layout-and-filters.css:469` | base |
-| `.billing-state` | `styles/02-billing-drawers.css:155` | base |
-| `.billing-state.ready` | `styles/02-billing-drawers.css:163` | base |
-| `.brand` | `styles/01-foundations.css:65` | base |
+| `.billing-section-explainer` | `styles/02-billing-drawers.css:1462` | base |
+| `.billing-state` | `styles/02-billing-drawers.css:160` | base |
+| `.billing-state.ready` | `styles/02-billing-drawers.css:168` | base |
 | `.brand` | `styles/01-foundations.css:1312` | base |
-| `.brand-area` | `styles/01-foundations.css:65` | base |
-| `.brand-area` | `styles/01-foundations.css:72` | base |
-| `.brand-area` | `styles/01-foundations.css:995` | @media (max-width: 760px) |
+| `.brand` | `styles/01-foundations.css:65` | base |
 | `.brand-area` | `styles/01-foundations.css:1308` | base |
 | `.brand-area` | `styles/01-foundations.css:1708` | @media (max-width: 900px) |
 | `.brand-area` | `styles/01-foundations.css:1736` | @media (max-width: 760px) |
+| `.brand-area` | `styles/01-foundations.css:65` | base |
+| `.brand-area` | `styles/01-foundations.css:72` | base |
+| `.brand-area` | `styles/01-foundations.css:995` | @media (max-width: 760px) |
 | `.brand-copy` | `styles/01-foundations.css:90` | base |
-| `.brand-copy span` | `styles/01-foundations.css:96` | base |
 | `.brand-copy span` | `styles/01-foundations.css:1329` | base |
+| `.brand-copy span` | `styles/01-foundations.css:96` | base |
 | `.brand-copy strong` | `styles/01-foundations.css:1324` | base |
-| `.brand-mark` | `styles/01-foundations.css:76` | base |
 | `.brand-mark` | `styles/01-foundations.css:1316` | base |
+| `.brand-mark` | `styles/01-foundations.css:76` | base |
 | `.brand-mark.large` | `styles/01-foundations.css:84` | base |
 | `.cell-subtext` | `styles/01-foundations.css:1165` | base |
 | `.cell-subtext` | `styles/01-foundations.css:1176` | base |
 | `.cell-subtext` | `styles/01-foundations.css:1670` | base |
-| `.change-orders-context` | `styles/06-project-references.css:661` | base |
-| `.change-orders-empty` | `styles/06-project-references.css:729` | base |
-| `.change-orders-help` | `styles/06-project-references.css:569` | base |
-| `.change-orders-help` | `styles/06-project-references.css:750` | @media ( max-width: 760px ) |
-| `.change-orders-item` | `styles/06-project-references.css:680` | base |
-| `.change-orders-item-main` | `styles/06-project-references.css:689` | base |
-| `.change-orders-item-main > span` | `styles/06-project-references.css:702` | base |
-| `.change-orders-item-main strong` | `styles/06-project-references.css:696` | base |
-| `.change-orders-item-meta` | `styles/06-project-references.css:708` | base |
-| `.change-orders-list` | `styles/06-project-references.css:672` | base |
-| `.change-orders-message` | `styles/06-project-references.css:729` | base |
-| `.change-orders-message.error` | `styles/06-project-references.css:740` | base |
-| `.change-orders-popover` | `styles/06-project-references.css:589` | base |
-| `.change-orders-popover` | `styles/06-project-references.css:758` | @media ( max-width: 760px ) |
-| `.change-orders-popover` | `styles/06-project-references.css:773` | base |
-| `.change-orders-popover .negative` | `styles/06-project-references.css:721` | base |
-| `.change-orders-popover .neutral` | `styles/06-project-references.css:725` | base |
-| `.change-orders-popover .positive` | `styles/06-project-references.css:717` | base |
-| `.change-orders-popover-head > div` | `styles/06-project-references.css:607` | base |
-| `.change-orders-popover-head small` | `styles/06-project-references.css:626` | base |
-| `.change-orders-popover-head span` | `styles/06-project-references.css:612` | base |
-| `.change-orders-popover-head strong` | `styles/06-project-references.css:620` | base |
-| `.change-orders-summary` | `styles/06-project-references.css:576` | base |
-| `.change-orders-summary` | `styles/06-project-references.css:754` | @media ( max-width: 760px ) |
-| `.change-orders-summary-grid` | `styles/06-project-references.css:631` | base |
-| `.change-orders-summary-grid > div` | `styles/06-project-references.css:637` | base |
-| `.change-orders-summary-grid span` | `styles/06-project-references.css:647` | base |
-| `.change-orders-summary-grid strong` | `styles/06-project-references.css:655` | base |
-| `.change-orders-summary::-webkit-details-marker` | `styles/06-project-references.css:585` | base |
+| `.change-orders-context` | `styles/06-project-references.css:655` | base |
+| `.change-orders-empty` | `styles/06-project-references.css:723` | base |
+| `.change-orders-help` | `styles/06-project-references.css:563` | base |
+| `.change-orders-help` | `styles/06-project-references.css:744` | @media ( max-width: 760px ) |
+| `.change-orders-item` | `styles/06-project-references.css:674` | base |
+| `.change-orders-item-main` | `styles/06-project-references.css:683` | base |
+| `.change-orders-item-main > span` | `styles/06-project-references.css:696` | base |
+| `.change-orders-item-main strong` | `styles/06-project-references.css:690` | base |
+| `.change-orders-item-meta` | `styles/06-project-references.css:702` | base |
+| `.change-orders-list` | `styles/06-project-references.css:666` | base |
+| `.change-orders-message` | `styles/06-project-references.css:723` | base |
+| `.change-orders-message.error` | `styles/06-project-references.css:734` | base |
+| `.change-orders-popover` | `styles/06-project-references.css:583` | base |
+| `.change-orders-popover` | `styles/06-project-references.css:752` | @media ( max-width: 760px ) |
+| `.change-orders-popover` | `styles/06-project-references.css:761` | base |
+| `.change-orders-popover .negative` | `styles/06-project-references.css:715` | base |
+| `.change-orders-popover .neutral` | `styles/06-project-references.css:719` | base |
+| `.change-orders-popover .positive` | `styles/06-project-references.css:711` | base |
+| `.change-orders-popover-head > div` | `styles/06-project-references.css:601` | base |
+| `.change-orders-popover-head small` | `styles/06-project-references.css:620` | base |
+| `.change-orders-popover-head span` | `styles/06-project-references.css:606` | base |
+| `.change-orders-popover-head strong` | `styles/06-project-references.css:614` | base |
+| `.change-orders-summary` | `styles/06-project-references.css:570` | base |
+| `.change-orders-summary` | `styles/06-project-references.css:748` | @media ( max-width: 760px ) |
+| `.change-orders-summary-grid` | `styles/06-project-references.css:625` | base |
+| `.change-orders-summary-grid > div` | `styles/06-project-references.css:631` | base |
+| `.change-orders-summary-grid span` | `styles/06-project-references.css:641` | base |
+| `.change-orders-summary-grid strong` | `styles/06-project-references.css:649` | base |
+| `.change-orders-summary::-webkit-details-marker` | `styles/06-project-references.css:579` | base |
 | `.clickable-project-row` | `styles/02-billing-drawers.css:13` | base |
 | `.clickable-project-row:focus-visible` | `styles/02-billing-drawers.css:17` | base |
 | `.clickable-project-row:hover` | `styles/02-billing-drawers.css:17` | base |
@@ -1097,11 +1096,11 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.cognito-supplier-value` | `styles/10-active-projects.css:619` | base |
 | `.cognito-supplier-value.amount` | `styles/10-active-projects.css:625` | base |
 | `.cognito-workflow-line` | `styles/10-active-projects.css:667` | base |
-| `.commercial-source-note` | `styles/04-projected-workspace.css:365` | base |
-| `.commercial-source-note` | `styles/07-detail-layout-and-filters.css:94` | base |
-| `.compact-sort-field` | `styles/02-billing-drawers.css:249` | base |
-| `.compact-sort-field > span` | `styles/02-billing-drawers.css:255` | base |
-| `.compact-sort-field select` | `styles/02-billing-drawers.css:263` | base |
+| `.commercial-source-note` | `styles/02-billing-drawers.css:1178` | base |
+| `.commercial-source-note` | `styles/02-billing-drawers.css:1367` | base |
+| `.compact-sort-field` | `styles/02-billing-drawers.css:254` | base |
+| `.compact-sort-field > span` | `styles/02-billing-drawers.css:260` | base |
+| `.compact-sort-field select` | `styles/02-billing-drawers.css:268` | base |
 | `.comparison-bar` | `styles/01-foundations.css:449` | base |
 | `.comparison-bar.actual` | `styles/01-foundations.css:459` | base |
 | `.comparison-bar.expected` | `styles/01-foundations.css:455` | base |
@@ -1111,14 +1110,14 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.comparison-view-toggle button` | `styles/05-project-pivot.css:22` | base |
 | `.comparison-view-toggle button:hover` | `styles/05-project-pivot.css:35` | base |
 | `.comparison-view-toggle button.active` | `styles/05-project-pivot.css:39` | base |
-| `.completed-benchmark-card` | `styles/02-billing-drawers.css:920` | base |
-| `.completed-benchmark-card p` | `styles/02-billing-drawers.css:947` | base |
-| `.completed-benchmark-card small` | `styles/02-billing-drawers.css:954` | base |
-| `.completed-benchmark-heading` | `styles/02-billing-drawers.css:927` | base |
-| `.completed-benchmark-heading` | `styles/02-billing-drawers.css:964` | @media ( max-width: 700px ) |
-| `.completed-benchmark-heading > div` | `styles/02-billing-drawers.css:934` | base |
-| `.completed-benchmark-heading > div > span` | `styles/02-billing-drawers.css:940` | base |
-| `.completed-benchmark-heading strong` | `styles/02-billing-drawers.css:883` | base |
+| `.completed-benchmark-card` | `styles/02-billing-drawers.css:922` | base |
+| `.completed-benchmark-card p` | `styles/02-billing-drawers.css:949` | base |
+| `.completed-benchmark-card small` | `styles/02-billing-drawers.css:956` | base |
+| `.completed-benchmark-heading` | `styles/02-billing-drawers.css:929` | base |
+| `.completed-benchmark-heading` | `styles/02-billing-drawers.css:966` | @media ( max-width: 700px ) |
+| `.completed-benchmark-heading > div` | `styles/02-billing-drawers.css:936` | base |
+| `.completed-benchmark-heading > div > span` | `styles/02-billing-drawers.css:942` | base |
+| `.completed-benchmark-heading strong` | `styles/02-billing-drawers.css:885` | base |
 | `.completed-closeout-context` | `styles/14-completed-closeout.css:14` | base |
 | `.completed-closeout-context` | `styles/14-completed-closeout.css:340` | @media (max-width: 760px) |
 | `.completed-closeout-context` | `styles/14-completed-closeout.css:359` | @media (max-width: 480px) |
@@ -1145,13 +1144,13 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.completed-closeout-extra` | `styles/14-completed-closeout.css:198` | base |
 | `.completed-closeout-extra > summary` | `styles/14-completed-closeout.css:202` | base |
 | `.completed-closeout-extra > summary:hover` | `styles/14-completed-closeout.css:209` | base |
-| `.completed-closeout-location` | `styles/14-completed-closeout.css:50` | base |
 | `.completed-closeout-location` | `styles/14-completed-closeout.css:345` | @media (max-width: 760px) |
 | `.completed-closeout-location` | `styles/14-completed-closeout.css:363` | @media (max-width: 480px) |
+| `.completed-closeout-location` | `styles/14-completed-closeout.css:50` | base |
 | `.completed-closeout-report .completed-closeout-contract-ledger` | `styles/14-completed-closeout.css:92` | base |
 | `.completed-closeout-report .completed-closeout-contract-ledger .source-comparison > summary` | `styles/14-completed-closeout.css:157` | base |
-| `.completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value` | `styles/14-completed-closeout.css:98` | base |
 | `.completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value` | `styles/14-completed-closeout.css:367` | @media (max-width: 480px) |
+| `.completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value` | `styles/14-completed-closeout.css:98` | base |
 | `.completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value > .completed-data-pill` | `styles/14-completed-closeout.css:163` | base |
 | `.completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value > .source-comparison` | `styles/14-completed-closeout.css:142` | base |
 | `.completed-closeout-report .completed-closeout-contract-ledger > .completed-detail-value > .source-comparison` | `styles/14-completed-closeout.css:471` | @media (max-width: 650px) |
@@ -1170,10 +1169,10 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.completed-closeout-report .completed-closeout-extra > .completed-detail-value > small` | `styles/14-completed-closeout.css:133` | base |
 | `.completed-closeout-report .completed-closeout-extra > .completed-detail-value > span:first-child` | `styles/14-completed-closeout.css:113` | base |
 | `.completed-closeout-report .completed-closeout-extra > .completed-detail-value > strong` | `styles/14-completed-closeout.css:123` | base |
-| `.completed-closeout-report .completed-closeout-financial-outcome` | `styles/14-completed-closeout.css:92` | base |
 | `.completed-closeout-report .completed-closeout-financial-outcome` | `styles/14-completed-closeout.css:176` | base |
-| `.completed-closeout-report .completed-closeout-financial-outcome > .completed-detail-value` | `styles/14-completed-closeout.css:98` | base |
+| `.completed-closeout-report .completed-closeout-financial-outcome` | `styles/14-completed-closeout.css:92` | base |
 | `.completed-closeout-report .completed-closeout-financial-outcome > .completed-detail-value` | `styles/14-completed-closeout.css:367` | @media (max-width: 480px) |
+| `.completed-closeout-report .completed-closeout-financial-outcome > .completed-detail-value` | `styles/14-completed-closeout.css:98` | base |
 | `.completed-closeout-report .completed-closeout-financial-outcome > .completed-detail-value > small` | `styles/14-completed-closeout.css:133` | base |
 | `.completed-closeout-report .completed-closeout-financial-outcome > .completed-detail-value > span:first-child` | `styles/14-completed-closeout.css:113` | base |
 | `.completed-closeout-report .completed-closeout-financial-outcome > .completed-detail-value > strong` | `styles/14-completed-closeout.css:123` | base |
@@ -1201,100 +1200,97 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.completed-closeout-terms-list > article` | `styles/14-completed-closeout.css:255` | base |
 | `.completed-closeout-terms-list > article > span:first-child` | `styles/14-completed-closeout.css:270` | base |
 | `.completed-closeout-terms-list > article > strong` | `styles/14-completed-closeout.css:279` | base |
-| `.completed-commercial-grid` | `styles/04-projected-workspace.css:437` | base |
-| `.completed-commercial-grid` | `styles/04-projected-workspace.css:446` | @media (max-width: 1200px) |
-| `.completed-commercial-grid` | `styles/04-projected-workspace.css:452` | @media (max-width: 760px) |
-| `.completed-commercial-grid` | `styles/07-detail-layout-and-filters.css:29` | base |
-| `.completed-commercial-grid` | `styles/07-detail-layout-and-filters.css:176` | @media (max-width: 900px) |
-| `.completed-commercial-grid` | `styles/07-detail-layout-and-filters.css:188` | @media (max-width: 640px) |
-| `.completed-curve-summary` | `styles/04-projected-workspace.css:461` | base |
-| `.completed-data-pill` | `styles/02-billing-drawers.css:529` | base |
-| `.completed-data-pill.critical` | `styles/02-billing-drawers.css:557` | base |
-| `.completed-data-pill.derived` | `styles/02-billing-drawers.css:564` | base |
-| `.completed-data-pill.operations` | `styles/02-billing-drawers.css:571` | base |
-| `.completed-data-pill.success` | `styles/02-billing-drawers.css:544` | base |
-| `.completed-data-pill.warning` | `styles/02-billing-drawers.css:550` | base |
-| `.completed-derived-note` | `styles/02-billing-drawers.css:708` | base |
-| `.completed-derived-note` | `styles/07-detail-layout-and-filters.css:135` | base |
-| `.completed-derived-note span` | `styles/02-billing-drawers.css:693` | base |
-| `.completed-detail-grid` | `styles/02-billing-drawers.css:678` | base |
-| `.completed-detail-grid` | `styles/02-billing-drawers.css:792` | @media ( max-width: 760px ) |
-| `.completed-detail-grid` | `styles/07-detail-layout-and-filters.css:15` | base |
-| `.completed-detail-grid` | `styles/07-detail-layout-and-filters.css:29` | base |
-| `.completed-detail-grid` | `styles/07-detail-layout-and-filters.css:176` | @media (max-width: 900px) |
-| `.completed-detail-grid` | `styles/07-detail-layout-and-filters.css:188` | @media (max-width: 640px) |
-| `.completed-detail-value` | `styles/07-detail-layout-and-filters.css:39` | base |
-| `.completed-detail-value > small` | `styles/07-detail-layout-and-filters.css:94` | base |
-| `.completed-detail-value > span:first-child` | `styles/07-detail-layout-and-filters.css:57` | base |
-| `.completed-detail-value > strong` | `styles/07-detail-layout-and-filters.css:72` | base |
-| `.completed-detail-value small` | `styles/02-billing-drawers.css:655` | base |
-| `.completed-drawer` | `styles/02-billing-drawers.css:589` | base |
-| `.completed-drawer` | `styles/02-billing-drawers.css:781` | @media ( max-width: 760px ) |
+| `.completed-commercial-grid` | `styles/02-billing-drawers.css:1253` | base |
+| `.completed-commercial-grid` | `styles/02-billing-drawers.css:1262` | @media (max-width: 1200px) |
+| `.completed-commercial-grid` | `styles/02-billing-drawers.css:1268` | @media (max-width: 760px) |
+| `.completed-commercial-grid` | `styles/02-billing-drawers.css:1308` | base |
+| `.completed-commercial-grid` | `styles/02-billing-drawers.css:1439` | @media (max-width: 900px) |
+| `.completed-commercial-grid` | `styles/02-billing-drawers.css:1451` | @media (max-width: 640px) |
+| `.completed-curve-summary` | `styles/02-billing-drawers.css:1277` | base |
+| `.completed-data-pill` | `styles/02-billing-drawers.css:534` | base |
+| `.completed-data-pill.critical` | `styles/02-billing-drawers.css:562` | base |
+| `.completed-data-pill.derived` | `styles/02-billing-drawers.css:569` | base |
+| `.completed-data-pill.operations` | `styles/02-billing-drawers.css:576` | base |
+| `.completed-data-pill.success` | `styles/02-billing-drawers.css:549` | base |
+| `.completed-data-pill.warning` | `styles/02-billing-drawers.css:555` | base |
+| `.completed-derived-note` | `styles/02-billing-drawers.css:1401` | base |
+| `.completed-derived-note` | `styles/02-billing-drawers.css:710` | base |
+| `.completed-derived-note span` | `styles/02-billing-drawers.css:695` | base |
+| `.completed-detail-grid` | `styles/02-billing-drawers.css:1298` | base |
+| `.completed-detail-grid` | `styles/02-billing-drawers.css:1308` | base |
+| `.completed-detail-grid` | `styles/02-billing-drawers.css:1439` | @media (max-width: 900px) |
+| `.completed-detail-grid` | `styles/02-billing-drawers.css:1451` | @media (max-width: 640px) |
+| `.completed-detail-grid` | `styles/02-billing-drawers.css:680` | base |
+| `.completed-detail-grid` | `styles/02-billing-drawers.css:794` | @media ( max-width: 760px ) |
+| `.completed-detail-value` | `styles/02-billing-drawers.css:1316` | base |
+| `.completed-detail-value > small` | `styles/02-billing-drawers.css:1367` | base |
+| `.completed-detail-value > span:first-child` | `styles/02-billing-drawers.css:1334` | base |
+| `.completed-detail-value > strong` | `styles/02-billing-drawers.css:1349` | base |
+| `.completed-detail-value small` | `styles/02-billing-drawers.css:661` | base |
+| `.completed-drawer` | `styles/02-billing-drawers.css:594` | base |
+| `.completed-drawer` | `styles/02-billing-drawers.css:783` | @media ( max-width: 760px ) |
 | `.completed-drawer .completed-closeout-report` | `styles/14-completed-closeout.css:54` | base |
-| `.completed-drawer-backdrop` | `styles/02-billing-drawers.css:579` | base |
-| `.completed-drawer-close` | `styles/02-billing-drawers.css:623` | base |
-| `.completed-drawer-close` | `styles/07-detail-layout-and-filters.css:485` | base |
-| `.completed-drawer-close:hover` | `styles/02-billing-drawers.css:634` | base |
-| `.completed-drawer-header` | `styles/02-billing-drawers.css:600` | base |
-| `.completed-drawer-header` | `styles/02-billing-drawers.css:785` | @media ( max-width: 760px ) |
-| `.completed-drawer-header h2` | `styles/02-billing-drawers.css:609` | base |
-| `.completed-drawer-header p` | `styles/02-billing-drawers.css:617` | base |
-| `.completed-drawer-meta` | `styles/02-billing-drawers.css:639` | base |
-| `.completed-drawer-meta` | `styles/02-billing-drawers.css:785` | @media ( max-width: 760px ) |
-| `.completed-drawer-meta` | `styles/07-detail-layout-and-filters.css:15` | base |
-| `.completed-drawer-meta` | `styles/07-detail-layout-and-filters.css:120` | base |
-| `.completed-drawer-meta-five` | `styles/04-projected-workspace.css:457` | base |
-| `.completed-drawer-meta.billing-drawer-meta-five` | `styles/07-detail-layout-and-filters.css:169` | @media (max-width: 1280px) |
-| `.completed-drawer-meta.billing-drawer-meta-five` | `styles/07-detail-layout-and-filters.css:176` | @media (max-width: 900px) |
-| `.completed-drawer-meta.billing-drawer-meta-five` | `styles/07-detail-layout-and-filters.css:188` | @media (max-width: 640px) |
-| `.completed-drawer-scroll` | `styles/02-billing-drawers.css:643` | base |
-| `.completed-drawer-scroll` | `styles/02-billing-drawers.css:785` | @media ( max-width: 760px ) |
-| `.completed-drawer-scroll` | `styles/07-detail-layout-and-filters.css:129` | base |
-| `.completed-drawer-section` | `styles/02-billing-drawers.css:661` | base |
-| `.completed-drawer-section` | `styles/07-detail-layout-and-filters.css:156` | base |
-| `.completed-drawer-section` | `styles/07-detail-layout-and-filters.css:162` | base |
-| `.completed-empty-panel` | `styles/02-billing-drawers.css:708` | base |
-| `.completed-empty-panel` | `styles/07-detail-layout-and-filters.css:135` | base |
-| `.completed-empty-panel span` | `styles/02-billing-drawers.css:693` | base |
-| `.completed-estimator-cell` | `styles/02-billing-drawers.css:491` | base |
-| `.completed-estimator-cell span` | `styles/02-billing-drawers.css:497` | base |
-| `.completed-estimator-cell span` | `styles/02-billing-drawers.css:514` | base |
-| `.completed-estimator-cell strong` | `styles/02-billing-drawers.css:497` | base |
-| `.completed-estimator-flags` | `styles/02-billing-drawers.css:701` | base |
-| `.completed-filter-reset` | `styles/02-billing-drawers.css:473` | base |
-| `.completed-filter-reset` | `styles/07-detail-layout-and-filters.css:402` | base |
+| `.completed-drawer-backdrop` | `styles/02-billing-drawers.css:584` | base |
+| `.completed-drawer-close` | `styles/02-billing-drawers.css:1472` | base |
+| `.completed-drawer-close` | `styles/02-billing-drawers.css:628` | base |
+| `.completed-drawer-close:hover` | `styles/02-billing-drawers.css:639` | base |
+| `.completed-drawer-header` | `styles/02-billing-drawers.css:605` | base |
+| `.completed-drawer-header` | `styles/02-billing-drawers.css:787` | @media ( max-width: 760px ) |
+| `.completed-drawer-header h2` | `styles/02-billing-drawers.css:614` | base |
+| `.completed-drawer-header p` | `styles/02-billing-drawers.css:622` | base |
+| `.completed-drawer-meta` | `styles/02-billing-drawers.css:1298` | base |
+| `.completed-drawer-meta` | `styles/02-billing-drawers.css:1391` | base |
+| `.completed-drawer-meta` | `styles/02-billing-drawers.css:787` | @media ( max-width: 760px ) |
+| `.completed-drawer-meta-five` | `styles/02-billing-drawers.css:1273` | base |
+| `.completed-drawer-meta.billing-drawer-meta-five` | `styles/02-billing-drawers.css:1432` | @media (max-width: 1280px) |
+| `.completed-drawer-meta.billing-drawer-meta-five` | `styles/02-billing-drawers.css:1439` | @media (max-width: 900px) |
+| `.completed-drawer-meta.billing-drawer-meta-five` | `styles/02-billing-drawers.css:1451` | @media (max-width: 640px) |
+| `.completed-drawer-scroll` | `styles/02-billing-drawers.css:648` | base |
+| `.completed-drawer-scroll` | `styles/02-billing-drawers.css:787` | @media ( max-width: 760px ) |
+| `.completed-drawer-section` | `styles/02-billing-drawers.css:1420` | base |
+| `.completed-drawer-section` | `styles/02-billing-drawers.css:1426` | base |
+| `.completed-empty-panel` | `styles/02-billing-drawers.css:1401` | base |
+| `.completed-empty-panel` | `styles/02-billing-drawers.css:710` | base |
+| `.completed-empty-panel span` | `styles/02-billing-drawers.css:695` | base |
+| `.completed-estimator-cell` | `styles/02-billing-drawers.css:496` | base |
+| `.completed-estimator-cell span` | `styles/02-billing-drawers.css:502` | base |
+| `.completed-estimator-cell span` | `styles/02-billing-drawers.css:519` | base |
+| `.completed-estimator-cell strong` | `styles/02-billing-drawers.css:502` | base |
+| `.completed-estimator-flags` | `styles/02-billing-drawers.css:703` | base |
+| `.completed-filter-reset` | `styles/02-billing-drawers.css:478` | base |
+| `.completed-filter-reset` | `styles/07-detail-layout-and-filters.css:214` | base |
 | `.completed-gc-column` | `styles/08-notifications-and-inputs.css:461` | base |
-| `.completed-heading-count` | `styles/02-billing-drawers.css:416` | base |
-| `.completed-heading-title` | `styles/02-billing-drawers.css:409` | base |
-| `.completed-inline-warning` | `styles/02-billing-drawers.css:683` | base |
-| `.completed-inline-warning` | `styles/07-detail-layout-and-filters.css:135` | base |
-| `.completed-inline-warning span` | `styles/02-billing-drawers.css:693` | base |
-| `.completed-job-number` | `styles/07-detail-layout-and-filters.css:422` | base |
-| `.completed-job-number` | `styles/07-detail-layout-and-filters.css:428` | base |
-| `.completed-job-number-column` | `styles/07-detail-layout-and-filters.css:422` | base |
-| `.completed-kpi-grid` | `styles/02-billing-drawers.css:649` | base |
-| `.completed-kpi-grid` | `styles/02-billing-drawers.css:771` | @media ( max-width: 1200px ) |
-| `.completed-kpi-grid` | `styles/02-billing-drawers.css:792` | @media ( max-width: 760px ) |
-| `.completed-kpi-grid` | `styles/07-detail-layout-and-filters.css:15` | base |
-| `.completed-lifecycle-cell` | `styles/02-billing-drawers.css:491` | base |
-| `.completed-lifecycle-cell` | `styles/07-detail-layout-and-filters.css:442` | base |
-| `.completed-lifecycle-cell span` | `styles/02-billing-drawers.css:497` | base |
-| `.completed-lifecycle-cell span` | `styles/02-billing-drawers.css:514` | base |
-| `.completed-lifecycle-cell span` | `styles/07-detail-layout-and-filters.css:454` | base |
-| `.completed-lifecycle-cell strong` | `styles/02-billing-drawers.css:497` | base |
-| `.completed-lifecycle-cell strong` | `styles/07-detail-layout-and-filters.css:446` | base |
-| `.completed-lifecycle-summary-grid` | `styles/04-projected-workspace.css:441` | base |
-| `.completed-monthly-table` | `styles/02-billing-drawers.css:725` | base |
-| `.completed-monthly-table .numeric` | `styles/02-billing-drawers.css:758` | base |
-| `.completed-monthly-table tbody tr:last-child td` | `styles/02-billing-drawers.css:748` | base |
-| `.completed-monthly-table td` | `styles/02-billing-drawers.css:731` | base |
-| `.completed-monthly-table tfoot td` | `styles/02-billing-drawers.css:752` | base |
-| `.completed-monthly-table th` | `styles/02-billing-drawers.css:731` | base |
-| `.completed-monthly-table th` | `styles/02-billing-drawers.css:739` | base |
-| `.completed-monthly-wrap` | `styles/02-billing-drawers.css:719` | base |
-| `.completed-more-filter-grid` | `styles/07-detail-layout-and-filters.css:393` | base |
-| `.completed-more-filter-grid` | `styles/07-detail-layout-and-filters.css:409` | @media (max-width: 1200px) |
-| `.completed-more-filter-grid` | `styles/07-detail-layout-and-filters.css:415` | @media (max-width: 700px) |
+| `.completed-heading-count` | `styles/02-billing-drawers.css:421` | base |
+| `.completed-heading-title` | `styles/02-billing-drawers.css:414` | base |
+| `.completed-inline-warning` | `styles/02-billing-drawers.css:1401` | base |
+| `.completed-inline-warning` | `styles/02-billing-drawers.css:685` | base |
+| `.completed-inline-warning span` | `styles/02-billing-drawers.css:695` | base |
+| `.completed-job-number` | `styles/07-detail-layout-and-filters.css:234` | base |
+| `.completed-job-number` | `styles/07-detail-layout-and-filters.css:240` | base |
+| `.completed-job-number-column` | `styles/07-detail-layout-and-filters.css:234` | base |
+| `.completed-kpi-grid` | `styles/02-billing-drawers.css:1298` | base |
+| `.completed-kpi-grid` | `styles/02-billing-drawers.css:655` | base |
+| `.completed-kpi-grid` | `styles/02-billing-drawers.css:773` | @media ( max-width: 1200px ) |
+| `.completed-kpi-grid` | `styles/02-billing-drawers.css:794` | @media ( max-width: 760px ) |
+| `.completed-lifecycle-cell` | `styles/02-billing-drawers.css:496` | base |
+| `.completed-lifecycle-cell` | `styles/07-detail-layout-and-filters.css:254` | base |
+| `.completed-lifecycle-cell span` | `styles/02-billing-drawers.css:502` | base |
+| `.completed-lifecycle-cell span` | `styles/02-billing-drawers.css:519` | base |
+| `.completed-lifecycle-cell span` | `styles/07-detail-layout-and-filters.css:266` | base |
+| `.completed-lifecycle-cell strong` | `styles/02-billing-drawers.css:502` | base |
+| `.completed-lifecycle-cell strong` | `styles/07-detail-layout-and-filters.css:258` | base |
+| `.completed-lifecycle-summary-grid` | `styles/02-billing-drawers.css:1257` | base |
+| `.completed-monthly-table` | `styles/02-billing-drawers.css:727` | base |
+| `.completed-monthly-table .numeric` | `styles/02-billing-drawers.css:760` | base |
+| `.completed-monthly-table tbody tr:last-child td` | `styles/02-billing-drawers.css:750` | base |
+| `.completed-monthly-table td` | `styles/02-billing-drawers.css:733` | base |
+| `.completed-monthly-table tfoot td` | `styles/02-billing-drawers.css:754` | base |
+| `.completed-monthly-table th` | `styles/02-billing-drawers.css:733` | base |
+| `.completed-monthly-table th` | `styles/02-billing-drawers.css:741` | base |
+| `.completed-monthly-wrap` | `styles/02-billing-drawers.css:721` | base |
+| `.completed-more-filter-grid` | `styles/07-detail-layout-and-filters.css:205` | base |
+| `.completed-more-filter-grid` | `styles/07-detail-layout-and-filters.css:221` | @media (max-width: 1200px) |
+| `.completed-more-filter-grid` | `styles/07-detail-layout-and-filters.css:227` | @media (max-width: 700px) |
 | `.completed-progress` | `styles/14-completed-closeout.css:380` | base |
 | `.completed-progress figcaption` | `styles/14-completed-closeout.css:453` | base |
 | `.completed-progress svg` | `styles/14-completed-closeout.css:413` | base |
@@ -1310,53 +1306,53 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.completed-progress-point` | `styles/14-completed-closeout.css:440` | base |
 | `.completed-progress-unavailable` | `styles/14-completed-closeout.css:453` | base |
 | `.completed-progress-unavailable` | `styles/14-completed-closeout.css:461` | base |
-| `.completed-project-card` | `styles/02-billing-drawers.css:461` | base |
-| `.completed-project-filter-grid` | `styles/02-billing-drawers.css:465` | base |
-| `.completed-project-filter-grid` | `styles/02-billing-drawers.css:767` | @media ( max-width: 1200px ) |
-| `.completed-project-filter-grid` | `styles/02-billing-drawers.css:777` | @media ( max-width: 760px ) |
-| `.completed-project-name` | `styles/02-billing-drawers.css:491` | base |
+| `.completed-project-card` | `styles/02-billing-drawers.css:466` | base |
+| `.completed-project-filter-grid` | `styles/02-billing-drawers.css:470` | base |
+| `.completed-project-filter-grid` | `styles/02-billing-drawers.css:769` | @media ( max-width: 1200px ) |
+| `.completed-project-filter-grid` | `styles/02-billing-drawers.css:779` | @media ( max-width: 760px ) |
+| `.completed-project-name` | `styles/02-billing-drawers.css:496` | base |
 | `.completed-project-name` | `styles/12-table-teams-and-zebra.css:371` | base |
 | `.completed-project-name .project-title-ellipsis` | `styles/12-table-teams-and-zebra.css:377` | base |
-| `.completed-project-name span` | `styles/02-billing-drawers.css:497` | base |
-| `.completed-project-name span` | `styles/02-billing-drawers.css:514` | base |
-| `.completed-project-name strong` | `styles/02-billing-drawers.css:497` | base |
-| `.completed-project-name strong` | `styles/02-billing-drawers.css:506` | base |
-| `.completed-project-pill` | `styles/02-billing-drawers.css:529` | base |
-| `.completed-project-pill.critical` | `styles/02-billing-drawers.css:557` | base |
-| `.completed-project-pill.derived` | `styles/02-billing-drawers.css:564` | base |
-| `.completed-project-pill.success` | `styles/02-billing-drawers.css:544` | base |
-| `.completed-project-pill.warning` | `styles/02-billing-drawers.css:550` | base |
-| `.completed-project-row` | `styles/02-billing-drawers.css:477` | base |
-| `.completed-project-row:focus-visible` | `styles/02-billing-drawers.css:486` | base |
-| `.completed-project-row:hover` | `styles/02-billing-drawers.css:482` | base |
-| `.completed-project-stats` | `styles/02-billing-drawers.css:427` | base |
-| `.completed-project-stats` | `styles/02-billing-drawers.css:450` | @media (max-width: 980px) |
-| `.completed-project-stats` | `styles/02-billing-drawers.css:456` | @media (max-width: 650px) |
-| `.completed-project-stats .stat-card` | `styles/02-billing-drawers.css:433` | base |
-| `.completed-project-stats .stat-card small` | `styles/02-billing-drawers.css:444` | base |
-| `.completed-project-stats .stat-card strong` | `styles/02-billing-drawers.css:438` | base |
+| `.completed-project-name span` | `styles/02-billing-drawers.css:502` | base |
+| `.completed-project-name span` | `styles/02-billing-drawers.css:519` | base |
+| `.completed-project-name strong` | `styles/02-billing-drawers.css:502` | base |
+| `.completed-project-name strong` | `styles/02-billing-drawers.css:511` | base |
+| `.completed-project-pill` | `styles/02-billing-drawers.css:534` | base |
+| `.completed-project-pill.critical` | `styles/02-billing-drawers.css:562` | base |
+| `.completed-project-pill.derived` | `styles/02-billing-drawers.css:569` | base |
+| `.completed-project-pill.success` | `styles/02-billing-drawers.css:549` | base |
+| `.completed-project-pill.warning` | `styles/02-billing-drawers.css:555` | base |
+| `.completed-project-row` | `styles/02-billing-drawers.css:482` | base |
+| `.completed-project-row:focus-visible` | `styles/02-billing-drawers.css:491` | base |
+| `.completed-project-row:hover` | `styles/02-billing-drawers.css:487` | base |
+| `.completed-project-stats` | `styles/02-billing-drawers.css:432` | base |
+| `.completed-project-stats` | `styles/02-billing-drawers.css:455` | @media (max-width: 980px) |
+| `.completed-project-stats` | `styles/02-billing-drawers.css:461` | @media (max-width: 650px) |
+| `.completed-project-stats .stat-card` | `styles/02-billing-drawers.css:438` | base |
+| `.completed-project-stats .stat-card small` | `styles/02-billing-drawers.css:449` | base |
+| `.completed-project-stats .stat-card strong` | `styles/02-billing-drawers.css:443` | base |
 | `.completed-project-table` | `styles/08-notifications-and-inputs.css:457` | base |
-| `.completed-project-table .admin-source-hint` | `styles/04-projected-workspace.css:465` | base |
-| `.completed-project-table .commercial-source-note` | `styles/04-projected-workspace.css:465` | base |
+| `.completed-project-table .admin-source-hint` | `styles/02-billing-drawers.css:1281` | base |
+| `.completed-project-table .commercial-source-note` | `styles/02-billing-drawers.css:1281` | base |
 | `.completed-project-table .completed-directory-contract-total` | `styles/14-completed-closeout.css:481` | base |
 | `.completed-project-table .project-team-badge-column` | `styles/12-table-teams-and-zebra.css:381` | base |
-| `.completed-project-table .sortable-column .table-sort-button` | `styles/07-detail-layout-and-filters.css:434` | base |
-| `.completed-project-table td` | `styles/07-detail-layout-and-filters.css:462` | base |
-| `.completed-projects-page` | `styles/02-billing-drawers.css:405` | base |
-| `.completed-quality-stack` | `styles/02-billing-drawers.css:522` | base |
-| `.completed-section-heading` | `styles/02-billing-drawers.css:665` | base |
-| `.completed-section-heading` | `styles/02-billing-drawers.css:797` | @media ( max-width: 760px ) |
-| `.completed-section-heading h3` | `styles/02-billing-drawers.css:673` | base |
-| `.content-card` | `styles/01-foundations.css:245` | base |
-| `.content-card` | `styles/01-foundations.css:376` | base |
+| `.completed-project-table .sortable-column .table-sort-button` | `styles/07-detail-layout-and-filters.css:246` | base |
+| `.completed-project-table td` | `styles/07-detail-layout-and-filters.css:274` | base |
+| `.completed-projects-page` | `styles/02-billing-drawers.css:410` | base |
+| `.completed-quality-stack` | `styles/02-billing-drawers.css:527` | base |
+| `.completed-section-heading` | `styles/02-billing-drawers.css:667` | base |
+| `.completed-section-heading` | `styles/02-billing-drawers.css:799` | @media ( max-width: 760px ) |
+| `.completed-section-heading h3` | `styles/02-billing-drawers.css:675` | base |
 | `.content-card` | `styles/01-foundations.css:1528` | base |
 | `.content-card` | `styles/01-foundations.css:1632` | base |
+| `.content-card` | `styles/01-foundations.css:245` | base |
+| `.content-card` | `styles/01-foundations.css:376` | base |
 | `.csv-export-backdrop` | `CsvExportDialog.css:1` | base |
 | `.csv-export-backdrop` | `CsvExportDialog.css:14` | @media (max-width:560px) |
 | `.csv-export-close` | `CsvExportDialog.css:6` | base |
 | `.csv-export-close:hover` | `CsvExportDialog.css:7` | base |
-| `.csv-export-dialog` | `CsvExportDialog.css:2` | base |
 | `.csv-export-dialog` | `CsvExportDialog.css:14` | @media (max-width:560px) |
+| `.csv-export-dialog` | `CsvExportDialog.css:2` | base |
 | `.csv-export-footer` | `CsvExportDialog.css:13` | base |
 | `.csv-export-footer` | `CsvExportDialog.css:14` | @media (max-width:560px) |
 | `.csv-export-footer button` | `CsvExportDialog.css:14` | @media (max-width:560px) |
@@ -1368,63 +1364,63 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.csv-export-option strong` | `CsvExportDialog.css:11` | base |
 | `.csv-export-option:hover` | `CsvExportDialog.css:10` | base |
 | `.csv-export-options` | `CsvExportDialog.css:8` | base |
-| `.current-user` | `styles/01-foundations.css:134` | base |
 | `.current-user` | `styles/01-foundations.css:1003` | @media (max-width: 760px) |
+| `.current-user` | `styles/01-foundations.css:134` | base |
 | `.current-user` | `styles/01-foundations.css:1370` | base |
 | `.current-user` | `styles/01-foundations.css:1758` | @media (max-width: 760px) |
-| `.current-user span` | `styles/01-foundations.css:141` | base |
 | `.current-user span` | `styles/01-foundations.css:1383` | base |
+| `.current-user span` | `styles/01-foundations.css:141` | base |
 | `.current-user strong` | `styles/01-foundations.css:1375` | base |
-| `.curve-assumption-card` | `styles/02-billing-drawers.css:805` | base |
-| `.curve-method-badge` | `styles/02-billing-drawers.css:815` | base |
-| `.curve-method-badge.curve` | `styles/02-billing-drawers.css:830` | base |
-| `.curve-method-badge.warning` | `styles/02-billing-drawers.css:836` | base |
-| `.curve-version` | `styles/02-billing-drawers.css:809` | base |
-| `.detail-heading-actions` | `styles/02-billing-drawers.css:243` | base |
-| `.detail-heading-actions` | `styles/02-billing-drawers.css:343` | @media (max-width: 700px) |
-| `.detail-table` | `styles/01-foundations.css:396` | base |
+| `.curve-assumption-card` | `styles/02-billing-drawers.css:807` | base |
+| `.curve-method-badge` | `styles/02-billing-drawers.css:817` | base |
+| `.curve-method-badge.curve` | `styles/02-billing-drawers.css:832` | base |
+| `.curve-method-badge.warning` | `styles/02-billing-drawers.css:838` | base |
+| `.curve-version` | `styles/02-billing-drawers.css:811` | base |
+| `.detail-heading-actions` | `styles/02-billing-drawers.css:248` | base |
+| `.detail-heading-actions` | `styles/02-billing-drawers.css:348` | @media (max-width: 700px) |
 | `.detail-table` | `styles/01-foundations.css:1645` | base |
 | `.detail-table` | `styles/01-foundations.css:1654` | base |
+| `.detail-table` | `styles/01-foundations.css:396` | base |
 | `.detail-table tbody tr:hover` | `styles/01-foundations.css:427` | base |
 | `.detail-table tbody tr:last-child td` | `styles/01-foundations.css:422` | base |
-| `.detail-table td` | `styles/01-foundations.css:402` | base |
 | `.detail-table td` | `styles/01-foundations.css:1658` | base |
-| `.detail-table th` | `styles/01-foundations.css:402` | base |
-| `.detail-table th` | `styles/01-foundations.css:411` | base |
+| `.detail-table td` | `styles/01-foundations.css:402` | base |
 | `.detail-table th` | `styles/01-foundations.css:1658` | base |
 | `.detail-table th` | `styles/01-foundations.css:1665` | base |
+| `.detail-table th` | `styles/01-foundations.css:402` | base |
+| `.detail-table th` | `styles/01-foundations.css:411` | base |
 | `.detail-table-wrap` | `styles/01-foundations.css:391` | base |
-| `.drawer-tbd-value` | `styles/04-projected-workspace.css:207` | base |
+| `.drawer-tbd-value` | `styles/02-billing-drawers.css:1025` | base |
 | `.empty-cell` | `styles/01-foundations.css:541` | base |
-| `.eyebrow` | `styles/01-foundations.css:155` | base |
 | `.eyebrow` | `styles/01-foundations.css:1401` | base |
-| `.filter-actions` | `styles/01-foundations.css:295` | base |
-| `.filter-actions` | `styles/01-foundations.css:989` | @media (max-width: 1180px) |
+| `.eyebrow` | `styles/01-foundations.css:155` | base |
 | `.filter-actions` | `styles/01-foundations.css:1019` | @media (max-width: 760px) |
 | `.filter-actions` | `styles/01-foundations.css:1572` | base |
-| `.filter-field` | `styles/01-foundations.css:260` | base |
+| `.filter-actions` | `styles/01-foundations.css:295` | base |
+| `.filter-actions` | `styles/01-foundations.css:989` | @media (max-width: 1180px) |
 | `.filter-field` | `styles/01-foundations.css:1549` | base |
-| `.filter-field > span` | `styles/01-foundations.css:265` | base |
+| `.filter-field` | `styles/01-foundations.css:260` | base |
 | `.filter-field > span` | `styles/01-foundations.css:1553` | base |
-| `.filter-field input` | `styles/01-foundations.css:273` | base |
+| `.filter-field > span` | `styles/01-foundations.css:265` | base |
 | `.filter-field input` | `styles/01-foundations.css:1558` | base |
+| `.filter-field input` | `styles/01-foundations.css:273` | base |
 | `.filter-field input:focus` | `styles/01-foundations.css:1566` | base |
 | `.filter-field input[type="month"]` | `styles/01-foundations.css:282` | base |
 | `.filter-field input[type="month"]::-webkit-calendar-picker-indicator` | `styles/01-foundations.css:290` | base |
-| `.filter-field select` | `styles/01-foundations.css:273` | base |
 | `.filter-field select` | `styles/01-foundations.css:1558` | base |
+| `.filter-field select` | `styles/01-foundations.css:273` | base |
 | `.filter-field select:focus` | `styles/01-foundations.css:1566` | base |
-| `.filter-grid` | `styles/01-foundations.css:255` | base |
-| `.filter-grid` | `styles/01-foundations.css:984` | @media (max-width: 1180px) |
 | `.filter-grid` | `styles/01-foundations.css:1541` | base |
 | `.filter-grid` | `styles/01-foundations.css:1721` | @media (max-width: 900px) |
 | `.filter-grid` | `styles/01-foundations.css:1781` | @media (max-width: 760px) |
-| `.filter-group-title` | `styles/01-foundations.css:265` | base |
+| `.filter-grid` | `styles/01-foundations.css:255` | base |
+| `.filter-grid` | `styles/01-foundations.css:984` | @media (max-width: 1180px) |
 | `.filter-group-title` | `styles/01-foundations.css:1553` | base |
 | `.filter-group-title` | `styles/01-foundations.css:1582` | base |
-| `.filter-panel` | `styles/01-foundations.css:245` | base |
+| `.filter-group-title` | `styles/01-foundations.css:265` | base |
 | `.filter-panel` | `styles/01-foundations.css:1528` | base |
 | `.filter-panel` | `styles/01-foundations.css:1536` | base |
+| `.filter-panel` | `styles/01-foundations.css:245` | base |
 | `.filter-toggle-buttons` | `ViewControls.css:19` | base |
 | `.filter-toggle-buttons button` | `ViewControls.css:20` | base |
 | `.filter-toggle-buttons button:focus-visible` | `ViewControls.css:6` | base |
@@ -1466,10 +1462,10 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.floating-editor-title-row` | `styles/10-active-projects.css:263` | base |
 | `.floating-editor-title-row h2` | `styles/10-active-projects.css:267` | base |
 | `.floating-editor-title-row p` | `styles/10-active-projects.css:273` | base |
-| `.floating-filter-tab` | `styles/07-detail-layout-and-filters.css:201` | base |
-| `.floating-filter-tab` | `styles/07-detail-layout-and-filters.css:382` | @media (max-width: 640px) |
-| `.floating-filter-tab span` | `styles/07-detail-layout-and-filters.css:222` | base |
-| `.floating-filter-tab:hover` | `styles/07-detail-layout-and-filters.css:228` | base |
+| `.floating-filter-tab` | `styles/07-detail-layout-and-filters.css:13` | base |
+| `.floating-filter-tab` | `styles/07-detail-layout-and-filters.css:194` | @media (max-width: 640px) |
+| `.floating-filter-tab span` | `styles/07-detail-layout-and-filters.css:34` | base |
+| `.floating-filter-tab:hover` | `styles/07-detail-layout-and-filters.css:40` | base |
 | `.floating-table-controls` | `styles/05-project-pivot.css:548` | @media print |
 | `.floating-table-controls .project-pivot-metric-toggle` | `styles/05-project-pivot.css:527` | base |
 | `.floating-table-controls .project-pivot-month-scroll` | `styles/11-lifecycle-feedback-and-staffing.css:406` | base |
@@ -1495,9 +1491,9 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.gc-display.compact` | `styles/08-notifications-and-inputs.css:396` | base |
 | `.gc-empty` | `styles/08-notifications-and-inputs.css:420` | base |
 | `.gc-table-cell` | `styles/08-notifications-and-inputs.css:424` | base |
-| `.heading-actions` | `styles/01-foundations.css:150` | base |
 | `.heading-actions` | `styles/01-foundations.css:1011` | @media (max-width: 760px) |
 | `.heading-actions` | `styles/01-foundations.css:1425` | base |
+| `.heading-actions` | `styles/01-foundations.css:150` | base |
 | `.info-icon-button` | `ViewControls.css:14` | base |
 | `.info-icon-button:focus-visible` | `ViewControls.css:6` | base |
 | `.info-icon-button:hover` | `ViewControls.css:15` | base |
@@ -1507,13 +1503,13 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.information-sheet-section` | `styles/10-active-projects.css:472` | base |
 | `.information-sheet-subheading` | `styles/10-active-projects.css:481` | base |
 | `.job-number-cell` | `styles/04-projected-workspace.css:34` | base |
-| `.loading-panel` | `styles/01-foundations.css:245` | base |
 | `.loading-panel` | `styles/01-foundations.css:1528` | base |
 | `.loading-panel` | `styles/01-foundations.css:1593` | base |
-| `.loading-panel > div:first-child` | `styles/01-foundations.css:318` | base |
+| `.loading-panel` | `styles/01-foundations.css:245` | base |
 | `.loading-panel > div:first-child` | `styles/01-foundations.css:1598` | base |
-| `.loading-panel small` | `styles/01-foundations.css:324` | base |
+| `.loading-panel > div:first-child` | `styles/01-foundations.css:318` | base |
 | `.loading-panel small` | `styles/01-foundations.css:1602` | base |
+| `.loading-panel small` | `styles/01-foundations.css:324` | base |
 | `.loading-screen` | `styles/01-foundations.css:45` | base |
 | `.management-preview-cognito-guide` | `styles/13-financial-review-and-metrics.css:545` | base |
 | `.management-preview-cognito-guide strong` | `styles/13-financial-review-and-metrics.css:555` | base |
@@ -1526,22 +1522,22 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.microsoft-mark span:nth-child(2)` | `styles/01-foundations.css:830` | base |
 | `.microsoft-mark span:nth-child(3)` | `styles/01-foundations.css:834` | base |
 | `.microsoft-mark span:nth-child(4)` | `styles/01-foundations.css:838` | base |
-| `.mode-tabs` | `styles/01-foundations.css:210` | base |
 | `.mode-tabs` | `styles/01-foundations.css:1015` | @media (max-width: 760px) |
+| `.mode-tabs` | `styles/01-foundations.css:210` | base |
 | `.mode-tabs button` | `styles/01-foundations.css:216` | base |
 | `.mode-tabs button span` | `styles/01-foundations.css:230` | base |
 | `.mode-tabs button.active` | `styles/01-foundations.css:239` | base |
 | `.money-input` | `styles/08-notifications-and-inputs.css:274` | base |
-| `.money-negative` | `styles/04-projected-workspace.css:361` | base |
+| `.money-negative` | `styles/04-projected-workspace.css:176` | base |
 | `.month-cell` | `styles/01-foundations.css:432` | base |
-| `.month-current-project-row` | `styles/02-billing-drawers.css:334` | base |
-| `.month-current-project-row:hover` | `styles/02-billing-drawers.css:338` | base |
-| `.monthly-comparison-body[hidden]` | `styles/02-billing-drawers.css:378` | base |
-| `.monthly-comparison-row` | `styles/02-billing-drawers.css:272` | base |
-| `.monthly-comparison-row:hover` | `styles/02-billing-drawers.css:277` | base |
+| `.month-current-project-row` | `styles/02-billing-drawers.css:339` | base |
+| `.month-current-project-row:hover` | `styles/02-billing-drawers.css:343` | base |
+| `.monthly-comparison-body[hidden]` | `styles/02-billing-drawers.css:383` | base |
+| `.monthly-comparison-row` | `styles/02-billing-drawers.css:277` | base |
+| `.monthly-comparison-row:hover` | `styles/02-billing-drawers.css:282` | base |
 | `.monthly-comparison-row.selected` | `styles/12-table-teams-and-zebra.css:443` | base |
-| `.monthly-heading-actions` | `styles/02-billing-drawers.css:351` | base |
-| `.monthly-heading-actions` | `styles/02-billing-drawers.css:383` | @media (max-width: 700px) |
+| `.monthly-heading-actions` | `styles/02-billing-drawers.css:356` | base |
+| `.monthly-heading-actions` | `styles/02-billing-drawers.css:388` | @media (max-width: 700px) |
 | `.monthly-heading-actions` | `styles/05-project-pivot.css:210` | @media (max-width: 900px) |
 | `.monthly-margin-cell` | `styles/04-projected-workspace.css:121` | base |
 | `.monthly-margin-percent` | `styles/04-projected-workspace.css:125` | base |
@@ -1549,36 +1545,36 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.monthly-margin-value` | `styles/04-projected-workspace.css:125` | base |
 | `.monthly-margin-value` | `styles/04-projected-workspace.css:130` | base |
 | `.monthly-margin-warning` | `styles/04-projected-workspace.css:144` | base |
-| `.monthly-project-detail` | `styles/02-billing-drawers.css:395` | base |
-| `.monthly-project-detail-heading` | `styles/02-billing-drawers.css:286` | base |
-| `.monthly-project-detail-heading > span` | `styles/02-billing-drawers.css:300` | base |
-| `.monthly-project-detail-heading strong` | `styles/02-billing-drawers.css:294` | base |
-| `.monthly-project-detail-row > td` | `styles/02-billing-drawers.css:281` | base |
-| `.monthly-project-detail-row > td` | `styles/02-billing-drawers.css:391` | base |
-| `.monthly-project-table` | `styles/02-billing-drawers.css:311` | base |
-| `.monthly-project-table` | `styles/06-project-references.css:828` | base |
+| `.monthly-project-detail` | `styles/02-billing-drawers.css:400` | base |
+| `.monthly-project-detail-heading` | `styles/02-billing-drawers.css:291` | base |
+| `.monthly-project-detail-heading > span` | `styles/02-billing-drawers.css:305` | base |
+| `.monthly-project-detail-heading strong` | `styles/02-billing-drawers.css:299` | base |
+| `.monthly-project-detail-row > td` | `styles/02-billing-drawers.css:286` | base |
+| `.monthly-project-detail-row > td` | `styles/02-billing-drawers.css:396` | base |
+| `.monthly-project-table` | `styles/02-billing-drawers.css:316` | base |
+| `.monthly-project-table` | `styles/06-project-references.css:816` | base |
 | `.monthly-project-table .gc-table-cell` | `styles/08-notifications-and-inputs.css:436` | base |
-| `.monthly-project-table .numeric` | `styles/02-billing-drawers.css:330` | base |
+| `.monthly-project-table .numeric` | `styles/02-billing-drawers.css:335` | base |
 | `.monthly-project-table .project-cell` | `styles/12-table-teams-and-zebra.css:220` | base |
-| `.monthly-project-table td` | `styles/02-billing-drawers.css:316` | base |
-| `.monthly-project-table th` | `styles/02-billing-drawers.css:316` | base |
-| `.monthly-project-table th` | `styles/02-billing-drawers.css:323` | base |
-| `.monthly-project-table-wrap` | `styles/02-billing-drawers.css:305` | base |
-| `.monthly-table` | `styles/01-foundations.css:396` | base |
+| `.monthly-project-table td` | `styles/02-billing-drawers.css:321` | base |
+| `.monthly-project-table th` | `styles/02-billing-drawers.css:321` | base |
+| `.monthly-project-table th` | `styles/02-billing-drawers.css:328` | base |
+| `.monthly-project-table-wrap` | `styles/02-billing-drawers.css:310` | base |
 | `.monthly-table` | `styles/01-foundations.css:1645` | base |
 | `.monthly-table` | `styles/01-foundations.css:1650` | base |
+| `.monthly-table` | `styles/01-foundations.css:396` | base |
 | `.monthly-table tbody tr:hover` | `styles/01-foundations.css:427` | base |
 | `.monthly-table tbody tr:last-child td` | `styles/01-foundations.css:422` | base |
-| `.monthly-table td` | `styles/01-foundations.css:402` | base |
 | `.monthly-table td` | `styles/01-foundations.css:1658` | base |
-| `.monthly-table th` | `styles/01-foundations.css:402` | base |
-| `.monthly-table th` | `styles/01-foundations.css:411` | base |
+| `.monthly-table td` | `styles/01-foundations.css:402` | base |
 | `.monthly-table th` | `styles/01-foundations.css:1658` | base |
 | `.monthly-table th` | `styles/01-foundations.css:1665` | base |
+| `.monthly-table th` | `styles/01-foundations.css:402` | base |
+| `.monthly-table th` | `styles/01-foundations.css:411` | base |
 | `.monthly-table-wrap` | `styles/01-foundations.css:391` | base |
 | `.monthly-total-row` | `styles/04-projected-workspace.css:117` | base |
-| `.more-filters` | `styles/01-foundations.css:300` | base |
 | `.more-filters` | `styles/01-foundations.css:1576` | base |
+| `.more-filters` | `styles/01-foundations.css:300` | base |
 | `.muted-value` | `styles/01-foundations.css:1230` | base |
 | `.needs-rebalance-action` | `styles/13-financial-review-and-metrics.css:28` | base |
 | `.needs-rebalance-action:focus-visible` | `styles/13-financial-review-and-metrics.css:33` | base |
@@ -1606,8 +1602,8 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.notification-card-heading-copy > strong` | `styles/13-financial-review-and-metrics.css:130` | base |
 | `.notification-card-reason` | `styles/13-financial-review-and-metrics.css:139` | base |
 | `.notification-card-reason` | `styles/13-financial-review-and-metrics.css:153` | base |
-| `.notification-center` | `styles/08-notifications-and-inputs.css:59` | base |
 | `.notification-center` | `styles/08-notifications-and-inputs.css:268` | @media print |
+| `.notification-center` | `styles/08-notifications-and-inputs.css:59` | base |
 | `.notification-count` | `styles/08-notifications-and-inputs.css:98` | base |
 | `.notification-empty` | `styles/08-notifications-and-inputs.css:240` | base |
 | `.notification-grace-note` | `styles/13-financial-review-and-metrics.css:166` | base |
@@ -1639,96 +1635,96 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.numeric .table-sort-button` | `styles/04-projected-workspace.css:74` | base |
 | `.organizer-notes-field` | `styles/11-lifecycle-feedback-and-staffing.css:922` | base |
 | `.originating-bid-attention-drawer` | `styles/08-notifications-and-inputs.css:236` | base |
-| `.originating-bid-candidate` | `styles/06-project-references.css:381` | base |
-| `.originating-bid-candidate-facts` | `styles/06-project-references.css:187` | base |
-| `.originating-bid-candidate-facts` | `styles/06-project-references.css:546` | @media (max-width: 760px) |
-| `.originating-bid-candidate-facts > div` | `styles/06-project-references.css:194` | base |
-| `.originating-bid-candidate-facts span` | `styles/06-project-references.css:205` | base |
-| `.originating-bid-candidate-facts strong` | `styles/06-project-references.css:214` | base |
-| `.originating-bid-candidate-head` | `styles/06-project-references.css:396` | base |
-| `.originating-bid-candidate-head > div` | `styles/06-project-references.css:403` | base |
-| `.originating-bid-candidate-head small` | `styles/06-project-references.css:409` | base |
-| `.originating-bid-candidate-list` | `styles/06-project-references.css:363` | base |
-| `.originating-bid-candidate-name-row` | `styles/06-project-references.css:414` | base |
-| `.originating-bid-candidate-name-row > strong` | `styles/06-project-references.css:421` | base |
-| `.originating-bid-candidate.selected` | `styles/06-project-references.css:391` | base |
-| `.originating-bid-confidence` | `styles/06-project-references.css:427` | base |
-| `.originating-bid-confidence.likely` | `styles/06-project-references.css:447` | base |
-| `.originating-bid-confidence.very-likely` | `styles/06-project-references.css:441` | base |
-| `.originating-bid-confirm-actions` | `styles/06-project-references.css:520` | base |
-| `.originating-bid-confirm-actions` | `styles/06-project-references.css:556` | @media (max-width: 760px) |
-| `.originating-bid-confirmation` | `styles/06-project-references.css:491` | base |
-| `.originating-bid-confirmation` | `styles/06-project-references.css:551` | @media (max-width: 760px) |
-| `.originating-bid-confirmation > div:first-child` | `styles/06-project-references.css:502` | base |
-| `.originating-bid-confirmation p` | `styles/06-project-references.css:513` | base |
-| `.originating-bid-confirmation strong` | `styles/06-project-references.css:507` | base |
-| `.originating-bid-empty` | `styles/06-project-references.css:340` | base |
-| `.originating-bid-empty` | `styles/06-project-references.css:350` | base |
-| `.originating-bid-error` | `styles/06-project-references.css:340` | base |
-| `.originating-bid-error` | `styles/06-project-references.css:357` | base |
-| `.originating-bid-finder` | `styles/06-project-references.css:237` | base |
-| `.originating-bid-finder-head` | `styles/06-project-references.css:246` | base |
-| `.originating-bid-finder-head > div` | `styles/06-project-references.css:253` | base |
-| `.originating-bid-finder-head small` | `styles/06-project-references.css:264` | base |
-| `.originating-bid-finder-head strong` | `styles/06-project-references.css:258` | base |
-| `.originating-bid-help` | `styles/06-project-references.css:129` | base |
-| `.originating-bid-help > summary` | `styles/06-project-references.css:91` | base |
-| `.originating-bid-help > summary` | `styles/06-project-references.css:135` | base |
-| `.originating-bid-help > summary::-webkit-details-marker` | `styles/06-project-references.css:140` | base |
-| `.originating-bid-help > summary:hover` | `styles/06-project-references.css:111` | base |
-| `.originating-bid-help-address` | `styles/06-project-references.css:225` | base |
-| `.originating-bid-help-facts` | `styles/06-project-references.css:187` | base |
-| `.originating-bid-help-facts` | `styles/06-project-references.css:546` | @media (max-width: 760px) |
-| `.originating-bid-help-facts > div` | `styles/06-project-references.css:194` | base |
-| `.originating-bid-help-facts span` | `styles/06-project-references.css:205` | base |
-| `.originating-bid-help-facts strong` | `styles/06-project-references.css:214` | base |
-| `.originating-bid-help-popover` | `styles/06-project-references.css:145` | base |
-| `.originating-bid-help-popover` | `styles/06-project-references.css:773` | base |
-| `.originating-bid-help-title > div` | `styles/06-project-references.css:163` | base |
-| `.originating-bid-help-title small` | `styles/06-project-references.css:182` | base |
-| `.originating-bid-help-title span` | `styles/06-project-references.css:168` | base |
-| `.originating-bid-help-title strong` | `styles/06-project-references.css:176` | base |
-| `.originating-bid-inline-success` | `styles/06-project-references.css:123` | base |
-| `.originating-bid-link-warning` | `styles/06-project-references.css:471` | base |
-| `.originating-bid-link-warning span` | `styles/06-project-references.css:486` | base |
-| `.originating-bid-link-warning strong` | `styles/06-project-references.css:480` | base |
-| `.originating-bid-match-reasons` | `styles/06-project-references.css:455` | base |
-| `.originating-bid-match-reasons > span` | `styles/06-project-references.css:461` | base |
-| `.originating-bid-primary-button` | `styles/06-project-references.css:295` | base |
-| `.originating-bid-primary-button` | `styles/06-project-references.css:307` | base |
-| `.originating-bid-primary-button:disabled` | `styles/06-project-references.css:332` | base |
-| `.originating-bid-results-summary` | `styles/06-project-references.css:368` | base |
-| `.originating-bid-results-summary > span` | `styles/06-project-references.css:375` | base |
-| `.originating-bid-results-summary small` | `styles/06-project-references.css:264` | base |
-| `.originating-bid-review-button` | `styles/06-project-references.css:295` | base |
-| `.originating-bid-review-button` | `styles/06-project-references.css:316` | base |
-| `.originating-bid-review-button:disabled` | `styles/06-project-references.css:332` | base |
-| `.originating-bid-search` | `styles/06-project-references.css:271` | base |
-| `.originating-bid-search button` | `styles/06-project-references.css:295` | base |
-| `.originating-bid-search button` | `styles/06-project-references.css:307` | base |
-| `.originating-bid-search button:disabled` | `styles/06-project-references.css:332` | base |
-| `.originating-bid-search input` | `styles/06-project-references.css:277` | base |
-| `.originating-bid-search input:focus` | `styles/06-project-references.css:290` | base |
-| `.originating-bid-secondary-button` | `styles/06-project-references.css:295` | base |
-| `.originating-bid-secondary-button` | `styles/06-project-references.css:316` | base |
-| `.originating-bid-secondary-button:disabled` | `styles/06-project-references.css:332` | base |
-| `.originating-bid-status` | `styles/06-project-references.css:340` | base |
-| `.originating-bid-status` | `styles/06-project-references.css:350` | base |
-| `.originating-bid-text-button` | `styles/06-project-references.css:295` | base |
-| `.originating-bid-text-button` | `styles/06-project-references.css:325` | base |
-| `.originating-bid-wide-fact` | `styles/06-project-references.css:451` | base |
-| `.page-alert` | `styles/01-foundations.css:245` | base |
-| `.page-alert` | `styles/01-foundations.css:308` | base |
+| `.originating-bid-candidate` | `styles/06-project-references.css:375` | base |
+| `.originating-bid-candidate-facts` | `styles/06-project-references.css:181` | base |
+| `.originating-bid-candidate-facts` | `styles/06-project-references.css:540` | @media (max-width: 760px) |
+| `.originating-bid-candidate-facts > div` | `styles/06-project-references.css:188` | base |
+| `.originating-bid-candidate-facts span` | `styles/06-project-references.css:199` | base |
+| `.originating-bid-candidate-facts strong` | `styles/06-project-references.css:208` | base |
+| `.originating-bid-candidate-head` | `styles/06-project-references.css:390` | base |
+| `.originating-bid-candidate-head > div` | `styles/06-project-references.css:397` | base |
+| `.originating-bid-candidate-head small` | `styles/06-project-references.css:403` | base |
+| `.originating-bid-candidate-list` | `styles/06-project-references.css:357` | base |
+| `.originating-bid-candidate-name-row` | `styles/06-project-references.css:408` | base |
+| `.originating-bid-candidate-name-row > strong` | `styles/06-project-references.css:415` | base |
+| `.originating-bid-candidate.selected` | `styles/06-project-references.css:385` | base |
+| `.originating-bid-confidence` | `styles/06-project-references.css:421` | base |
+| `.originating-bid-confidence.likely` | `styles/06-project-references.css:441` | base |
+| `.originating-bid-confidence.very-likely` | `styles/06-project-references.css:435` | base |
+| `.originating-bid-confirm-actions` | `styles/06-project-references.css:514` | base |
+| `.originating-bid-confirm-actions` | `styles/06-project-references.css:550` | @media (max-width: 760px) |
+| `.originating-bid-confirmation` | `styles/06-project-references.css:485` | base |
+| `.originating-bid-confirmation` | `styles/06-project-references.css:545` | @media (max-width: 760px) |
+| `.originating-bid-confirmation > div:first-child` | `styles/06-project-references.css:496` | base |
+| `.originating-bid-confirmation p` | `styles/06-project-references.css:507` | base |
+| `.originating-bid-confirmation strong` | `styles/06-project-references.css:501` | base |
+| `.originating-bid-empty` | `styles/06-project-references.css:334` | base |
+| `.originating-bid-empty` | `styles/06-project-references.css:344` | base |
+| `.originating-bid-error` | `styles/06-project-references.css:334` | base |
+| `.originating-bid-error` | `styles/06-project-references.css:351` | base |
+| `.originating-bid-finder` | `styles/06-project-references.css:231` | base |
+| `.originating-bid-finder-head` | `styles/06-project-references.css:240` | base |
+| `.originating-bid-finder-head > div` | `styles/06-project-references.css:247` | base |
+| `.originating-bid-finder-head small` | `styles/06-project-references.css:258` | base |
+| `.originating-bid-finder-head strong` | `styles/06-project-references.css:252` | base |
+| `.originating-bid-help` | `styles/06-project-references.css:123` | base |
+| `.originating-bid-help > summary` | `styles/06-project-references.css:129` | base |
+| `.originating-bid-help > summary` | `styles/06-project-references.css:85` | base |
+| `.originating-bid-help > summary::-webkit-details-marker` | `styles/06-project-references.css:134` | base |
+| `.originating-bid-help > summary:hover` | `styles/06-project-references.css:105` | base |
+| `.originating-bid-help-address` | `styles/06-project-references.css:219` | base |
+| `.originating-bid-help-facts` | `styles/06-project-references.css:181` | base |
+| `.originating-bid-help-facts` | `styles/06-project-references.css:540` | @media (max-width: 760px) |
+| `.originating-bid-help-facts > div` | `styles/06-project-references.css:188` | base |
+| `.originating-bid-help-facts span` | `styles/06-project-references.css:199` | base |
+| `.originating-bid-help-facts strong` | `styles/06-project-references.css:208` | base |
+| `.originating-bid-help-popover` | `styles/06-project-references.css:139` | base |
+| `.originating-bid-help-popover` | `styles/06-project-references.css:761` | base |
+| `.originating-bid-help-title > div` | `styles/06-project-references.css:157` | base |
+| `.originating-bid-help-title small` | `styles/06-project-references.css:176` | base |
+| `.originating-bid-help-title span` | `styles/06-project-references.css:162` | base |
+| `.originating-bid-help-title strong` | `styles/06-project-references.css:170` | base |
+| `.originating-bid-inline-success` | `styles/06-project-references.css:117` | base |
+| `.originating-bid-link-warning` | `styles/06-project-references.css:465` | base |
+| `.originating-bid-link-warning span` | `styles/06-project-references.css:480` | base |
+| `.originating-bid-link-warning strong` | `styles/06-project-references.css:474` | base |
+| `.originating-bid-match-reasons` | `styles/06-project-references.css:449` | base |
+| `.originating-bid-match-reasons > span` | `styles/06-project-references.css:455` | base |
+| `.originating-bid-primary-button` | `styles/06-project-references.css:289` | base |
+| `.originating-bid-primary-button` | `styles/06-project-references.css:301` | base |
+| `.originating-bid-primary-button:disabled` | `styles/06-project-references.css:326` | base |
+| `.originating-bid-results-summary` | `styles/06-project-references.css:362` | base |
+| `.originating-bid-results-summary > span` | `styles/06-project-references.css:369` | base |
+| `.originating-bid-results-summary small` | `styles/06-project-references.css:258` | base |
+| `.originating-bid-review-button` | `styles/06-project-references.css:289` | base |
+| `.originating-bid-review-button` | `styles/06-project-references.css:310` | base |
+| `.originating-bid-review-button:disabled` | `styles/06-project-references.css:326` | base |
+| `.originating-bid-search` | `styles/06-project-references.css:265` | base |
+| `.originating-bid-search button` | `styles/06-project-references.css:289` | base |
+| `.originating-bid-search button` | `styles/06-project-references.css:301` | base |
+| `.originating-bid-search button:disabled` | `styles/06-project-references.css:326` | base |
+| `.originating-bid-search input` | `styles/06-project-references.css:271` | base |
+| `.originating-bid-search input:focus` | `styles/06-project-references.css:284` | base |
+| `.originating-bid-secondary-button` | `styles/06-project-references.css:289` | base |
+| `.originating-bid-secondary-button` | `styles/06-project-references.css:310` | base |
+| `.originating-bid-secondary-button:disabled` | `styles/06-project-references.css:326` | base |
+| `.originating-bid-status` | `styles/06-project-references.css:334` | base |
+| `.originating-bid-status` | `styles/06-project-references.css:344` | base |
+| `.originating-bid-text-button` | `styles/06-project-references.css:289` | base |
+| `.originating-bid-text-button` | `styles/06-project-references.css:319` | base |
+| `.originating-bid-wide-fact` | `styles/06-project-references.css:445` | base |
 | `.page-alert` | `styles/01-foundations.css:1528` | base |
 | `.page-alert` | `styles/01-foundations.css:1586` | base |
+| `.page-alert` | `styles/01-foundations.css:245` | base |
+| `.page-alert` | `styles/01-foundations.css:308` | base |
 | `.page-alert span` | `styles/01-foundations.css:314` | base |
-| `.page-heading` | `styles/01-foundations.css:145` | base |
 | `.page-heading` | `styles/01-foundations.css:1007` | @media (max-width: 760px) |
 | `.page-heading` | `styles/01-foundations.css:1395` | base |
+| `.page-heading` | `styles/01-foundations.css:145` | base |
 | `.page-heading` | `styles/01-foundations.css:1716` | @media (max-width: 900px) |
+| `.page-heading p` | `styles/01-foundations.css:1419` | base |
 | `.page-heading p` | `styles/01-foundations.css:165` | base |
 | `.page-heading p` | `styles/01-foundations.css:170` | base |
-| `.page-heading p` | `styles/01-foundations.css:1419` | base |
 | `.page-shell` | `styles/01-foundations.css:1388` | base |
 | `.page-shell` | `styles/01-foundations.css:1712` | @media (max-width: 900px) |
 | `.page-shell` | `styles/01-foundations.css:1764` | @media (max-width: 760px) |
@@ -1782,9 +1778,9 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.pivot-project-name` | `styles/05-project-pivot.css:337` | base |
 | `.pivot-project-name` | `styles/12-table-teams-and-zebra.css:201` | base |
 | `.pivot-project-name` | `styles/12-table-teams-and-zebra.css:209` | base |
-| `.pivot-project-name-line` | `styles/12-table-teams-and-zebra.css:46` | base |
 | `.pivot-project-name-line` | `styles/12-table-teams-and-zebra.css:190` | base |
 | `.pivot-project-name-line` | `styles/12-table-teams-and-zebra.css:196` | base |
+| `.pivot-project-name-line` | `styles/12-table-teams-and-zebra.css:46` | base |
 | `.pivot-project-name-line:has(.needs-rebalance-flag)` | `styles/13-financial-review-and-metrics.css:208` | base |
 | `.pivot-project-name-line:has(.schedule-review-flag)` | `styles/13-financial-review-and-metrics.css:208` | base |
 | `.pivot-project-pm-line` | `styles/05-project-pivot.css:344` | base |
@@ -1911,12 +1907,12 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.pm-policy-updated` | `styles/03-pm-projections.css:522` | base |
 | `.pm-save-button` | `styles/03-pm-projections.css:255` | base |
 | `.pm-save-button:hover:not(:disabled)` | `styles/03-pm-projections.css:266` | base |
-| `.primary-button` | `styles/01-foundations.css:187` | base |
 | `.primary-button` | `styles/01-foundations.css:1429` | base |
-| `.primary-filters` | `styles/01-foundations.css:984` | @media (max-width: 1180px) |
+| `.primary-button` | `styles/01-foundations.css:187` | base |
 | `.primary-filters` | `styles/01-foundations.css:1545` | base |
 | `.primary-filters` | `styles/01-foundations.css:1721` | @media (max-width: 900px) |
 | `.primary-filters` | `styles/01-foundations.css:1781` | @media (max-width: 760px) |
+| `.primary-filters` | `styles/01-foundations.css:984` | @media (max-width: 1180px) |
 | `.primary-projection-amount` | `ProjectionDisplay.css:2` | base |
 | `.probability-input` | `styles/08-notifications-and-inputs.css:330` | base |
 | `.probability-input` | `styles/08-notifications-and-inputs.css:444` | @media (max-width: 1180px) |
@@ -1944,12 +1940,12 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.project-directory-completed-toggle:hover` | `styles/10-active-projects.css:770` | base |
 | `.project-directory-completed-toggle.active` | `styles/10-active-projects.css:776` | base |
 | `.project-directory-completed-toggle.active .project-directory-completed-dot` | `styles/10-active-projects.css:791` | base |
-| `.project-location-line` | `styles/04-projected-workspace.css:39` | base |
 | `.project-location-line` | `styles/04-projected-workspace.css:160` | @media (max-width: 900px) |
+| `.project-location-line` | `styles/04-projected-workspace.css:39` | base |
 | `.project-month-cell` | `styles/04-projected-workspace.css:46` | base |
-| `.project-name-status-line` | `styles/12-table-teams-and-zebra.css:46` | base |
 | `.project-name-status-line` | `styles/12-table-teams-and-zebra.css:190` | base |
 | `.project-name-status-line` | `styles/12-table-teams-and-zebra.css:196` | base |
+| `.project-name-status-line` | `styles/12-table-teams-and-zebra.css:46` | base |
 | `.project-name-status-line:has(.needs-rebalance-flag)` | `styles/13-financial-review-and-metrics.css:208` | base |
 | `.project-name-status-line:has(.schedule-review-flag)` | `styles/13-financial-review-and-metrics.css:208` | base |
 | `.project-pivot-metric-toggle` | `styles/05-project-pivot.css:298` | base |
@@ -1970,12 +1966,12 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.project-pivot-table .pivot-job-column` | `styles/05-project-pivot.css:62` | base |
 | `.project-pivot-table .pivot-month-column` | `styles/05-project-pivot.css:241` | base |
 | `.project-pivot-table .pivot-probability-column` | `styles/12-table-teams-and-zebra.css:231` | base |
-| `.project-pivot-table .pivot-project-column` | `styles/05-project-pivot.css:69` | base |
 | `.project-pivot-table .pivot-project-column` | `styles/05-project-pivot.css:218` | @media (max-width: 760px) |
+| `.project-pivot-table .pivot-project-column` | `styles/05-project-pivot.css:69` | base |
 | `.project-pivot-table .pivot-project-row:hover > :is( td.pivot-source-column, td.pivot-job-column, td.pivot-project-column, td.pivot-probability-column )` | `styles/12-table-teams-and-zebra.css:464` | base |
 | `.project-pivot-table .pivot-project-values-column` | `styles/12-table-teams-and-zebra.css:13` | base |
 | `.project-pivot-table .pivot-source-column` | `styles/05-project-pivot.css:55` | base |
-| `.project-pivot-table .pivot-team-column` | `styles/06-project-references.css:821` | base |
+| `.project-pivot-table .pivot-team-column` | `styles/06-project-references.css:809` | base |
 | `.project-pivot-table .pivot-total-column` | `styles/05-project-pivot.css:241` | base |
 | `.project-pivot-table tbody > tr:nth-child(even of .pivot-project-row) > :is( td.pivot-source-column, td.pivot-job-column, td.pivot-project-column, td.pivot-probability-column )` | `styles/12-table-teams-and-zebra.css:430` | base |
 | `.project-pivot-table td` | `styles/05-project-pivot.css:50` | base |
@@ -1984,13 +1980,13 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.project-pivot-table td.pivot-project-column` | `styles/08-notifications-and-inputs.css:766` | base |
 | `.project-pivot-table td.pivot-source-column` | `styles/05-project-pivot.css:76` | base |
 | `.project-pivot-table th` | `styles/05-project-pivot.css:50` | base |
-| `.project-pivot-table th.pivot-job-column` | `styles/05-project-pivot.css:86` | base |
 | `.project-pivot-table th.pivot-job-column` | `styles/05-project-pivot.css:107` | base |
-| `.project-pivot-table th.pivot-project-column` | `styles/05-project-pivot.css:96` | base |
+| `.project-pivot-table th.pivot-job-column` | `styles/05-project-pivot.css:86` | base |
 | `.project-pivot-table th.pivot-project-column` | `styles/05-project-pivot.css:107` | base |
+| `.project-pivot-table th.pivot-project-column` | `styles/05-project-pivot.css:96` | base |
 | `.project-pivot-table th.pivot-project-column` | `styles/08-notifications-and-inputs.css:766` | base |
-| `.project-pivot-table th.pivot-source-column` | `styles/05-project-pivot.css:76` | base |
 | `.project-pivot-table th.pivot-source-column` | `styles/05-project-pivot.css:107` | base |
+| `.project-pivot-table th.pivot-source-column` | `styles/05-project-pivot.css:76` | base |
 | `.project-pivot-table:not(.pivot-metric-all) .pivot-month-column` | `styles/05-project-pivot.css:472` | base |
 | `.project-pivot-table:not(.pivot-metric-all) .pivot-month-column` | `styles/05-project-pivot.css:537` | @media (max-width: 760px) |
 | `.project-pivot-table:not(.pivot-metric-all) .pivot-total-column` | `styles/05-project-pivot.css:472` | base |
@@ -2066,47 +2062,44 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.project-pivot-wrap` | `styles/11-lifecycle-feedback-and-staffing.css:396` | base |
 | `.project-pivot-wrap::-webkit-scrollbar` | `styles/11-lifecycle-feedback-and-staffing.css:401` | base |
 | `.project-reference-refresh-note` | `ActiveProjectSaveReview.css:9` | base |
-| `.project-save-comparison` | `ActiveProjectSaveReview.css:4` | base |
 | `.project-save-comparison` | `ActiveProjectSaveReview.css:11` | @media (max-width: 640px) |
+| `.project-save-comparison` | `ActiveProjectSaveReview.css:4` | base |
 | `.project-save-comparison pre` | `ActiveProjectSaveReview.css:6` | base |
 | `.project-save-comparison span` | `ActiveProjectSaveReview.css:5` | base |
 | `.project-save-conflict` | `ActiveProjectSaveReview.css:3` | base |
 | `.project-save-conflict-actions` | `ActiveProjectSaveReview.css:7` | base |
 | `.project-save-review` | `ActiveProjectSaveReview.css:1` | base |
 | `.project-save-review > p` | `ActiveProjectSaveReview.css:2` | base |
-| `.project-setup-finder` | `styles/06-project-references.css:233` | base |
-| `.project-setup-finder` | `styles/06-project-references.css:542` | @media (max-width: 760px) |
-| `.project-setup-flag` | `styles/06-project-references.css:19` | base |
-| `.project-setup-flag-row` | `styles/06-project-references.css:31` | base |
-| `.project-setup-flags` | `styles/06-project-references.css:13` | base |
-| `.project-setup-flags` | `styles/06-project-references.css:528` | @media (max-width: 760px) |
-| `.project-setup-flags` | `styles/06-project-references.css:745` | @media ( max-width: 760px ) |
-| `.project-setup-flags` | `styles/07-detail-layout-and-filters.css:135` | base |
-| `.project-setup-flags` | `styles/07-detail-layout-and-filters.css:143` | base |
-| `.project-setup-flags` | `styles/07-detail-layout-and-filters.css:517` | base |
-| `.project-setup-flags` | `styles/07-detail-layout-and-filters.css:578` | @media (max-width: 1050px) |
-| `.project-setup-flags` | `styles/07-detail-layout-and-filters.css:584` | @media (max-width: 700px) |
-| `.project-setup-flags > .project-setup-flag` | `styles/07-detail-layout-and-filters.css:526` | base |
-| `.project-setup-flags > .project-setup-flag + .project-setup-flag` | `styles/06-project-references.css:533` | @media (max-width: 760px) |
-| `.project-setup-flags > .project-setup-flag + .project-setup-flag` | `styles/07-detail-layout-and-filters.css:537` | base |
-| `.project-setup-help` | `styles/06-project-references.css:129` | base |
-| `.project-setup-help > summary` | `styles/06-project-references.css:91` | base |
-| `.project-setup-help > summary` | `styles/06-project-references.css:135` | base |
-| `.project-setup-help > summary::-webkit-details-marker` | `styles/06-project-references.css:140` | base |
-| `.project-setup-help > summary:hover` | `styles/06-project-references.css:111` | base |
-| `.project-setup-info-button` | `styles/06-project-references.css:91` | base |
-| `.project-setup-info-button:hover` | `styles/06-project-references.css:111` | base |
-| `.project-setup-info-button.disabled` | `styles/06-project-references.css:118` | base |
-| `.project-setup-tag` | `styles/06-project-references.css:39` | base |
-| `.project-setup-tag-button` | `styles/06-project-references.css:39` | base |
-| `.project-setup-tag-button` | `styles/06-project-references.css:59` | base |
-| `.project-setup-tag-button.unlinked` | `styles/06-project-references.css:69` | base |
-| `.project-setup-tag-button.unlinked:hover` | `styles/06-project-references.css:76` | base |
-| `.project-setup-tag.change-orders-present` | `styles/06-project-references.css:563` | base |
-| `.project-setup-tag.error` | `styles/06-project-references.css:85` | base |
-| `.project-setup-tag.linked` | `styles/06-project-references.css:63` | base |
-| `.project-setup-tag.neutral` | `styles/06-project-references.css:81` | base |
-| `.project-setup-tag.unlinked` | `styles/06-project-references.css:69` | base |
+| `.project-setup-finder` | `styles/06-project-references.css:227` | base |
+| `.project-setup-finder` | `styles/06-project-references.css:536` | @media (max-width: 760px) |
+| `.project-setup-flag` | `styles/06-project-references.css:13` | base |
+| `.project-setup-flag-row` | `styles/06-project-references.css:25` | base |
+| `.project-setup-flags` | `styles/06-project-references.css:522` | @media (max-width: 760px) |
+| `.project-setup-flags` | `styles/06-project-references.css:739` | @media ( max-width: 760px ) |
+| `.project-setup-flags` | `styles/06-project-references.css:829` | base |
+| `.project-setup-flags` | `styles/06-project-references.css:858` | @media (max-width: 1050px) |
+| `.project-setup-flags` | `styles/06-project-references.css:864` | @media (max-width: 700px) |
+| `.project-setup-flags > .project-setup-flag` | `styles/06-project-references.css:841` | base |
+| `.project-setup-flags > .project-setup-flag + .project-setup-flag` | `styles/06-project-references.css:527` | @media (max-width: 760px) |
+| `.project-setup-flags > .project-setup-flag + .project-setup-flag` | `styles/06-project-references.css:850` | base |
+| `.project-setup-help` | `styles/06-project-references.css:123` | base |
+| `.project-setup-help > summary` | `styles/06-project-references.css:129` | base |
+| `.project-setup-help > summary` | `styles/06-project-references.css:85` | base |
+| `.project-setup-help > summary::-webkit-details-marker` | `styles/06-project-references.css:134` | base |
+| `.project-setup-help > summary:hover` | `styles/06-project-references.css:105` | base |
+| `.project-setup-info-button` | `styles/06-project-references.css:85` | base |
+| `.project-setup-info-button:hover` | `styles/06-project-references.css:105` | base |
+| `.project-setup-info-button.disabled` | `styles/06-project-references.css:112` | base |
+| `.project-setup-tag` | `styles/06-project-references.css:33` | base |
+| `.project-setup-tag-button` | `styles/06-project-references.css:33` | base |
+| `.project-setup-tag-button` | `styles/06-project-references.css:53` | base |
+| `.project-setup-tag-button.unlinked` | `styles/06-project-references.css:63` | base |
+| `.project-setup-tag-button.unlinked:hover` | `styles/06-project-references.css:70` | base |
+| `.project-setup-tag.change-orders-present` | `styles/06-project-references.css:557` | base |
+| `.project-setup-tag.error` | `styles/06-project-references.css:79` | base |
+| `.project-setup-tag.linked` | `styles/06-project-references.css:57` | base |
+| `.project-setup-tag.neutral` | `styles/06-project-references.css:75` | base |
+| `.project-setup-tag.unlinked` | `styles/06-project-references.css:63` | base |
 | `.project-team-badge` | `styles/12-table-teams-and-zebra.css:145` | base |
 | `.project-team-badge strong` | `styles/12-table-teams-and-zebra.css:159` | base |
 | `.project-team-badge-column` | `styles/12-table-teams-and-zebra.css:184` | base |
@@ -2114,16 +2107,16 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.project-team-badges.compact` | `styles/12-table-teams-and-zebra.css:166` | base |
 | `.project-team-badges.compact .project-team-badge` | `styles/12-table-teams-and-zebra.css:172` | base |
 | `.project-team-badges.compact .project-team-badge strong` | `styles/12-table-teams-and-zebra.css:179` | base |
-| `.project-team-cell` | `styles/06-project-references.css:784` | base |
-| `.project-team-column` | `styles/06-project-references.css:780` | base |
+| `.project-team-cell` | `styles/06-project-references.css:772` | base |
+| `.project-team-column` | `styles/06-project-references.css:768` | base |
 | `.project-team-current-editor` | `styles/11-lifecycle-feedback-and-staffing.css:766` | base |
 | `.project-team-current-editor` | `styles/11-lifecycle-feedback-and-staffing.css:964` | @media (max-width: 760px) |
-| `.project-team-empty` | `styles/06-project-references.css:817` | base |
+| `.project-team-empty` | `styles/06-project-references.css:805` | base |
 | `.project-team-foreman-row` | `styles/11-lifecycle-feedback-and-staffing.css:766` | base |
 | `.project-team-foreman-row` | `styles/11-lifecycle-feedback-and-staffing.css:964` | @media (max-width: 760px) |
 | `.project-team-foremen-editor` | `styles/11-lifecycle-feedback-and-staffing.css:773` | base |
-| `.project-team-member` | `styles/06-project-references.css:790` | base |
-| `.project-team-name` | `styles/06-project-references.css:807` | base |
+| `.project-team-member` | `styles/06-project-references.css:778` | base |
+| `.project-team-name` | `styles/06-project-references.css:795` | base |
 | `.project-team-office-grid` | `styles/11-lifecycle-feedback-and-staffing.css:704` | base |
 | `.project-team-organizer-editor` | `styles/11-lifecycle-feedback-and-staffing.css:872` | base |
 | `.project-team-organizer-effective` | `styles/11-lifecycle-feedback-and-staffing.css:934` | base |
@@ -2145,7 +2138,7 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.project-team-person-select` | `styles/11-lifecycle-feedback-and-staffing.css:807` | base |
 | `.project-team-person-select:disabled` | `styles/11-lifecycle-feedback-and-staffing.css:824` | base |
 | `.project-team-person-select:focus` | `styles/11-lifecycle-feedback-and-staffing.css:819` | base |
-| `.project-team-role` | `styles/06-project-references.css:798` | base |
+| `.project-team-role` | `styles/06-project-references.css:786` | base |
 | `.project-team-role-editor + .project-team-role-editor` | `styles/11-lifecycle-feedback-and-staffing.css:762` | base |
 | `.project-team-staffing-field` | `styles/11-lifecycle-feedback-and-staffing.css:783` | base |
 | `.project-team-staffing-field > small` | `styles/11-lifecycle-feedback-and-staffing.css:797` | base |
@@ -2165,7 +2158,7 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.project-team-staffing-state small` | `styles/11-lifecycle-feedback-and-staffing.css:838` | base |
 | `.project-title-ellipsis` | `styles/12-table-teams-and-zebra.css:201` | base |
 | `.project-title-ellipsis` | `styles/12-table-teams-and-zebra.css:214` | base |
-| `.projected-breakdown-table` | `styles/06-project-references.css:832` | base |
+| `.projected-breakdown-table` | `styles/06-project-references.css:820` | base |
 | `.projected-breakdown-table .gc-table-cell` | `styles/08-notifications-and-inputs.css:436` | base |
 | `.projected-breakdown-table .project-cell` | `styles/12-table-teams-and-zebra.css:220` | base |
 | `.projected-export-button` | `styles/12-table-teams-and-zebra.css:114` | base |
@@ -2175,34 +2168,32 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.projected-filter-panel .filter-field` | `styles/12-table-teams-and-zebra.css:124` | base |
 | `.projected-filter-panel .filter-field input` | `styles/12-table-teams-and-zebra.css:128` | base |
 | `.projected-filter-panel .filter-field select` | `styles/12-table-teams-and-zebra.css:128` | base |
-| `.projected-heading-controls` | `styles/12-table-teams-and-zebra.css:86` | base |
 | `.projected-heading-controls` | `styles/12-table-teams-and-zebra.css:314` | @media (max-width: 1100px) |
 | `.projected-heading-controls` | `styles/12-table-teams-and-zebra.css:322` | @media (max-width: 760px) |
-| `.projected-heading-source-toggles` | `styles/12-table-teams-and-zebra.css:95` | base |
+| `.projected-heading-controls` | `styles/12-table-teams-and-zebra.css:86` | base |
 | `.projected-heading-source-toggles` | `styles/12-table-teams-and-zebra.css:314` | @media (max-width: 1100px) |
 | `.projected-heading-source-toggles` | `styles/12-table-teams-and-zebra.css:327` | @media (max-width: 760px) |
+| `.projected-heading-source-toggles` | `styles/12-table-teams-and-zebra.css:95` | base |
 | `.projected-heading-source-toggles .toggle-label small` | `styles/12-table-teams-and-zebra.css:110` | base |
 | `.projected-heading-source-toggles .toggle-label strong` | `styles/12-table-teams-and-zebra.css:106` | base |
 | `.projected-heading-source-toggles button` | `styles/12-table-teams-and-zebra.css:100` | base |
 | `.projected-heading-source-toggles button` | `styles/12-table-teams-and-zebra.css:332` | @media (max-width: 760px) |
 | `.projected-monthly-table tfoot td` | `styles/04-projected-workspace.css:98` | base |
-| `.projected-monthly-table tfoot th` | `styles/04-projected-workspace.css:98` | base |
 | `.projected-monthly-table tfoot th` | `styles/04-projected-workspace.css:109` | base |
-| `.projected-page-heading` | `styles/12-table-teams-and-zebra.css:76` | base |
+| `.projected-monthly-table tfoot th` | `styles/04-projected-workspace.css:98` | base |
 | `.projected-page-heading` | `styles/12-table-teams-and-zebra.css:309` | @media (max-width: 1100px) |
+| `.projected-page-heading` | `styles/12-table-teams-and-zebra.css:76` | base |
 | `.projected-page-heading h1` | `styles/12-table-teams-and-zebra.css:81` | base |
-| `.projection-attention-message` | `styles/04-projected-workspace.css:316` | base |
-| `.projection-attention-message` | `styles/07-detail-layout-and-filters.css:549` | base |
+| `.projection-attention-message` | `styles/02-billing-drawers.css:1494` | base |
 | `.projection-basis-controls` | `ProjectionDisplay.css:4` | base |
 | `.projection-basis-controls label` | `ProjectionDisplay.css:5` | base |
 | `.projection-coverage-note` | `ProjectionDisplay.css:6` | base |
-| `.projection-detail-grid` | `styles/04-projected-workspace.css:324` | base |
-| `.projection-detail-grid` | `styles/04-projected-workspace.css:338` | @media (max-width: 1050px) |
-| `.projection-detail-grid` | `styles/04-projected-workspace.css:344` | @media (max-width: 700px) |
-| `.projection-detail-grid` | `styles/07-detail-layout-and-filters.css:561` | base |
-| `.projection-detail-grid > div` | `styles/07-detail-layout-and-filters.css:566` | base |
-| `.projection-details-section` | `styles/07-detail-layout-and-filters.css:500` | base |
-| `.projection-details-section > .section-heading.compact` | `styles/07-detail-layout-and-filters.css:505` | base |
+| `.projection-detail-grid` | `styles/02-billing-drawers.css:1139` | base |
+| `.projection-detail-grid` | `styles/02-billing-drawers.css:1155` | @media (max-width: 1050px) |
+| `.projection-detail-grid` | `styles/02-billing-drawers.css:1161` | @media (max-width: 700px) |
+| `.projection-detail-grid > div` | `styles/02-billing-drawers.css:1505` | base |
+| `.projection-details-section` | `styles/02-billing-drawers.css:1482` | base |
+| `.projection-details-section > .section-heading.compact` | `styles/02-billing-drawers.css:1487` | base |
 | `.projection-estimate-marker` | `ProjectionDisplay.css:8` | base |
 | `.projection-source-count-toggle` | `ProjectionDisplay.css:10` | base |
 | `.projection-source-count-toggle:hover` | `ProjectionDisplay.css:11` | base |
@@ -2241,8 +2232,8 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.riggs-flow-directory-heading small` | `AdministrationPowerAutomate.css:4` | base |
 | `.riggs-flow-directory-heading strong` | `AdministrationPowerAutomate.css:3` | base |
 | `.riggs-flow-directory-summary` | `AdministrationPowerAutomate.css:17` | base |
-| `.riggs-flow-directory-table` | `AdministrationPowerAutomate.css:18` | base |
 | `.riggs-flow-directory-table` | `AdministrationPowerAutomate.css:109` | base |
+| `.riggs-flow-directory-table` | `AdministrationPowerAutomate.css:18` | base |
 | `.riggs-flow-directory-table .riggs-flow-clickable-row` | `AdministrationPowerAutomate.css:32` | base |
 | `.riggs-flow-directory-table .riggs-flow-clickable-row:focus-visible` | `AdministrationPowerAutomate.css:36` | base |
 | `.riggs-flow-directory-table .riggs-flow-clickable-row:focus-visible .riggs-flow-row-name` | `AdministrationPowerAutomate.css:37` | base |
@@ -2259,24 +2250,24 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.riggs-flow-inspection-dialog .riggs-flow-inspection-facts-compact` | `AdministrationPowerAutomate.css:118` | base |
 | `.riggs-flow-inspection-dialog .riggs-flow-portal-button` | `AdministrationPowerAutomate.css:116` | base |
 | `.riggs-flow-inspection-dialog .riggs-flow-portal-button:hover` | `AdministrationPowerAutomate.css:117` | base |
-| `.riggs-flow-inspection-dialog .riggs-flow-runs-heading` | `AdministrationPowerAutomate.css:80` | base |
 | `.riggs-flow-inspection-dialog .riggs-flow-runs-heading` | `AdministrationPowerAutomate.css:105` | @media (max-width:640px) |
+| `.riggs-flow-inspection-dialog .riggs-flow-runs-heading` | `AdministrationPowerAutomate.css:80` | base |
 | `.riggs-flow-inspection-dialog .riggs-flow-runs-heading h3` | `AdministrationPowerAutomate.css:89` | base |
 | `.riggs-flow-inspection-dialog a:focus-visible` | `AdministrationPowerAutomate.css:99` | base |
 | `.riggs-flow-inspection-dialog button` | `AdministrationPowerAutomate.css:90` | base |
 | `.riggs-flow-inspection-dialog button:focus-visible` | `AdministrationPowerAutomate.css:99` | base |
 | `.riggs-flow-inspection-dialog button:hover` | `AdministrationPowerAutomate.css:101` | base |
 | `.riggs-flow-inspection-dialog::backdrop` | `AdministrationPowerAutomate.css:79` | base |
-| `.riggs-flow-inspection-dialog.riggs-flow-runs` | `AdministrationPowerAutomate.css:60` | base |
 | `.riggs-flow-inspection-dialog.riggs-flow-runs` | `AdministrationPowerAutomate.css:104` | @media (max-width:640px) |
+| `.riggs-flow-inspection-dialog.riggs-flow-runs` | `AdministrationPowerAutomate.css:60` | base |
 | `.riggs-flow-inspection-disclaimer` | `AdministrationPowerAutomate.css:53` | base |
 | `.riggs-flow-inspection-facts` | `AdministrationPowerAutomate.css:49` | base |
 | `.riggs-flow-inspection-facts small` | `AdministrationPowerAutomate.css:53` | base |
 | `.riggs-flow-inspection-facts span` | `AdministrationPowerAutomate.css:51` | base |
 | `.riggs-flow-inspection-facts strong` | `AdministrationPowerAutomate.css:52` | base |
 | `.riggs-flow-inspection-facts>div` | `AdministrationPowerAutomate.css:50` | base |
-| `.riggs-flow-inspection-message` | `AdministrationPowerAutomate.css:54` | base |
 | `.riggs-flow-inspection-message` | `AdministrationPowerAutomate.css:119` | base |
+| `.riggs-flow-inspection-message` | `AdministrationPowerAutomate.css:54` | base |
 | `.riggs-flow-inspection-qualification` | `AdministrationPowerAutomate.css:55` | base |
 | `.riggs-flow-monitor` | `AdministrationPowerAutomate.css:1` | base |
 | `.riggs-flow-monitor button` | `AdministrationPowerAutomate.css:5` | base |
@@ -2319,49 +2310,49 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.schedule-review-flag` | `styles/13-financial-review-and-metrics.css:172` | base |
 | `.schedule-review-info-drawer` | `styles/13-financial-review-and-metrics.css:196` | base |
 | `.schedule-review-info-message` | `styles/13-financial-review-and-metrics.css:200` | base |
-| `.secondary-button` | `styles/01-foundations.css:187` | base |
-| `.secondary-button` | `styles/01-foundations.css:194` | base |
 | `.secondary-button` | `styles/01-foundations.css:1429` | base |
 | `.secondary-button` | `styles/01-foundations.css:1435` | base |
+| `.secondary-button` | `styles/01-foundations.css:187` | base |
+| `.secondary-button` | `styles/01-foundations.css:194` | base |
 | `.secondary-button:hover:not(:disabled)` | `styles/01-foundations.css:200` | base |
-| `.section-collapse-button` | `styles/02-billing-drawers.css:358` | base |
-| `.section-collapse-button:hover` | `styles/02-billing-drawers.css:371` | base |
-| `.section-heading` | `styles/01-foundations.css:380` | base |
+| `.section-collapse-button` | `styles/02-billing-drawers.css:363` | base |
+| `.section-collapse-button:hover` | `styles/02-billing-drawers.css:376` | base |
 | `.section-heading` | `styles/01-foundations.css:1023` | @media (max-width: 760px) |
 | `.section-heading` | `styles/01-foundations.css:1636` | base |
-| `.section-heading.compact` | `styles/02-billing-drawers.css:146` | base |
-| `.section-heading.compact h3` | `styles/02-billing-drawers.css:150` | base |
-| `.section-kicker` | `styles/01-foundations.css:155` | base |
+| `.section-heading` | `styles/01-foundations.css:380` | base |
+| `.section-heading.compact` | `styles/02-billing-drawers.css:151` | base |
+| `.section-heading.compact h3` | `styles/02-billing-drawers.css:155` | base |
 | `.section-kicker` | `styles/01-foundations.css:1401` | base |
-| `.section-note` | `styles/01-foundations.css:387` | base |
+| `.section-kicker` | `styles/01-foundations.css:155` | base |
 | `.section-note` | `styles/01-foundations.css:1641` | base |
+| `.section-note` | `styles/01-foundations.css:387` | base |
 | `.show-controls` | `ViewControls.css:10` | base |
 | `.show-controls > span` | `ViewControls.css:11` | base |
 | `.show-controls button` | `ViewControls.css:12` | base |
 | `.show-controls button:focus-visible` | `ViewControls.css:6` | base |
 | `.show-controls button.active` | `ViewControls.css:13` | base |
-| `.side-filter-backdrop` | `styles/07-detail-layout-and-filters.css:233` | base |
-| `.side-filter-body` | `styles/07-detail-layout-and-filters.css:292` | base |
-| `.side-filter-close` | `styles/07-detail-layout-and-filters.css:273` | base |
-| `.side-filter-close:hover` | `styles/07-detail-layout-and-filters.css:287` | base |
-| `.side-filter-drawer` | `styles/07-detail-layout-and-filters.css:243` | base |
-| `.side-filter-fields` | `styles/07-detail-layout-and-filters.css:316` | base |
-| `.side-filter-fields .filter-field` | `styles/07-detail-layout-and-filters.css:322` | base |
-| `.side-filter-fields .filter-field input` | `styles/07-detail-layout-and-filters.css:327` | base |
-| `.side-filter-fields .filter-field select` | `styles/07-detail-layout-and-filters.css:327` | base |
-| `.side-filter-footer` | `styles/07-detail-layout-and-filters.css:371` | base |
-| `.side-filter-header` | `styles/07-detail-layout-and-filters.css:253` | base |
-| `.side-filter-header h2` | `styles/07-detail-layout-and-filters.css:262` | base |
-| `.side-filter-header p` | `styles/07-detail-layout-and-filters.css:267` | base |
-| `.side-filter-section` | `styles/07-detail-layout-and-filters.css:298` | base |
-| `.side-filter-section-title` | `styles/07-detail-layout-and-filters.css:307` | base |
-| `.side-filter-section:last-child` | `styles/07-detail-layout-and-filters.css:303` | base |
-| `.side-filter-source-toggles` | `styles/07-detail-layout-and-filters.css:334` | base |
-| `.side-filter-source-toggles` | `styles/07-detail-layout-and-filters.css:386` | @media (max-width: 640px) |
-| `.side-filter-source-toggles button` | `styles/07-detail-layout-and-filters.css:340` | base |
-| `.side-filter-source-toggles button.active` | `styles/07-detail-layout-and-filters.css:356` | base |
-| `.side-filter-source-toggles small` | `styles/07-detail-layout-and-filters.css:366` | base |
-| `.side-filter-source-toggles strong` | `styles/07-detail-layout-and-filters.css:362` | base |
+| `.side-filter-backdrop` | `styles/07-detail-layout-and-filters.css:45` | base |
+| `.side-filter-body` | `styles/07-detail-layout-and-filters.css:104` | base |
+| `.side-filter-close` | `styles/07-detail-layout-and-filters.css:85` | base |
+| `.side-filter-close:hover` | `styles/07-detail-layout-and-filters.css:99` | base |
+| `.side-filter-drawer` | `styles/07-detail-layout-and-filters.css:55` | base |
+| `.side-filter-fields` | `styles/07-detail-layout-and-filters.css:128` | base |
+| `.side-filter-fields .filter-field` | `styles/07-detail-layout-and-filters.css:134` | base |
+| `.side-filter-fields .filter-field input` | `styles/07-detail-layout-and-filters.css:139` | base |
+| `.side-filter-fields .filter-field select` | `styles/07-detail-layout-and-filters.css:139` | base |
+| `.side-filter-footer` | `styles/07-detail-layout-and-filters.css:183` | base |
+| `.side-filter-header` | `styles/07-detail-layout-and-filters.css:65` | base |
+| `.side-filter-header h2` | `styles/07-detail-layout-and-filters.css:74` | base |
+| `.side-filter-header p` | `styles/07-detail-layout-and-filters.css:79` | base |
+| `.side-filter-section` | `styles/07-detail-layout-and-filters.css:110` | base |
+| `.side-filter-section-title` | `styles/07-detail-layout-and-filters.css:119` | base |
+| `.side-filter-section:last-child` | `styles/07-detail-layout-and-filters.css:115` | base |
+| `.side-filter-source-toggles` | `styles/07-detail-layout-and-filters.css:146` | base |
+| `.side-filter-source-toggles` | `styles/07-detail-layout-and-filters.css:198` | @media (max-width: 640px) |
+| `.side-filter-source-toggles button` | `styles/07-detail-layout-and-filters.css:152` | base |
+| `.side-filter-source-toggles button.active` | `styles/07-detail-layout-and-filters.css:168` | base |
+| `.side-filter-source-toggles small` | `styles/07-detail-layout-and-filters.css:178` | base |
+| `.side-filter-source-toggles strong` | `styles/07-detail-layout-and-filters.css:174` | base |
 | `.signout-button` | `styles/01-foundations.css:1344` | base |
 | `.signout-button` | `styles/01-foundations.css:1358` | base |
 | `.signout-button:hover` | `styles/01-foundations.css:1364` | base |
@@ -2370,18 +2361,18 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.source-chip.bid` | `styles/01-foundations.css:479` | base |
 | `.source-chip.completed` | `styles/12-table-teams-and-zebra.css:53` | base |
 | `.source-chip.current` | `styles/01-foundations.css:474` | base |
-| `.source-comparison` | `styles/04-projected-workspace.css:379` | base |
-| `.source-comparison` | `styles/04-projected-workspace.css:473` | @media print |
-| `.source-comparison > summary` | `styles/04-projected-workspace.css:384` | base |
-| `.source-comparison > summary::-webkit-details-marker` | `styles/04-projected-workspace.css:394` | base |
-| `.source-comparison > summary::after` | `styles/04-projected-workspace.css:398` | base |
-| `.source-comparison-panel` | `styles/04-projected-workspace.css:406` | base |
-| `.source-comparison-row` | `styles/04-projected-workspace.css:414` | base |
-| `.source-comparison-row > span` | `styles/04-projected-workspace.css:422` | base |
-| `.source-comparison-row > strong` | `styles/04-projected-workspace.css:431` | base |
-| `.source-comparison[open] > summary::after` | `styles/04-projected-workspace.css:402` | base |
-| `.source-filter-group` | `styles/01-foundations.css:304` | base |
+| `.source-comparison` | `styles/02-billing-drawers.css:1195` | base |
+| `.source-comparison` | `styles/02-billing-drawers.css:1289` | @media print |
+| `.source-comparison > summary` | `styles/02-billing-drawers.css:1200` | base |
+| `.source-comparison > summary::-webkit-details-marker` | `styles/02-billing-drawers.css:1210` | base |
+| `.source-comparison > summary::after` | `styles/02-billing-drawers.css:1214` | base |
+| `.source-comparison-panel` | `styles/02-billing-drawers.css:1222` | base |
+| `.source-comparison-row` | `styles/02-billing-drawers.css:1230` | base |
+| `.source-comparison-row > span` | `styles/02-billing-drawers.css:1238` | base |
+| `.source-comparison-row > strong` | `styles/02-billing-drawers.css:1247` | base |
+| `.source-comparison[open] > summary::after` | `styles/02-billing-drawers.css:1218` | base |
 | `.source-filter-group` | `styles/01-foundations.css:1576` | base |
+| `.source-filter-group` | `styles/01-foundations.css:304` | base |
 | `.source-selector` | `styles/01-foundations.css:1446` | base |
 | `.source-selector` | `styles/01-foundations.css:1687` | @media (max-width: 1180px) |
 | `.source-selector` | `styles/01-foundations.css:1768` | @media (max-width: 760px) |
@@ -2442,15 +2433,15 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.staffing-schedule-main small` | `styles/11-lifecycle-feedback-and-staffing.css:611` | base |
 | `.staffing-schedule-main strong` | `styles/11-lifecycle-feedback-and-staffing.css:607` | base |
 | `.staffing-schedule-row` | `styles/11-lifecycle-feedback-and-staffing.css:640` | base |
-| `.stat-card` | `styles/01-foundations.css:245` | base |
 | `.stat-card` | `styles/01-foundations.css:1528` | base |
 | `.stat-card` | `styles/01-foundations.css:1611` | base |
-| `.stat-card > span` | `styles/01-foundations.css:349` | base |
+| `.stat-card` | `styles/01-foundations.css:245` | base |
 | `.stat-card > span` | `styles/01-foundations.css:1616` | base |
-| `.stat-card small` | `styles/01-foundations.css:362` | base |
+| `.stat-card > span` | `styles/01-foundations.css:349` | base |
 | `.stat-card small` | `styles/01-foundations.css:1626` | base |
-| `.stat-card strong` | `styles/01-foundations.css:357` | base |
+| `.stat-card small` | `styles/01-foundations.css:362` | base |
 | `.stat-card strong` | `styles/01-foundations.css:1620` | base |
+| `.stat-card strong` | `styles/01-foundations.css:357` | base |
 | `.stat-card.emphasis` | `styles/01-foundations.css:368` | base |
 | `.stat-card.emphasis strong` | `styles/01-foundations.css:372` | base |
 | `.stat-card.tone-critical` | `styles/01-foundations.css:1122` | base |
@@ -2463,26 +2454,26 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.state-cell small` | `styles/01-foundations.css:511` | base |
 | `.state-dot` | `styles/01-foundations.css:516` | base |
 | `.state-dot.ready` | `styles/01-foundations.css:524` | base |
-| `.stats-grid` | `styles/01-foundations.css:344` | base |
 | `.stats-grid` | `styles/01-foundations.css:1606` | base |
 | `.stats-grid` | `styles/01-foundations.css:1786` | @media (max-width: 760px) |
+| `.stats-grid` | `styles/01-foundations.css:344` | base |
 | `.stats-grid.stats-grid-potential-only` | `styles/08-notifications-and-inputs.css:734` | base |
 | `.stats-grid.stats-grid-potential-only` | `styles/08-notifications-and-inputs.css:775` | @media (max-width: 1180px) |
 | `.stats-grid.stats-grid-potential-only` | `styles/08-notifications-and-inputs.css:785` | @media (max-width: 760px) |
 | `.strong-cell` | `styles/01-foundations.css:432` | base |
-| `.table-sort-button` | `styles/04-projected-workspace.css:57` | base |
 | `.table-sort-button` | `styles/04-projected-workspace.css:170` | @media print |
+| `.table-sort-button` | `styles/04-projected-workspace.css:57` | base |
 | `.table-sort-button:hover` | `styles/04-projected-workspace.css:80` | base |
 | `.table-sort-button:hover .pivot-header-total-value` | `styles/11-lifecycle-feedback-and-staffing.css:544` | base |
 | `.table-sort-button.active` | `styles/04-projected-workspace.css:80` | base |
 | `.table-sort-button.active .pivot-header-total-value` | `styles/11-lifecycle-feedback-and-staffing.css:544` | base |
 | `.table-sort-button.active .table-sort-indicator` | `styles/04-projected-workspace.css:92` | base |
-| `.table-sort-indicator` | `styles/04-projected-workspace.css:86` | base |
 | `.table-sort-indicator` | `styles/04-projected-workspace.css:166` | @media print |
-| `.text-button` | `styles/01-foundations.css:187` | base |
-| `.text-button` | `styles/01-foundations.css:204` | base |
+| `.table-sort-indicator` | `styles/04-projected-workspace.css:86` | base |
 | `.text-button` | `styles/01-foundations.css:1429` | base |
 | `.text-button` | `styles/01-foundations.css:1441` | base |
+| `.text-button` | `styles/01-foundations.css:187` | base |
+| `.text-button` | `styles/01-foundations.css:204` | base |
 | `.theme-toggle` | `styles/01-foundations.css:119` | base |
 | `.theme-toggle` | `styles/01-foundations.css:1344` | base |
 | `.theme-toggle` | `styles/01-foundations.css:1353` | base |
@@ -2492,34 +2483,34 @@ Generated for consolidation C1 from accepted source `6cee03078f9d99b0525927bc6f3
 | `.toggle-label strong` | `styles/01-foundations.css:1516` | base |
 | `.top-button` | `styles/01-foundations.css:119` | base |
 | `.top-button` | `styles/01-foundations.css:128` | base |
-| `.topbar` | `styles/01-foundations.css:56` | base |
 | `.topbar` | `styles/01-foundations.css:1298` | base |
 | `.topbar` | `styles/01-foundations.css:1704` | @media (max-width: 900px) |
 | `.topbar` | `styles/01-foundations.css:1728` | @media (max-width: 760px) |
-| `.topbar-actions` | `styles/01-foundations.css:65` | base |
-| `.topbar-actions` | `styles/01-foundations.css:999` | @media (max-width: 760px) |
+| `.topbar` | `styles/01-foundations.css:56` | base |
 | `.topbar-actions` | `styles/01-foundations.css:1340` | base |
 | `.topbar-actions` | `styles/01-foundations.css:1752` | @media (max-width: 760px) |
+| `.topbar-actions` | `styles/01-foundations.css:65` | base |
+| `.topbar-actions` | `styles/01-foundations.css:999` | @media (max-width: 760px) |
 | `.topbar-actions .refresh-icon-button` | `ViewControls.css:27` | base |
 | `.topbar-actions .refresh-icon-button:hover:not(:disabled)` | `ViewControls.css:28` | base |
 | `.variance-negative` | `styles/01-foundations.css:537` | base |
 | `.variance-positive` | `styles/01-foundations.css:533` | base |
-| `.visual-column` | `styles/01-foundations.css:437` | base |
 | `.visual-column` | `styles/01-foundations.css:1028` | @media (max-width: 760px) |
+| `.visual-column` | `styles/01-foundations.css:437` | base |
 | `*` | `styles/01-foundations.css:11` | base |
 | `#root` | `styles/01-foundations.css:15` | base |
 | `#root` | `styles/03-pm-projections.css:369` | @media print |
 | `a` | `styles/01-foundations.css:29` | base |
+| `body` | `styles/01-foundations.css:1293` | base |
 | `body` | `styles/01-foundations.css:15` | base |
 | `body` | `styles/01-foundations.css:22` | base |
-| `body` | `styles/01-foundations.css:1293` | base |
 | `body` | `styles/03-pm-projections.css:369` | @media print |
 | `button` | `styles/01-foundations.css:29` | base |
 | `button` | `styles/01-foundations.css:36` | base |
 | `button:disabled` | `styles/01-foundations.css:40` | base |
 | `h1` | `styles/01-foundations.css:1407` | base |
-| `h2` | `styles/01-foundations.css:161` | base |
 | `h2` | `styles/01-foundations.css:1414` | base |
+| `h2` | `styles/01-foundations.css:161` | base |
 | `html` | `styles/01-foundations.css:15` | base |
 | `html` | `styles/03-pm-projections.css:369` | @media print |
 | `input` | `styles/01-foundations.css:29` | base |

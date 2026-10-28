@@ -11,22 +11,22 @@
 /* FOUNDATIONS — shared shell, controls, login, and accountability */
 @import './styles/01-foundations.css';
 
-/* BILLING DRAWERS — monthly detail, completed directory, and system curves */
+/* BILLING DRAWERS — shared cards, source disclosures, forecast grids and breakpoints */
 @import './styles/02-billing-drawers.css';
 
 /* PM PROJECTIONS — editor, history, print, and policy switch */
 @import './styles/03-pm-projections.css';
 
-/* PROJECTED BILLINGS — landing page and financial detail layout */
+/* PROJECTED BILLINGS — landing table, sorting and financial sign utility */
 @import './styles/04-projected-workspace.css';
 
 /* PROJECT PIVOT — columns, frozen headers, and financial value cells */
 @import './styles/05-project-pivot.css';
 
-/* PROJECT REFERENCES — originating bid, change orders, and team display */
+/* PROJECT REFERENCES — reference-card layout, originating bid, change orders and team display */
 @import './styles/06-project-references.css';
 
-/* DETAIL LAYOUT — shared cards, side filters, and completed filtering */
+/* FILTERS / DIRECTORY — side drawer and completed filters; billing cards belong to 02 */
 @import './styles/07-detail-layout-and-filters.css';
 
 /* NOTIFICATIONS AND INPUTS — bell, PM corrections, and potential-bid settings */

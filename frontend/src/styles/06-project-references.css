@@ -1,20 +1,14 @@
 /* ==========================================================================
-   PROJECT REFERENCES — originating bid, change orders, and team display
+   PROJECT REFERENCES — three-card layout, bid links and change orders
 
-   Edit here: Originating-bid disclosure/finder, confirmation states, change-order popovers, and team metadata.
-   Related: Current reference-card grid is in 07; compact team badge geometry is in 12.
+   Edit here: Reference-card grid/spacing, originating-bid finder, confirmation states, change-order popovers and team metadata.
+   Related: Curve-help popover geometry is in 02; compact employee badges are in 12.
 
    Loaded by ../styles.css in explicit cascade order. Do not alphabetize imports.
    Colors: theme-tokens.css. Editing map: docs/BIDLOG_CSS_EDITING_GUIDE.md.
-   ========================================================================== */
+   ==========================================================================  */
 
 /* PROJECT SETUP FLAGS / ORIGINATING BID CONTROL */
-
-.project-setup-flags {
-  position: relative;
-  display: grid;
-  overflow: visible;
-}
 
 .project-setup-flag {
   min-width: 0;
@@ -764,12 +758,6 @@
 
 /* PROJECT CONTROL POPOVER BEHAVIOR */
 
-.billing-curve-help-popover {
-  z-index: 130;
-  right: auto;
-  left: 0;
-}
-
 .originating-bid-help-popover,
 .change-orders-popover {
   z-index: 130;
@@ -831,4 +819,49 @@
 
 .projected-breakdown-table {
   min-width: 1480px;
+}
+
+/* REFERENCE CARDS — layout, direct-child spacing and breakpoints
+   These are three independent cards (Curve / Original Bid / Change Orders).
+   Keep the existing 760px, 1050px and 700px cascade; it is intentional here.
+   This block is now owned here, not by the sidebar/filter module. */
+
+.project-setup-flags {
+  position: relative;
+  display: grid;
+  overflow: visible;
+  grid-template-columns: repeat( 3, minmax(0, 1fr) );
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.project-setup-flags
+> .project-setup-flag {
+  min-height: 78px;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.project-setup-flags
+> .project-setup-flag
++ .project-setup-flag {
+  padding-left: 15px;
+  border-left: 1px solid var(--border);
+}
+
+@media (max-width: 1050px) {
+  .project-setup-flags {
+    grid-template-columns: repeat( 3, minmax(0, 1fr) );
+  }
+}
+
+@media (max-width: 700px) {
+  .project-setup-flags {
+    grid-template-columns: 1fr;
+  }
 }

@@ -1,12 +1,12 @@
 /* ==========================================================================
-   BILLING DRAWERS — monthly detail, completed directory, and system curves
+   BILLING DRAWERS — shared card and responsive layout owner
 
-   Edit here: Base billing drawers, monthly detail, initial completed-project directory, curve summaries.
-   Related: Later shared drawer card rhythm is in 07; closeout-specific layout is in 14.
+   Edit here: Active/completed drawer shells, card layout, source comparisons, curve help and forecast detail grids.
+   Related: Closeout-specific layout is in 14; reference-card grid is in 06; sticky financial tables remain unchanged.
 
    Loaded by ../styles.css in explicit cascade order. Do not alphabetize imports.
    Colors: theme-tokens.css. Editing map: docs/BIDLOG_CSS_EDITING_GUIDE.md.
-   ========================================================================== */
+   ==========================================================================  */
 
 /* Active Project billing accountability drawer */
 
@@ -90,9 +90,14 @@
   padding: 24px 30px 36px;
 }
 
+/* PROJECT IDENTITY GRID
+   Default four-column metadata; the five-card modifier and its breakpoints
+   appear below in this same file. Edit margin here, not in the filter module.  */
+
 .billing-drawer-meta {
   display: grid;
   grid-template-columns: repeat( 4, minmax(0, 1fr) );
+  margin-bottom: 18px;
 }
 
 .billing-drawer-meta span,
@@ -636,14 +641,15 @@
   background: var(--surface-3);
 }
 
-.completed-drawer-meta {
-  flex-wrap: wrap;
-}
+/* COMPLETED DRAWER SCROLL OWNER
+   Horizontal/bottom padding is shared; top stays flush with the context strip.
+   The closeout report adds its scoped rules in 14-completed-closeout.css.  */
 
 .completed-drawer-scroll {
   flex: 1 1 auto;
   overflow-y: auto;
   padding: 22px 26px 38px;
+  padding-top: 0;
 }
 
 .completed-kpi-grid {
@@ -656,10 +662,6 @@
   color: var(--muted);
   font-size: 11px;
   line-height: 1.35;
-}
-
-.completed-drawer-section {
-  border-top: 1px solid var(--border);
 }
 
 .completed-section-heading {
@@ -983,4 +985,526 @@
   color: var(--muted);
   font-size: 11px;
   line-height: 1.45;
+}
+
+/* SHARED DRAWER CARDS AND SOURCE DETAILS
+   Active and completed drawers share these card sizes and type rules.
+   Base grids precede modifier grids; keep responsive overrides in this order.
+   The closeout-only presentation remains in 14-completed-closeout.css. */
+
+/* ACTIVE DRAWER — project identity, characteristics and forecast summary */
+
+.billing-drawer-meta-five {
+  grid-template-columns: repeat( 5, minmax(0, 1fr) );
+}
+
+.billing-meta-card,
+.billing-characteristics-grid article {
+  min-width: 0;
+  padding: 13px 14px;
+  border: 1px solid var( --border, rgba(255, 255, 255, 0.12) );
+  border-radius: 10px;
+  background: rgba( 255, 255, 255, 0.025 );
+}
+
+.billing-meta-label,
+.billing-characteristics-grid span {
+  display: block;
+  margin-bottom: 6px;
+  color: var( --text-muted, #9da9b7 );
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.billing-location-card > small:not(.billing-meta-label) {
+  display: block;
+}
+
+.drawer-tbd-value {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+/* ACTIVE DRAWER CHARACTERISTICS
+   Retention / estimated margin / quantities. Shared direct-child card treatment
+   is in the SHARED CARD RHYTHM section below; desktop and narrow grids differ.  */
+
+.billing-characteristics-grid {
+  display: grid;
+  grid-template-columns: repeat( 4, minmax(0, 1fr) );
+}
+
+.billing-characteristics-grid strong {
+  font-size: 18px;
+}
+
+.billing-kpi-primary-grid {
+  grid-template-columns: repeat( 4, minmax(0, 1fr) );
+}
+
+.billing-kpi-secondary-grid {
+  grid-template-columns: repeat( 4, minmax(0, 1fr) );
+}
+
+.billing-kpi-grid article > small {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.billing-detail-label {
+  display: block;
+}
+
+.billing-curve-tag {
+  display: inline-flex;
+  padding: 5px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.billing-curve-help {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.billing-curve-help summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 29px;
+  height: 29px;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  color: var(--muted);
+  cursor: pointer;
+  list-style: none;
+}
+
+.billing-curve-help summary::-webkit-details-marker {
+  display: none;
+}
+
+.billing-curve-help summary:hover {
+  color: var(--text);
+  background: var(--surface-3);
+}
+
+/* CURVE HELP POPOVER
+   Size, right/left anchor and stacking order now have one definition.
+   Keep z-index 130 so help remains above neighboring reference cards.  */
+
+.billing-curve-help-popover {
+  position: absolute;
+  top: 36px;
+  width: min( 380px, 75vw );
+  padding: 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.32);
+  z-index: 130;
+  right: auto;
+  left: 0;
+}
+
+.billing-curve-help-popover strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.billing-curve-help-popover p {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.billing-curve-help-popover p:last-child {
+  margin-bottom: 0;
+}
+
+/* FORECAST DETAIL GRID
+   Base columns and spacing are together here. Its 1050px and 700px rules below
+   must remain later in the cascade; do not move the base after those breakpoints.  */
+
+.projection-detail-grid {
+  grid-template-columns: repeat( 5, minmax(0, 1fr) );
+  gap: 12px;
+  margin: 0;
+}
+
+@media (max-width: 1050px) {
+  .billing-drawer-meta-five {
+    grid-template-columns: repeat( 3, minmax(0, 1fr) );
+  }
+
+  .billing-characteristics-grid,
+  .billing-kpi-primary-grid {
+    grid-template-columns: repeat( 2, minmax(0, 1fr) );
+  }
+
+  .projection-detail-grid {
+    grid-template-columns: repeat( 3, minmax(0, 1fr) );
+  }
+}
+
+@media (max-width: 700px) {
+  .billing-drawer-meta-five,
+  .billing-characteristics-grid,
+  .billing-kpi-primary-grid,
+  .billing-kpi-secondary-grid,
+  .projection-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  .billing-curve-help {
+    display: none !important;
+  }
+}
+
+/* - FOUNDATION COMMERCIALS / ADMIN SOURCE COMPARISON */
+
+.commercial-source-note {
+  display: block;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.admin-source-hint {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+/* SOURCE COMPARISON DISCLOSURE
+   Source labels and values only; this CSS does not select Foundation versus Ops.
+   Print hiding remains at the end of this section.  */
+
+.source-comparison {
+  width: 100%;
+  margin-top: 9px;
+}
+
+.source-comparison > summary {
+  width: fit-content;
+  cursor: pointer;
+  list-style: none;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+}
+
+.source-comparison > summary::-webkit-details-marker {
+  display: none;
+}
+
+.source-comparison > summary::after {
+  content: ' ▾';
+}
+
+.source-comparison[open] > summary::after {
+  content: ' ▴';
+}
+
+.source-comparison-panel {
+  display: grid;
+  gap: 6px;
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid var(--border);
+}
+
+.source-comparison-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  font-size: 11px;
+}
+
+.source-comparison-row > span {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.source-comparison-row > strong {
+  color: var(--text);
+  font-size: 11px;
+  text-align: right;
+}
+
+.completed-commercial-grid {
+  grid-template-columns: repeat( 5, minmax(0, 1fr) );
+}
+
+.completed-lifecycle-summary-grid {
+  margin-bottom: 12px;
+}
+
+@media (max-width: 1200px) {
+  .completed-commercial-grid {
+    grid-template-columns: repeat( 2, minmax(0, 1fr) );
+  }
+}
+
+@media (max-width: 760px) {
+  .completed-commercial-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.completed-drawer-meta-five {
+  display: grid;
+}
+
+.completed-curve-summary {
+  margin-bottom: 0;
+}
+
+.completed-project-table
+.commercial-source-note,
+.completed-project-table
+.admin-source-hint {
+  white-space: normal;
+}
+
+@media print {
+  .source-comparison {
+    display: none !important;
+  }
+}
+
+/* SHARED CARD RHYTHM
+   Common grid spacing, card surface, uppercase labels, values and source notes.
+   Keep child/descendant selectors distinct: they intentionally have different reach.  */
+
+.billing-drawer-meta,
+.billing-characteristics-grid,
+.billing-kpi-grid,
+.completed-drawer-meta,
+.completed-kpi-grid,
+.completed-detail-grid {
+  gap: 12px;
+  align-items: stretch;
+}
+
+.billing-characteristics-grid,
+.billing-kpi-primary-grid,
+.billing-kpi-secondary-grid,
+.completed-commercial-grid,
+.completed-detail-grid {
+  margin-bottom: 12px;
+}
+
+.billing-meta-card,
+.billing-characteristics-grid > article,
+.billing-kpi-grid > article,
+.completed-detail-value {
+  min-height: 106px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+/* CARD LABELS — shared 11px label typography in light and OLED.  */
+
+.billing-meta-label,
+.billing-characteristics-grid > article > span:first-child,
+.billing-kpi-grid > article > span:first-child,
+.completed-detail-value > span:first-child,
+.billing-detail-label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+/* CARD VALUES — 16px values; closeout-specific overrides remain in module 14.  */
+
+.billing-meta-card > strong,
+.billing-characteristics-grid > article > strong,
+.billing-kpi-grid > article > strong,
+.billing-kpi-grid .date-kpi,
+.completed-detail-value > strong {
+  display: block;
+  margin: 0;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.billing-meta-card > strong,
+.billing-location-card > strong {
+  word-break: break-word;
+}
+
+.billing-location-card > small:not(.billing-meta-label),
+.billing-kpi-grid > article > small,
+.completed-detail-value > small,
+.commercial-source-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.billing-kpi-grid > article > .billing-variance-label {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.billing-kpi-grid > article > .billing-variance-label > small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.completed-drawer-meta {
+  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat( 5, minmax(0, 1fr) );
+  gap: 12px;
+  padding: 0 26px 18px;
+  border-bottom: 0;
+  background: transparent;
+}
+
+.billing-curve-summary,
+.completed-derived-note,
+.completed-empty-panel,
+.completed-inline-warning {
+  border-radius: 10px;
+}
+
+.billing-curve-summary {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid var( --border, rgba(255, 255, 255, 0.12) );
+  margin-bottom: 12px;
+  padding: 15px;
+  background: var(--surface-2);
+}
+
+.billing-assumptions,
+.billing-monthly-section,
+.completed-drawer-section {
+  margin-top: 20px;
+}
+
+.completed-drawer-section {
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+
+@media (max-width: 1280px) {
+  .billing-drawer-meta-five,
+.completed-drawer-meta.billing-drawer-meta-five {
+    grid-template-columns: repeat( 3, minmax(0, 1fr) );
+  }
+}
+
+@media (max-width: 900px) {
+  .billing-drawer-meta-five,
+.completed-drawer-meta.billing-drawer-meta-five,
+.billing-characteristics-grid,
+.billing-kpi-primary-grid,
+.billing-kpi-secondary-grid,
+.completed-commercial-grid,
+.completed-detail-grid {
+    grid-template-columns: repeat( 2, minmax(0, 1fr) );
+  }
+}
+
+@media (max-width: 640px) {
+  .billing-drawer-meta-five,
+.completed-drawer-meta.billing-drawer-meta-five,
+.billing-characteristics-grid,
+.billing-kpi-primary-grid,
+.billing-kpi-secondary-grid,
+.completed-commercial-grid,
+.completed-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.billing-section-explainer {
+  max-width: 520px;
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+/* CLOSE BUTTONS — optical X centering, shared by active and completed drawers.  */
+
+.billing-drawer-close,
+.completed-drawer-close {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  padding-bottom: 5px;
+  line-height: 1;
+  text-align: center;
+}
+
+.projection-details-section {
+  display: grid;
+  gap: 12px;
+}
+
+.projection-details-section
+> .section-heading.compact {
+  margin-bottom: 0;
+}
+
+/* FORECAST ATTENTION — presentation only; text/status is supplied by React.  */
+
+.projection-attention-message {
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: var(--surface-2);
+  font-size: 11px;
+  margin: 0;
+  padding: 11px 15px;
+  border-radius: 10px;
+  line-height: 1.4;
+}
+
+.projection-detail-grid
+> div {
+  min-height: 82px;
+  padding: 15px;
+  border-radius: 10px;
 }
