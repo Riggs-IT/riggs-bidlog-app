@@ -76,6 +76,14 @@ class DataAPIIdentityConflict(DataAPIError):
     pass
 
 
+class DataAPIProjectSetupDisabled(DataAPIError):
+    """AP4C read gate is off; not a missing project."""
+
+
+class DataAPIProjectSetupServiceUnavailable(DataAPIError):
+    """Bid Log machine-service authentication flag for AP4C is off."""
+
+
 class DataAPIResourceNotFound(DataAPIError):
     pass
 
@@ -1443,6 +1451,62 @@ def update_bid_log_outcome(
         response,
         operation=operation,
     )
+
+
+def get_project_setup_draft(*, setup_id: UUID, actor_eid: int) -> dict:
+    """AP4C GET by known stable SetupID; BID_LOG ADMIN rechecked by SQL.
+
+    This deliberately is NOT an Ops discovery/list endpoint.
+    """
+    if not isinstance(setup_id, UUID) or setup_id.int == 0:
+        raise DataAPIRequestRejected(422, "project_setup_invalid_request")
+    if type(actor_eid) is not int or actor_eid <= 0:
+        raise DataAPIConfigurationError("Authenticated actor EID required.")
+    operation = "Project setup draft by ID"
+    try:
+        response = _get_http_client().get(
+            f"/v1/project-setups/drafts/{setup_id}",
+            headers=_request_headers(include_service_auth=True, actor_eid=actor_eid),
+        )
+    except (httpx.TimeoutException, httpx.RequestError):
+        raise DataAPIUnavailable("Project setup read unavailable.") from None
+    detail = _detail(response)
+    if response.status_code == 503 and detail == "project_setup_reads_disabled":
+        raise DataAPIProjectSetupDisabled()
+    if response.status_code == 503 and detail == "service_auth_unavailable":
+        raise DataAPIProjectSetupServiceUnavailable()
+    if response.status_code in (403, 404) and detail in (
+        "project_setup_forbidden", "project_setup_not_found"
+    ):
+        raise DataAPIRequestRejected(response.status_code, detail)
+    _raise_common_failure(response, operation=operation)
+    if response.status_code != 200:
+        raise DataAPIInvalidResponse("Unexpected project setup read response.")
+    value = _json_object(response, operation=operation)
+    # The bridge returns an AP4A/Pydantic-typed full draft. Validate its
+    # identity and external-null status again before proxying it unchanged.
+    if set(value) != {"setup", "persistence", "externalState"}:
+        raise DataAPIInvalidResponse("Unexpected project setup read contract.")
+    record = value.get("setup")
+    try:
+        if (value["persistence"] != "SQL_DRAFT_ONLY"
+            or value["externalState"] != "NOT_CONNECTED"
+            or not isinstance(record, dict)
+            or UUID(str(record.get("setupId"))) != setup_id
+            or UUID(str(record.get("childId"))).int == 0
+            or type(record.get("originalBidLogId")) is not int
+            or record["originalBidLogId"] <= 0
+            or type(record.get("revision")) is not int
+            or record["revision"] <= 0
+            or any(record.get(key) is not None
+                   for key in ("jobNumber", "cognitoEntryId", "jobListId"))
+            or not isinstance(record.get("values"), dict)
+            or not isinstance(record.get("originatingBid"), dict)
+            or record["originatingBid"].get("originalBidLogId") != record["originalBidLogId"]):
+            raise ValueError("invalid draft contract")
+    except (ValueError, TypeError, KeyError, AttributeError):
+        raise DataAPIInvalidResponse("Invalid project setup read contract.") from None
+    return value
 
 
 def get_active_project_detail(

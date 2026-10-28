@@ -49,6 +49,8 @@ from .data_api import (
     DataAPIConfigurationError,
     DataAPIEdgeRejected,
     DataAPIInvalidResponse,
+    DataAPIProjectSetupDisabled,
+    DataAPIProjectSetupServiceUnavailable,
     DataAPIRequestRejected,
     DataAPISharedRefreshRateLimited,
     DataAPIResourceNotFound,
@@ -66,6 +68,7 @@ from .data_api import (
     get_bid_log_outcome_bids,
     get_bid_log_outcome_detail,
     get_active_project_detail,
+    get_project_setup_draft,
     get_active_project_cognito_detail,
     get_active_project_resource_schedule,
     assign_active_project_staffing,
@@ -2015,6 +2018,40 @@ def projected_billings_current_project_monthly(
             exc
         )
 
+
+
+# ============================================================
+# AP4D - known SetupID read for existing Active Projects BFF.
+# Deliberately no Ops list/discovery or broadened team authorization.
+# ============================================================
+
+@app.get("/api/project-setups/drafts/{setup_id}")
+def active_project_setup_draft_proxy(
+    setup_id: UUID,
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    _require_projects_workspace_access(current_user)
+    _require_project_editor(current_user)  # SQL currently requires BID_LOG ADMIN.
+    if setup_id.int == 0:
+        raise HTTPException(422, "project_setup_invalid_request")
+    try:
+        record = get_project_setup_draft(
+            setup_id=setup_id,
+            actor_eid=current_user.eid,
+        )
+        return JSONResponse(record, headers={"Cache-Control": "no-store, private"})
+    except DataAPIProjectSetupDisabled:
+        raise HTTPException(503, "project_setup_reads_disabled") from None
+    except DataAPIProjectSetupServiceUnavailable:
+        raise HTTPException(503, "project_setup_service_auth_unavailable") from None
+    except DataAPIRequestRejected as exc:
+        if (exc.status_code, exc.detail) in {
+            (403, "project_setup_forbidden"), (404, "project_setup_not_found"),
+        }:
+            raise HTTPException(exc.status_code, exc.detail) from None
+        raise HTTPException(503, "project_setup_unavailable") from None
+    except Exception as exc:
+        _raise_active_project_proxy_error(exc)
 
 
 # ============================================================

@@ -43,6 +43,7 @@ class PassiveFreshnessAuthTests(unittest.TestCase):
                   '/api/bid-log/reference/general-contractors','/api/bid-log/reference/pm-badges',
                   '/api/active-projects','/api/projects/completed-directory', '/api/completed-projects',
                   '/api/bid-log/active/123', '/api/completed-projects/22/monthly',
+                  '/api/project-setups/drafts/00000000-0000-4000-8000-000000000001',
                   '/api/other','/api/current-projects/0/pm-forecast','/api/current-projects/24/pm-forecast/admin-correction']:
             self.app.add_api_route(p,endpoint,methods=['GET','POST','PUT'])
         self.client=TestClient(self.app);self.addCleanup(self.client.close)
@@ -82,6 +83,23 @@ class PassiveFreshnessAuthTests(unittest.TestCase):
         self.assertEqual(detail.json()['last_activity_at'], 1100)  # no wildcard exemption
         monthly = self.client.get('/api/completed-projects/22/monthly', headers=HEADER)
         self.assertEqual(monthly.json()['last_activity_at'], 1100)
+
+    def test_project_setup_known_id_passive_only_with_header(self):
+        path = '/api/project-setups/drafts/00000000-0000-4000-8000-000000000001'
+        passive = self.client.get(path, headers=HEADER)
+        self.assertEqual(passive.status_code, 200)
+        self.assertEqual(passive.json()['last_activity_at'], 1000)
+        self.assertNotIn('set-cookie', passive.headers)
+        ordinary = self.client.get(path)
+        self.assertEqual(ordinary.json()['last_activity_at'], 1100)
+        self.assertIn(COOKIE, ordinary.headers.get('set-cookie', ''))
+
+    def test_setup_read_requires_exact_uuid_path(self):
+        path = '/api/project-setups/drafts/not-an-id'
+        from types import SimpleNamespace
+        req = SimpleNamespace(method='GET', headers=HEADER,
+                              url=SimpleNamespace(path=path))
+        self.assertFalse(auth.is_passive_freshness_read(req))
 
     def test_normal_read_marks_activity(self):
         r=self.client.get(PATH);self.assertEqual(r.json()['last_activity_at'],1100);self.assertIn(COOKIE,r.headers['set-cookie'])

@@ -354,6 +354,11 @@ _PASSIVE_READ_PATHS = frozenset({
     "/api/pm-forecast/schedule-review/attention",
     "/api/originating-bid/attention",
 })
+_PASSIVE_PROJECT_SETUP_DRAFT_PATH = re.compile(
+    r"/api/project-setups/drafts/"
+    r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
+    r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+)
 _PASSIVE_PM_PATH = re.compile(
     r"/api/current-projects/[1-9][0-9]*/pm-forecast"
     r"(?:/policy|/history(?:/[1-9][0-9]*)?)?"
@@ -367,7 +372,8 @@ def is_passive_freshness_read(request: Request) -> bool:
         request.method == "GET"
         and request.headers.get("X-Riggs-Passive-Read") == "1"
         and (request.url.path in _PASSIVE_READ_PATHS
-             or _PASSIVE_PM_PATH.fullmatch(request.url.path) is not None)
+             or _PASSIVE_PM_PATH.fullmatch(request.url.path) is not None
+             or _PASSIVE_PROJECT_SETUP_DRAFT_PATH.fullmatch(request.url.path) is not None)
     )
 
 
