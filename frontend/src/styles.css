@@ -2121,7 +2121,7 @@ body {
 
 .current-user span {
   margin-top: 3px;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .page-shell {
@@ -2318,7 +2318,7 @@ h2 {
 
 .filter-field > span,
 .filter-group-title {
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .filter-field input,
@@ -5369,7 +5369,7 @@ h2 {
 
   border:
     1px solid
-    var(--border-strong);
+    var(--toggle-off-border);
 
   border-radius: 999px;
 
@@ -5377,16 +5377,28 @@ h2 {
     var(--surface);
 
   color:
-    var(--muted);
+    var(--toggle-off-label);
 
   cursor: pointer;
 }
 
 
+/* One accessible ON/OFF style for both themes, independent of status colors.
+   Contrast comes from reversing the track/thumb values, not hue. */
+.pm-policy-switch:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+
+.pm-policy-switch:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
 .pm-policy-switch strong {
   min-width: 25px;
 
-  font-size: 10px;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 
@@ -5399,7 +5411,7 @@ h2 {
   border-radius: 999px;
 
   background:
-    var(--border-strong);
+    var(--toggle-off-track);
 
   transition:
     background 120ms ease;
@@ -5418,7 +5430,7 @@ h2 {
   border-radius: 50%;
 
   background:
-    var(--text);
+    var(--toggle-off-thumb);
 
   transition:
     transform 120ms ease;
@@ -5427,19 +5439,25 @@ h2 {
 
 .pm-policy-switch.is-on {
   color:
-    var(--text);
+    var(--toggle-on-label);
+
+  border-color:
+    var(--toggle-on-border);
 }
 
 
 .pm-policy-switch.is-on
 .pm-policy-switch-track {
   background:
-    var(--accent);
+    var(--toggle-on-track);
 }
 
 
 .pm-policy-switch.is-on
 .pm-policy-switch-thumb {
+  background:
+    var(--toggle-on-thumb);
+
   transform:
     translateX(14px);
 }
@@ -6516,7 +6534,7 @@ td.pivot-project-column {
   color:
     var(--muted);
 
-  font-size: 8px;
+  font-size: 10.5px;
   font-weight: 650;
 
   letter-spacing: 0.025em;
@@ -6528,7 +6546,7 @@ td.pivot-project-column {
   color:
     var(--text);
 
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
 
   white-space: nowrap;
@@ -6795,6 +6813,8 @@ th.pivot-project-column {
 }
 
 
+/* Compact project metadata uses one readable text scale across light/dark.
+   Monthly financial value tracks, sticky widths and badges remain unchanged. */
 .pivot-project-meta {
   display: flex;
   align-items: center;
@@ -6806,7 +6826,7 @@ th.pivot-project-column {
   color:
     var(--muted);
 
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 650;
 
   line-height: 1.35;
@@ -6849,7 +6869,7 @@ th.pivot-project-column {
 
 .pivot-project-meta-separator {
   color:
-    var(--muted-2);
+    var(--muted);
 }
 
 
@@ -6901,7 +6921,7 @@ th.pivot-project-column {
   color:
     var(--muted);
 
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
 
   letter-spacing: 0.055em;
@@ -6945,7 +6965,7 @@ th.pivot-project-column {
     var(--muted);
 
   font: inherit;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
 
   cursor: pointer;
@@ -6994,7 +7014,7 @@ th.pivot-project-column {
   color:
     var(--text);
 
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 
   line-height: 1.3;
@@ -7052,7 +7072,7 @@ th.pivot-project-column {
   color:
     var(--text);
 
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
 
   letter-spacing: 0.045em;
@@ -7065,7 +7085,7 @@ th.pivot-project-column {
   color:
     var(--muted);
 
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
 
   letter-spacing: 0.045em;
@@ -7086,7 +7106,7 @@ th.pivot-project-column {
   color:
     var(--text-soft);
 
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
 
   line-height: 1.25;
@@ -7117,7 +7137,7 @@ th.pivot-project-column {
     5px;
 
   color:
-    var(--muted-2);
+    var(--muted);
 }
 
 
@@ -7141,7 +7161,7 @@ th.pivot-project-column {
   color:
     var(--muted);
 
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
 
   line-height: 1.2;
@@ -7173,7 +7193,7 @@ th.pivot-project-column {
   color:
     var(--muted);
 
-  font-size: 8px;
+  font-size: 10.5px;
   font-weight: 600;
 
   letter-spacing: 0.025em;
@@ -7186,7 +7206,7 @@ th.pivot-project-column {
   color:
     var(--text);
 
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
 
   white-space: nowrap;
@@ -7199,7 +7219,7 @@ th.pivot-project-column {
   color:
     var(--text);
 
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
 
   white-space: nowrap;
@@ -8944,7 +8964,7 @@ tbody td {
 
 
 .project-team-empty {
-  color: var(--muted-2);
+  color: var(--muted);
 }
 
 
@@ -10003,10 +10023,11 @@ tbody td {
   display: grid;
   place-items: center;
 
-  min-width: 18px;
-  height: 18px;
+  /* Shared light/dark sizing keeps multi-digit counts legible. */
+  min-width: 22px;
+  height: 22px;
 
-  padding: 0 4px;
+  padding: 0 5px;
 
   border:
     2px solid
@@ -10020,8 +10041,11 @@ tbody td {
   color:
     #fff;
 
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .notification-panel {
@@ -10486,7 +10510,7 @@ tbody td {
 
 
 .gc-empty {
-  color: var(--muted-2);
+  color: var(--muted);
 }
 
 
@@ -11149,7 +11173,7 @@ td.pivot-project-column {
   border-bottom: 1px solid var(--border-strong);
   background: var(--surface-2);
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.055em;
   text-align: left;
@@ -11161,7 +11185,7 @@ td.pivot-project-column {
   padding: 10px;
   border-bottom: 1px solid var(--border);
   color: var(--text);
-  font-size: 11px;
+  font-size: 12px;
   vertical-align: middle;
 }
 
@@ -11192,7 +11216,7 @@ td.pivot-project-column {
 .bid-log-due-state {
   display: block;
   margin-top: 3px;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.05em;
 }
@@ -11214,7 +11238,7 @@ td.pivot-project-column {
   display: block;
   margin-top: 2px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .bid-log-name-line {
@@ -13658,7 +13682,7 @@ td.pivot-project-column {
 
 .pivot-project-value-line small {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.045em;
   text-transform: uppercase;
@@ -13666,7 +13690,7 @@ td.pivot-project-column {
 
 .pivot-project-value-line strong {
   color: var(--text);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -14135,7 +14159,7 @@ tbody > tr:nth-child(
 .needs-rebalance-action:focus-visible {
   background: color-mix(in srgb, var(--warning) 20%, var(--surface));
 }
-.pivot-needs-rebalance { font-size: 9px; }
+.pivot-needs-rebalance { font-size: 10px; }
 .projection-source-count-toggle.rebalance-count:not(.active) {
   color: var(--warning);
 }
@@ -14150,13 +14174,13 @@ tbody > tr:nth-child(
 .needs-rebalance-flag.pending-foundation-flag,
 :is(.pivot-project-name-line, .project-name-status-line, .active-project-name-line)
   > .needs-rebalance-flag.pending-foundation-flag {
-  color: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 36%, var(--border));
-  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  color: var(--pending-foundation);
+  border-color: color-mix(in srgb, var(--pending-foundation) 36%, var(--border));
+  background: color-mix(in srgb, var(--pending-foundation) 9%, var(--surface));
 }
 .needs-rebalance-action.pending-foundation-flag:hover,
 .needs-rebalance-action.pending-foundation-flag:focus-visible {
-  background: color-mix(in srgb, var(--accent) 17%, var(--surface));
+  background: color-mix(in srgb, var(--pending-foundation) 17%, var(--surface));
 }
 
 /* Selection is a filled state, not just amber text on a neutral pill.
@@ -14983,9 +15007,9 @@ tbody > tr:nth-child(
 }
 :is(.project-name-status-line, .pivot-project-name-line, .active-project-name-line)
   .balance-review-status-stack > .needs-rebalance-flag.pending-foundation-flag {
-  color: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 36%, var(--border));
-  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  color: var(--pending-foundation);
+  border-color: color-mix(in srgb, var(--pending-foundation) 36%, var(--border));
+  background: color-mix(in srgb, var(--pending-foundation) 9%, var(--surface));
 }
 /* The card is the action: no nested button, no duplicate gap figure. */
 .pm-forecast-jump-target > .balance-review-detail { margin-bottom: 16px; }
@@ -15001,8 +15025,8 @@ tbody > tr:nth-child(
   text-align: left;
 }
 .balance-review-detail.is-pending {
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
-  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+  border-color: color-mix(in srgb, var(--pending-foundation) 40%, var(--border));
+  background: color-mix(in srgb, var(--pending-foundation) 5%, var(--surface));
 }
 .balance-review-detail.is-actionable { cursor: pointer; }
 .balance-review-detail.is-actionable:hover {
@@ -15010,8 +15034,8 @@ tbody > tr:nth-child(
   background: color-mix(in srgb, var(--warning) 10%, var(--surface));
 }
 .balance-review-detail.is-pending.is-actionable:hover {
-  border-color: color-mix(in srgb, var(--accent) 66%, var(--border));
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  border-color: color-mix(in srgb, var(--pending-foundation) 66%, var(--border));
+  background: color-mix(in srgb, var(--pending-foundation) 8%, var(--surface));
 }
 .balance-review-detail.is-actionable:focus-visible {
   outline: 2px solid var(--accent);

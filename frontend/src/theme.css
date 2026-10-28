@@ -58,6 +58,8 @@
   /* Interaction + meaning */
   --accent: #2d607f;
   --accent-soft: #e5eef3;
+  /* Foundation billing reconciliation is blue regardless of UI accent. */
+  --pending-foundation: #2d607f;
   --positive: #2c785c;
   --negative: #a34f4f;
 
@@ -70,11 +72,28 @@
   --critical-soft: #f8e8e8;
   --success-soft: #e5f2ec;
 
+  /* High-contrast ON/OFF controls — neutral, never a status color.
+     Both themes use these same semantic variables; edit values here. */
+  --toggle-on-track: #454b51;
+  --toggle-on-thumb: #ffffff;
+  --toggle-on-border: #6a7177;
+  --toggle-on-label: #1f252c;
+  --toggle-off-track: #d6dbe0;
+  --toggle-off-thumb: #525c66;
+  --toggle-off-border: #b7c0c8;
+  --toggle-off-label: #59636e;
+
   /* Header */
   --topbar: #1b2229;
   --topbar-border: #323b44;
   --topbar-text: #f5f7f8;
   --topbar-muted: #9da6af;
+  /* Shared header controls are neutral even when light theme topbar is dark. */
+  --topbar-control-bg: #191919;
+  --topbar-control-text: #e8e8e8;
+  --topbar-control-border: #3c3c3c;
+  --topbar-control-hover-bg: #272727;
+  --topbar-control-hover-border: #656565;
 
   --shadow:
     0 10px 28px
@@ -86,27 +105,30 @@
 /* ========================================================================== */
 
 :root[data-theme="dark"] {
-  /* Surface stack: charcoal instead of near-black. */
-  --bg: #181d22;
-  --surface: #20262c;
-  --surface-2: #252c33;
-  --surface-3: #2b333b;
+  /* OLED / Neutral Black — LOCAL PREVIEW ONLY.
+     Edit these surface tokens to change the feel of dark mode.
+     Keep meaningful warning/positive/negative/review hues separate. */
+  --bg: #0c0c0c;
+  --surface: #191919;
+  --surface-2: #202020;
+  --surface-3: #292929;
 
-  /* Softer default text; strong text is reserved for hierarchy. */
-  --text: #cbd2d8;
-  --text-strong: #e1e6ea;
-  --text-soft: #b5bec6;
-  --muted: #929da7;
+  /* Neutral text hierarchy, deliberately not blue-gray. */
+  --text: #e1e1e1;
+  --text-strong: #f4f4f4;
+  --text-soft: #d1d1d1;
+  --muted: #b6b6b6;
 
-  /* Quieter separators reduce the outlined-everything effect. */
-  --border: #2d343b;
-  --border-strong: #3a434c;
-  --row-divider: #2a3138;
+  /* Subtle neutral separators for dense financial tables. */
+  --border: #303030;
+  --border-strong: #424242;
+  --row-divider: #2a2a2a;
   --table-row-alt: color-mix(in srgb, var(--surface-2) 48%, var(--surface));
 
   /* Interaction + meaning */
-  --accent: #72a3c0;
-  --accent-soft: #243844;
+  --accent: #c7c7c7;
+  --accent-soft: #303030;
+  --pending-foundation: #85bde3;
   --positive: #78ad97;
   --negative: #d08484;
 
@@ -119,31 +141,105 @@
   --critical-soft: #3a2929;
   --success-soft: #26372f;
 
+  /* ON is light with a dark thumb; OFF is charcoal with a light thumb.
+     Financial/approval states use separate colors, never toggle colors. */
+  --toggle-on-track: #e0e0e0;
+  --toggle-on-thumb: #171717;
+  --toggle-on-border: #909090;
+  --toggle-on-label: #f3f3f3;
+  --toggle-off-track: #383838;
+  --toggle-off-thumb: #bcbcbc;
+  --toggle-off-border: #505050;
+  --toggle-off-label: #bcbcbc;
+
   /* Header */
-  --topbar: #151a1f;
-  --topbar-border: #2a3138;
-  --topbar-text: #d9dfe3;
-  --topbar-muted: #8f9aa4;
+  --topbar: #101010;
+  --topbar-border: #292929;
+  --topbar-text: #eeeeee;
+  --topbar-muted: #a6a6a6;
+  --topbar-control-bg: #191919;
+  --topbar-control-text: #e8e8e8;
+  --topbar-control-border: #3c3c3c;
+  --topbar-control-hover-bg: #272727;
+  --topbar-control-hover-border: #656565;
 
   /* Dark component tuning. These are intentionally semantic so most future
      dark-mode changes can be made here without touching selectors below. */
-  --dark-control-bg: #1d2329;
-  --dark-control-hover-bg: #232a31;
-  --dark-placeholder: #7f8a94;
-  --dark-table-head-bg: #242b32;
-  --dark-table-head-text: #9ba6b0;
-  --dark-row-hover: #252d34;
-  --dark-status-pill-bg: #2a3239;
-  --dark-scroll-thumb: #46515b;
-  --dark-auth-bg: #151a1f;
-  --dark-auth-mark-bg: #1d242a;
-  --dark-auth-copy: #a5b0b9;
-  --dark-auth-product: #c0c8cf;
-  --dark-auth-trust: #bcc5cc;
+  --dark-control-bg: #191919;
+  --dark-control-hover-bg: #292929;
+  --dark-placeholder: #a3a3a3;
+  --dark-table-head-bg: #222222;
+  --dark-table-head-text: #cecece;
+  --dark-row-hover: #2c2c2c;
+  --dark-status-pill-bg: #292929;
+  --dark-scroll-thumb: #505050;
+  --dark-auth-bg: #0c0c0c;
+  --dark-auth-mark-bg: #222222;
+  --dark-auth-copy: #b7b7b7;
+  --dark-auth-product: #d6d6d6;
+  --dark-auth-trust: #c7c7c7;
 
   --shadow:
     0 8px 24px
     rgba(0, 0, 0, 0.15);
+}
+
+
+/* ========================================================================== */
+/* SHARED MICROTYPOGRAPHY — applies equally to LIGHT and DARK                 */
+/*                                                                            */
+/* These labels were previously 9–10px in light mode and 10.5px in dark mode. */
+/* Keep font sizes here, never inside a dark-only selector.                    */
+/* Table amounts/geometry live in styles.css; badge colors stay semantic.     */
+/* ========================================================================== */
+:root :is(
+  .bid-log-workspace-count span,
+  .bid-log-workspace-count small,
+  .bid-log-summary-card small,
+  .bid-log-notes-heading span,
+  .bid-log-status-pill,
+  .bid-edit-section-heading > small,
+  .bid-edit-field > small,
+  .bid-edit-toggle small,
+  .bid-log-edit-footer small,
+  .bid-gc-option-copy small,
+  .bid-gc-picker-tip,
+  .active-project-schedule-callout small,
+  .active-project-reference-grid dt,
+  .cognito-file-row small,
+  .originating-bid-inline-success,
+  .originating-bid-help-title span,
+  .originating-bid-help-title small,
+  .originating-bid-help-facts span,
+  .originating-bid-help-address,
+  .originating-bid-finder-head small,
+  .originating-bid-results-summary small,
+  .originating-bid-candidate-head small,
+  .originating-bid-confidence,
+  .originating-bid-match-reasons > span,
+  .originating-bid-link-warning span,
+  .originating-bid-confirmation p,
+  .change-orders-popover-head span,
+  .change-orders-popover-head small,
+  .change-orders-summary-grid span,
+  .change-orders-context,
+  .change-orders-message,
+  .change-orders-empty,
+  .project-team-role,
+  .side-filter-source-toggles small,
+  .pm-history-admin-badge,
+  .notification-panel-header span,
+  .active-bid-settings-toggle small
+) {
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* PM / No PM selection intentionally uses the existing neutral gray styling
+   in ProjectionDisplay.css. No dark-only active color override is needed. */
+:root[data-theme="dark"] .projection-source-count-toggle:not(.active):not(:disabled):hover {
+  color: var(--text-strong);
+  border-color: var(--border-strong);
 }
 
 /* ========================================================================== */
@@ -153,8 +249,6 @@
 :root[data-theme="dark"] body {
   background: var(--bg);
   color: var(--text);
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
 }
 
 /* Strong text is deliberate rather than making every glyph near-white. */
@@ -184,7 +278,6 @@
 
 :root[data-theme="dark"] .app-nav button {
   color: var(--topbar-muted);
-  font-size: 12px;
   font-weight: 600;
 }
 
@@ -206,12 +299,36 @@
 
 :root[data-theme="dark"] .current-user strong {
   color: var(--topbar-text);
-  font-size: 12px;
 }
 
 :root[data-theme="dark"] .current-user span {
   color: var(--topbar-muted);
-  font-size: 10.5px;
+}
+
+
+/* Neutralize legacy blue-gray topbar controls in styles.css.
+   The shared status colors and notification state are not changed. */
+:root[data-theme="dark"] :is(.signout-button, .notification-button) {
+  border-color: var(--border-strong);
+  background: var(--dark-control-bg);
+  color: var(--topbar-text);
+}
+
+:root[data-theme="dark"] :is(.signout-button, .notification-button):hover {
+  border-color: var(--accent);
+  background: var(--dark-control-hover-bg);
+}
+
+:root[data-theme="dark"] .notification-button.has-attention {
+  border-color: var(--accent);
+}
+
+/* Notification count: neutral OLED contrast, not white digits on silver.
+   Font size and dimensions are shared between themes in styles.css. */
+:root[data-theme="dark"] .notification-count {
+  background: #eeeeee;
+  color: #151515;
+  border-color: var(--topbar);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -257,7 +374,6 @@
   border-color: var(--border);
   background: var(--surface-2);
   color: var(--text-strong);
-  font-size: 12px;
   line-height: 1.35;
 }
 
@@ -288,7 +404,6 @@
   .section-note
 ) {
   color: var(--muted);
-  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.035em;
 }
@@ -299,7 +414,6 @@
 }
 
 :root[data-theme="dark"] small {
-  font-size: 11px;
   line-height: 1.35;
 }
 
@@ -309,19 +423,16 @@
 
 :root[data-theme="dark"] table {
   color: var(--text);
-  font-size: 12px;
 }
 
 :root[data-theme="dark"] table th {
   color: var(--muted);
-  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.035em;
 }
 
 :root[data-theme="dark"] table td {
   color: var(--text);
-  font-size: 12px;
   line-height: 1.35;
 }
 
@@ -416,9 +527,6 @@
   .bid-log-workspace-count span,
   .bid-log-workspace-count small,
   .bid-log-summary-card small,
-  .bid-log-due-state,
-  .bid-log-name-cell span,
-  .bid-log-type-stack span,
   .bid-log-notes-heading span,
   .bid-log-status-pill,
   .bid-edit-section-heading > small,
@@ -431,12 +539,10 @@
   .active-project-reference-grid dt,
   .cognito-file-row small
 ) {
-  font-size: 10.5px;
   line-height: 1.35;
 }
 
 :root[data-theme="dark"] .bid-log-notes-content {
-  font-size: 11.5px;
   line-height: 1.65;
 }
 
@@ -458,10 +564,6 @@
 /* -------------------------------------------------------------------------- */
 
 :root[data-theme="dark"] :is(
-  .pivot-project-meta,
-  .pivot-project-role-label,
-  .pivot-project-context-line,
-  .pivot-project-gc,
   .originating-bid-inline-success,
   .originating-bid-help-title span,
   .originating-bid-help-title small,
@@ -486,7 +588,6 @@
   .notification-panel-header span,
   .active-bid-settings-toggle small
 ) {
-  font-size: 10.5px;
   line-height: 1.35;
 }
 
@@ -495,7 +596,6 @@
   .pivot-billing-line small
 ) {
   color: var(--muted);
-  font-size: 10.5px;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -583,6 +683,35 @@
 
 :root[data-theme="dark"] .auth-trust-list {
   color: var(--dark-auth-trust);
+}
+
+
+/* Neutral dark authentication accents; do not change light-mode branding. */
+:root[data-theme="dark"] .auth-blueprint-grid {
+  background-image:
+    linear-gradient(rgba(210, 210, 210, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(210, 210, 210, 0.025) 1px, transparent 1px);
+}
+
+:root[data-theme="dark"] .auth-kicker {
+  color: var(--text-soft);
+}
+
+:root[data-theme="dark"] .auth-trust-icon {
+  border-color: var(--border-strong);
+  background: var(--surface-3);
+  color: var(--text-soft);
+}
+
+:root[data-theme="dark"] .auth-access-column {
+  border-color: var(--border);
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+}
+
+:root[data-theme="dark"] .auth-state-label {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text-soft);
 }
 
 /* Preserve meaning for focus and keyboard users. */

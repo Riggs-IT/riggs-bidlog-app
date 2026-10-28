@@ -23,5 +23,6 @@
 .pm-comparison-controls .show-controls {margin-bottom:0;}
 
 /* The top navigation keeps its existing dark surface in both app themes. */
-.topbar-actions .refresh-icon-button {width:40px;min-height:38px;padding:0;border-radius:6px;background:#12171b;color:#dce2e7;border-color:#39434d;}
-.topbar-actions .refresh-icon-button:hover:not(:disabled) {background:#1a2026;border-color:#596774;}
+/* Topbar refresh shares the OLED's neutral controls in both themes; spinner and feedback stay unchanged. */
+.topbar-actions .refresh-icon-button {width:40px;min-height:38px;padding:0;border-radius:6px;background:var(--topbar-control-bg);color:var(--topbar-control-text);border-color:var(--topbar-control-border);}
+.topbar-actions .refresh-icon-button:hover:not(:disabled) {background:var(--topbar-control-hover-bg);border-color:var(--topbar-control-hover-border);}
