@@ -84,6 +84,10 @@ class DataAPIProjectSetupServiceUnavailable(DataAPIError):
     """Bid Log machine-service authentication flag for AP4C is off."""
 
 
+class DataAPIProjectSetupOpsDiscoveryDisabled(DataAPIError):
+    """AP4E Ops discovery is independently default-off."""
+
+
 class DataAPIResourceNotFound(DataAPIError):
     pass
 
@@ -3828,3 +3832,99 @@ def get_bid_log_administration_queue_events(
     if response.status_code != 200:
         raise DataAPIInvalidResponse("Unexpected Administration queue event status")
     return _json_object(response, operation=operation)
+
+
+
+def get_ops_project_setup_summary(*, actor_eid: int, page_size: int = 25,
+                                  cursor: dict | None = None) -> dict:
+    """AP4E summary only via BID_LOG credentials and trusted BFF actor EID.
+
+    Never bridge Accounting token/queue and never parse raw ValuesJson or
+    originating bid snapshots for a non-admin user.
+    """
+    from datetime import datetime
+    if type(actor_eid) is not int or not 0 < actor_eid <= 2147483647:
+        raise DataAPIConfigurationError("Authenticated EID required")
+    if type(page_size) is not int or not 1 <= page_size <= 50:
+        raise DataAPIRequestRejected(422, "project_setup_invalid_request")
+    params = {"page_size": page_size}
+    if cursor is not None:
+        if not isinstance(cursor, dict) or set(cursor) != {"createdAtUTC", "setupId"}:
+            raise DataAPIRequestRejected(422, "project_setup_invalid_cursor")
+        try:
+            dt = datetime.fromisoformat(str(cursor["createdAtUTC"]).replace("Z", "+00:00"))
+            uid = UUID(str(cursor["setupId"]))
+            if dt.tzinfo is None or dt.utcoffset() is None or uid.int == 0:
+                raise ValueError("invalid cursor")
+        except (ValueError, AttributeError, TypeError):
+            raise DataAPIRequestRejected(422, "project_setup_invalid_cursor") from None
+        params["after_created_at_utc"] = dt.isoformat()
+        params["after_setup_id"] = str(uid)
+    operation = "Ops awaiting project setup list"
+    try:
+        response = _get_http_client().get(
+            "/v1/project-setups/ops/awaiting-information", params=params,
+            headers=_request_headers(include_service_auth=True, actor_eid=actor_eid),
+        )
+    except (httpx.TimeoutException, httpx.RequestError):
+        raise DataAPIUnavailable("Ops setup discovery unavailable") from None
+    detail = _detail(response)
+    if response.status_code == 503 and detail == "project_setup_reads_disabled":
+        raise DataAPIProjectSetupDisabled()
+    if response.status_code == 503 and detail == "project_setup_ops_discovery_disabled":
+        raise DataAPIProjectSetupOpsDiscoveryDisabled()
+    if response.status_code == 503 and detail == "service_auth_unavailable":
+        raise DataAPIProjectSetupServiceUnavailable()
+    if response.status_code == 403 and detail == "project_setup_forbidden":
+        raise DataAPIRequestRejected(403, detail)
+    if response.status_code == 422 and detail in (
+            "project_setup_invalid_cursor", "project_setup_invalid_request"):
+        raise DataAPIRequestRejected(422, detail)
+    _raise_common_failure(response, operation=operation)
+    if response.status_code != 200:
+        raise DataAPIInvalidResponse("Unexpected Ops setup response")
+    value = _json_object(response, operation=operation)
+    try:
+        if set(value) != {"items", "nextCursor", "persistence"} or value["persistence"] != "SQL_DRAFT_ONLY":
+            raise ValueError("unexpected response fields")
+        items = value["items"]
+        if not isinstance(items, list) or len(items) > page_size:
+            raise ValueError("invalid items")
+        ids = set()
+        last = None
+        required = {"setupId", "childId", "originalBidLogId", "revision", "jobName",
+                    "createdAtUTC", "updatedAtUTC", "setupState", "numberingState", "externalState"}
+        for item in items:
+            if not isinstance(item, dict) or set(item) != required:
+                raise ValueError("invalid item keys")
+            sid, cid = UUID(str(item["setupId"])), UUID(str(item["childId"]))
+            if sid.int == 0 or cid.int == 0 or sid in ids:
+                raise ValueError("invalid item identity")
+            ids.add(sid)
+            if (type(item["revision"]) is not int or item["revision"] <= 0
+                or type(item["originalBidLogId"]) is not int or item["originalBidLogId"] <= 0
+                or (item["jobName"] is not None and
+                    (type(item["jobName"]) is not str or len(item["jobName"]) > 1000))
+                or item["setupState"] != "PENDING_SETUP"
+                or item["numberingState"] != "AWAITING_JOB_NUMBER"
+                or item["externalState"] != "NOT_CONNECTED"):
+                raise ValueError("invalid state")
+            created = datetime.fromisoformat(str(item["createdAtUTC"]).replace("Z", "+00:00"))
+            updated = datetime.fromisoformat(str(item["updatedAtUTC"]).replace("Z", "+00:00"))
+            if created.tzinfo is None or updated.tzinfo is None:
+                raise ValueError("invalid dates")
+            if last is not None and created < last[0]:
+                raise ValueError("out of order")
+            last = (created, sid)
+        next_cursor = value["nextCursor"]
+        if next_cursor is not None:
+            if (not items or not isinstance(next_cursor, dict)
+                    or set(next_cursor) != {"createdAtUTC", "setupId"}):
+                raise ValueError("invalid continuation")
+            next_id = UUID(str(next_cursor["setupId"]))
+            next_date = datetime.fromisoformat(str(next_cursor["createdAtUTC"]).replace("Z", "+00:00"))
+            if next_id != last[1] or next_date != last[0] or next_date.tzinfo is None:
+                raise ValueError("invalid continuation identity")
+    except (ValueError, TypeError, KeyError, AttributeError):
+        raise DataAPIInvalidResponse("Invalid Ops setup summary contract") from None
+    return value

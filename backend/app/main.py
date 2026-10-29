@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from datetime import date
+from datetime import date, datetime
 import json
 from urllib.parse import urlencode, urlparse
 from uuid import UUID, uuid4
@@ -51,6 +51,7 @@ from .data_api import (
     DataAPIInvalidResponse,
     DataAPIProjectSetupDisabled,
     DataAPIProjectSetupServiceUnavailable,
+    DataAPIProjectSetupOpsDiscoveryDisabled,
     DataAPIRequestRejected,
     DataAPISharedRefreshRateLimited,
     DataAPIResourceNotFound,
@@ -69,6 +70,7 @@ from .data_api import (
     get_bid_log_outcome_detail,
     get_active_project_detail,
     get_project_setup_draft,
+    get_ops_project_setup_summary,
     get_active_project_cognito_detail,
     get_active_project_resource_schedule,
     assign_active_project_staffing,
@@ -2047,6 +2049,52 @@ def active_project_setup_draft_proxy(
     except DataAPIRequestRejected as exc:
         if (exc.status_code, exc.detail) in {
             (403, "project_setup_forbidden"), (404, "project_setup_not_found"),
+        }:
+            raise HTTPException(exc.status_code, exc.detail) from None
+        raise HTTPException(503, "project_setup_unavailable") from None
+    except Exception as exc:
+        _raise_active_project_proxy_error(exc)
+
+
+# ============================================================
+# AP4E - Summary-only Ops discovery, separate from ADMIN draft-by-ID.
+# This never grants the user access to the Accounting task queue.
+# ============================================================
+
+@app.get("/api/project-setups/ops/awaiting-information")
+def project_setup_ops_awaiting_proxy(
+    page_size: int = FastAPIQuery(default=25, ge=1, le=50),
+    after_created_at_utc: datetime | None = FastAPIQuery(default=None),
+    after_setup_id: UUID | None = FastAPIQuery(default=None),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    _require_bid_log_workspace_access(current_user)
+    if _normalized_app_role(current_user) not in {"ADMIN", "OPERATIONS"}:
+        raise HTTPException(403, "project_setup_ops_list_forbidden")
+    if (after_created_at_utc is None) != (after_setup_id is None):
+        raise HTTPException(422, "project_setup_invalid_cursor")
+    cursor = None
+    if after_created_at_utc is not None:
+        if (after_setup_id.int == 0 or after_created_at_utc.tzinfo is None
+                or after_created_at_utc.utcoffset() is None):
+            raise HTTPException(422, "project_setup_invalid_cursor")
+        cursor = {"createdAtUTC": after_created_at_utc.isoformat(), "setupId": str(after_setup_id)}
+    try:
+        value = get_ops_project_setup_summary(
+            actor_eid=current_user.eid, page_size=page_size, cursor=cursor,
+        )
+        return JSONResponse(value, headers={"Cache-Control": "private, no-store"})
+    except DataAPIProjectSetupDisabled:
+        raise HTTPException(503, "project_setup_reads_disabled") from None
+    except DataAPIProjectSetupOpsDiscoveryDisabled:
+        raise HTTPException(503, "project_setup_ops_discovery_disabled") from None
+    except DataAPIProjectSetupServiceUnavailable:
+        raise HTTPException(503, "project_setup_service_auth_unavailable") from None
+    except DataAPIRequestRejected as exc:
+        if (exc.status_code, exc.detail) in {
+            (403, "project_setup_forbidden"),
+            (422, "project_setup_invalid_cursor"),
+            (422, "project_setup_invalid_request"),
         }:
             raise HTTPException(exc.status_code, exc.detail) from None
         raise HTTPException(503, "project_setup_unavailable") from None

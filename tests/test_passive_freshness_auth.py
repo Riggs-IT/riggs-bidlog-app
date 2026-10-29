@@ -44,6 +44,7 @@ class PassiveFreshnessAuthTests(unittest.TestCase):
                   '/api/active-projects','/api/projects/completed-directory', '/api/completed-projects',
                   '/api/bid-log/active/123', '/api/completed-projects/22/monthly',
                   '/api/project-setups/drafts/00000000-0000-4000-8000-000000000001',
+                  '/api/project-setups/ops/awaiting-information',
                   '/api/other','/api/current-projects/0/pm-forecast','/api/current-projects/24/pm-forecast/admin-correction']:
             self.app.add_api_route(p,endpoint,methods=['GET','POST','PUT'])
         self.client=TestClient(self.app);self.addCleanup(self.client.close)
@@ -93,6 +94,20 @@ class PassiveFreshnessAuthTests(unittest.TestCase):
         ordinary = self.client.get(path)
         self.assertEqual(ordinary.json()['last_activity_at'], 1100)
         self.assertIn(COOKIE, ordinary.headers.get('set-cookie', ''))
+
+    def test_ops_setup_summary_passive_read_never_extends_session(self):
+        path = '/api/project-setups/ops/awaiting-information?page_size=25'
+        self.client.get('/seed')
+        passive = self.client.get(path, headers=HEADER)
+        self.assertEqual(passive.status_code, 200)
+        self.assertEqual(passive.json()['last_activity_at'], 1000)
+        self.assertNotIn('set-cookie', passive.headers)
+        ordinary = self.client.get(path)
+        self.assertEqual(ordinary.json()['last_activity_at'], 1100)
+        self.assertIn(COOKIE, ordinary.headers.get('set-cookie', ''))
+        self.client.get('/seed')
+        posted = self.client.post(path, headers=HEADER)
+        self.assertEqual(posted.json()['last_activity_at'], 1100)
 
     def test_setup_read_requires_exact_uuid_path(self):
         path = '/api/project-setups/drafts/not-an-id'

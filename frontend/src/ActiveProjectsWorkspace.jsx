@@ -22,6 +22,7 @@ import {
   ProjectTeamBadges,
 } from './BillingDisplay.jsx';
 import ActiveProjectEditDrawer from './ActiveProjectEditDrawer.jsx';
+import ProjectSetupAwaitingPanel from './ProjectSetupAwaitingPanel.jsx';
 import ScheduleReviewFlag from './ScheduleReviewFlag.jsx';
 import ForecastBalanceFlag from './ForecastBalanceFlag.jsx';
 import {BalanceReviewAmount} from './BalanceReviewSummary.jsx';
@@ -563,6 +564,7 @@ export default function ActiveProjectsWorkspace({
     () => completedProjectsCache.items || [],
   );
   const [showCompleted, setShowCompleted] = useState(false);
+  const [showAwaiting, setShowAwaiting] = useState(false);
   const [loading, setLoading] = useState(
     () => !Array.isArray(activeProjectsCache.items),
   );
@@ -938,6 +940,7 @@ export default function ActiveProjectsWorkspace({
   ).toUpperCase();
   const canEdit = role === 'ADMIN';
   const managementPreview = role === 'MANAGEMENT_ADMIN';
+  const canReadSetupSummary = role === 'ADMIN' || role === 'OPERATIONS';
 
   return (
     <main className={`page-shell active-projects-workspace${managementPreview ? ' management-admin-preview' : ''}`}>
@@ -965,6 +968,15 @@ export default function ActiveProjectsWorkspace({
         </div>
       </div>
 
+      {canReadSetupSummary && <div className="active-project-filter-actions" aria-label="Project workspace views">
+        <button type="button" className="secondary-button"
+          aria-pressed={!showAwaiting} onClick={() => setShowAwaiting(false)}>Project Directory</button>
+        <button type="button" className="secondary-button"
+          aria-pressed={showAwaiting} onClick={() => {setEditProjectId(null);setShowAwaiting(true);}}>
+          Awaiting information
+        </button>
+      </div>}
+      {showAwaiting && canReadSetupSummary ? <ProjectSetupAwaitingPanel /> : <>
       <section className="bid-log-summary-grid active-project-summary-grid">
         <button
           type="button"
@@ -1474,6 +1486,8 @@ export default function ActiveProjectsWorkspace({
           </table>
         </div>
       </section>
+
+      </>}
 
       <ActiveProjectEditDrawer
         jobListId={editProjectId}

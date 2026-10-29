@@ -40,6 +40,7 @@ import ActiveProjectsWorkspace, {
   invalidateProjectsWorkspaceCache,
   prefetchProjectsWorkspace,
 } from './ActiveProjectsWorkspace.jsx';
+import ProjectSetupAwaitingPanel from './ProjectSetupAwaitingPanel.jsx';
 import BidLogEditDrawer from './BidLogEditDrawer.jsx';
 import ActiveProjectEditDrawer from './ActiveProjectEditDrawer.jsx';
 import CurrentProjectBillingDrawer from './CurrentProjectBillingDrawer.jsx';
@@ -2309,6 +2310,9 @@ export default function App() {
       .canViewProjects
     === true;
 
+  const canViewSetupSummary = canViewBidLog
+    && ['ADMIN', 'OPERATIONS'].includes(String(user?.appRole || '').toUpperCase());
+
 
   const canViewCompletedBillings =
     capabilities
@@ -2713,6 +2717,10 @@ export default function App() {
         === 'active-projects'
       ) {
         return 'Projects';
+      }
+
+      if (activePageRef.current === 'project-setups') {
+        return 'Awaiting information';
       }
 
       return 'Projected Billings';
@@ -3183,6 +3191,9 @@ export default function App() {
         'active-projects':
           canViewProjects,
 
+        'project-setups':
+          canViewSetupSummary,
+
         accountability:
           canViewCompletedBillings,
 
@@ -3225,6 +3236,7 @@ export default function App() {
       canViewCompletedBillings,
       canViewProjectedBillings,
       canViewProjects,
+      canViewSetupSummary,
       canViewAdministration,
       user,
     ],
@@ -5534,6 +5546,14 @@ export default function App() {
                 onClick={() => setActivePage('active-projects')}
               >
                 Projects
+              </button>
+            )}
+
+            {canViewSetupSummary && !canViewProjects && (
+              <button type="button"
+                className={activePage === 'project-setups' ? 'active' : ''}
+                onClick={() => setActivePage('project-setups')}>
+                Awaiting information
               </button>
             )}
 
@@ -7968,6 +7988,16 @@ export default function App() {
           onOpenBillingProject={canViewProjectedBillings ? openBillingProjectFromDirectory : null}
           onProjectDataChanged={refreshProjectedCurrentProjectData}
         />
+      ) : (
+        activePage === 'project-setups'
+        && canViewSetupSummary
+      ) ? (
+        <main className="page-shell active-projects-workspace">
+          <div className="page-heading bid-log-workspace-heading">
+            <div><div className="eyebrow">PROJECT SETUP</div><h1>Awaiting information</h1></div>
+          </div>
+          <ProjectSetupAwaitingPanel />
+        </main>
       ) : (
         activePage === 'accountability'
         && canViewCompletedBillings

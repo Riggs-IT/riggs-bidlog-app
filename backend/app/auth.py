@@ -345,6 +345,7 @@ _PASSIVE_READ_PATHS = frozenset({
     "/api/bid-log/reference/general-contractors",
     "/api/bid-log/reference/pm-badges",
     "/api/active-projects",
+    "/api/project-setups/ops/awaiting-information",
     "/api/projects/completed-directory",
     "/api/completed-projects",
     "/api/projected-billings/active-bids/dashboard",
