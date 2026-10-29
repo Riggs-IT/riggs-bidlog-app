@@ -31,6 +31,7 @@ const LIFECYCLE_STATUSES = [
   'Awarded',
   'Lost',
   'Dead',
+  'Not Pursuing',
 ];
 
 
@@ -269,6 +270,10 @@ function errorMessage(error, fallback) {
     );
   }
 
+  if (structured?.code === 'bid_lifecycle_requires_reconciliation') {
+    return 'This lifecycle operation has a recorded partial result that needs reconciliation. Do not choose a different status or create another outcome.';
+  }
+
   if (structured?.code === 'bid_log_lifecycle_partial_failure') {
     const expected = Number(structured.expectedCloneCount) || 0;
     const created = Number(structured.createdCloneCount) || 0;
@@ -296,6 +301,14 @@ function errorMessage(error, fallback) {
 
   if (detail === 'active_bid_changed') {
     return 'This bid changed after you opened it. Reload the latest version before saving.';
+  }
+
+  if (detail === 'bid_lifecycle_cutover_paused') {
+    return 'Bid completion is temporarily paused for lifecycle cutover. Ordinary bid editing remains available.';
+  }
+
+  if (detail === 'bid_lifecycle_busy') {
+    return 'This bid lifecycle operation is already being processed. Retry the same action after the current operation finishes.';
   }
 
   if (detail === 'active_bid_lifecycle_action_required') {
@@ -1198,7 +1211,7 @@ export default function BidLogEditDrawer({
           : `Mark this bid ${lifecycleAction}?`,
         message: lifecycleAction === 'Awarded'
           ? 'The winning GC will remain on the Awarded record. Any losing GCs will be created as GC Not Awarded records.'
-          : `This will move the bid out of Active Bids and into the ${lifecycleAction === 'Dead' ? 'Unpursued' : lifecycleAction} view.`,
+          : `This will complete the bid and move it to the ${lifecycleAction === 'Not Pursuing' ? 'Unpursued' : lifecycleAction === 'Dead' ? 'Lost' : lifecycleAction} view.`,
         confirmLabel: lifecycleAction === 'Awarded'
           ? 'Award Bid'
           : `Mark ${lifecycleAction}`,
@@ -1253,6 +1266,7 @@ export default function BidLogEditDrawer({
               reason:
                 lifecycleAction === 'Lost'
                 || lifecycleAction === 'Dead'
+                || lifecycleAction === 'Not Pursuing'
                   ? optionalText(lifecycleReason)
                   : null,
             }),
@@ -1642,8 +1656,8 @@ export default function BidLogEditDrawer({
                     label="Status"
                     hint={
                       pmAssigned
-                        ? 'Assigned is the active status for a bid with a PM. Awarded, Lost, and Dead run the dedicated lifecycle workflow.'
-                        : 'Potential is used while no PM is assigned. Lost and Dead remain available; Awarded requires a PM.'
+                        ? 'Assigned is the active status for a bid with a PM. Awarded, Lost, Dead, and Not Pursuing use the dedicated lifecycle workflow.'
+                        : 'Potential is used while no PM is assigned. Lost, Dead, and Not Pursuing remain available; Awarded requires a PM.'
                     }
                   >
                     <select
@@ -2065,7 +2079,7 @@ export default function BidLogEditDrawer({
                   )}
 
                   <div className="bid-edit-message warning">
-                    This is a final Bid Log lifecycle action. The existing Power Automate workflow will move the completed record to its outcome list after SharePoint sees the status change.
+                    This is a final Bid Log lifecycle action. The server will preserve history, verify the destination record, synchronize SQL, and then remove the Active Bid source.
                   </div>
                 </section>
               )}

@@ -1860,7 +1860,8 @@ export default function BidLogWorkspace({
       ? {
           Awarded: 'awarded',
           Lost: 'lost',
-          Dead: 'unpursued',
+          Dead: 'lost',
+          'Not Pursuing': 'unpursued',
         }[finalStatus]
       : null;
 
@@ -1948,9 +1949,13 @@ export default function BidLogWorkspace({
 
       onBidDataChanged?.();
       if (event?.kind === 'award_complete' && mayAuthor(user)
-          && awardCompleted(event.lifecycleResult)
-          && event.lifecycleResult.sharePointItemId === updatedIdentity) {
-        onOpenProjectSetup?.(updatedIdentity);
+          && awardCompleted(event.lifecycleResult)) {
+        const setupBidId = Number(
+          event.lifecycleResult.originalBidLogId ?? updatedIdentity,
+        );
+        if (Number.isInteger(setupBidId) && setupBidId > 0) {
+          onOpenProjectSetup?.(setupBidId);
+        }
       }
       return;
     }

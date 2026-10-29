@@ -1237,6 +1237,7 @@ def transition_active_bid_lifecycle(
         409,
         422,
         502,
+        503,
     }:
         detail = None
 

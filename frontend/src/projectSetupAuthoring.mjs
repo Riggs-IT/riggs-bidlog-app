@@ -32,7 +32,7 @@ export function setupError(error) {
   if (error?.status === 403) return 'Draft editing currently requires an authorized Bid Log administrator.';
   if (code === 'project_setup_writes_disabled') return 'Project setup editing is not enabled yet. The bid award is not undone.';
   if (code === 'project_setup_reads_disabled') return 'Project setup reads are disabled. This is not an empty draft.';
-  if (code === 'project_setup_award_sync_pending') return 'The awarded bid is still awaiting its existing mirror update. Retry setup only; do not award the bid again.';
+  if (code === 'project_setup_award_sync_pending') return 'The awarded bid has not finished its SQL handoff yet. Retry setup only; do not award the bid again.';
   if (code === 'project_setup_award_version_changed') return 'The bid changed while setup was opening. Retry setup to load its current starting values.';
   if (code === 'project_setup_child_selection_required') return 'An existing child or job needs to be selected. Reload setup; do not create another child automatically.';
   if (error?.status === 409) return 'This draft or source changed. Your entries remain here. Reload the saved draft before making a new edit.';
