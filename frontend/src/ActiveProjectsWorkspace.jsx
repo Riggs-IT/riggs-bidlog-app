@@ -23,6 +23,7 @@ import {
 } from './BillingDisplay.jsx';
 import ActiveProjectEditDrawer from './ActiveProjectEditDrawer.jsx';
 import ProjectSetupAwaitingPanel from './ProjectSetupAwaitingPanel.jsx';
+import ProjectSetupEditor from './ProjectSetupEditor.jsx';
 import ScheduleReviewFlag from './ScheduleReviewFlag.jsx';
 import ForecastBalanceFlag from './ForecastBalanceFlag.jsx';
 import {BalanceReviewAmount} from './BalanceReviewSummary.jsx';
@@ -554,6 +555,8 @@ export default function ActiveProjectsWorkspace({
   user,
   teamIdentityByName = null,
   onProjectDataChanged,
+  setupIntent = null,
+  onSetupIntentChanged = null,
   refreshApiRef,
 }) {
   const gcDirectory = useGcReference(canReadGcReference(user));
@@ -565,6 +568,10 @@ export default function ActiveProjectsWorkspace({
   );
   const [showCompleted, setShowCompleted] = useState(false);
   const [showAwaiting, setShowAwaiting] = useState(false);
+  const [setupRefresh, setSetupRefresh] = useState(0);
+  useEffect(() => {
+    if (setupIntent) {setShowAwaiting(true);setEditProjectId(null);}
+  }, [setupIntent]);
   const [loading, setLoading] = useState(
     () => !Array.isArray(activeProjectsCache.items),
   );
@@ -961,11 +968,11 @@ export default function ActiveProjectsWorkspace({
           </p>
         </div>
 
-        <div className="bid-log-workspace-count">
+{!showAwaiting &&         <div className="bid-log-workspace-count">
           <span>SHOWING</span>
           <strong>{filteredItems.length}</strong>
           <small>of {items.length} projects in view</small>
-        </div>
+        </div>}
       </div>
 
       {canReadSetupSummary && <div className="active-project-filter-actions" aria-label="Project workspace views">
@@ -976,7 +983,13 @@ export default function ActiveProjectsWorkspace({
           Awaiting information
         </button>
       </div>}
-      {showAwaiting && canReadSetupSummary ? <ProjectSetupAwaitingPanel /> : <>
+      {canEdit && setupIntent && <ProjectSetupEditor
+        key={setupIntent.setupId || `award:${setupIntent.originalBidLogId}`}
+        intent={setupIntent} user={user}
+        onLeave={() => {onSetupIntentChanged?.(null);setShowAwaiting(true);setSetupRefresh(v=>v+1);}}
+        onSaved={() => setSetupRefresh(v=>v+1)} />}
+      {showAwaiting && canReadSetupSummary ? <ProjectSetupAwaitingPanel key={setupRefresh}
+        onResume={canEdit && onSetupIntentChanged ? setupId => onSetupIntentChanged({setupId}) : null} /> : <>
       <section className="bid-log-summary-grid active-project-summary-grid">
         <button
           type="button"

@@ -1634,6 +1634,8 @@ export default function App() {
     activePage,
     setActivePage,
   ] = useState('projected');
+  const [projectSetupIntent, setProjectSetupIntent] = useState(null);
+
 
   const usageSessionIdRef =
     useRef(null);
@@ -7974,6 +7976,11 @@ export default function App() {
           onBidDataChanged={() => {
             void refreshProjectedBidData();
           }}
+          onOpenProjectSetup={originalBidLogId => {
+            if (String(user?.appRole || '').trim().toUpperCase() !== 'ADMIN') return;
+            setProjectSetupIntent({originalBidLogId});
+            setActivePage('active-projects');
+          }}
         />
       ) : (
         activePage === 'active-projects'
@@ -7981,6 +7988,8 @@ export default function App() {
       ) ? (
         <ActiveProjectsWorkspace
           user={user}
+          setupIntent={projectSetupIntent}
+          onSetupIntentChanged={setProjectSetupIntent}
           teamIdentityByName={teamIdentityByName}
           refreshApiRef={projectsRefreshRef}
           rebalanceByJobId={rebalanceByJobId}

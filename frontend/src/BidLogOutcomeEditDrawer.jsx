@@ -284,6 +284,7 @@ export default function BidLogOutcomeEditDrawer({
   pmOptions = [],
   onClose,
   onSaved,
+  onOpenProjectSetup = null,
 }) {
   const [detail, setDetail] = useState(null);
   const [form, setForm] = useState(null);
@@ -694,6 +695,12 @@ export default function BidLogOutcomeEditDrawer({
               >
                 Back to Bid Log
               </button>
+              {role === 'ADMIN' && outcomeStatus === 'Awarded' && onOpenProjectSetup && (
+                <button type="button" className="secondary-button" disabled={saving || hasUnsavedChanges}
+                  onClick={() => onOpenProjectSetup(originalBidLogId)}>
+                  Start / continue project setup
+                </button>
+              )}
               {canEdit && (
                 <button
                   type="button"

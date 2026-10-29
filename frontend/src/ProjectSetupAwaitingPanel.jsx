@@ -22,7 +22,7 @@ function dateLabel(text) {
   }).format(new Date(time)) : '—';
 }
 
-export default function ProjectSetupAwaitingPanel() {
+export default function ProjectSetupAwaitingPanel({onResume = null}) {
   const [items, setItems] = useState([]);
   const [nextCursor, setNextCursor] = useState(null);
   const [loaded, setLoaded] = useState(false);
@@ -102,7 +102,8 @@ export default function ProjectSetupAwaitingPanel() {
                 <small className="bid-log-read-only-note">Draft revision {item.revision} · Setup {item.setupId.slice(0,8)}…</small></td>
               <td>{item.originalBidLogId}</td>
               <td>{dateLabel(item.updatedAtUTC)}</td>
-              <td>Awaiting information · Job number pending with Accounting</td>
+              <td>{onResume ? <button type="button" className="secondary-button" onClick={() => onResume(item.setupId)}>Continue setup</button>
+                : 'Awaiting information · Job number pending with Accounting'}</td>
             </tr>)}</tbody>
           </table>
         </div>
@@ -110,7 +111,9 @@ export default function ProjectSetupAwaitingPanel() {
           disabled={loading} onClick={() => void load(nextCursor)}>Load more</button>}
         {!nextCursor && <p className="bid-log-read-only-note">{items.length} setup drafts shown · End of list</p>}
       </>}
-      <p className="bid-log-read-only-note">This view is read-only. Assigning a job number, creating the Cognito entry, and editing draft fields are not enabled in this release.</p>
+      <p className="bid-log-read-only-note">{onResume
+        ? 'Continue a saved draft. Job numbering and Cognito creation are not enabled here.'
+        : 'This view is read-only. Assigning a job number, creating the Cognito entry, and editing draft fields are not enabled for this role.'}</p>
     </section>
   );
 }

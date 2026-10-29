@@ -1,3 +1,4 @@
+import {awardCompleted, mayAuthor} from './projectSetupAuthoring.mjs';
 import {teamBadgeTextColor} from './teamBadgeIdentity.js';
 import {facetRows} from './viewFilters.js';
 import {hasMissingEstimate, isOverdueForDays} from './bidLogOverdue.js';
@@ -785,6 +786,7 @@ export default function BidLogWorkspace({
   pmDirectory = [],
   pmBadgeDirectory = [],
   onBidDataChanged,
+  onOpenProjectSetup = null,
   refreshApiRef,
 }) {
   const gcDirectory = useGcReference(canReadGcReference(user));
@@ -1846,7 +1848,7 @@ export default function BidLogWorkspace({
   }
 
 
-  function handleBidSaved(updated) {
+  function handleBidSaved(updated, event = null) {
     const updatedIdentity = activeView
       ? Number(updated?.sharePointItemId)
       : Number(updated?.originalBidLogId);
@@ -1908,7 +1910,7 @@ export default function BidLogWorkspace({
 
       /*
         The destination list changed, so force a fresh read
-        next time the user opens it. Do not route them there.
+        next time the user opens it. The ADMIN setup route below is separate.
       */
       bidLogListCache = {
         ...bidLogListCache,
@@ -1920,18 +1922,21 @@ export default function BidLogWorkspace({
         },
       };
 
-      setEditSelection(null);
+      // A partial lifecycle must retain its visible warning and never open setup.
+      if (event?.kind !== 'award_partial') setEditSelection(null);
       setNotesBidId(null);
 
       showActionToast(
-        'success',
-        `Bid marked ${finalStatus}.`,
+        event?.kind === 'award_partial' ? 'error' : 'success',
+        event?.kind === 'award_partial'
+          ? 'Bid awarded with incomplete GC copies. Review the warning; do not award again.'
+          : `Bid marked ${finalStatus}.`,
       );
 
       /*
         Re-read Active shortly after the SharePoint lifecycle
-        operation completes. Keep the user on the current
-        Active screen and update only the cache; the row was
+        operation completes. Update only the cache; a confirmed
+        ADMIN award may open project setup separately. The row was
         already removed optimistically above.
       */
       window.setTimeout(
@@ -1942,6 +1947,11 @@ export default function BidLogWorkspace({
       );
 
       onBidDataChanged?.();
+      if (event?.kind === 'award_complete' && mayAuthor(user)
+          && awardCompleted(event.lifecycleResult)
+          && event.lifecycleResult.sharePointItemId === updatedIdentity) {
+        onOpenProjectSetup?.(updatedIdentity);
+      }
       return;
     }
 
@@ -2798,6 +2808,7 @@ export default function BidLogWorkspace({
           pmOptions={approvedPmOptions}
           onClose={() => setEditSelection(null)}
           onSaved={handleBidSaved}
+          onOpenProjectSetup={mayAuthor(user) ? onOpenProjectSetup : null}
         />
       )}
     </main>

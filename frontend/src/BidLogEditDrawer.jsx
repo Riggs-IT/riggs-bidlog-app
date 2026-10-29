@@ -1,3 +1,4 @@
+import {awardCompleted} from './projectSetupAuthoring.mjs';
 import MoneyInput from './MoneyInput.jsx';
 import useGcReference from './useGcReference.js';
 import { gcReference } from './gcReference.js';
@@ -1284,7 +1285,7 @@ export default function BidLogEditDrawer({
           setSaveMessage(`Bid marked ${finalStatus}.`);
         }
 
-        onSaved?.(completedDetail);
+        onSaved?.(completedDetail, {kind: awardCompleted(lifecycleResult) ? 'award_complete' : 'lifecycle_complete', lifecycleResult});
         return;
       }
 
@@ -1317,7 +1318,7 @@ export default function BidLogEditDrawer({
           ),
         });
         setLifecycleComplete(true);
-        onSaved?.(completedDetail);
+        onSaved?.(completedDetail, {kind: 'award_partial'});
       }
 
       if (error?.status === 401 && ['delegated_session_expired', 'delegated_session_required'].includes(error?.message)) {

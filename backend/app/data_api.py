@@ -3928,3 +3928,82 @@ def get_ops_project_setup_summary(*, actor_eid: int, page_size: int = 25,
     except (ValueError, TypeError, KeyError, AttributeError):
         raise DataAPIInvalidResponse("Invalid Ops setup summary contract") from None
     return value
+
+
+# AP4F - fixed draft-authoring domain calls through the existing pooled client.
+_SETUP_ERRORS = {
+    401: {"missing_authenticated_user"},
+    403: {"project_setup_forbidden"},
+    404: {"project_setup_not_found"},
+    409: {"project_setup_conflict", "project_setup_award_sync_pending",
+          "project_setup_award_version_changed", "project_setup_child_selection_required"},
+    422: {"project_setup_invalid_request"},
+    503: {"project_setup_reads_disabled", "project_setup_writes_disabled",
+          "project_setup_award_source_unavailable", "project_setup_busy",
+          "service_auth_unavailable", "sql_unavailable", "project_setup_unavailable"},
+}
+
+def _project_setup_authoring_request(method, path, *, actor_eid, body=None):
+    if type(actor_eid) is not int or actor_eid <= 0:
+        raise DataAPIConfigurationError("Authenticated actor required.")
+    try:
+        response = _get_http_client().request(method, path, json=body,
+            headers=_request_headers(include_service_auth=True, actor_eid=actor_eid))
+    except (httpx.TimeoutException, httpx.RequestError):
+        # No automatic retry for an uncertain draft write.
+        raise DataAPIUnavailable("Project setup request unavailable.") from None
+    if response.status_code != 200:
+        code = _detail(response)
+        if code in _SETUP_ERRORS.get(response.status_code, set()):
+            raise DataAPIRequestRejected(response.status_code, code)
+        if response.status_code == 422:
+            raise DataAPIRequestRejected(422, "project_setup_invalid_request")
+        _raise_common_failure(response, operation="Project setup authoring")
+        raise DataAPIInvalidResponse("Unexpected project setup response.")
+    result = _json_object(response, operation="Project setup authoring")
+    if result.get("persistence") != "SQL_DRAFT_ONLY":
+        raise DataAPIInvalidResponse("Invalid project setup persistence.")
+    return result
+
+
+def get_project_setup_award_context(*, bid_id: int, actor_eid: int) -> dict:
+    result = _project_setup_authoring_request("GET",
+        f"/v1/project-setups/authoring/awards/{bid_id}", actor_eid=actor_eid)
+    if (result.get("originalBidLogId") != bid_id
+        or result.get("mode") not in {"CREATE_INITIAL", "RESUME", "CHOOSE_CHILD", "EXISTING_JOB_REVIEW"}
+        or result.get("externalState") != "NOT_CONNECTED"
+        or not isinstance(result.get("choices"), list) or len(result["choices"]) > 50):
+        raise DataAPIInvalidResponse("Invalid award start context.")
+    return result
+
+
+def start_initial_project_setup(*, bid_id: int, actor_eid: int, body: dict) -> dict:
+    result = _project_setup_authoring_request("POST",
+        f"/v1/project-setups/authoring/awards/{bid_id}/start", actor_eid=actor_eid, body=body)
+    draft = result.get("setup")
+    try:
+        if (result.get("action") not in {"CREATED", "RESUMED"}
+                or result.get("externalState") != "NOT_CONNECTED"
+                or type(result.get("externalWrites")) is not int or result["externalWrites"] != 0
+                or not isinstance(draft, dict) or draft.get("originalBidLogId") != bid_id
+                or not UUID(draft["setupId"]).int or not UUID(draft["childId"]).int
+                or type(draft.get("revision")) is not int or draft["revision"] < 1
+                or any(draft.get(k) is not None for k in ("jobNumber", "cognitoEntryId", "jobListId"))):
+            raise ValueError()
+    except (KeyError, ValueError, TypeError, AttributeError):
+        raise DataAPIInvalidResponse("Invalid draft start response.") from None
+    return result
+
+
+def edit_project_setup_draft(*, setup_id: UUID, actor_eid: int, body: dict) -> dict:
+    result = _project_setup_authoring_request("PATCH",
+        f"/v1/project-setups/authoring/drafts/{setup_id}/edits", actor_eid=actor_eid, body=body)
+    if (result.get("setupId") != str(setup_id)
+            or result.get("operationId") != body["operationId"]
+            or type(result.get("revision")) is not int or result["revision"] < 1
+            or result.get("action") not in {"UPDATED", "UNCHANGED"}
+            or type(result.get("replayed")) is not bool or result.get("persisted") is not True
+            or type(result.get("externalWrites")) is not int or result["externalWrites"] != 0
+            or result.get("sharedChangesState") != "NOT_DISPATCHED"):
+        raise DataAPIInvalidResponse("Invalid draft edit receipt.")
+    return result
