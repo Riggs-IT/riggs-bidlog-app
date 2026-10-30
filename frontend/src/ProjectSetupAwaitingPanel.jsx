@@ -6,13 +6,13 @@ const PATH = '/api/project-setups/ops/awaiting-information';
 
 function errorMessage(status, detail) {
   if (status === 401) return 'Your session is no longer authorized. Sign in again.';
-  if (status === 403) return 'You do not have permission to view setup drafts.';
+  if (status === 403) return 'You do not have permission to view project setup drafts.';
   if (status === 503 && detail === 'project_setup_ops_discovery_disabled')
-    return 'Awaiting information is not enabled yet. This is not an empty queue.';
+    return 'Project setup drafts are not available yet. This is not an empty list.';
   if (status === 503 && detail === 'project_setup_reads_disabled')
-    return 'Project setup reads are disabled. This is not an empty queue.';
-  if (status === 503) return 'Project setup service is unavailable. Please retry later.';
-  return 'Unable to verify the Awaiting information list.';
+    return 'Project setup reads are disabled. This is not an empty list.';
+  if (status === 503) return 'Project setup is unavailable. Please retry later.';
+  return 'Unable to verify the project setup list.';
 }
 
 function dateLabel(text) {
@@ -61,7 +61,7 @@ export default function ProjectSetupAwaitingPanel({onResume = null}) {
     } catch (cause) {
       if (controller.signal.aborted || sequence !== sequenceRef.current || cause?.name === 'AbortError') return;
       setError(cause?.name === 'SetupReadFailure' ? cause.message :
-        'The setup list could not be verified. Previously loaded rows may be out of date.');
+        'The project setup list could not be verified. Previously loaded rows may be out of date.');
     } finally {
       if (controllerRef.current === controller && sequence === sequenceRef.current) {
         controllerRef.current = null;
@@ -76,12 +76,12 @@ export default function ProjectSetupAwaitingPanel({onResume = null}) {
   }, [load]);
 
   return (
-    <section className="panel bid-log-list-card active-project-list-card" aria-label="Awaiting information">
-      <div className="bid-log-list-heading">
+    <section className="panel bid-log-list-card active-project-list-card project-setup-awaiting-panel" aria-label="Project setup drafts">
+      <div className="bid-log-list-heading project-setup-list-heading">
         <div>
-          <span className="section-kicker">PROJECT SETUP · SQL DRAFTS</span>
-          <h2>Awaiting information</h2>
-          <p className="bid-log-read-only-note">One record per intended awarded-bid child. No Cognito entry or job number has been created by this step.</p>
+          <span className="section-kicker">PROJECT SETUP</span>
+          <h2>Setup drafts</h2>
+          <p className="bid-log-read-only-note">Awarded projects that are still being prepared. Drafts can be saved before a job number or Cognito entry exists.</p>
         </div>
         <div className="active-project-filter-actions">
           <button type="button" className="secondary-button" disabled={loading}
@@ -89,31 +89,30 @@ export default function ProjectSetupAwaitingPanel({onResume = null}) {
         </div>
       </div>
       {error && <p role="alert" className="bid-edit-message error">{error}</p>}
-      {!loaded && loading && <p role="status" className="bid-log-read-only-note">Checking setup drafts…</p>}
+      {!loaded && loading && <p role="status" className="bid-log-read-only-note">Loading project setups…</p>}
       {loaded && items.length === 0 && !error &&
-        <p role="status" className="bid-log-read-only-note">No setup drafts have been recorded yet. This does not mean all awarded bids are set up.</p>}
+        <p role="status" className="bid-log-read-only-note">No project setup drafts are currently listed.</p>}
       {loaded && items.length > 0 && <>
-        {loading && <p role="status" className="bid-log-read-only-note">Refreshing setup records…</p>}
+        {loading && <p role="status" className="bid-log-read-only-note">Refreshing project setups…</p>}
         <div className="bid-log-table-wrap active-project-table-wrap">
-          <table className="bid-log-table active-project-table">
-            <thead><tr><th scope="col">Project</th><th scope="col">Original bid</th><th scope="col">Updated</th><th scope="col">Next action</th></tr></thead>
+          <table className="bid-log-table active-project-table project-setup-draft-table">
+            <thead><tr><th scope="col">Project</th><th scope="col">Status</th><th scope="col">Updated</th><th scope="col">Action</th></tr></thead>
             <tbody>{items.map(item => <tr key={item.setupId}>
-              <td><strong>{item.jobName?.trim() || 'Unnamed child job'}</strong>
-                <small className="bid-log-read-only-note">Draft revision {item.revision} · Setup {item.setupId.slice(0,8)}…</small></td>
-              <td>{item.originalBidLogId}</td>
+              <td><strong>{item.jobName?.trim() || 'Unnamed project'}</strong></td>
+              <td><span className="project-setup-list-status">Draft in progress</span></td>
               <td>{dateLabel(item.updatedAtUTC)}</td>
               <td>{onResume ? <button type="button" className="secondary-button" onClick={() => onResume(item.setupId)}>Continue setup</button>
-                : 'Awaiting information · Job number pending with Accounting'}</td>
+                : <span className="bid-log-read-only-note">In progress</span>}</td>
             </tr>)}</tbody>
           </table>
         </div>
         {nextCursor && <button type="button" className="secondary-button"
           disabled={loading} onClick={() => void load(nextCursor)}>Load more</button>}
-        {!nextCursor && <p className="bid-log-read-only-note">{items.length} setup drafts shown · End of list</p>}
+        {!nextCursor && <p className="bid-log-read-only-note">{items.length} setup {items.length===1?'draft':'drafts'} shown</p>}
       </>}
-      <p className="bid-log-read-only-note">{onResume
-        ? 'Continue a saved draft. Job numbering and Cognito creation are not enabled here.'
-        : 'This view is read-only. Assigning a job number, creating the Cognito entry, and editing draft fields are not enabled for this role.'}</p>
+      <p className="bid-log-read-only-note project-setup-list-footnote">{onResume
+        ? 'Continue a saved draft to add or update project information.'
+        : 'This view is read-only. Project setup editing is limited to authorized Bid Log administrators.'}</p>
     </section>
   );
 }
