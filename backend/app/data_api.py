@@ -1204,16 +1204,30 @@ def transition_active_bid_lifecycle(
 ) -> dict:
     operation = "Process Active Bid Log lifecycle action"
 
+    # A multi-GC award performs sequential SharePoint and SQL writes.  The
+    # default five-second read timeout would abandon the response while the
+    # server is still processing.  Scope a bounded timeout to this route only.
+    timeout = httpx.Timeout(
+        connect=settings.data_api_connect_timeout_seconds,
+        read=90.0,
+        write=settings.data_api_read_timeout_seconds,
+        pool=settings.data_api_connect_timeout_seconds,
+    )
+
     try:
-        response = _get_http_client().post(
-            f"/v1/bid-log/active/{sharepoint_item_id}/lifecycle",
-            json=payload,
-            headers=_request_headers(
-                include_service_auth=True,
-                request_id=request_id,
-                actor_eid=actor_eid,
-                delegated_session_id=
-                    delegated_session_id,
+        response = _timed_data_api_request(
+            "active-bid-lifecycle",
+            lambda: _get_http_client().post(
+                f"/v1/bid-log/active/{sharepoint_item_id}/lifecycle",
+                json=payload,
+                headers=_request_headers(
+                    include_service_auth=True,
+                    request_id=request_id,
+                    actor_eid=actor_eid,
+                    delegated_session_id=
+                        delegated_session_id,
+                ),
+                timeout=timeout,
             ),
         )
 

@@ -63,5 +63,27 @@ class BidLifecycleOwnershipBFFTests(unittest.TestCase):
         )
 
 
+    @patch("backend.app.data_api._request_headers")
+    @patch("backend.app.data_api._get_http_client")
+    def test_owned_lifecycle_has_route_scoped_read_timeout(self, get_client, request_headers):
+        import httpx
+        request_headers.return_value = {"X-Request-ID": "synthetic"}
+        response = MagicMock()
+        response.status_code = 200
+        response.json.return_value = {"transitionApplied": True}
+        get_client.return_value.post.return_value = response
+
+        result = data_api.transition_active_bid_lifecycle(
+            123, {"action": "Awarded", "expectedEtag": '"synthetic"'},
+            actor_eid=2021, request_id="synthetic", delegated_session_id="synthetic",
+        )
+        self.assertTrue(result["transitionApplied"])
+        kwargs = get_client.return_value.post.call_args.kwargs
+        self.assertIsInstance(kwargs["timeout"], httpx.Timeout)
+        self.assertEqual(kwargs["timeout"].read, 90.0)
+        self.assertEqual(kwargs["timeout"].connect, data_api.settings.data_api_connect_timeout_seconds)
+        self.assertNotIn("timeout", kwargs["headers"])
+
+
 if __name__ == "__main__":
     unittest.main()
