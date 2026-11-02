@@ -12,6 +12,7 @@ import {BalanceReviewAmount} from './BalanceReviewSummary.jsx';
 import {balanceReviewFacetValues, isBalanceReviewFilter, matchesBalanceReviewFacet,
   toggleExclusiveBalanceReview} from './balanceReviewQuickFilter.js';
 import AdministrationDashboard from './AdministrationDashboard.jsx';
+import {notifyWriteAuthFailure, APPLICATION_WRITE_AUTH_EXPIRED_EVENT} from './writeAuthRecovery.mjs';
 import {indexScheduleReview} from './scheduleReview.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey} from './gcReference.js';
@@ -1000,6 +1001,7 @@ async function fetchJson(
       // Keep default.
     }
 
+    notifyWriteAuthFailure(response.status, detail, options.method);
     const error =
       new Error(
         friendlyError(
@@ -2260,6 +2262,20 @@ export default function App() {
     window.location.replace(error.detail === 'application_updated'
       ? '/?auth_error=application_updated' : '/?signed_out=timeout');
   }
+
+  // Reuse the existing deployment/inactivity sign-in flow for rejected writes.
+  // Delegated Microsoft editor reconnection is handled inline in each editor.
+  useEffect(() => {
+    function onApplicationWriteSessionExpired(event) {
+      handleReadSessionError({
+        status: 401,
+        detail: event?.detail?.reason === 'application_updated'
+          ? 'application_updated' : 'authentication_required',
+      });
+    }
+    window.addEventListener(APPLICATION_WRITE_AUTH_EXPIRED_EVENT, onApplicationWriteSessionExpired);
+    return () => window.removeEventListener(APPLICATION_WRITE_AUTH_EXPIRED_EVENT, onApplicationWriteSessionExpired);
+  }, []);
 
   const applyCurrentProjectRead = ({projects, monthly, primarySnapshotId: nextSnapshotId}) => {
     // One merged primary read: never borrow a month/amount from another source.

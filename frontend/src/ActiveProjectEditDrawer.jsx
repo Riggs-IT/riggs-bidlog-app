@@ -1,3 +1,4 @@
+import {notifyWriteAuthFailure} from './writeAuthRecovery.mjs';
 import useGcReference from './useGcReference.js';
 import { gcReference } from './gcReference.js';
 import {
@@ -70,6 +71,7 @@ async function requestJson(url, options = {}) {
 
   if (!response.ok) {
     const detail = payload?.detail;
+    notifyWriteAuthFailure(response.status, detail, options.method);
     const error = new Error(
       requestErrorMessage(
         detail,

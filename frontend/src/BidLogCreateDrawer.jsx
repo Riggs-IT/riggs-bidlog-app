@@ -1,3 +1,4 @@
+import {notifyWriteAuthFailure} from './writeAuthRecovery.mjs';
 import useGcReference from './useGcReference.js';
 import { gcReference } from './gcReference.js';
 import {
@@ -13,6 +14,7 @@ import BidLogStateSelect, {
 import FloatingEditorShell from './FloatingEditorShell.jsx';
 import ActionToast from './ActionToast.jsx';
 import BidLogConfirmDialog from './BidLogConfirmDialog.jsx';
+import {reconnectMicrosoft, checkMicrosoftReconnect, isDelegatedReconnectError} from './delegatedReconnect.js';
 
 
 const PROJECT_TYPES = [
@@ -73,6 +75,14 @@ function errorMessage(error, fallback) {
     return 'Your account is not allowed to create Bid Log items.';
   }
 
+  if (isDelegatedReconnectError(error)) {
+    return 'Microsoft editing access expired. Reconnect Microsoft before creating this bid. Your entries are preserved.';
+  }
+
+  if (error?.status === 401) {
+    return 'Your Bid Log sign-in expired. Sign in again to continue.';
+  }
+
   return detail || fallback;
 }
 
@@ -107,6 +117,7 @@ async function requestJson(path, options = {}) {
     );
 
     error.status = response.status;
+    if (!isDelegatedReconnectError(error)) notifyWriteAuthFailure(response.status, payload?.detail, options.method);
     throw error;
   }
 
@@ -144,6 +155,9 @@ export default function BidLogCreateDrawer({
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [saveMessage, setSaveMessage] = useState(null);
+  const [reconnectNeeded, setReconnectNeeded] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
   const [requiredFields, setRequiredFields] = useState([]);
   const [confirmDialog, setConfirmDialog] = useState(null);
   const { items: gcOptions, loading: gcOptionsLoading, error: gcOptionsError, refresh: retryGcOptions } = useGcReference(open);
@@ -197,6 +211,7 @@ export default function BidLogCreateDrawer({
     }
 
     setSaveError(null);
+    setSaveMessage(null);
   }
 
   function requestClose() {
@@ -226,6 +241,9 @@ export default function BidLogCreateDrawer({
         generalContractors: [],
       });
       setSaveError(null);
+      setSaveMessage(null);
+      setReconnectNeeded(false);
+      setReconnecting(false);
       setRequiredFields([]);
       setSaving(false);
     },
@@ -233,7 +251,7 @@ export default function BidLogCreateDrawer({
   );
 
   async function createBid() {
-    if (saving) {
+    if (saving || reconnecting) {
       return;
     }
 
@@ -273,6 +291,7 @@ export default function BidLogCreateDrawer({
 
     setSaving(true);
     setSaveError(null);
+    setSaveMessage(null);
 
     try {
       const created = await requestJson(
@@ -287,13 +306,48 @@ export default function BidLogCreateDrawer({
         ...EMPTY_FORM,
         generalContractors: [],
       });
+      setReconnectNeeded(false);
       onCreated?.(created);
     } catch (error) {
+      if (isDelegatedReconnectError(error)) {
+        setReconnectNeeded(true);
+      }
       setSaveError(
         errorMessage(error, 'Unable to create this bid.'),
       );
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function reconnectCreateMicrosoft() {
+    if (reconnecting || saving) return;
+    setReconnecting(true);
+    try {
+      await reconnectMicrosoft();
+      setReconnectNeeded(false);
+      setSaveError(null);
+      setSaveMessage('Microsoft access restored. Review your new bid, then click Create Bid again.');
+      // Do not automatically replay a Create request after an uncertain failure.
+    } catch (error) {
+      setSaveError(error?.message || 'Microsoft access could not be restored.');
+    } finally {
+      setReconnecting(false);
+    }
+  }
+
+  async function checkCreateMicrosoft() {
+    if (reconnecting || saving) return;
+    setReconnecting(true);
+    try {
+      await checkMicrosoftReconnect();
+      setReconnectNeeded(false);
+      setSaveError(null);
+      setSaveMessage('Microsoft access restored. Review your new bid, then click Create Bid again.');
+    } catch (error) {
+      setSaveError(error?.message || 'Microsoft access is not connected yet.');
+    } finally {
+      setReconnecting(false);
     }
   }
 
@@ -305,7 +359,7 @@ export default function BidLogCreateDrawer({
     <FloatingEditorShell
       eyebrow="BID LOG · NEW BID"
       title="Create New Bid"
-      subtitle="Add the information needed to start a Potential bid."
+      subtitle="Start a Potential bid, or an Assigned bid when a PM is selected."
       backLabel="Back to Bid Log"
       onClose={requestClose}
       saving={saving}
@@ -335,6 +389,7 @@ export default function BidLogCreateDrawer({
               onClick={createBid}
               disabled={
                 saving
+                || reconnecting
                 || (
                   requiredFields.length > 0
                   && (
@@ -350,10 +405,27 @@ export default function BidLogCreateDrawer({
         </footer>
       }
     >
+      {reconnectNeeded && (
+        <div className="bid-edit-message warning" role="alert">
+          Microsoft editing access expired. Your new bid details are still here.
+          <button type="button" className="secondary-button"
+            disabled={saving || reconnecting}
+            onClick={() => { void reconnectCreateMicrosoft(); }}>
+            {reconnecting ? 'Connecting…' : 'Reconnect Microsoft'}
+          </button>
+          <button type="button" className="secondary-button"
+            disabled={saving || reconnecting}
+            onClick={() => { void checkCreateMicrosoft(); }}>
+            Check connection
+          </button>
+          <small>Close the Microsoft window when finished. Review your bid and click Create Bid again.</small>
+        </div>
+      )}
+
       <ActionToast
-        message={saveError}
-        type="error"
-        onDismiss={() => setSaveError(null)}
+        message={saveError || saveMessage}
+        type={saveError ? 'error' : 'success'}
+        onDismiss={() => { setSaveError(null); setSaveMessage(null); }}
       />
 
       {requiredFields.length > 0 && (
@@ -416,7 +488,7 @@ export default function BidLogCreateDrawer({
             />
           </Field>
 
-          <Field label="PM">
+          <Field label="PM" hint="Selecting a PM starts this bid as Assigned.">
             <select
               value={form.pm}
               onChange={event => updateField('pm', event.target.value)}

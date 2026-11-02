@@ -1,4 +1,6 @@
+import {notifyWriteAuthFailure} from './writeAuthRecovery.mjs';
 import MoneyInput from './MoneyInput.jsx';
+import {reconnectMicrosoft, checkMicrosoftReconnect, isDelegatedReconnectError} from './delegatedReconnect.js';
 import useGcReference from './useGcReference.js';
 import { gcReference } from './gcReference.js';
 import {
@@ -179,6 +181,10 @@ function valuesEqual(left, right) {
 function errorMessage(error, fallback) {
   const detail = String(error?.message || '').trim();
 
+  if (detail === 'delegated_session_expired' || detail === 'delegated_session_required') {
+    return 'Microsoft editing access expired. Reconnect Microsoft before saving. Your changes are preserved.';
+  }
+
   if (detail === 'bid_log_outcome_changed') {
     return 'This bid changed after you opened it. Reload the latest version before saving.';
   }
@@ -224,6 +230,9 @@ async function requestJson(path, options = {}) {
   }
 
   if (!response.ok) {
+    // Full-session 401 uses App's existing sign-in redirect; delegated 401
+    // stays in this editor and offers the established Microsoft popup.
+    notifyWriteAuthFailure(response.status, payload?.detail, options.method);
     const error = new Error(
       payload?.detail || `Request failed with HTTP ${response.status}.`,
     );
@@ -291,6 +300,8 @@ export default function BidLogOutcomeEditDrawer({
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [reconnectNeeded, setReconnectNeeded] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [saveMessage, setSaveMessage] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
@@ -581,7 +592,7 @@ export default function BidLogOutcomeEditDrawer({
   }
 
   async function save() {
-    if (!canEdit || !detail?.etag || !form || saving) {
+    if (!canEdit || !detail?.etag || !form || saving || reconnectNeeded || reconnecting) {
       return;
     }
 
@@ -616,12 +627,47 @@ export default function BidLogOutcomeEditDrawer({
 
       setDetail(updated);
       setForm(initialForm(updated));
+      setReconnectNeeded(false);
       setSaveMessage('Bid saved.');
       onSaved?.(updated);
     } catch (error) {
+      if (isDelegatedReconnectError(error)) {
+        setReconnectNeeded(true);
+      }
       setSaveError(errorMessage(error, 'Unable to save this bid.'));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function reconnectOutcomeMicrosoft() {
+    if (saving || reconnecting) return;
+    setReconnecting(true);
+    try {
+      await reconnectMicrosoft();
+      setReconnectNeeded(false);
+      setSaveError(null);
+      setSaveMessage('Microsoft access restored. Review the latest bid details, then click Save Bid again.');
+      // No automatic replay: the previous write result might be uncertain.
+    } catch (error) {
+      setSaveError(error?.message || 'Microsoft access could not be restored.');
+    } finally {
+      setReconnecting(false);
+    }
+  }
+
+  async function checkOutcomeMicrosoft() {
+    if (saving || reconnecting) return;
+    setReconnecting(true);
+    try {
+      await checkMicrosoftReconnect();
+      setReconnectNeeded(false);
+      setSaveError(null);
+      setSaveMessage('Microsoft access restored. Review the latest bid details, then click Save Bid again.');
+    } catch (error) {
+      setSaveError(error?.message || 'Microsoft access is not connected yet.');
+    } finally {
+      setReconnecting(false);
     }
   }
 
@@ -706,7 +752,7 @@ export default function BidLogOutcomeEditDrawer({
                   type="button"
                   className="primary-button bid-log-save-button"
                   onClick={save}
-                  disabled={saving || !detail.etag || !hasUnsavedChanges}
+                  disabled={saving || reconnecting || reconnectNeeded || !detail.etag || !hasUnsavedChanges}
                 >
                   {saving ? 'Saving…' : 'Save Bid'}
                 </button>
@@ -742,6 +788,23 @@ export default function BidLogOutcomeEditDrawer({
           <div className="bid-edit-message outcome">
             This is the stored <strong>{outcomeStatus}</strong> record. Saving changes its fields only; it does not move the bid to another lifecycle status.
           </div>
+
+          {reconnectNeeded && (
+            <div className="bid-edit-message warning" role="alert">
+              Microsoft editing access expired. Your unsaved bid changes are still here.
+              <button type="button" className="secondary-button"
+                disabled={saving || reconnecting}
+                onClick={() => { void reconnectOutcomeMicrosoft(); }}>
+                {reconnecting ? 'Connecting…' : 'Reconnect Microsoft'}
+              </button>
+              <button type="button" className="secondary-button"
+                disabled={saving || reconnecting}
+                onClick={() => { void checkOutcomeMicrosoft(); }}>
+                Check connection
+              </button>
+              <small>Close the Microsoft window when finished. Verify the bid and click Save Bid again. Nothing resubmits automatically.</small>
+            </div>
+          )}
 
           <ActionToast
             message={saveError || saveMessage}

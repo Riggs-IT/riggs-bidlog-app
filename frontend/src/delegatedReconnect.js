@@ -13,6 +13,14 @@ async function revision() {
   return data.revision;
 }
 
+// This is a delegated-editing session error, not a full app login failure.
+// The caller must preserve its unsaved form and never replay the write.
+export function isDelegatedReconnectError(error) {
+  return error?.status === 401
+    && ['delegated_session_expired', 'delegated_session_required']
+      .includes(error?.message);
+}
+
 export function reconnectMicrosoft() {
   if (inFlight) return inFlight;
 

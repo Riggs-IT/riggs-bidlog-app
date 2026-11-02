@@ -1,3 +1,4 @@
+import {notifyWriteAuthFailure} from './writeAuthRecovery.mjs';
 import {
   useEffect,
   useState,
@@ -214,6 +215,7 @@ async function fetchJson(
   }
 
   if (!response.ok) {
+    notifyWriteAuthFailure(response.status, payload?.detail, options.method);
     const error = new Error(
       requestErrorText(
         payload?.detail

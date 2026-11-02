@@ -1,3 +1,4 @@
+import {notifyWriteAuthFailure} from './writeAuthRecovery.mjs';
 /** One project draft, existing domain endpoints. No write retries or fake transaction.
  * Fresh-read comparison narrows stale overwrites but is NOT atomic concurrency.
  * The server's permissions, canary gate and SQL/outbox ownership remain authority.
@@ -149,6 +150,7 @@ export function createProjectEditor({ jobListId, canEdit, fetcher = (...args) =>
       const payload = await response.json().catch(() => null);
       failIfStale(generation);
       if (!response.ok) {
+        notifyWriteAuthFailure(response.status, payload?.detail, method);
         const error = new Error(section === 'general' ? generalRequestError(payload?.detail) : projectRequestError(payload?.detail));
         error.status = response.status;
         error.detail = payload?.detail;

@@ -1,3 +1,4 @@
+import {notifyWriteAuthFailure} from './writeAuthRecovery.mjs';
 import {awardCompleted} from './projectSetupAuthoring.mjs';
 import MoneyInput from './MoneyInput.jsx';
 import useGcReference from './useGcReference.js';
@@ -400,6 +401,9 @@ async function requestJson(path, options = {}) {
     );
 
     error.status = response.status;
+    if (!['delegated_session_expired', 'delegated_session_required'].includes(payload?.detail)) {
+      notifyWriteAuthFailure(response.status, payload?.detail, method);
+    }
     throw error;
   }
 

@@ -1,3 +1,4 @@
+import {notifyWriteAuthFailure} from './writeAuthRecovery.mjs';
 import MoneyInput from './MoneyInput.jsx';
 import {
   useEffect,
@@ -287,6 +288,7 @@ async function requestJson(
         'Bid Log could not reach Riggs data services. Try again in a moment.',
     };
 
+    notifyWriteAuthFailure(response.status, detail, options.method);
     const error =
       new Error(
         messages[detail]

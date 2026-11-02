@@ -1,3 +1,4 @@
+import {notifyWriteAuthFailure} from './writeAuthRecovery.mjs';
 import MoneyInput from './MoneyInput.jsx';
 import {InfoButton, RefreshButton, ShowControls} from './ViewControls.jsx';
 import './ReviewControls.css';
@@ -258,6 +259,7 @@ async function fetchJson(
   }
 
   if (!response.ok) {
+    notifyWriteAuthFailure(response.status, payload?.detail, options.method);
     const error = new Error(errorText(payload?.detail));
     error.status = response.status;
     error.detail = payload?.detail;

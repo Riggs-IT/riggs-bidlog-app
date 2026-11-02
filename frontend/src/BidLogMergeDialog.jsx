@@ -1,3 +1,4 @@
+import {notifyWriteAuthFailure} from './writeAuthRecovery.mjs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import FloatingEditorShell from './FloatingEditorShell.jsx';
 import BidLogConfirmDialog from './BidLogConfirmDialog.jsx';
@@ -144,6 +145,7 @@ export default function BidLogMergeDialog({ bids, targetBid, onClose, onMerged }
           setError('Microsoft editing access expired. Reconnect before attempting this merge again.');
           return;
         }
+        notifyWriteAuthFailure(response.status, detail, 'POST');
         const requiresReview = detail?.requiresReview === true || response.status >= 500;
         if (requiresReview) setNeedsReconciliation(true);
         setError(responseError(response.status, detail));
