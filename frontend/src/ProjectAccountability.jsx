@@ -17,6 +17,8 @@ import {
 import CompletedProjectBillingDrawer
   from './CompletedProjectBillingDrawer.jsx';
 import CompletedMonthlyHistory from './CompletedMonthlyHistory.jsx';
+import {downloadCsv} from './csvExport.js';
+import {buildCompletedDirectoryDataDump} from './dataDumpExports.js';
 import ActiveProjectEditDrawer from './ActiveProjectEditDrawer.jsx';
 import {
   commercialSourceLabel,
@@ -603,6 +605,7 @@ export default function ProjectAccountability({
 
   const completedHistoryRefreshRef = useRef(null);
   const [billingHistoryView, setBillingHistoryView] = useState('directory');
+  const [exportError, setExportError] = useState(null);
   const completedLoadGenerationRef = useRef(0);
 
   const [search, setSearch] =
@@ -1331,6 +1334,22 @@ export default function ProjectAccountability({
   }
 
 
+  function exportCompletedView() {
+    setExportError(null);
+    if (billingHistoryView !== 'directory') {
+      if (completedHistoryRefreshRef.current?.exportCsv?.() !== true) {
+        setExportError('Historical billing data for the selected months is not ready. Review the date range and loading status, then retry.');
+      }
+      return;
+    }
+
+    // All selected directory rows, already in the table's current sort order.
+    const {headers, rows: exportedRows} = buildCompletedDirectoryDataDump(sortedRows, {
+      canViewMargin: isAdmin,
+    });
+    downloadCsv('riggs-completed-billings-directory-filtered.csv', headers, exportedRows);
+  }
+
   const editProjectSummary =
     rows.find(
       row => Number(row.jobListId) === Number(editProjectId),
@@ -1382,6 +1401,10 @@ export default function ProjectAccountability({
         </div>
       </div>
 
+
+      {exportError && (
+        <div className="page-alert" role="alert">{exportError}</div>
+      )}
 
       {error && (
         <div
@@ -1623,6 +1646,14 @@ export default function ProjectAccountability({
 
 
           <div className="completed-filter-reset">
+            <button
+              type="button"
+              className="secondary-button projected-export-button"
+              onClick={exportCompletedView}
+              disabled={loading || Boolean(error) || !filteredRows.length}
+            >
+              Export CSV
+            </button>
             <button
               type="button"
               className="secondary-button"
@@ -2361,7 +2392,7 @@ export default function ProjectAccountability({
         <CompletedMonthlyHistory
           key={`${user?.eid ?? 'unknown'}:${user?.appRole ?? 'none'}`}
           view={billingHistoryView}
-          onViewChange={setBillingHistoryView}
+          onViewChange={next => {setExportError(null); setBillingHistoryView(next);}}
           projects={filteredRows}
           canViewMargin={isAdmin}
           pmIdentityByName={pmIdentityByName}

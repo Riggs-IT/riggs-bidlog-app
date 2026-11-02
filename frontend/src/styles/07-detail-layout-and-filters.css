@@ -214,7 +214,14 @@
 .completed-filter-reset {
   display: flex;
   align-items: flex-end;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+/* Export stays beside More Filters on narrow screens, rather than inheriting
+   the full-width Projected Billings header-button rule. */
+.completed-filter-reset .projected-export-button {
+  width: auto;
 }
 
 @media (max-width: 1200px) {

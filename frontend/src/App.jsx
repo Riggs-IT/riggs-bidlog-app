@@ -50,6 +50,7 @@ import ActiveBidBillingDrawer from './ActiveBidBillingDrawer.jsx';
 import OriginatingBidAttentionDrawer from './OriginatingBidAttentionDrawer.jsx';
 import ProjectBillingPivot from './ProjectBillingPivot.jsx';
 import CsvExportDialog from './CsvExportDialog.jsx';
+import {downloadCsv} from './csvExport.js';
 import useStickyTableHeader from './useStickyTableHeader.js';
 import useTeamBadgeDirectory from './useTeamBadgeDirectory.js';
 import {teamIdentityMap, teamBadgeTextColor} from './teamBadgeIdentity.js';
@@ -1202,87 +1203,6 @@ function historicalProjectStaffOptions(
   }
 
   return historicalValues;
-}
-
-
-function csvValue(
-  value,
-) {
-  const text =
-    value === null
-    || value === undefined
-      ? ''
-      : String(value);
-
-  return (
-    `"${text.replaceAll(
-      '"',
-      '""',
-    )}"`
-  );
-}
-
-
-function downloadCsv(
-  filename,
-  headers,
-  rows,
-) {
-  const lines = [
-    headers
-      .map(csvValue)
-      .join(','),
-    ...rows.map(
-      row =>
-        headers
-          .map(
-            header =>
-              csvValue(
-                row[header]
-              )
-          )
-          .join(',')
-    ),
-  ];
-
-  const blob =
-    new Blob(
-      [
-        '\uFEFF'
-        + lines.join('\r\n'),
-      ],
-      {
-        type:
-          'text/csv;charset=utf-8',
-      },
-    );
-
-  const url =
-    URL.createObjectURL(
-      blob
-    );
-
-  const anchor =
-    document.createElement(
-      'a'
-    );
-
-  anchor.href =
-    url;
-
-  anchor.download =
-    filename;
-
-  document.body.appendChild(
-    anchor
-  );
-
-  anchor.click();
-  anchor.remove();
-
-  URL.revokeObjectURL(
-    url
-  );
 }
 
 
@@ -2718,7 +2638,7 @@ export default function App() {
         activePageRef.current
         === 'active-projects'
       ) {
-        return 'Projects';
+        return 'Active Projects';
       }
 
       if (activePageRef.current === 'project-setups') {
@@ -5547,7 +5467,7 @@ export default function App() {
                 }
                 onClick={() => setActivePage('active-projects')}
               >
-                Projects
+                Active Projects
               </button>
             )}
 
@@ -5811,18 +5731,6 @@ export default function App() {
               </button>
             </div>
 
-            <button
-              type="button"
-              className="secondary-button projected-export-button"
-              onClick={() => setExportDialogOpen(true)}
-              disabled={
-                dataLoading
-                || !rangeValid
-                || !detailRows.length
-              }
-            >
-              Export CSV
-            </button>
           </div>
         </div>
 
@@ -5919,6 +5827,19 @@ export default function App() {
             </label>
 
             <div className="filter-actions">
+              <button
+                type="button"
+                className="secondary-button projected-export-button"
+                onClick={() => setExportDialogOpen(true)}
+                disabled={
+                  dataLoading
+                  || !rangeValid
+                  || !detailRows.length
+                }
+              >
+                Export CSV
+              </button>
+
               <button
                 type="button"
                 className="secondary-button"

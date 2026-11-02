@@ -29,6 +29,8 @@ import BidLogOutcomeEditDrawer from './BidLogOutcomeEditDrawer.jsx';
 import BidLogCreateDrawer from './BidLogCreateDrawer.jsx';
 import BidLogMergeDialog from './BidLogMergeDialog.jsx';
 import ActionToast from './ActionToast.jsx';
+import {downloadCsv} from './csvExport.js';
+import {buildBidLogDataDump} from './dataDumpExports.js';
 
 
 const ALL = '__ALL__';
@@ -1657,6 +1659,13 @@ export default function BidLogWorkspace({
   }
 
 
+  function exportFilteredBidLog() {
+    // filteredItems is the complete matching/sorted table population.
+    // visibleItems is only the first virtualized/rendered slice.
+    const {headers, rows} = buildBidLogDataDump(filteredItems, {canSeeMargin});
+    downloadCsv(`riggs-bid-log-${bidView}-filtered.csv`, headers, rows);
+  }
+
   function clearFilters() {
     setSearch('');
     setPmFilter(ALL);
@@ -2185,8 +2194,8 @@ export default function BidLogWorkspace({
           </p>
         </div>
 
-        {canEdit && activeView && (
-          <div className="bid-log-heading-actions">
+        <div className="bid-log-heading-actions">
+          {canEdit && activeView && (
             <button
               type="button"
               className="bid-log-new-bid-button bid-log-new-bid-button-header"
@@ -2195,8 +2204,8 @@ export default function BidLogWorkspace({
               <span className="bid-log-new-bid-plus" aria-hidden="true">+</span>
               <span>New Bid</span>
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <nav
@@ -2295,6 +2304,18 @@ export default function BidLogWorkspace({
           )}
 
           <div className="bid-log-filter-actions">
+            <button
+              type="button"
+              className="secondary-button projected-export-button"
+              onClick={exportFilteredBidLog}
+              disabled={loading || Boolean(error) || payloadViewKey !== bidView || !filteredItems.length
+                || (activeView && Number(payload?.total ?? 0) > items.length)}
+              title={activeView && Number(payload?.total ?? 0) > items.length
+                ? 'The active-bid list is incomplete. Refresh or contact Riggs IT before exporting.'
+                : 'Export all matching rows, including rows not yet displayed'}
+            >
+              Export CSV
+            </button>
             <button
               type="button"
               className="secondary-button"

@@ -96,8 +96,16 @@
   min-height: 36px;
 }
 
+.projected-filter-panel .filter-actions {
+  flex-wrap: wrap;
+}
+
 .projected-filter-panel .filter-actions button {
   min-height: 36px;
+}
+
+.projected-filter-panel .filter-actions .projected-export-button {
+  width: auto;
 }
 
 .project-team-badges {

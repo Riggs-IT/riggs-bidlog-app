@@ -27,6 +27,8 @@ import ProjectSetupEditor from './ProjectSetupEditor.jsx';
 import ScheduleReviewFlag from './ScheduleReviewFlag.jsx';
 import ForecastBalanceFlag from './ForecastBalanceFlag.jsx';
 import {BalanceReviewAmount} from './BalanceReviewSummary.jsx';
+import {downloadCsv} from './csvExport.js';
+import {buildProjectDirectoryDataDump} from './dataDumpExports.js';
 
 
 const ALL = '__ALL__';
@@ -926,6 +928,17 @@ export default function ActiveProjectsWorkspace({
     });
   }
 
+  function exportProjectDirectory() {
+    const {headers, rows} = buildProjectDirectoryDataDump(filteredItems, {
+      canViewMargin: String(user?.appRole || '').toUpperCase() === 'ADMIN',
+    });
+    downloadCsv(
+      `riggs-projects-${showCompleted ? 'including-completed' : 'active'}-filtered.csv`,
+      headers,
+      rows,
+    );
+  }
+
   function clearFilters() {
     setSearch('');
     setPmFilter(ALL);
@@ -962,17 +975,21 @@ export default function ActiveProjectsWorkspace({
           <div className="eyebrow">
             PROJECT DIRECTORY
           </div>
-          <h1>Projects</h1>
+          <h1>Active Projects</h1>
           <p>
             Review active project ownership and core job details, with completed projects available on demand. Select a project to view its information.
           </p>
         </div>
 
-{!showAwaiting &&         <div className="bid-log-workspace-count">
-          <span>SHOWING</span>
-          <strong>{filteredItems.length}</strong>
-          <small>of {items.length} projects in view</small>
-        </div>}
+{!showAwaiting && (
+          <div className="bid-log-heading-actions">
+            <div className="bid-log-workspace-count">
+              <span>SHOWING</span>
+              <strong>{filteredItems.length}</strong>
+              <small>of {items.length} projects in view</small>
+            </div>
+          </div>
+        )}
       </div>
 
       {canReadSetupSummary && <div className="active-project-filter-actions" aria-label="Project workspace views">
@@ -1092,6 +1109,15 @@ export default function ActiveProjectsWorkspace({
           </button>
 
           <div className="active-project-filter-actions">
+            <button
+              type="button"
+              className="secondary-button projected-export-button"
+              onClick={exportProjectDirectory}
+              disabled={loading || (showCompleted && completedLoading) || Boolean(error)
+                || (showCompleted && Boolean(completedError)) || !filteredItems.length}
+            >
+              Export CSV
+            </button>
             <button
               type="button"
               className="secondary-button"

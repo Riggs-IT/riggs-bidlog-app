@@ -62,6 +62,7 @@
 .bid-log-heading-actions {
   display: flex;
   align-items: center;
+  gap: 8px;
   min-height: 44px;
 }
 
@@ -484,9 +485,13 @@
     min-height: 28px;
   }
 
-  .bid-log-heading-actions,
-  .bid-log-new-bid-button-header {
+  .bid-log-heading-actions {
     width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .bid-log-heading-actions > button {
+    flex: 1 1 150px;
   }
 
   .bid-log-summary-grid,

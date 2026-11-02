@@ -8,6 +8,8 @@ import {
   defaultCompletedMonths,
   normalizeCompletedMonthly,
 } from './completedMonthlyView.js';
+import {downloadCsv} from './csvExport.js';
+import {buildCompletedHistoryDataDump} from './dataDumpExports.js';
 
 const currency = value => new Intl.NumberFormat('en-US', {
   style: 'currency', currency: 'USD', maximumFractionDigits: 0,
@@ -112,10 +114,6 @@ export default function CompletedMonthlyHistory({
     return () => { inFlight.current?.controller.abort(); };
   }, [loadRange]);
 
-  useImperativeHandle(refreshApiRef, () => ({
-    refresh: () => loadRange(true),
-  }), [loadRange]);
-
   const byId = history.key === rangeKey ? history.byId : null;
   const prepared = useMemo(() => byId ? completedHistoryView(
     projects, byId, months, {canViewMargin, pmIdentityByName},
@@ -128,6 +126,30 @@ export default function CompletedMonthlyHistory({
     return prepared.currentProjects.filter(project =>
       prepared.currentMonthly.get(project.jobListId)?.some(row => row.monthStart === `${activeFocus}-01`));
   }, [prepared, activeFocus]);
+
+  useImperativeHandle(refreshApiRef, () => ({
+    refresh: () => loadRange(true),
+    exportCsv: () => {
+      // Do not export an obsolete month selection during revalidation.
+      if (view === 'directory' || !prepared || history.key !== rangeKey
+          || history.loading || history.error) return false;
+      const {headers, rows} = buildCompletedHistoryDataDump({
+        view,
+        projects,
+        byId,
+        months,
+        monthlySummary: prepared.monthlySummary,
+        focusedMonth: view === 'project' ? activeFocus : null,
+        canViewMargin,
+      });
+      if (!rows.length) return false;
+      const selectedMonths = view === 'project' && activeFocus
+        ? `${activeFocus}-to-${activeFocus}`
+        : `${months[0]}-to-${months[months.length - 1]}`;
+      downloadCsv(`riggs-completed-billings-${view}-${selectedMonths}.csv`, headers, rows);
+      return true;
+    },
+  }), [loadRange, view, prepared, history, rangeKey, projects, byId, months, activeFocus, canViewMargin]);
 
   function changeView(next) {
     if (next === 'project') setFocusedMonth(null);

@@ -453,6 +453,12 @@ function bidPivotRow(
               }`,
           }
         : null,
+      bid.projectType && String(bid.projectType).trim()
+        ? {
+            value: String(bid.projectType).trim(),
+            title: `Project type: ${String(bid.projectType).trim()}`,
+          }
+        : null,
     ].filter(Boolean),
 
     projectValues: [
