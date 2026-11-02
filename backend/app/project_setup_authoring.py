@@ -55,7 +55,9 @@ class EditRequest(BaseModel):
                    "city", "state", "postalCode", "contractAmount", "retentionPercent",
                    "anticipatedStartDate", "estimatedDurationMonths", "gcContactInfo",
                    "projectOwnerInfo", "bond", "parcel", "scope", "leed", "ndaRequired",
-                   "keywords", "comments", "buildingNames"}
+                   "keywords", "comments", "buildingNames", "gcLookupId", "pmITUserId",
+                   "peITUserId", "apmITUserId", "superintendentEid", "foremanEids",
+                   "additionalMemberITUserIds", "surveyorITUserId"}
         if not set(self.changes).issubset(allowed):
             raise ValueError("unsupported draft field")
         return self
@@ -94,6 +96,11 @@ def _respond(call):
         raise HTTPException(502, "project_setup_invalid_response") from None
     except Exception:
         raise HTTPException(503, "project_setup_unavailable") from None
+
+
+@router.get("/identities")
+def setup_identity_directory(current_user: CurrentUser = Depends(_admin)):
+    return _respond(lambda: data_api.get_project_setup_identity_directory(actor_eid=current_user.eid))
 
 
 @router.get("/awards/{bid_id}")

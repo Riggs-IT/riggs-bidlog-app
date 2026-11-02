@@ -129,7 +129,7 @@ test('complete award wires to setup; partial keeps warning and never navigates',
 });
 test('Awaiting resume only receives ADMIN callback; misleading directory count suppressed',()=>{
  const s=source('ActiveProjectsWorkspace.jsx');assert.match(s,/onResume=\{canEdit && onSetupIntentChanged/);
- assert.match(s,/!showAwaiting &&\s*<div className="bid-log-workspace-count"/);
+ assert.match(s,/!showAwaiting &&\s*\(\s*<div className="bid-log-heading-actions">\s*<div className="bid-log-workspace-count"/);
  assert.match(source('ProjectSetupAwaitingPanel.jsx'),/Continue setup/);
 });
 test('manual awarded recovery exists, protected by role and unsaved state',()=>{

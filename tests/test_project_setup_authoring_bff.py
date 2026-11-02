@@ -14,6 +14,7 @@ from backend.app.auth import CurrentUser, get_current_user, is_passive_freshness
 SID='00000000-0000-4000-8000-000000000001';CID='00000000-0000-4000-8000-000000000002';OID='00000000-0000-4000-8000-000000000003'
 PATH='/api/project-setups/authoring/awards/101'
 EDIT_PATH=f'/api/project-setups/authoring/drafts/{SID}/edits'
+IDENTITY_PATH='/api/project-setups/authoring/identities'
 USER=CurrentUser(eid=2021,it_user_id=12,display_name='Synthetic',app_role='ADMIN',employee_trade=None,
     can_edit_billing=False,billing_access_source=None,microsoft_username=None,
     entra_object_id='00000000-0000-4000-8000-000000000010',tenant_id='00000000-0000-4000-8000-000000000020')
@@ -35,6 +36,36 @@ class RouteTests(unittest.TestCase):
         self.client=TestClient(main.app);self.addCleanup(self.client.close)
         p=patch.object(routes,'get_settings',return_value=SimpleNamespace(entra_redirect_uri='https://example.test/api/auth/callback'))
         p.start();self.addCleanup(p.stop)
+    def test_identity_directory_read_uses_session_actor_and_no_cookie_refresh(self):
+        response={'persistence':'SQL_DRAFT_ONLY','externalState':'NOT_CONNECTED',
+                  'source':'RIGGSDATAHUB_VERIFIED_REFERENCES',
+                  'unavailable':['architectLookupId','structuralEngineerLookupId'],
+                  'gcs':[], 'itUsers':[], 'employees':[]}
+        with patch.object(data_api,'get_project_setup_identity_directory',return_value=response) as reader:
+            result=self.client.get(IDENTITY_PATH,headers={**HEADER,'X-Riggs-Passive-Read':'1'})
+        self.assertEqual(result.status_code,200)
+        self.assertEqual(result.json(),response)
+        reader.assert_called_once_with(actor_eid=2021)
+        self.assertIn('no-store',result.headers['cache-control'])
+        request=Request({'type':'http','method':'GET','path':IDENTITY_PATH,
+                         'headers':[(b'x-riggs-passive-read',b'1')]})
+        self.assertTrue(is_passive_freshness_read(request))
+
+    def test_identity_directory_rejects_nonadmin(self):
+        main.app.dependency_overrides[get_current_user]=lambda:replace(USER,app_role='OPERATIONS')
+        with patch.object(data_api,'get_project_setup_identity_directory') as reader:
+            self.assertEqual(self.client.get(IDENTITY_PATH).status_code,403)
+            reader.assert_not_called()
+
+    def test_typed_identity_edits_reach_bridge_without_browser_actor(self):
+        body={**EDIT,'changes':{'gcLookupId':'140-12','pmITUserId':17,
+                                 'superintendentEid':70,'foremanEids':[70]}}
+        with patch.object(data_api,'edit_project_setup_draft',return_value=receipt()) as writer:
+            result=self.client.patch(EDIT_PATH,headers=HEADER,json=body)
+        self.assertEqual(result.status_code,200)
+        self.assertEqual(writer.call_args.kwargs['actor_eid'],2021)
+        self.assertEqual(writer.call_args.kwargs['body'],body)
+
     def test_get_uses_session_eid_not_browser_header(self):
         with patch.object(data_api,'get_project_setup_award_context',return_value=context()) as reader:
             r=self.client.get(PATH,headers=HEADER)
@@ -75,7 +106,7 @@ class RouteTests(unittest.TestCase):
                 r=self.client.post(PATH+'/start',headers=HEADER,json={**START,key:'PRIVATE_SENTINEL'})
                 self.assertEqual(r.status_code,422);self.assertNotIn('PRIVATE_SENTINEL',r.text);writer.assert_not_called()
     def test_protected_edit_fields_rejected(self):
-        for field in ('jobNumber','gcLookupId','foremanEids','cognitoEntryId','controlProjectName','pmITUserId'):
+        for field in ('jobNumber','architectLookupId','structuralEngineerLookupId','cognitoEntryId','controlProjectName'):
             with self.subTest(field=field),patch.object(data_api,'edit_project_setup_draft') as writer:
                 r=self.client.patch(EDIT_PATH,headers=HEADER,json={**EDIT,'changes':{field:None}})
                 self.assertEqual(r.status_code,422);writer.assert_not_called()
@@ -106,6 +137,19 @@ class ClientTests(unittest.TestCase):
         self.mocked(context());self.assertEqual(data_api.get_project_setup_award_context(bid_id=101,actor_eid=2021),context())
         self.assertEqual(self.client.return_value.request.call_args.args,('GET','/v1/project-setups/authoring/awards/101'))
         self.headers.assert_called_once_with(include_service_auth=True,actor_eid=2021)
+    def test_directory_contract_fails_closed_on_mismatched_namespaces(self):
+        good={'persistence':'SQL_DRAFT_ONLY','externalState':'NOT_CONNECTED',
+              'source':'RIGGSDATAHUB_VERIFIED_REFERENCES',
+              'unavailable':['architectLookupId','structuralEngineerLookupId'],
+              'gcs':[{'id':'140-12','label':'GC'}], 'itUsers':[{'id':17,'label':'PM'}],
+              'employees':[{'id':70,'label':'Super'}]}
+        self.mocked(good)
+        self.assertEqual(data_api.get_project_setup_identity_directory(actor_eid=2021),good)
+        bad={**good,'itUsers':[{'id':'17','label':'Forged'}]}
+        self.client.return_value.request.return_value=httpx.Response(200,json=bad)
+        with self.assertRaises(data_api.DataAPIInvalidResponse):
+            data_api.get_project_setup_identity_directory(actor_eid=2021)
+
     def test_start_response_same_bid_no_external_ids(self):
         self.mocked(started());data_api.start_initial_project_setup(bid_id=101,actor_eid=2021,body=START)
         self.assertEqual(self.client.return_value.request.call_count,1)

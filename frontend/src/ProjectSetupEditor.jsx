@@ -1,7 +1,9 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import FloatingEditorShell from './FloatingEditorShell.jsx';
+import ProjectSetupIdentityPicker from './ProjectSetupIdentityPicker.jsx';
+import {setupReadiness} from './projectSetupReadiness.mjs';
 import {applyDraftChanges,buildDraftChanges,currentAwardReference,mayAuthor,openSetup,readPath,requestSetup,
-  setPath,setupError,validateDraft,validateEditReceipt} from './projectSetupAuthoring.mjs';
+  setPath,setupError,validateDraft,validateEditReceipt,validateIdentityDirectory} from './projectSetupAuthoring.mjs';
 
 const PROJECT_TYPES = ['Tilt','CIP','PRE','SITE','Other'];
 const PURPOSES = ['RET','OFF','PAR','IND','EDU','MED','RES','MIX','DAT','STG','SIDE'];
@@ -18,6 +20,10 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
   const [reference,setReference] = useState(null);
   const [referenceBusy,setReferenceBusy] = useState(false);
   const [referenceError,setReferenceError] = useState(null);
+  const [directory,setDirectory] = useState(null);
+  const [directoryError,setDirectoryError] = useState(null);
+  const [directoryBusy,setDirectoryBusy] = useState(false);
+  const [directoryRetry,setDirectoryRetry] = useState(0);
   const [uncertain,setUncertain] = useState(false);
   const [conflict,setConflict] = useState(false);
   const controller = useRef(null);
@@ -27,6 +33,7 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
   const openOperation = useRef(null);
   const dirty = touched.size > 0;
   const author = mayAuthor(user);
+  const readiness=setupReadiness(form||{},directory);
 
   const load = useCallback(async (selection = intent) => {
     if (!mayAuthor(user)) return;
@@ -56,6 +63,17 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
     void load();
     return () => {sequence.current+=1;controller.current?.abort();};
   },[load]);
+  useEffect(() => {
+    if (!record?.setupId || !author) {setDirectory(null);return;}
+    const abort=new AbortController();
+    setDirectoryBusy(true);setDirectoryError(null);
+    requestSetup('/api/project-setups/authoring/identities',{signal:abort.signal})
+      .then(data=>{if (!abort.signal.aborted) setDirectory(validateIdentityDirectory(data));})
+      .catch(()=>{if (!abort.signal.aborted) {setDirectory(null);setDirectoryError('Verified lookup directory unavailable. Existing draft fields are preserved.');}})
+      .finally(()=>{if (!abort.signal.aborted) setDirectoryBusy(false);});
+    return ()=>abort.abort();
+  },[record?.setupId,author,directoryRetry]);
+
   useEffect(() => {
     if (!dirty && !uncertain && !busy) return;
     const warn = event => {event.preventDefault();event.returnValue='';};
@@ -235,6 +253,12 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
           <div><span>Setup ID</span><strong>{record.setupId}</strong></div>
         </details>
       </div>
+      <section className="project-setup-readiness" aria-label="Project Setup progress">
+        <div><strong>Setup checklist: {readiness.filled}/{readiness.total}</strong>
+          <small>Advisory only. Drafts can be saved with missing information; this does not create a Cognito job.</small></div>
+        {readiness.missing.length>0 && <p>Suggested next fields: {readiness.missing.join(' · ')}</p>}
+        {readiness.unverified.length>0 && <p role="status">Previously saved selections need verification: {readiness.unverified.join(', ')}.</p>}
+      </section>
       <fieldset className="cognito-general-fields project-setup-fields" disabled={busy||uncertain||conflict||!author}>
         <section className="bid-edit-section project-setup-section">
           {sectionHeading('PROJECT','Project overview','Start with the project identity from the awarded bid. These values stay editable while the setup is a draft.')}
@@ -287,6 +311,15 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
         <section className="bid-edit-section project-setup-section">
           {sectionHeading('GENERAL CONTRACTOR','GC contacts','Keep project-level GC contact information together. The awarded GC name remains a reference until its verified lookup is connected.')}
           {awardedGcReference()}
+          {directoryBusy && <p role="status" className="cognito-general-note">Loading verified reference directories…</p>}
+          {directoryError && <div role="alert" className="cognito-general-note">{directoryError}
+            <button type="button" className="secondary-button" disabled={directoryBusy} onClick={()=>setDirectoryRetry(v=>v+1)}>Retry directory</button></div>}
+          <div className="bid-edit-grid project-setup-overview-grid">
+            <ProjectSetupIdentityPicker label="Verified general contractor" value={form.gcLookupId}
+              options={directory?.gcs||[]} disabled={!directory||directoryBusy}
+              help="Cognito Form 140 ID, not a typed name. The awarded bid label is reference only."
+              onChange={value=>change('gcLookupId',value)}/>
+          </div>
           {referenceError && <p role="alert" className="cognito-general-note">{referenceError}</p>}
           <div className="project-setup-contact-section">
             <div className="project-setup-contact-block">
@@ -304,6 +337,32 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
               <h4>GC Superintendent</h4>
               <div className="bid-edit-grid project-setup-contact-grid">{CONTACT.map(([path,label])=>input(`gcContactInfo.superintendent.${path}`,label))}</div>
             </div>
+          </div>
+        </section>
+
+        <section className="bid-edit-section project-setup-section">
+          {sectionHeading('RIGGS TEAM & DESIGN','Verified project relationships',
+            'Assignments here are draft references only. They do not alter current staffing or create a Cognito entry.')}
+          <div className="bid-edit-grid project-setup-overview-grid">
+            {[
+              ['pmITUserId','Riggs PM'],['apmITUserId','Riggs APM'],
+              ['peITUserId','Riggs PE'],['surveyorITUserId','Surveyor'],
+            ].map(([path,label])=><ProjectSetupIdentityPicker key={path} label={label}
+              value={form[path]} options={directory?.itUsers||[]} disabled={!directory||directoryBusy}
+              onChange={value=>change(path,value)}/>)}
+            <ProjectSetupIdentityPicker label="Superintendent" value={form.superintendentEid}
+              options={directory?.employees||[]} disabled={!directory||directoryBusy}
+              onChange={value=>change('superintendentEid',value)}/>
+            <ProjectSetupIdentityPicker label="Foremen" multiple value={form.foremanEids}
+              options={directory?.employees||[]} disabled={!directory||directoryBusy}
+              onChange={value=>change('foremanEids',value)}/>
+            <ProjectSetupIdentityPicker label="Additional team members" multiple value={form.additionalMemberITUserIds}
+              options={directory?.itUsers||[]} disabled={!directory||directoryBusy}
+              onChange={value=>change('additionalMemberITUserIds',value)}/>
+            <ProjectSetupIdentityPicker label="Architect of record" value={form.architectLookupId}
+              options={[]} unavailable help="Needs the Cognito AOR reference source; no unverified IDs are accepted."/>
+            <ProjectSetupIdentityPicker label="Structural engineer of record" value={form.structuralEngineerLookupId}
+              options={[]} unavailable help="Needs the Cognito SEOR reference source; no unverified IDs are accepted."/>
           </div>
         </section>
 

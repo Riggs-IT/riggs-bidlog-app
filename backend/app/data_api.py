@@ -3987,7 +3987,7 @@ _SETUP_ERRORS = {
     404: {"project_setup_not_found"},
     409: {"project_setup_conflict", "project_setup_award_sync_pending",
           "project_setup_award_version_changed", "project_setup_child_selection_required"},
-    422: {"project_setup_invalid_request"},
+    422: {"project_setup_invalid_request", "project_setup_invalid_identity"},
     503: {"project_setup_reads_disabled", "project_setup_writes_disabled",
           "project_setup_award_source_unavailable", "project_setup_busy",
           "service_auth_unavailable", "sql_unavailable", "project_setup_unavailable"},
@@ -4056,4 +4056,36 @@ def edit_project_setup_draft(*, setup_id: UUID, actor_eid: int, body: dict) -> d
             or type(result.get("externalWrites")) is not int or result["externalWrites"] != 0
             or result.get("sharedChangesState") != "NOT_DISPATCHED"):
         raise DataAPIInvalidResponse("Invalid draft edit receipt.")
+    return result
+
+
+# AP4F1 read-only directory. Strict response shape, no browser-chosen actor or
+# provider writes. The bridge independently authorizes its SQL reference read.
+def get_project_setup_identity_directory(*, actor_eid: int) -> dict:
+    result = _project_setup_authoring_request(
+        "GET", "/v1/project-setups/authoring/identities", actor_eid=actor_eid
+    )
+    if (result.get("source") != "RIGGSDATAHUB_VERIFIED_REFERENCES"
+            or result.get("externalState") != "NOT_CONNECTED"
+            or result.get("unavailable") != ["architectLookupId", "structuralEngineerLookupId"]):
+        raise DataAPIInvalidResponse("Invalid setup identity directory contract.")
+    for group in ("gcs", "itUsers", "employees"):
+        values = result.get(group)
+        if not isinstance(values, list) or len(values) > 10000:
+            raise DataAPIInvalidResponse("Invalid setup identity directory.")
+        found = set()
+        for entry in values:
+            if not isinstance(entry, dict) or set(entry) != {"id", "label"}:
+                raise DataAPIInvalidResponse("Invalid identity choice.")
+            ident, label = entry["id"], entry["label"]
+            if not isinstance(label, str) or not 0 < len(label) <= 255:
+                raise DataAPIInvalidResponse("Invalid directory label.")
+            if group == "gcs":
+                import re
+                valid = isinstance(ident, str) and re.fullmatch(r"140-[1-9][0-9]*", ident) is not None
+            else:
+                valid = type(ident) is int and 0 < ident <= 2147483647
+            if not valid or ident in found:
+                raise DataAPIInvalidResponse("Invalid or duplicate directory identity.")
+            found.add(ident)
     return result

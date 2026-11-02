@@ -1,9 +1,12 @@
+import {notifyWriteAuthFailure} from './writeAuthRecovery.mjs';
 // AP4F: SQL draft-only workflow. No Cognito, bid-write, numbering or staffing calls.
 export const EDITABLE_ROOTS = new Set([
   'jobName','numberOfBuildings','jobType','purpose','streetAddress','city','state',
   'postalCode','contractAmount','retentionPercent','anticipatedStartDate',
   'estimatedDurationMonths','gcContactInfo','projectOwnerInfo','bond','parcel',
   'scope','leed','ndaRequired','keywords','comments','buildingNames',
+  'gcLookupId','pmITUserId','peITUserId','apmITUserId','superintendentEid',
+  'foremanEids','additionalMemberITUserIds','surveyorITUserId',
 ]);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function validId(value) {return typeof value === 'string' && UUID.test(value) && !/^0{8}-0{4}-0{4}-0{4}-0{12}$/.test(value);}
@@ -36,6 +39,7 @@ export function setupError(error) {
   if (code === 'project_setup_award_version_changed') return 'The bid changed while setup was opening. Retry setup to load its current starting values.';
   if (code === 'project_setup_child_selection_required') return 'An existing child or job needs to be selected. Reload setup; do not create another child automatically.';
   if (error?.status === 409) return 'This draft or source changed. Your entries remain here. Reload the saved draft before making a new edit.';
+  if (code === 'project_setup_invalid_identity') return 'One or more selected identities no longer match the verified directory. Refresh the directory and review the selection.';
   if (error?.status === 422) return 'Check the entered values and building count. The draft was not accepted.';
   return 'The result could not be verified. Retry setup, or retry the exact save; do not repeat the award.';
 }
@@ -48,6 +52,7 @@ export async function requestSetup(path, {method='GET', body, signal, fetcher=fe
   let value;
   try {value = await response.json();} catch {value = null;}
   if (!response.ok) {
+    notifyWriteAuthFailure(response.status, value?.detail, method);
     const error = new Error('Setup request failed.');
     error.status = response.status;
     error.code = typeof value?.detail === 'string' ? value.detail : 'project_setup_invalid_response';
@@ -92,7 +97,44 @@ export function setPath(object,path,value) {
   node[keys.at(-1)] = value;
   return result;
 }
+const ID_FIELDS = new Set(['pmITUserId','peITUserId','apmITUserId','superintendentEid','surveyorITUserId']);
+const ARRAY_ID_FIELDS = new Set(['foremanEids','additionalMemberITUserIds']);
+export function validateIdentityDirectory(value) {
+  if (value?.source!=='RIGGSDATAHUB_VERIFIED_REFERENCES' || value.persistence!=='SQL_DRAFT_ONLY'
+    || value.externalState!=='NOT_CONNECTED'
+    || JSON.stringify(value.unavailable)!==JSON.stringify(['architectLookupId','structuralEngineerLookupId']))
+    throw new Error('Invalid setup identity directory.');
+  for (const group of ['gcs','itUsers','employees']) {
+    const records=value[group];
+    if (!Array.isArray(records)||records.length>10000) throw new Error('Invalid identity directory group.');
+    const ids=new Set();
+    for (const record of records) {
+      const id=record?.id;
+      const valid=group==='gcs' ? (typeof id==='string' && /^140-[1-9][0-9]*$/.test(id))
+        : (Number.isInteger(id) && id>0 && id<=2147483647);
+      if (!valid || typeof record.label!=='string' || !record.label.trim() || record.label.length>255
+        || ids.has(String(id))) throw new Error('Invalid or duplicate identity record.');
+      ids.add(String(id));
+    }
+  }
+  return value;
+}
 function normalized(path,value) {
+  if (path==='gcLookupId') {
+    if (value==='' || value==null) return null;
+    if (typeof value!=='string' || !/^140-[1-9][0-9]*$/.test(value)) throw new Error('Choose a verified GC.');
+    return value;
+  }
+  if (ID_FIELDS.has(path)) {
+    if (value==='' || value==null) return null;
+    if (!Number.isInteger(value) || value<1 || value>2147483647) throw new Error('Choose a verified person.');
+    return value;
+  }
+  if (ARRAY_ID_FIELDS.has(path)) {
+    if (!Array.isArray(value)||value.length>200 || new Set(value).size!==value.length ||
+      value.some(id=>!Number.isInteger(id)||id<1||id>2147483647)) throw new Error('Choose verified people.');
+    return value;
+  }
   if (path === 'buildingNames') return value.map(v=>({cognitoRowId:v.cognitoRowId ?? null,name:v.name === '' ? null : v.name}));
   if (path === 'leed' || path === 'ndaRequired') {
     if (value === '' || value === null || value === undefined) return null;
