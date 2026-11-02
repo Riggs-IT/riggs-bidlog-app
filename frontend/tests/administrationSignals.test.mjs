@@ -85,7 +85,7 @@ test('unavailable data is not interpreted as zero or proof SQL is down', () => {
 test('new presentation remains read-only with original passive and owner-protected transport', () => {
   const dashboard = readFileSync(new URL('../src/AdministrationDashboard.jsx', import.meta.url), 'utf8');
   const main = readFileSync(new URL('../../backend/app/main.py', import.meta.url), 'utf8');
-  assert.match(dashboard, /<AdministrationAttention overview=\{overview\}\/>/);
+  assert.match(dashboard, /<AdministrationAttention overview=\{overview\} terminalIncidents=\{terminalIncidents\}\/>/);
   assert.match(dashboard, /X-Riggs-Passive-Read/);
   assert.match(dashboard, /document.visibilityState !== 'visible'/);
   assert.match(dashboard, /setInterval\(refreshVisible, 60_000\)/);
@@ -93,4 +93,15 @@ test('new presentation remains read-only with original passive and owner-protect
   assert.match(dashboard, /id="administration-cache"/);
   assert.match(main, /Depends\(require_administration_owner\)/);
   assert.doesNotMatch(dashboard, /method:\s*'POST'|\/api\/admin\/restart|dashboard-cache\/refresh/);
+});
+
+
+test('recorded terminal incidents appear in Needs attention; unknown incident reads are not healthy zero', () => {
+  const data = base();
+  const found = summarizeAdministration(data, {availability: 'AVAILABLE', totalCount: 2, blockedCount: 1, uncertainCount: 1});
+  assert.equal(found.issues.at(-1).id, 'terminal-incidents');
+  assert.match(found.issues.at(-1).description, /1 blocked and 1 uncertain/);
+  const unknown = summarizeAdministration(data, {availability: 'UNAVAILABLE'});
+  assert.match(unknown.unknown.at(-1), /watchdog incident evidence unavailable/);
+  assert.deepEqual(summarizeAdministration(data, {availability: 'AVAILABLE', totalCount: 0, blockedCount: 0, uncertainCount: 0}), {issues: [], unknown: []});
 });

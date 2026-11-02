@@ -38,7 +38,7 @@ test('the actual tab and endpoints require exact pinned two-person identity', ()
 
 test('existing monitoring, passive reads and queue aging survive preview removal', () => {
   const dashboard = source('../src/AdministrationDashboard.jsx');
-  assert.match(dashboard, /summarizeAdministration\(overview\)/);
+  assert.match(dashboard, /summarizeAdministration\(overview,\s*terminalIncidents\)/);
   assert.match(dashboard, /queueEvidence\(monitoring\.queues, monitoring\.observedAtUTC\)/);
   assert.match(dashboard, /queueAgeLabel\(item\.oldestPendingAgeSeconds\)/);
   assert.match(dashboard, /X-Riggs-Passive-Read/);

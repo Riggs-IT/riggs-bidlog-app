@@ -25,7 +25,7 @@ const validAge = value => typeof value === 'number' && Number.isFinite(value) &&
 const formatCount = value => value.toLocaleString();
 const issue = (id, title, description, target) => ({id, title, description, target});
 
-export function summarizeAdministration(overview) {
+export function summarizeAdministration(overview, terminalIncidents = null) {
   const issues = [];
   const unknown = [];
   const services = overview?.services || {};
@@ -91,6 +91,16 @@ export function summarizeAdministration(overview) {
         `${formatCount(eligible)} Bid Log session records are eligible for closeout; the automatic reconciler is disabled. These records are not proof of live users.`,
         'administration-usage-closeout'));
     }
+  }
+
+  if (terminalIncidents?.availability === 'AVAILABLE') {
+    if (wholeCount(terminalIncidents.totalCount) && terminalIncidents.totalCount > 0) {
+      issues.push(issue('terminal-incidents', 'Bid lifecycle exceptions recorded',
+        `${formatCount(terminalIncidents.blockedCount)} blocked and ${formatCount(terminalIncidents.uncertainCount)} uncertain watchdog incidents. These are recorded events, not verified current open cases.`,
+        'administration-terminal-incidents'));
+    }
+  } else if (terminalIncidents?.availability === 'UNAVAILABLE') {
+    unknown.push('Bid lifecycle watchdog incident evidence unavailable');
   }
 
   return {issues, unknown};

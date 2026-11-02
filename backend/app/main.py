@@ -32,6 +32,7 @@ from starlette.concurrency import run_in_threadpool
 
 from .administration import get_administration_overview, get_administration_presence, get_administration_leaderboard, get_administration_queue_events
 from .administration_sources import get_administration_source_evidence
+from .administration_terminal import get_administration_terminal_incidents
 from .power_platform_routes import create_power_platform_router
 from .power_platform_vault import VerifiedPrincipal
 from .power_platform_sso import bootstrap_owner_connection
@@ -1450,6 +1451,20 @@ def administration_overview(
     # is checked before any bridge status reads.
     return JSONResponse(
         get_administration_overview(
+            owner_eid=current_user.eid,
+            owner_oid=current_user.entra_object_id,
+        ),
+        headers={"Cache-Control": "no-store, private"},
+    )
+
+
+@app.get("/api/admin/terminal-incidents")
+def administration_terminal_incidents(
+    current_user: CurrentUser = Depends(require_administration_owner),
+):
+    # Existing Entra/EID/OID gate remains mandatory and SQL rechecks it.
+    return JSONResponse(
+        get_administration_terminal_incidents(
             owner_eid=current_user.eid,
             owner_oid=current_user.entra_object_id,
         ),

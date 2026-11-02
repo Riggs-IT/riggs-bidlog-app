@@ -6,6 +6,7 @@ import {queueEvidence, queueAgeLabel} from './administrationQueueEvidence.mjs';
 import AdministrationQueueDetails from './AdministrationQueueDetails.jsx';
 import AdministrationSources from './AdministrationSources.jsx';
 import AdministrationPowerAutomate from './AdministrationPowerAutomate.jsx';
+import AdministrationTerminalIncidents from './AdministrationTerminalIncidents.jsx';
 
 export function displayUTC(value) {
   if (!value) return 'Not recorded';
@@ -39,8 +40,8 @@ function HealthCard({name, service, detail}) {
 const displayCount = value => Number.isSafeInteger(value) && value >= 0
   ? value.toLocaleString() : 'Not collected';
 
-function AdministrationAttention({overview}) {
-  const {issues, unknown} = summarizeAdministration(overview);
+function AdministrationAttention({overview, terminalIncidents}) {
+  const {issues, unknown} = summarizeAdministration(overview, terminalIncidents);
   return <section className="administration-section administration-attention" aria-label="Needs attention">
     <div className="administration-section-heading">
       <h2>Needs attention</h2>
@@ -70,6 +71,7 @@ export function AdministrationView({
   onUsageModeChange = () => {}, onLeaderboardDaysChange = () => {},
   onLeaderboardAppChange = () => {},
   queueSelection = null, onQueueInspect = () => {}, onQueueClose = () => {},
+  terminalIncidents = null, onTerminalChange,
   onSessionError,
 }) {
   const services = overview?.services || {};
@@ -89,7 +91,7 @@ export function AdministrationView({
 
   return <>
     <div className="administration-top-grid" aria-label="Administration overview">
-      <AdministrationAttention overview={overview}/>
+      <AdministrationAttention overview={overview} terminalIncidents={terminalIncidents}/>
     <AdministrationUsagePanel
       presence={presence} leaderboard={leaderboard} mode={usageMode}
       days={leaderboardDays} appCode={leaderboardApp} loading={usageLoading}
@@ -98,6 +100,8 @@ export function AdministrationView({
     </div>
     <AdministrationPowerAutomate onSessionError={onSessionError}/>
     <AdministrationSources onSessionError={onSessionError}/>
+    <AdministrationTerminalIncidents refreshKey={overview?.observedAtUTC}
+      onStateChange={onTerminalChange} onSessionError={onSessionError}/>
     <section className="administration-section" id="administration-system-health" aria-label="System health">
       <div className="administration-section-heading"><h2>Systems</h2><span>Current checks</span></div>
       <div className="administration-tiles">
@@ -237,6 +241,7 @@ export default function AdministrationDashboard({onSessionError, refreshApiRef, 
   const [leaderboardDays, setLeaderboardDays] = useState(30);
   const [leaderboardApp, setLeaderboardApp] = useState('ALL');
   const [queueSelection, setQueueSelection] = useState(null);
+  const [terminalIncidents, setTerminalIncidents] = useState(null);
   const [busy, setBusy] = useState(false);
   const [usageBusy, setUsageBusy] = useState(false);
   const [error, setError] = useState('');
@@ -421,7 +426,8 @@ export default function AdministrationDashboard({onSessionError, refreshApiRef, 
         usageLoading={usageBusy} onUsageModeChange={changeUsageMode}
         onLeaderboardDaysChange={changeLeaderboardDays} onLeaderboardAppChange={changeLeaderboardApp}
         queueSelection={queueSelection} onQueueInspect={(laneKey, status) => setQueueSelection({laneKey, status})}
-        onQueueClose={() => setQueueSelection(null)} onSessionError={onSessionError} />
+        onQueueClose={() => setQueueSelection(null)} terminalIncidents={terminalIncidents}
+        onTerminalChange={setTerminalIncidents} onSessionError={onSessionError} />
     </> : !error && <div className="administration-message">Checking current status…</div>}
   </main>;
 }

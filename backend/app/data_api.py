@@ -3769,6 +3769,41 @@ def get_bid_log_administration_monitoring(*, actor_eid: int, entra_object_id: st
     return _json_object(response, operation=operation)
 
 
+# Typed, bounded read of watchdog incident evidence for the owner-only Admin UI.
+def get_bid_log_administration_terminal_incidents(*, actor_eid: int, entra_object_id: str) -> dict:
+    if type(actor_eid) is not int or actor_eid not in (2021, 176):
+        raise DataAPIConfigurationError("Administration actor unavailable")
+    try:
+        oid = UUID(entra_object_id)
+        if oid.int == 0:
+            raise ValueError("empty UUID")
+    except (ValueError, TypeError, AttributeError) as exc:
+        raise DataAPIConfigurationError("Administration identity unavailable") from exc
+    headers = _request_headers(include_service_auth=True, actor_eid=actor_eid)
+    headers["X-Riggs-Actor-Entra-OID"] = str(oid)
+    operation = "Bid Log Administration watchdog incidents"
+    try:
+        response = _timed_data_api_request(
+            "admin_terminal_incidents",
+            lambda: _get_http_client().get(
+                "/v1/bid-log/admin/terminal-incidents",
+                headers=headers,
+                timeout=httpx.Timeout(
+                    connect=settings.data_api_connect_timeout_seconds,
+                    read=settings.data_api_dashboard_read_timeout_seconds,
+                    write=settings.data_api_read_timeout_seconds,
+                    pool=settings.data_api_connect_timeout_seconds,
+                ),
+            ),
+        )
+    except (httpx.TimeoutException, httpx.RequestError) as exc:
+        raise DataAPIUnavailable("Administration watchdog incident upstream unavailable") from exc
+    _raise_common_failure(response, operation=operation)
+    if response.status_code != 200:
+        raise DataAPIInvalidResponse("Unexpected Administration incident status")
+    return _json_object(response, operation=operation)
+
+
 # Source evidence uses an explicit owner-only click, not the overview poll.
 # It never trusts EID/OID from the browser and never contacts arbitrary tables.
 def get_bid_log_administration_source_evidence(*, actor_eid: int, entra_object_id: str) -> dict:
