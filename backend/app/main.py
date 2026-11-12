@@ -52,6 +52,7 @@ from .auth import (
     suppress_unchanged_passive_cookie,
 )
 from .config import get_settings
+from .project_setup_reviewers import can_review_project_setup, require_project_setup_reviewer
 from .cognito_general import general_request
 from .data_api import (
     DataAPIConfigurationError,
@@ -1447,6 +1448,7 @@ def auth_me(
     payload["canViewAdministration"] = can_view_administration(
         current_user, request.session.get("entra_identity")
     )
+    payload["canReviewProjectSetup"] = can_review_project_setup(current_user)
     return payload
 
 
@@ -2116,7 +2118,8 @@ def active_project_setup_draft_proxy(
     current_user: CurrentUser = Depends(get_current_user),
 ):
     _require_projects_workspace_access(current_user)
-    _require_project_editor(current_user)  # SQL currently requires BID_LOG ADMIN.
+    _require_project_editor(current_user)
+    require_project_setup_reviewer(current_user)  # Separate private two-reviewer gate.
     if setup_id.int == 0:
         raise HTTPException(422, "project_setup_invalid_request")
     try:
@@ -2152,8 +2155,7 @@ def project_setup_ops_awaiting_proxy(
     current_user: CurrentUser = Depends(get_current_user),
 ):
     _require_bid_log_workspace_access(current_user)
-    if _normalized_app_role(current_user) not in {"ADMIN", "OPERATIONS"}:
-        raise HTTPException(403, "project_setup_ops_list_forbidden")
+    require_project_setup_reviewer(current_user)
     if (after_created_at_utc is None) != (after_setup_id is None):
         raise HTTPException(422, "project_setup_invalid_cursor")
     cursor = None
@@ -4258,6 +4260,8 @@ def gong_favicon():
 # AP4F authoring must be registered before the SPA catch-all.
 from .project_setup_authoring import router as project_setup_authoring_router
 app.include_router(project_setup_authoring_router)
+from .project_additional_members import router as project_additional_members_router
+app.include_router(project_additional_members_router)
 
 
 @app.get(

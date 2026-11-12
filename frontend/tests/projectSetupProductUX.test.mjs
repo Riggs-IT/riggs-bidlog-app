@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {readSource} from './helpers/readSource.mjs';
 
 const editor=readFileSync(new URL('../src/ProjectSetupEditor.jsx',import.meta.url),'utf8');
+const team=readFileSync(new URL('../src/ProjectSetupTeamSections.jsx',import.meta.url),'utf8');
 const awaiting=readFileSync(new URL('../src/ProjectSetupAwaitingPanel.jsx',import.meta.url),'utf8');
 const styles=readSource(new URL('../src/styles.css',import.meta.url));
 const styleEntry=readFileSync(new URL('../src/styles.css',import.meta.url),'utf8');
@@ -12,19 +13,20 @@ test('Project Setup is presented as an operational draft workflow',()=>{
   assert.match(editor,/const PROJECT_TYPES = \['Tilt','CIP','PRE','SITE','Other'\]/);
   assert.match(editor,/const PURPOSES = \['RET','OFF','PAR','IND','EDU','MED','RES','MIX','DAT','STG','SIDE'\]/);
   for(const heading of [
-    'Project overview','Where and when','Project commercial setup','Project details',
-    'GC contacts','Project owner','Project setup comments',
+    'Project basics','Location & schedule','Riggs Team','Owner / Developer & General Contractor',
+    'GC Team','Scope & Notes','Contract & Administration',
   ]) assert.match(editor,new RegExp(heading));
-  assert.match(editor,/Not yet sent to Cognito/);
-  assert.match(editor,/Save & close/);
+  assert.match(team,/GC Project Team/);
+  assert.match(editor,/This is not Form 19 creation approval/);
+  assert.match(editor,/Save & Close/);
   assert.match(editor,/Starting contract amount/);
   assert.doesNotMatch(editor,/Operational contract starting value/);
   assert.doesNotMatch(editor,/No job number required/);
 });
 
 test('Setup draft list does not claim parked Accounting work is pending',()=>{
-  assert.match(awaiting,/Setup drafts/);
-  assert.match(awaiting,/Draft in progress/);
+  assert.match(awaiting,/Set Up Drafts/);
+  assert.match(awaiting,/project-setup-draft-row/);
   assert.doesNotMatch(awaiting,/Job number pending with Accounting/);
   assert.doesNotMatch(awaiting,/PROJECT SETUP · SQL DRAFTS/);
 });

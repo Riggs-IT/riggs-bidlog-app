@@ -927,7 +927,7 @@
 
 .project-setup-body {
   width: 100%;
-  max-width: 1320px;
+  max-width: 1520px;
   margin: 0 auto;
   gap: 16px;
 }
@@ -1021,29 +1021,27 @@
 
 .project-setup-fields {
   display: grid;
-  gap: 16px;
+  gap: 12px;
   margin: 0;
   padding: 0;
   border: 0;
 }
 
 .project-setup-section {
-  padding: 20px 22px !important;
+  padding: 17px 20px !important;
 }
 
 .project-setup-section-heading {
-  display: grid;
-  grid-template-columns: minmax(220px, 0.72fr) minmax(300px, 1.28fr);
-  gap: 24px;
-  align-items: end;
-  margin-bottom: 18px;
-  padding-bottom: 13px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
   border-bottom: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
 }
 
 .project-setup-section-heading h3 {
   margin: 3px 0 0;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .project-setup-section-heading p {
@@ -1058,7 +1056,7 @@
 }
 
 .project-setup-location-grid {
-  grid-template-columns: minmax(260px, 1.7fr) repeat(4, minmax(130px, 0.75fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .project-setup-commercial-grid,
@@ -1067,7 +1065,7 @@
 }
 
 .project-setup-requirements-grid {
-  grid-template-columns: repeat(2, minmax(180px, 0.42fr)) minmax(0, 1.16fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .project-setup-span-2 {
@@ -1200,7 +1198,7 @@
 }
 
 .project-setup-draft-table {
-  min-width: 820px;
+  min-width: 560px;
 }
 
 .project-setup-draft-table td:first-child {
@@ -1269,14 +1267,567 @@
 }
 
 
-/* AP4F1 verified identities and advisory completeness; scoped to Project Setup. */
-.project-setup-readiness{padding:12px 14px;border:1px solid var(--border-color,var(--border,#86919c55));border-radius:10px;margin:12px 0}
-.project-setup-readiness div{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-.project-setup-readiness p{margin:8px 0 0;line-height:1.5}
-.project-setup-readiness small{opacity:.8}
-.project-setup-identity-picker{min-width:0;display:flex;flex-direction:column;gap:7px}
-.project-setup-identity-picker input[type=search],.project-setup-identity-picker select{width:100%;min-width:0}
-.project-setup-identity-unavailable,.project-setup-identity-warning{font-size:.85rem;line-height:1.4}
-.project-setup-identity-selected{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:5px}
-.project-setup-identity-selected li{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.project-setup-identity-selected button{flex-shrink:0}
+/* AP4F Project Setup — compact form, integrated picker, full-surface scroll. */
+.project-setup-readiness {
+  display: grid;
+  gap: 6px;
+  padding: 10px 14px;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+.project-setup-readiness > div {display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.project-setup-readiness small {color:var(--muted);font-size:11px}
+.project-setup-readiness p {margin:6px 0 0;color:var(--muted);font-size:12px;line-height:1.45}
+.project-setup-missing-fields > summary {width:fit-content;cursor:pointer;font-size:12px;color:var(--text)}
+.project-setup-status-card {align-items:center;padding:10px 14px;background:var(--surface-2)}
+.project-setup-status-copy {align-items:center;gap:10px}
+.project-setup-status-note {font-size:12px;color:var(--muted)}
+.project-setup-reference-card {padding:10px 13px;align-items:center}
+.project-setup-reference-card small {display:none}
+.project-setup-contact-section {gap:12px}
+.project-setup-contact-block {padding:12px 14px}
+.project-setup-contact-block h4 {margin:0 0 10px;font-size:13px}
+.project-setup-fields .bid-edit-field > small {color:var(--muted)}
+.project-setup-identity-picker {position:relative;min-width:0;display:flex;flex-direction:column;gap:6px}
+.project-setup-identity-picker > label {font-size:11px;font-weight:600;color:var(--muted)}
+.project-setup-identity-unavailable {padding:12px;border-radius:7px;background:var(--surface-3);color:var(--muted);font-size:12px}
+.project-setup-combobox-wrap {position:relative;min-width:0}
+.project-setup-combobox-wrap > input {width:100%;min-width:0;padding-right:54px}
+.project-setup-combobox-clear {position:absolute;right:28px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--muted);cursor:pointer;padding:4px 7px}
+.project-setup-combobox-caret {position:absolute;right:11px;top:50%;transform:translateY(-55%);font-size:18px;pointer-events:none;color:var(--muted)}
+.project-setup-combobox-list {
+  position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:35;
+  max-height:248px;overflow-y:auto;padding:4px;border:1px solid var(--border-strong);
+  border-radius:9px;background:var(--surface);box-shadow:0 14px 32px rgba(0,0,0,.28)
+}
+.project-setup-combobox-option {display:block;width:100%;padding:9px 10px;text-align:left;border:0;border-radius:6px;background:transparent;color:var(--text);font:inherit;font-size:12px;cursor:pointer}
+.project-setup-combobox-option:hover,.project-setup-combobox-option.active {background:var(--surface-3)}
+.project-setup-combobox-option:focus-visible {outline:2px solid var(--accent);outline-offset:-2px}
+.project-setup-combobox-empty {padding:10px;color:var(--muted);font-size:12px}
+.project-setup-identity-selected {display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 0}
+.project-setup-identity-chip {display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:4px 5px 4px 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface-3);font-size:11px}
+.project-setup-identity-chip > span {overflow-wrap:anywhere}
+.project-setup-identity-chip button {border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:15px;line-height:1}
+.project-setup-identity-warning {font-size:11px;color:var(--warning)}
+.project-setup-draft-row.is-clickable {cursor:pointer}
+.project-setup-draft-row.is-clickable:hover,.project-setup-draft-row.is-clickable:focus-visible {background:var(--surface-3);outline:2px solid var(--accent);outline-offset:-2px}
+.project-setup-draft-table td {padding-top:13px;padding-bottom:13px}
+.project-setup-back-nav {display:flex;align-items:center;gap:10px;margin:0 0 12px}
+.project-setup-view-toggle[aria-pressed="true"] {border-color:var(--accent);background:var(--surface-3)}
+
+/* Make the whole project-editor surface scroll; wheel works on headings,
+   footers, form gaps and the backdrop, not just over a field section. */
+.floating-editor-surface.floating-editor-scroll-surface {
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+  max-width:1640px;
+  margin-inline:auto;
+}
+.floating-editor-scroll-surface > .floating-editor-body,
+.floating-editor-scroll-surface > .floating-editor-body.bid-log-edit-body {
+  flex:0 0 auto;
+  height:auto;
+  max-height:none;
+  min-height:auto;
+  overflow:visible;
+  align-content:start;
+  grid-auto-rows:max-content;
+  padding:16px clamp(18px,2.5vw,34px) 28px;
+}
+.floating-editor-scroll-surface > .floating-editor-header {
+  position:sticky;top:0;z-index:10;padding:12px clamp(18px,2.5vw,34px);
+  background:var(--surface);border-bottom:1px solid var(--border);
+}
+.floating-editor-scroll-surface > .floating-editor-footer {
+  position:sticky;bottom:0;z-index:10;background:var(--surface);
+  border-top:1px solid var(--border);padding:11px clamp(18px,2.5vw,34px);
+}
+.floating-editor-scroll-surface .floating-editor-heading {gap:4px}
+.floating-editor-scroll-surface .floating-editor-title-row h2 {font-size:clamp(21px,2vw,28px)}
+.floating-editor-scroll-surface .floating-editor-title-row p {font-size:12px}
+.floating-editor-scroll-surface .section-kicker {font-size:10px;letter-spacing:.045em;color:var(--muted)}
+
+/* Active Project uses the same quiet section hierarchy as Project Setup. */
+.active-project-edit-drawer .bid-edit-section,
+.active-project-edit-drawer .floating-editor-body .bid-edit-section {padding:16px 20px;background:var(--surface-2);border-radius:10px}
+.active-project-edit-drawer .bid-edit-section-heading {
+  margin:0 0 14px;padding:0 0 10px;border-bottom:1px solid var(--border);
+  border-radius:0;background:none;align-items:center
+}
+.active-project-edit-drawer .bid-edit-section-heading h3 {margin:0;font-size:16px;letter-spacing:0}
+.active-project-edit-drawer .bid-edit-section-heading .section-kicker {display:none}
+.active-project-edit-drawer .bid-edit-grid {column-gap:14px;row-gap:12px}
+.active-project-edit-drawer .active-project-schedule-callout {padding:8px 12px;margin-bottom:12px}
+
+@media(max-width:760px) {
+  .floating-editor-scroll-surface {max-width:none;border-radius:0}
+  .project-setup-draft-table {min-width:500px}
+  .project-setup-contact-block {padding:10px}
+  .project-setup-combobox-list {max-height:200px}
+  .floating-editor-scroll-surface > .floating-editor-body,
+  .floating-editor-scroll-surface > .floating-editor-body.bid-log-edit-body {padding:12px 14px 24px}
+}
+
+
+/* AP4F layout corrections — contiguous view controls, dense master form, and
+   a full-height empty/loading state. This file is the owning CSS layer. */
+.active-project-filter-toolbar {
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.active-project-view-controls {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 8px;
+  min-width: 0;
+}
+.active-project-filter-toolbar > .active-project-filter-actions {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+.active-project-view-controls > .project-directory-completed-toggle {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 34px;
+}
+
+.active-project-edit-drawer .floating-editor-body.bid-log-edit-body {
+  gap: 12px;
+}
+.active-project-edit-drawer .bid-edit-section,
+.active-project-edit-drawer .floating-editor-body .bid-edit-section {
+  padding: 14px 17px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-2) 65%, var(--surface));
+}
+.active-project-edit-drawer .bid-edit-section-heading {
+  margin: 0 0 11px;
+  padding: 0 0 9px;
+}
+.active-project-edit-drawer .bid-edit-grid {
+  column-gap: 12px;
+  row-gap: 11px;
+}
+.active-project-edit-drawer .bid-edit-field {
+  gap: 5px;
+}
+.active-project-edit-drawer .bid-edit-field input,
+.active-project-edit-drawer .bid-edit-field select {
+  min-height: 36px;
+  padding: 7px 10px;
+}
+.active-project-edit-drawer .active-project-schedule-callout {
+  margin-bottom: 10px;
+}
+
+/* Compact GC picker: preserve the existing searchable input and verified
+   options while presenting the current selection and search on one line. */
+.active-project-edit-drawer .bid-gc-picker.compact .bid-gc-picker-control {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  min-height: 36px;
+}
+.active-project-edit-drawer .bid-gc-picker.compact .bid-gc-selected-list {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 4px 0 4px 8px;
+}
+.active-project-edit-drawer .bid-gc-picker.compact .bid-gc-search-row {
+  flex: 1 1 125px;
+  min-width: 100px;
+  padding-left: 2px;
+  min-height: 36px;
+}
+.active-project-edit-drawer .bid-gc-picker.compact .bid-gc-search-row input[type='search'] {
+  min-height: 32px;
+  padding: 5px 6px;
+}
+.active-project-edit-drawer .bid-gc-picker.compact .bid-gc-selected-chip {
+  max-width: 240px;
+  white-space: nowrap;
+}
+
+/* The editor's outer surface is the scroller. Keep the flex child stretching
+   on short/empty forms, so the sticky footer doesn't jump below the header. */
+.floating-editor-scroll-surface > .floating-editor-body,
+.floating-editor-scroll-surface > .floating-editor-body.bid-log-edit-body {
+  flex: 1 0 auto;
+  min-height: 180px;
+}
+
+@media (max-width: 1200px) {
+  .active-project-edit-drawer .active-project-core-grid {
+    grid-template-columns: minmax(110px,.7fr) minmax(240px,2fr) repeat(2,minmax(115px,1fr));
+  }
+  .active-project-edit-drawer .active-project-core-grid > .bid-edit-field:last-child {
+    grid-column: auto;
+  }
+}
+@media (max-width: 880px) {
+  .active-project-edit-drawer .active-project-core-grid {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+  .active-project-edit-drawer .active-project-core-grid > .bid-edit-field:nth-child(2) {
+    grid-column: span 1;
+  }
+}
+@media (max-width: 760px) {
+  .active-project-filter-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .active-project-view-controls {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+  .active-project-filter-toolbar > .active-project-filter-actions {
+    width: 100%;
+    margin-left: 0;
+    flex-wrap: wrap;
+  }
+  .active-project-edit-drawer .active-project-core-grid {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .active-project-edit-drawer .bid-gc-picker.compact .bid-gc-selected-list {
+    max-width: 45%;
+  }
+}
+
+/* AP4F3N: GC/Riggs team bubbles and nested modal, owned by Project Setup. */
+/* AP4F Team bubbles + project-specific contact editor. Scoped to Project Setup. */
+.setup-team-section {display:grid;gap:12px}
+.setup-team-toolbar {display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.setup-team-toolbar h4 {margin:0 0 4px;font-size:15px}
+.setup-team-toolbar small,.setup-team-empty {font-size:12px;color:var(--muted);line-height:1.5}
+.setup-team-chips {display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.setup-team-chip {display:flex;max-width:100%;align-items:stretch;border:1px solid var(--border);border-radius:999px;background:var(--surface-3);overflow:hidden}
+.setup-team-chip > button:first-child {display:flex;align-items:center;gap:8px;border:0;cursor:pointer;background:transparent;color:inherit;padding:5px 10px;text-align:left;min-width:0}
+.setup-team-chip > button:first-child:hover:not(:disabled) {background:color-mix(in srgb,var(--surface-3) 65%,var(--accent) 35%)}
+.setup-team-chip button:focus-visible {outline:2px solid var(--accent);outline-offset:-2px}
+.setup-team-avatar {display:grid;place-items:center;flex-shrink:0;width:28px;height:28px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);font-size:10px;font-weight:700}
+.setup-team-chip-info {display:grid;min-width:0;line-height:1.2;gap:3px}
+.setup-team-chip-info strong {font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:245px}
+.setup-team-chip-info small {color:var(--muted);font-size:10px}
+.setup-team-dates {font-size:10px;color:var(--muted);margin-left:4px;white-space:nowrap}
+.setup-team-remove {font-size:19px;min-width:31px;border:0;border-left:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer}
+.setup-team-remove:hover:not(:disabled) {color:var(--danger);background:color-mix(in srgb,var(--surface-3) 85%,var(--danger) 15%)}
+.setup-team-chip.archived {opacity:.75}
+.setup-team-history summary {cursor:pointer;color:var(--muted);font-size:12px}
+.setup-team-history .setup-team-chips {margin-top:8px}
+.setup-team-legacy {display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px;background:var(--surface-3);padding:9px 11px;border-radius:8px}
+.setup-team-overlay {position:fixed;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.68);padding:16px;z-index:11000}
+.setup-team-modal {width:min(620px,100%);max-height:min(90dvh,850px);display:flex;flex-direction:column;border-radius:13px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);box-shadow:0 16px 60px rgba(0,0,0,.55)}
+.setup-team-modal header {display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:19px 22px;border-bottom:1px solid var(--border)}
+.setup-team-modal header h3 {font-size:20px;margin:3px 0 6px}
+.setup-team-modal header p {font-size:12px;color:var(--muted);margin:0;line-height:1.45}
+.setup-team-modal-close {font-size:25px;background:transparent;border:0;color:inherit;cursor:pointer}
+.setup-team-modal-body {overflow:auto;padding:18px 22px;display:grid;gap:12px}
+.setup-team-modal-body > small {color:var(--muted);font-size:11px;line-height:1.5}
+.setup-team-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.setup-team-grid > label {display:grid;gap:5px;font-size:12px;color:var(--muted)}
+.setup-team-grid input:not([type=checkbox]),.setup-team-grid select {width:100%;min-height:36px;border:1px solid var(--border);border-radius:6px;background:var(--surface-3);color:var(--text);padding:7px 9px;font:inherit}
+.setup-team-grid > .project-setup-identity-picker {grid-column:1 / -1}
+.setup-team-check {grid-column:1 / -1;display:flex!important;align-items:center;gap:9px;color:var(--text)!important}
+.setup-team-modal footer {padding:14px 22px;display:flex;justify-content:flex-end;gap:9px;border-top:1px solid var(--border)}
+.setup-team-confirm-wrap {position:fixed;inset:0;z-index:11500;pointer-events:none}
+.setup-team-confirm-wrap .bid-confirm-backdrop {pointer-events:auto;z-index:11501}
+.setup-team-remove-date {position:fixed;z-index:11502;left:50%;top:52%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:9px;background:var(--surface-2);padding:4px;color:var(--text);font-size:12px;pointer-events:auto}
+.setup-team-remove-warning {position:fixed;z-index:11502;left:50%;top:59%;transform:translateX(-50%);color:var(--danger);pointer-events:auto}
+@media (max-width:600px) {.setup-team-grid {grid-template-columns:1fr}.setup-team-modal header,.setup-team-modal-body,.setup-team-modal footer {padding:14px}.setup-team-dates {display:none}}
+
+.setup-team-remove-label {display:grid;gap:6px;color:var(--muted);font-size:12px}
+.setup-team-remove-label input {min-height:38px;background:var(--surface-3);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px}
+.setup-team-removal-note {font-size:12px;color:var(--muted);line-height:1.5}
+.setup-team-danger-button {cursor:pointer;border:1px solid var(--border);border-radius:7px;background:var(--surface-3);padding:10px 14px;color:var(--text)}
+.setup-team-danger-button:hover {border-color:var(--danger)}
+
+/* AP4F3O — project-first layout; presentation only, no change to write ownership. */
+.project-setup-layout-pair,
+.project-setup-parties-grid,
+.project-setup-scope-grid,
+.active-project-layout-pair,
+.active-project-parties-grid,
+.active-project-scope-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+  align-items:start;
+}
+.project-setup-layout-pair > *,
+.project-setup-parties-grid > *,
+.project-setup-scope-grid > *,
+.active-project-layout-pair > *,
+.active-project-parties-grid > *,
+.active-project-scope-grid > * {min-width:0}
+.project-setup-basic-grid,
+.project-setup-party-fields,
+.project-setup-design-grid,
+.project-setup-detail-grid,
+.active-project-edit-drawer .active-project-core-grid,
+.active-project-location-grid,
+.active-project-gc-fields,
+.active-project-readonly-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+.project-setup-location-grid {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+}
+.project-setup-layout-pair .project-setup-span-full,
+.project-setup-party-fields .project-setup-span-full,
+.project-setup-scope-column .project-setup-span-full {grid-column:1 / -1}
+.project-setup-layout-pair .project-setup-section,
+.project-setup-teams-pair .project-setup-section,
+.active-project-layout-pair > .bid-edit-section,
+.active-project-teams-pair > .bid-edit-section {height:100%;min-width:0}
+.project-setup-party-block,
+.project-setup-scope-column,
+.active-project-party-block,
+.active-project-scope-column {min-width:0;display:grid;align-content:start;gap:12px}
+.project-setup-party-block + .project-setup-party-block,
+.project-setup-scope-column + .project-setup-scope-column,
+.active-project-party-block + .active-project-party-block,
+.active-project-scope-column + .active-project-scope-column {
+  border-left:1px solid var(--border);
+  padding-left:16px;
+}
+.project-setup-party-block h4,
+.project-setup-scope-column h4,
+.active-project-party-block h4,
+.active-project-scope-column h4 {margin:0;font-size:14px;color:var(--text)}
+.project-setup-party-block .project-setup-reference-card {margin:0;padding:8px 10px}
+.project-setup-party-block .project-setup-reference-card strong {font-size:12px}
+.project-setup-secondary-details,
+.active-project-secondary-details {margin-top:14px;border-top:1px solid var(--border);padding-top:12px}
+.project-setup-secondary-details summary,
+.active-project-secondary-details summary,
+.active-project-full-reference > summary {cursor:pointer;color:var(--text);font-size:12px;font-weight:650}
+.project-setup-secondary-details > .bid-edit-grid,
+.active-project-secondary-details > .bid-edit-grid {margin-top:12px}
+.project-setup-design-details > .bid-edit-grid {margin-top:14px}
+.project-setup-scope-grid .project-setup-source-notes {grid-template-columns:1fr;margin-top:0}
+.project-setup-scope-grid .project-setup-notes-section .bid-edit-field textarea {min-height:180px}
+.project-setup-checklist summary {display:flex;align-items:center;gap:12px;flex-wrap:wrap;cursor:pointer;font-weight:650;font-size:13px;list-style:auto}
+.project-setup-checklist summary > span {font-weight:400;font-size:11px;color:var(--muted)}
+.project-setup-checklist-body {margin-top:10px;color:var(--text);font-size:12px}
+
+/* Fix the screenshot defect: the popover must not be inside a short scrollport. */
+.setup-team-modal--picker {width:min(760px,calc(100vw - 32px));max-height:92dvh;overflow:visible}
+.setup-team-modal--picker .setup-team-modal-body {
+  overflow:visible;
+  min-height:min(390px,calc(92dvh - 135px));
+  align-content:start;
+}
+.setup-team-modal--picker .setup-team-riggs-grid {grid-template-columns:minmax(0,1fr);gap:16px}
+.setup-team-riggs-grid > label,
+.setup-team-riggs-grid > .project-setup-identity-picker {grid-column:1 / -1;min-width:0}
+.setup-team-modal--picker .project-setup-combobox-list {
+  max-height:min(255px,32dvh);z-index:120;
+  box-shadow:0 18px 40px rgba(0,0,0,.45);
+}
+.setup-team-modal--picker footer {position:relative;z-index:0}
+
+.active-project-edit-drawer .active-project-core-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
+.active-project-edit-drawer .active-project-core-grid > .bid-edit-field:first-child {grid-column:1 / -1}
+.active-project-readonly-field {min-width:0;display:grid;align-content:start;gap:5px;font-size:12px}
+.active-project-readonly-field span {color:var(--muted);font-size:11px;font-weight:600}
+.active-project-readonly-field strong {color:var(--text);font-weight:550;overflow-wrap:anywhere;white-space:pre-wrap;line-height:1.45}
+.active-project-gc-fields > .bid-edit-field {grid-column:1 / -1}
+.active-project-scope-flags {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.active-project-edit-drawer .active-project-scope-section .bid-edit-section-heading {margin-bottom:14px}
+.active-project-full-reference {border:1px solid var(--border);border-radius:10px;background:var(--surface-2);padding:12px 15px}
+.active-project-full-reference > summary {font-size:13px}
+.active-project-full-reference > .bid-edit-section {margin-top:12px}
+.active-project-field-team-details .additional-members-inline {margin-top:12px}
+.setup-team-readonly-chip {display:inline-flex;gap:8px;align-items:center;max-width:100%;border:1px solid var(--border);border-radius:999px;background:var(--surface-3);padding:5px 11px}
+
+@media(max-width:980px) {
+  .project-setup-layout-pair,
+  .project-setup-parties-grid,
+  .project-setup-scope-grid,
+  .active-project-layout-pair,
+  .active-project-parties-grid,
+  .active-project-scope-grid {grid-template-columns:1fr}
+  .project-setup-party-block + .project-setup-party-block,
+  .project-setup-scope-column + .project-setup-scope-column,
+  .active-project-party-block + .active-project-party-block,
+  .active-project-scope-column + .active-project-scope-column {border-left:0;border-top:1px solid var(--border);padding-left:0;padding-top:14px}
+}
+@media(max-width:600px) {
+  .project-setup-basic-grid,
+  .project-setup-party-fields,
+  .project-setup-location-grid,
+  .project-setup-design-grid,
+  .project-setup-detail-grid,
+  .active-project-edit-drawer .active-project-core-grid,
+  .active-project-location-grid,
+  .active-project-gc-fields,
+  .active-project-readonly-grid {grid-template-columns:1fr}
+  .setup-team-modal--picker .setup-team-modal-body {min-height:min(335px,calc(92dvh - 125px))}
+  .setup-team-modal--picker .project-setup-combobox-list {max-height:min(200px,30dvh)}
+}
+
+.active-project-field-summary {margin-top:14px;display:grid;gap:8px}
+.active-project-field-summary > strong {font-size:12px;color:var(--text)}
+
+/* AP4F3P — compact draft checklist, form layout and active GC picker.
+   No provider, SQL or authorization changes. */
+.project-setup-editor .floating-editor-header {
+  position:relative;
+  z-index:30;
+  overflow:visible;
+}
+.floating-editor-header-actions {margin-left:auto;align-self:flex-start;position:relative;z-index:30;}
+.project-setup-checklist-anchor {position:relative;}
+.project-setup-checklist-toggle {
+  cursor:pointer;
+  min-height:32px;
+  padding-inline:13px;
+  font:inherit;
+  font-size:12px;
+  font-weight:650;
+  white-space:nowrap;
+}
+.project-setup-checklist-toggle:hover,
+.project-setup-checklist-toggle:focus-visible {border-color:#d7a842;outline-offset:2px;}
+.project-setup-checklist-popover {
+  position:absolute;
+  top:calc(100% + 10px);
+  right:0;
+  z-index:110;
+  width:min(390px,calc(100vw - 45px));
+  max-height:min(62dvh,550px);
+  overflow-y:auto;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:12px;
+  background:var(--surface-2);
+  box-shadow:0 20px 50px rgba(0,0,0,.47);
+}
+.project-setup-checklist-title {display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:4px 6px 11px;border-bottom:1px solid var(--border)}
+.project-setup-checklist-title strong {font-size:14px}
+.project-setup-checklist-title small,.project-setup-checklist-disclaimer {color:var(--muted);font-size:11px}
+.project-setup-check-item {width:100%;display:flex;align-items:center;gap:10px;border:0;border-bottom:1px solid color-mix(in srgb,var(--border) 55%,transparent);padding:10px 6px;background:transparent;color:var(--text);font:inherit;font-size:12px;text-align:left;cursor:pointer;}
+.project-setup-check-item:hover,.project-setup-check-item:focus-visible {background:var(--surface-3);outline-offset:-2px}
+.project-setup-check-item > span:first-child {width:18px;display:inline-flex;align-items:center;justify-content:center;font-weight:750;font-size:14px}
+.project-setup-check-item .is-done {color:#65ad85}
+.project-setup-check-item .is-pending {color:#d7a842}
+.project-setup-check-item > span:nth-child(2) {min-width:0;flex:1}
+.project-setup-check-item > small {color:var(--muted);font-size:10px}
+.project-setup-checklist-disclaimer {display:block;margin:10px 6px 0}
+.project-setup-section,.project-setup-layout-pair {scroll-margin-top:28px}
+@keyframes setup-section-halo-pulse {0%{box-shadow:0 0 0 1px #d7a842,0 0 0 0 rgba(215,168,66,.45)} 40%{box-shadow:0 0 0 2px #d7a842,0 0 0 9px rgba(215,168,66,.16)} 100%{box-shadow:0 0 0 1px transparent,0 0 0 13px transparent}}
+.project-setup-editor .setup-section-halo {border-radius:12px;animation:setup-section-halo-pulse 1.45s ease-out both}
+@media(prefers-reduced-motion:reduce) {.project-setup-editor .setup-section-halo {animation:none;outline:2px solid #d7a842;outline-offset:4px}}
+.project-setup-contract-type-preview {display:grid;align-content:start;gap:5px;}
+.project-setup-contract-type-preview > strong {min-height:38px;padding:9px 11px;display:block;border:1px solid var(--border);border-radius:8px;background:var(--surface-3);font-size:13px}
+.project-setup-contract-type-preview small {font-size:10px;color:var(--muted);line-height:1.4}
+.project-setup-contract-section .project-setup-contract-grid {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+.project-setup-contract-section > .setup-team-empty {display:block;margin-top:10px}
+.project-setup-parties-grid {align-items:stretch}
+.project-setup-parties-grid > .project-setup-party-block {min-height:100%;}
+.project-setup-parties-section .active-project-readonly-field {min-height:60px}
+.project-setup-parties-section .active-project-readonly-field small {font-size:10px;color:var(--muted)}
+.project-setup-editor .bid-log-edit-footer-actions {align-items:center;gap:10px}
+.project-setup-editor .project-setup-save-close {display:inline-flex;min-width:132px;min-height:38px;justify-content:center;align-items:center;border-radius:8px;padding:9px 16px;white-space:nowrap}
+.project-setup-back-nav .secondary-button {min-width:100px}
+.active-project-gc-combobox {position:relative;min-width:0;grid-column:1/-1}
+.active-project-gc-combobox > .bid-edit-field {margin:0;min-width:0}
+.active-project-gc-combobox > small {color:var(--muted);font-size:10px;display:block;margin-top:5px;overflow-wrap:anywhere}
+.active-project-gc-options {position:absolute;top:calc(100% - 15px);left:0;right:0;z-index:60;max-height:260px;overflow-y:auto;display:grid;padding:6px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);box-shadow:0 18px 36px rgba(0,0,0,.48)}
+.active-project-gc-options > button {display:grid;gap:4px;border:0;border-radius:7px;padding:10px 11px;background:transparent;color:var(--text);text-align:left;cursor:pointer;font:inherit}
+.active-project-gc-options > button:hover,.active-project-gc-options > button:focus-visible {background:var(--surface-3)}
+.active-project-gc-options > button > strong {font-size:12px}
+.active-project-gc-options > button > small {font-size:10px;color:var(--muted)}
+.active-project-gc-options > p {color:var(--muted);font-size:12px;padding:12px;margin:0}
+.active-project-compact-reference .bid-edit-section-heading {margin-bottom:10px}
+.active-gc-contact-modal-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
+@media(max-width:980px) {.project-setup-contract-section .project-setup-contract-grid {grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px) {
+  .project-setup-contract-section .project-setup-contract-grid,.active-gc-contact-modal-grid {grid-template-columns:minmax(0,1fr)}
+  .floating-editor-header-actions {max-width:45vw}
+  .project-setup-checklist-toggle {font-size:10px;min-height:28px;padding-inline:9px}
+  .project-setup-checklist-popover {right:-24px}
+}
+
+/* AP4F3Q: display previously mapped operational JIS fields in the read-only
+   Active Projects reference without restoring hidden formulas or worker flags. */
+.active-project-compact-sections {display:grid;gap:12px;margin-top:12px}
+.active-project-compact-sections > .bid-edit-section {min-width:0;margin:0}
+.active-project-compact-sections .cognito-supplier-sheet {overflow-x:auto}
+.active-project-compact-sections .cognito-supplier-row {min-width:620px}
+@media(max-width:1200px) {
+  .active-project-compact-sections .cognito-supplier-row {min-width:0}
+}
+@media(max-width:700px) {
+  .active-project-compact-sections .information-sheet-grid.three-column,
+  .active-project-compact-sections .information-sheet-grid.two-column {grid-template-columns:minmax(0,1fr)}
+}
+
+/* AP4F3R — Form 206 design contact display; shared across draft and active. */
+.project-setup-design-section,.active-project-design-section {min-width:0}
+.project-setup-design-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:stretch}
+.design-team-person-card {min-width:0;padding:14px;border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:12px;background:var(--surface,transparent)}
+.design-team-person-card .project-setup-identity-picker {width:100%;min-width:0}
+.design-team-contact-details {display:grid;grid-template-columns:1fr;gap:9px}
+.design-team-contact-details .active-project-readonly-field strong {white-space:pre-wrap;overflow-wrap:anywhere}
+.design-team-contact-provenance,.design-team-active-current {font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.design-team-active-current strong {color:var(--text);font-weight:650}
+.design-team-readonly-choice {border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);min-height:38px;font-size:13px}
+.design-team-preview-warning {display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid var(--border);padding-top:10px;font-size:12px;color:var(--text)}
+.design-team-preview-warning button {flex-shrink:0}
+@media (max-width:820px) {.project-setup-design-grid {grid-template-columns:1fr}}
+
+
+/* AP4F3S — same neutral surface/contrast rules as the other project panels.
+   Keep all palette decisions in theme tokens. No hard-coded dark/light colors. */
+.design-team-person-card {background:var(--surface-2);border-color:var(--border-strong)}
+.design-team-person-card .project-setup-combobox-wrap > input,
+.design-team-person-card .design-team-readonly-choice,
+.design-team-person-card .project-setup-identity-unavailable {
+  min-height:38px;
+  background:var(--surface-3);
+  border:1px solid var(--border-strong);
+  border-radius:8px;
+  color:var(--text);
+  font-size:12px;
+  font-weight:550;
+}
+.design-team-person-card .project-setup-identity-unavailable {padding:10px 12px;overflow-wrap:anywhere}
+.design-team-person-card .project-setup-identity-picker > label {color:var(--text-soft)}
+.design-team-person-card .design-team-active-current,
+.design-team-person-card .design-team-contact-provenance {color:var(--text-soft)}
+.design-team-directory-warning {
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;
+  margin-top:10px;padding:9px 11px;border:1px solid var(--border-strong);
+  border-radius:8px;background:var(--surface-2);color:var(--text-soft);
+  font-size:12px;line-height:1.45;
+}
+.design-team-directory-warning button {flex-shrink:0}
+@media(max-width:600px) {.design-team-directory-warning button {width:100%}}
+
+/* AP4F3U — Project-only GC company contact overrides (not Cognito writes). */
+.project-setup-gc-company {min-width:0;margin-top:4px}
+.project-setup-gc-company-heading {display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.project-setup-gc-company-heading strong {color:var(--text);font-size:12px;font-weight:680}
+.project-setup-gc-company-heading small {color:var(--text-soft);font-size:11px;line-height:1.45}
+.project-setup-gc-company-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.project-setup-gc-company-field {display:flex;flex-direction:column;gap:5px;min-width:0}
+.project-setup-gc-company-field .bid-edit-field {margin:0}
+.project-setup-gc-company-field input {min-width:0;width:100%;color:var(--text)}
+.project-setup-gc-company-meta {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.project-setup-gc-company-meta button {font-size:10px;min-height:27px;padding:4px 8px}
+.project-setup-gc-company-status {color:var(--text-soft);font-size:10px;font-weight:600}
+.project-setup-gc-company-reference {color:var(--muted);font-size:10px;line-height:1.45;overflow-wrap:anywhere}
+.project-setup-gc-company-disclaimer {display:block;margin-top:12px;color:var(--text-soft);font-size:10px;line-height:1.55}
+@media(max-width:700px) {.project-setup-gc-company-grid {grid-template-columns:minmax(0,1fr)}}

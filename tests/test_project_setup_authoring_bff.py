@@ -66,6 +66,32 @@ class RouteTests(unittest.TestCase):
         self.assertEqual(writer.call_args.kwargs['actor_eid'],2021)
         self.assertEqual(writer.call_args.kwargs['body'],body)
 
+    def test_form206_directory_requires_admin_and_forwards_trusted_actor_only(self):
+        value={'source':'RIGGSDATAHUB_FORM206_MIRROR',
+               'persistence':'SQL_DRAFT_ONLY','externalState':'NOT_CONNECTED',
+               'selectionVerification':'COGNITO_REST_ON_DRAFT_SAVE','externalWrites':0,
+               'architects':[{'id':'206-1','label':'Architect'}],
+               'engineers':[{'id':'206-2','label':'Engineer'}]}
+        with patch.object(data_api,'get_project_setup_form206_directory',return_value=value) as reader:
+            r=self.client.get('/api/project-setups/authoring/form206',headers=HEADER)
+        self.assertEqual(r.status_code,200)
+        self.assertEqual(r.json(),value)
+        self.assertEqual(reader.call_args.kwargs,{'actor_eid':2021})
+        main.app.dependency_overrides[get_current_user]=lambda:replace(USER,app_role='OPERATIONS')
+        with patch.object(data_api,'get_project_setup_form206_directory') as reader:
+            r=self.client.get('/api/project-setups/authoring/form206',headers=HEADER)
+        self.assertEqual(r.status_code,403)
+        reader.assert_not_called()
+
+    def test_form206_fields_are_forwarded_only_as_sql_draft_edits(self):
+        body={**EDIT,'changes':{'architectLookupId':'206-1',
+                                 'structuralEngineerLookupId':'206-2'}}
+        with patch.object(data_api,'edit_project_setup_draft',return_value=receipt()) as writer:
+            r=self.client.patch(EDIT_PATH,headers=HEADER,json=body)
+        self.assertEqual(r.status_code,200)
+        self.assertEqual(writer.call_args.kwargs['body'],body)
+        self.assertEqual(writer.call_args.kwargs['actor_eid'],2021)
+
     def test_get_uses_session_eid_not_browser_header(self):
         with patch.object(data_api,'get_project_setup_award_context',return_value=context()) as reader:
             r=self.client.get(PATH,headers=HEADER)
@@ -106,7 +132,7 @@ class RouteTests(unittest.TestCase):
                 r=self.client.post(PATH+'/start',headers=HEADER,json={**START,key:'PRIVATE_SENTINEL'})
                 self.assertEqual(r.status_code,422);self.assertNotIn('PRIVATE_SENTINEL',r.text);writer.assert_not_called()
     def test_protected_edit_fields_rejected(self):
-        for field in ('jobNumber','architectLookupId','structuralEngineerLookupId','cognitoEntryId','controlProjectName'):
+        for field in ('jobNumber','cognitoEntryId','controlProjectName'):
             with self.subTest(field=field),patch.object(data_api,'edit_project_setup_draft') as writer:
                 r=self.client.patch(EDIT_PATH,headers=HEADER,json={**EDIT,'changes':{field:None}})
                 self.assertEqual(r.status_code,422);writer.assert_not_called()

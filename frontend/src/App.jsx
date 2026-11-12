@@ -2234,8 +2234,7 @@ export default function App() {
       .canViewProjects
     === true;
 
-  const canViewSetupSummary = canViewBidLog
-    && ['ADMIN', 'OPERATIONS'].includes(String(user?.appRole || '').toUpperCase());
+  const canViewSetupSummary = canViewBidLog && user?.canReviewProjectSetup === true;
 
 
   const canViewCompletedBillings =
@@ -7914,7 +7913,7 @@ export default function App() {
             void refreshProjectedBidData();
           }}
           onOpenProjectSetup={originalBidLogId => {
-            if (String(user?.appRole || '').trim().toUpperCase() !== 'ADMIN') return;
+            if (user?.canReviewProjectSetup !== true) return;
             setProjectSetupIntent({originalBidLogId});
             setActivePage('active-projects');
           }}

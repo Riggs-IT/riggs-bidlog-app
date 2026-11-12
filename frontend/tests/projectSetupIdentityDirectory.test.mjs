@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {buildDraftChanges,validateIdentityDirectory} from '../src/projectSetupAuthoring.mjs';
+import {buildDraftChanges,validateIdentityDirectory,validateForm206Directory} from '../src/projectSetupAuthoring.mjs';
 import {setupReadiness} from '../src/projectSetupReadiness.mjs';
 
 const directory={persistence:'SQL_DRAFT_ONLY',externalState:'NOT_CONNECTED',
@@ -37,10 +37,32 @@ test('checklist is advisory, never a Form 19 dispatch permission',()=>{
  assert.deepEqual(setupReadiness(values,directory).unverified,['General contractor']);
 });
 
-test('editor preserves draft-only boundary and unverified lookups are disabled',()=>{
+test('editor preserves draft-only boundary and Form206 uses server-validated candidates',()=>{
  const source=readFileSync(new URL('../src/ProjectSetupEditor.jsx',import.meta.url),'utf8');
  assert.match(source,/ProjectSetupIdentityPicker/);
- assert.match(source,/unavailable help="Needs the Cognito AOR reference/);
- assert.match(source,/SQL_DRAFT_ONLY|Not yet sent to Cognito/);
+ assert.match(source,/form206Directory\?\.architects/);
+ assert.match(source,/form206Directory\?\.engineers/);
+ assert.match(source,/unavailable=\{!form206Directory\}/);
+ assert.match(source,/This is not Form 19 creation approval/);
  assert.doesNotMatch(source,/createEntry\(/);
+});
+
+
+test('Form206 options use typed verified format and block forged or duplicate IDs',()=>{
+ const good={source:'RIGGSDATAHUB_FORM206_MIRROR',persistence:'SQL_DRAFT_ONLY',
+   externalState:'NOT_CONNECTED',selectionVerification:'COGNITO_REST_ON_DRAFT_SAVE',externalWrites:0,
+   architects:[{id:'206-4',label:'Architect'}],engineers:[{id:'206-7',label:'Engineer'}]};
+ assert.equal(validateForm206Directory(good),good);
+ for(const bad of [
+  {...good,externalWrites:1},
+  {...good,source:'browser'},
+  {...good,architects:[{id:'140-4',label:'fake'}]},
+  {...good,engineers:[{id:'206-4',label:'duplicate'}]},
+  {...good,architects:[{id:'206-4',label:''}]},
+ ]) assert.throws(()=>validateForm206Directory(bad));
+ const base={architectLookupId:null,structuralEngineerLookupId:null};
+ assert.deepEqual(buildDraftChanges(base,{architectLookupId:'206-4',structuralEngineerLookupId:'206-7'},
+   new Set(['architectLookupId','structuralEngineerLookupId'])),
+   {architectLookupId:'206-4',structuralEngineerLookupId:'206-7'});
+ assert.throws(()=>buildDraftChanges(base,{...base,architectLookupId:'140-4'},new Set(['architectLookupId'])));
 });

@@ -4089,3 +4089,44 @@ def get_project_setup_identity_directory(*, actor_eid: int) -> dict:
                 raise DataAPIInvalidResponse("Invalid or duplicate directory identity.")
             found.add(ident)
     return result
+
+
+# AP4F3D verified Form 206 candidate directory. The provider token stays on bridge.
+def get_project_setup_form206_directory(*, actor_eid: int) -> dict:
+    result = _project_setup_authoring_request(
+        "GET", "/v1/project-setups/authoring/form206", actor_eid=actor_eid
+    )
+    if (result.get("source") != "RIGGSDATAHUB_FORM206_MIRROR"
+            or result.get("persistence") != "SQL_DRAFT_ONLY"
+            or result.get("externalState") != "NOT_CONNECTED"
+            or result.get("selectionVerification") != "COGNITO_REST_ON_DRAFT_SAVE"
+            or result.get("externalWrites") != 0):
+        raise DataAPIInvalidResponse("Invalid Form 206 directory contract.")
+    import re
+    for key in ("architects", "engineers"):
+        entries = result.get(key)
+        if not isinstance(entries, list) or len(entries) > 10000:
+            raise DataAPIInvalidResponse("Invalid Form 206 directory group.")
+        seen = set()
+        for entry in entries:
+            # AP4F3S: AP4F3R adds read-only contact metadata. Older deployed
+            # bridge images may still return only id/label; accept BOTH shapes.
+            # Fail closed on unknown keys or malformed metadata.
+            allowed_keys = {"id", "label", "email", "address"}
+            if (not isinstance(entry, dict)
+                    or not {"id", "label"}.issubset(entry)
+                    or not set(entry).issubset(allowed_keys)):
+                raise DataAPIInvalidResponse("Invalid Form 206 directory entry.")
+            for field, limit in (("email", 320), ("address", 2000)):
+                item = entry.get(field)
+                if item is not None and (type(item) is not str or len(item) > limit):
+                    raise DataAPIInvalidResponse("Invalid Form 206 contact metadata.")
+            ident, label = entry["id"], entry["label"]
+            if (not isinstance(ident, str) or re.fullmatch(r"206-[1-9][0-9]*", ident) is None
+                    or not isinstance(label, str) or not label.strip() or len(label) > 255
+                    or ident in seen):
+                raise DataAPIInvalidResponse("Invalid Form 206 entry identity.")
+            seen.add(ident)
+    if {x["id"] for x in result["architects"]} & {x["id"] for x in result["engineers"]}:
+        raise DataAPIInvalidResponse("Overlapping Form 206 identity types.")
+    return result

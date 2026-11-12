@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useRef,
 } from 'react';
 
 
@@ -12,9 +13,12 @@ export default function FloatingEditorShell({
   saving = false,
   className = '',
   bodyClassName = '',
+  scrollSurface = false,
   footer = null,
+  headerActions = null,
   children,
 }) {
+  const surfaceRef = useRef(null);
   useEffect(
     () => {
       const previousOverflow = document.body.style.overflow;
@@ -42,6 +46,7 @@ export default function FloatingEditorShell({
   const surfaceClassName = [
     'billing-drawer',
     'floating-editor-surface',
+    scrollSurface && 'floating-editor-scroll-surface',
     className,
   ]
     .filter(Boolean)
@@ -59,6 +64,11 @@ export default function FloatingEditorShell({
     <div
       className="billing-drawer-backdrop floating-editor-backdrop"
       role="presentation"
+      onWheel={event => {
+        if (scrollSurface && event.target === event.currentTarget) {
+          surfaceRef.current?.scrollBy({top: event.deltaY, left: 0, behavior: 'auto'});
+        }
+      }}
       onMouseDown={event => {
         if (
           event.target === event.currentTarget
@@ -79,6 +89,7 @@ export default function FloatingEditorShell({
       }}
     >
       <section
+        ref={surfaceRef}
         className={surfaceClassName}
         role="dialog"
         aria-modal="true"
@@ -109,6 +120,7 @@ export default function FloatingEditorShell({
             </div>
           </div>
 
+          {headerActions && <div className="floating-editor-header-actions">{headerActions}</div>}
           <button
             type="button"
             className="billing-drawer-close floating-editor-close"

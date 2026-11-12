@@ -42,20 +42,34 @@ class ActiveProjectStaffingWiringTests(unittest.TestCase):
 
     def test_project_team_owns_field_staffing_without_duplicate_super(self):
         drawer = (
-            ROOT
-            / "frontend/src/ActiveProjectEditDrawer.jsx"
+            ROOT / "frontend/src/ActiveProjectEditDrawer.jsx"
+        ).read_text()
+        office_team = (
+            ROOT / "frontend/src/ActiveProjectTeamSections.jsx"
         ).read_text()
         organizer = (
-            ROOT
-            / "frontend/src/ActiveProjectStaffingOrganizer.jsx"
+            ROOT / "frontend/src/ActiveProjectStaffingOrganizer.jsx"
         ).read_text()
 
+        # AP4F3O moves office-role picks to a dedicated team component,
+        # but keeps Operations staffing and Additional Members independent.
+        self.assertIn("<ActiveProjectOfficeTeam", drawer)
+        self.assertIn("values={form}", drawer)
+        self.assertIn("people={people}", drawer)
+        self.assertIn("onChange={updateField}", drawer)
+        self.assertIn('aria-label="Riggs Team"', office_team)
+        self.assertIn("const OFFICE_ROLES = [", office_team)
+        self.assertIn("<ActiveProjectStaffingOrganizer", drawer)
+        self.assertIn("onWrite={writeStaffing}", drawer)
+        self.assertIn("<ActiveProjectAdditionalMembers", drawer)
+        self.assertNotIn("staffing/assign", office_team)
+        self.assertNotIn("staffing/unassign", office_team)
+        self.assertNotIn("CurrentSuperintendentEditor", office_team)
+        self.assertNotIn("CurrentForemenEditor", office_team)
         self.assertNotIn(
             'hint="Superintendent staffing stays managed through the Operations staffing workflow."',
             drawer,
         )
-        self.assertIn("project-team-office-grid", drawer)
-        self.assertIn("people={people}", drawer)
         self.assertIn("FIELD STAFFING", organizer)
         self.assertNotIn("CurrentSuperintendentEditor", organizer)
         self.assertNotIn("CurrentForemenEditor", organizer)
@@ -68,18 +82,30 @@ class ActiveProjectStaffingWiringTests(unittest.TestCase):
 
     def test_project_team_dropdowns_are_role_scoped(self):
         drawer = (
-            ROOT
-            / "frontend/src/ActiveProjectEditDrawer.jsx"
+            ROOT / "frontend/src/ActiveProjectEditDrawer.jsx"
+        ).read_text()
+        office_team = (
+            ROOT / "frontend/src/ActiveProjectTeamSections.jsx"
         ).read_text()
         organizer = (
-            ROOT
-            / "frontend/src/ActiveProjectStaffingOrganizer.jsx"
+            ROOT / "frontend/src/ActiveProjectStaffingOrganizer.jsx"
         ).read_text()
 
-        self.assertIn('role="PM"', drawer)
-        self.assertIn('role="APM"', drawer)
-        self.assertIn('role="PE"', drawer)
-        self.assertIn("person?.projectRole", drawer)
+        self.assertIn("<ActiveProjectOfficeTeam", drawer)
+        # Verify the actual AP4F3O role-to-field mapping, not the old
+        # inline role= JSX props that no longer exist in the drawer.
+        for role, field in (
+            ("PM", "pmITUserId"),
+            ("APM", "apmITUserId"),
+            ("PE", "peITUserId"),
+        ):
+            self.assertIn(f"{{field:'{field}', role:'{role}'", office_team)
+        self.assertIn("person?.projectRole", office_team)
+        self.assertIn(".toUpperCase() === role.role", office_team)
+        self.assertIn("person.sharePointId", office_team)
+        self.assertIn("options={directory[editor.role.role]}", office_team)
+        self.assertIn("onChange(role.field,String(id))", office_team)
+        # Field staffing continues using its separate role + EID filter.
         self.assertIn("person?.staffingRole", organizer)
         self.assertIn("role={role}", organizer)
         self.assertIn("disabled={option.disabled}", organizer)

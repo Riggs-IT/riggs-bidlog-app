@@ -7,10 +7,29 @@ export const EDITABLE_ROOTS = new Set([
   'scope','leed','ndaRequired','keywords','comments','buildingNames',
   'gcLookupId','pmITUserId','peITUserId','apmITUserId','superintendentEid',
   'foremanEids','additionalMemberITUserIds','surveyorITUserId',
+  'architectLookupId','structuralEngineerLookupId',
 ]);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function validId(value) {return typeof value === 'string' && UUID.test(value) && !/^0{8}-0{4}-0{4}-0{4}-0{12}$/.test(value);}
-export function mayAuthor(user) {return String(user?.appRole || '').trim().toUpperCase() === 'ADMIN';}
+
+// crypto.randomUUID() is unavailable on ordinary LAN HTTP origins in some browsers.
+// getRandomValues() remains available there and is cryptographically secure.
+// Never use Math.random() for a mutation/idempotency operation ID.
+export function createSetupOperationId(cryptoApi = globalThis.crypto) {
+  if (typeof cryptoApi?.randomUUID === 'function') return cryptoApi.randomUUID();
+  if (typeof cryptoApi?.getRandomValues !== 'function') {
+    const error = new Error('Secure browser randomness is unavailable.');
+    error.code = 'project_setup_random_unavailable';
+    throw error;
+  }
+  const bytes = new Uint8Array(16);
+  cryptoApi.getRandomValues(bytes);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40; // UUID v4
+  bytes[8] = (bytes[8] & 0x3f) | 0x80; // RFC 4122 variant
+  const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+}
+export function mayAuthor(user) {return user?.canReviewProjectSetup === true && String(user?.appRole || '').trim().toUpperCase() === 'ADMIN';}
 export function awardCompleted(result) {
   return result?.action === 'Awarded' && result?.finalStatus === 'Awarded'
     && result?.transitionApplied === true && result?.cloneCreationComplete === true
@@ -33,6 +52,7 @@ export function setupError(error) {
   const code = error?.code;
   if (error?.status === 401) return 'Your session expired. Sign in again; the last saved draft is retained.';
   if (error?.status === 403) return 'Draft editing currently requires an authorized Bid Log administrator.';
+  if (code === 'project_setup_random_unavailable') return 'This browser cannot generate a secure draft operation ID. Use an updated browser or HTTPS.';
   if (code === 'project_setup_writes_disabled') return 'Project setup editing is not enabled yet. The bid award is not undone.';
   if (code === 'project_setup_reads_disabled') return 'Project setup reads are disabled. This is not an empty draft.';
   if (code === 'project_setup_award_sync_pending') return 'The awarded bid has not finished its SQL handoff yet. Retry setup only; do not award the bid again.';
@@ -99,6 +119,7 @@ export function setPath(object,path,value) {
 }
 const ID_FIELDS = new Set(['pmITUserId','peITUserId','apmITUserId','superintendentEid','surveyorITUserId']);
 const ARRAY_ID_FIELDS = new Set(['foremanEids','additionalMemberITUserIds']);
+const GC_COMPANY_PATHS = new Set(['gcContactInfo.streetAddress','gcContactInfo.cityStateZip','gcContactInfo.generalEmail']);
 export function validateIdentityDirectory(value) {
   if (value?.source!=='RIGGSDATAHUB_VERIFIED_REFERENCES' || value.persistence!=='SQL_DRAFT_ONLY'
     || value.externalState!=='NOT_CONNECTED'
@@ -119,7 +140,42 @@ export function validateIdentityDirectory(value) {
   }
   return value;
 }
+export function validateForm206Directory(value) {
+  if (value?.source!=='RIGGSDATAHUB_FORM206_MIRROR'
+    || value?.persistence!=='SQL_DRAFT_ONLY'
+    || value?.externalState!=='NOT_CONNECTED'
+    || value?.selectionVerification!=='COGNITO_REST_ON_DRAFT_SAVE'
+    || value?.externalWrites!==0) throw new Error('Invalid Form 206 directory.');
+  const seenGlobal=new Set();
+  for (const field of ['architects','engineers']) {
+    if (!Array.isArray(value[field]) || value[field].length>10000) throw new Error('Invalid Form 206 choices.');
+    for (const choice of value[field]) {
+      if (!choice || typeof choice.id!=='string' || !/^206-[1-9][0-9]*$/.test(choice.id)
+        || typeof choice.label!=='string' || !choice.label.trim() || choice.label.length>255
+        || seenGlobal.has(choice.id)) throw new Error('Unverified or duplicated Form 206 identity.');
+      for (const [key,max] of [['email',320],['address',2000]]) {
+        const item=choice[key];
+        if (item!==undefined && item!==null && (typeof item!=='string' || item.length>max))
+          throw new Error('Invalid Form 206 contact details.');
+      }
+      seenGlobal.add(choice.id);
+    }
+  }
+  return value;
+}
+
 function normalized(path,value) {
+  if (path==='architectLookupId' || path==='structuralEngineerLookupId') {
+    if (value==='' || value==null) return null;
+    if (typeof value!=='string' || !/^206-[1-9][0-9]*$/.test(value))
+      throw new Error('Choose a verified Form 206 contact.');
+    return value;
+  }
+  if (GC_COMPANY_PATHS.has(path)) {
+    if (value === null || value === undefined) return null; // revert to Form 140
+    if (typeof value !== 'string' || value.length > 1000) throw new Error('Invalid GC project contact value.');
+    return value; // even empty string is an explicit project-only blank
+  }
   if (path==='gcLookupId') {
     if (value==='' || value==null) return null;
     if (typeof value!=='string' || !/^140-[1-9][0-9]*$/.test(value)) throw new Error('Choose a verified GC.');

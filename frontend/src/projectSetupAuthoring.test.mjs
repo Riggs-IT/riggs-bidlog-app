@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {applyDraftChanges,awardCompleted,buildDraftChanges,currentAwardReference,mayAuthor,openSetup,requestSetup,
-  setupError,setPath,validateDraft,validateEditReceipt} from './projectSetupAuthoring.mjs';
+  setupError,setPath,validateDraft,validateEditReceipt,createSetupOperationId} from './projectSetupAuthoring.mjs';
 const SID='00000000-0000-4000-8000-000000000001',CID='00000000-0000-4000-8000-000000000002',OID='00000000-0000-4000-8000-000000000003';
 const completed={action:'Awarded',finalStatus:'Awarded',transitionApplied:true,cloneCreationComplete:true,
   expectedCloneCount:0,createdCloneCount:0,sharePointItemId:101};
@@ -19,8 +19,9 @@ test('partial clone result never opens setup',()=>{
 });
 test('other terminal actions never open setup',()=>assert.equal(awardCompleted({...completed,action:'Lost'}),false));
 test('ADMIN only and no role inheritance',()=>{
- assert.equal(mayAuthor({appRole:'ADMIN'}),true);
- for(const role of ['OPERATIONS','MANAGEMENT_ADMIN','VIEWER','PM',''])assert.equal(mayAuthor({appRole:role}),false);
+ assert.equal(mayAuthor({appRole:'ADMIN',canReviewProjectSetup:true}),true);
+ assert.equal(mayAuthor({appRole:'ADMIN'}),false);
+ for(const role of ['OPERATIONS','MANAGEMENT_ADMIN','VIEWER','PM',''])assert.equal(mayAuthor({appRole:role,canReviewProjectSetup:true}),false);
 });
 test('create uses trusted context version not browser seed',async()=>{
  const calls=[];const request=async(path,options)=>{calls.push({path,options});return calls.length===1?ctx('CREATE_INITIAL'):saved();};
@@ -114,7 +115,7 @@ test('error text never instructs repeating award',()=>{
 test('editor save-and-later follows confirmed receipt; warnings and exact retry retained',()=>{
  const s=source('ProjectSetupEditor.jsx');
  assert.ok(s.indexOf('validateEditReceipt(response')<s.indexOf('if (leaveAfter) {onLeave();return;}'));
- assert.match(s,/pending.current=\{operationId:crypto.randomUUID\(\),expectedRevision:record.revision,changes\}/);
+ assert.match(s,/pending.current=\{operationId:createSetupOperationId\(\),expectedRevision:record.revision,changes\}/);
  assert.match(s,/if \(!unknown\) pending.current=null/);
  assert.match(s,/beforeunload/);assert.match(s,/window.confirm/);
  assert.match(s,/Copy original Bid Notes into Comments/);assert.match(s,/current \? `\$\{current\}\\n\\n\$\{notes\}` : notes/);
@@ -130,10 +131,35 @@ test('complete award wires to setup; partial keeps warning and never navigates',
 test('Awaiting resume only receives ADMIN callback; misleading directory count suppressed',()=>{
  const s=source('ActiveProjectsWorkspace.jsx');assert.match(s,/onResume=\{canEdit && onSetupIntentChanged/);
  assert.match(s,/!showAwaiting &&\s*\(\s*<div className="bid-log-heading-actions">\s*<div className="bid-log-workspace-count"/);
- assert.match(source('ProjectSetupAwaitingPanel.jsx'),/Continue setup/);
+ assert.match(source('ProjectSetupAwaitingPanel.jsx'),/project-setup-draft-row is-clickable/);
 });
 test('manual awarded recovery exists, protected by role and unsaved state',()=>{
  const s=source('BidLogOutcomeEditDrawer.jsx');assert.match(s,/role === 'ADMIN' && outcomeStatus === 'Awarded'/);
  assert.match(s,/disabled=\{saving \|\| hasUnsavedChanges\}/);
  assert.match(s,/Start \/ continue project setup/);
+});
+
+test('draft operation IDs use native randomUUID when supported',()=>{
+ assert.equal(createSetupOperationId({randomUUID:()=>OID}),OID);
+});
+test('draft operation IDs work securely on LAN HTTP without randomUUID',()=>{
+ let calls=0;
+ const id=createSetupOperationId({getRandomValues(bytes){
+   calls++;assert.equal(bytes.length,16);
+   for (let i=0;i<bytes.length;i++) bytes[i]=i;
+   return bytes;
+ }});
+ assert.equal(calls,1);
+ assert.equal(id,'00010203-0405-4607-8809-0a0b0c0d0e0f');
+ assert.match(id,/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+});
+test('draft IDs fail closed if secure randomness is unavailable',()=>{
+ assert.throws(()=>createSetupOperationId({}),error=>error.code==='project_setup_random_unavailable');
+ assert.match(setupError({code:'project_setup_random_unavailable'}),/secure draft operation ID/);
+});
+test('open operation ID failures are handled, not left in opening state',()=>{
+ const editor=source('ProjectSetupEditor.jsx');
+ assert.match(editor,/setBusy\(true\);setError\(null\);setChoices\(null\);setReference\(null\);setReferenceError\(null\);\s*try \{\s*openOperation\.current \|\|= createSetupOperationId\(\);/);
+ assert.match(editor,/pending\.current=\{operationId:createSetupOperationId\(\)/);
+ assert.doesNotMatch(editor,/crypto\.randomUUID\(\)/);
 });

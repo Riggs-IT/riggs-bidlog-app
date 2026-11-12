@@ -1,20 +1,24 @@
-import {useCallback,useEffect,useRef,useState} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import useGcReference from './useGcReference.js';
 import FloatingEditorShell from './FloatingEditorShell.jsx';
 import ProjectSetupIdentityPicker from './ProjectSetupIdentityPicker.jsx';
+import DesignTeamContactDetails from './DesignTeamContactDetails.jsx';
+import ProjectSetupGcCompany from './ProjectSetupGcCompany.jsx';
+import {gcContactContextHasData} from './projectSetupGcCompany.mjs';
+import {GcProjectTeam,RiggsProjectTeam} from './ProjectSetupTeamSections.jsx';
 import {setupReadiness} from './projectSetupReadiness.mjs';
 import {applyDraftChanges,buildDraftChanges,currentAwardReference,mayAuthor,openSetup,readPath,requestSetup,
-  setPath,setupError,validateDraft,validateEditReceipt,validateIdentityDirectory} from './projectSetupAuthoring.mjs';
+  setPath,setupError,validateDraft,validateEditReceipt,validateIdentityDirectory,createSetupOperationId,validateForm206Directory} from './projectSetupAuthoring.mjs';
 
 const PROJECT_TYPES = ['Tilt','CIP','PRE','SITE','Other'];
 const PURPOSES = ['RET','OFF','PAR','IND','EDU','MED','RES','MIX','DAT','STG','SIDE'];
-const CONTACT = [['name','Name'],['office','Office phone'],['mobile','Mobile phone'],['email','Email']];
 
 export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
   const [record,setRecord] = useState(null);
   const [form,setForm] = useState(null);
   const [touched,setTouched] = useState(new Set());
   const [choices,setChoices] = useState(null);
-  const [busy,setBusy] = useState(false);
+  const [busy,setBusy] = useState(() => Boolean(intent && mayAuthor(user)));
   const [error,setError] = useState(null);
   const [notice,setNotice] = useState(null);
   const [reference,setReference] = useState(null);
@@ -24,7 +28,14 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
   const [directoryError,setDirectoryError] = useState(null);
   const [directoryBusy,setDirectoryBusy] = useState(false);
   const [directoryRetry,setDirectoryRetry] = useState(0);
+  const [form206Directory,setForm206Directory] = useState(null);
+  const [form206Busy,setForm206Busy] = useState(false);
+  const [form206Error,setForm206Error] = useState(false);
   const [uncertain,setUncertain] = useState(false);
+  const [checklistOpen,setChecklistOpen] = useState(false);
+  const haloTimer = useRef(null);
+  const haloNode = useRef(null);
+  const checklistRef = useRef(null);
   const [conflict,setConflict] = useState(false);
   const controller = useRef(null);
   const sequence = useRef(0);
@@ -33,23 +44,37 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
   const openOperation = useRef(null);
   const dirty = touched.size > 0;
   const author = mayAuthor(user);
+  const maySeeDraftDetails = ['ADMIN','MANAGEMENT_ADMIN'].includes(String(user?.appRole || '').trim().toUpperCase());
   const readiness=setupReadiness(form||{},directory);
+  const {items:form140Options,loading:form140Loading,error:form140Error}=useGcReference(author);
+  const selectedForm140=useMemo(()=>{
+    if (!form?.gcLookupId || !Array.isArray(form140Options)) return null;
+    const matches=form140Options.filter(row=>row.cognitoLookupId===form.gcLookupId);
+    return matches.length===1?matches[0]:null;
+  },[form?.gcLookupId,form140Options]);
+  useEffect(()=>()=>{if(haloTimer.current) window.clearTimeout(haloTimer.current);},[]);
+  useEffect(()=>{
+    if(!checklistOpen) return;
+    const onOutside=event=>{if(!checklistRef.current?.contains(event.target)) setChecklistOpen(false);};
+    document.addEventListener('pointerdown',onOutside);
+    return ()=>document.removeEventListener('pointerdown',onOutside);
+  },[checklistOpen]);
 
   const load = useCallback(async (selection = intent) => {
     if (!mayAuthor(user)) return;
     controller.current?.abort();
     const abort = new AbortController();controller.current=abort;
     const seq = ++sequence.current;
-    openOperation.current ||= crypto.randomUUID();
     setBusy(true);setError(null);setChoices(null);setReference(null);setReferenceError(null);
     try {
+      openOperation.current ||= createSetupOperationId();
       const result = await openSetup(selection,{operationId:openOperation.current,signal:abort.signal});
       if (seq !== sequence.current || abort.signal.aborted) return;
       if (result.context) {setChoices(result.context);setRecord(null);return;}
       setReference(result.reference || null);
       setRecord(result.setup);setForm(structuredClone(result.setup.values));
       setTouched(new Set());setConflict(false);setUncertain(false);pending.current=null;
-      setNotice('Draft ready. Fill what you know now and save when you are ready.');
+      setNotice(null);
       onSaved?.(result.setup.setupId);
     } catch (cause) {
       if (seq !== sequence.current || abort.signal.aborted) return;
@@ -75,13 +100,39 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
   },[record?.setupId,author,directoryRetry]);
 
   useEffect(() => {
+    if (!record?.setupId || !author) {setForm206Directory(null);return;}
+    const abort=new AbortController();
+    setForm206Busy(true);setForm206Error(false);setForm206Directory(null);
+    requestSetup('/api/project-setups/authoring/form206',{signal:abort.signal})
+      .then(data=>{if (!abort.signal.aborted) setForm206Directory(validateForm206Directory(data));})
+      .catch(()=>{if (!abort.signal.aborted) {setForm206Directory(null);setForm206Error(true);}})
+      .finally(()=>{if (!abort.signal.aborted) setForm206Busy(false);});
+    return ()=>abort.abort();
+  },[record?.setupId,author,directoryRetry]);
+
+  useEffect(() => {
     if (!dirty && !uncertain && !busy) return;
     const warn = event => {event.preventDefault();event.returnValue='';};
     window.addEventListener('beforeunload',warn);
     return () => window.removeEventListener('beforeunload',warn);
   },[dirty,uncertain,busy]);
 
+  function goToSection(sectionId) {
+    const target=document.getElementById(sectionId);
+    setChecklistOpen(false);
+    if(!target) return;
+    haloNode.current?.classList.remove('setup-section-halo');
+    if(haloTimer.current) window.clearTimeout(haloTimer.current);
+    target.scrollIntoView({behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'});
+    target.classList.add('setup-section-halo');haloNode.current=target;
+    haloTimer.current=window.setTimeout(()=>{target.classList.remove('setup-section-halo');haloNode.current=null;},1500);
+  }
   function change(path,value) {
+    if (path==='gcLookupId' && form?.gcLookupId!==value && gcContactContextHasData(form?.gcContactInfo)) {
+      setError('This draft already has company-specific GC contacts. Changing the verified contractor requires a separate contact-history review; no changes were saved.');
+      return;
+    }
+    setError(null);
     setForm(current=>setPath(current,path,value));
     setTouched(previous=>new Set([...previous,path]));
     setNotice(null);
@@ -109,7 +160,7 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
           else setNotice('No changes to save.');
           return;
         }
-        pending.current={operationId:crypto.randomUUID(),expectedRevision:record.revision,changes};
+        pending.current={operationId:createSetupOperationId(),expectedRevision:record.revision,changes};
       }
       const body=pending.current;
       sent=true;
@@ -200,7 +251,6 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
       <div>
         <span className="section-kicker">AWARDED GC</span>
         <strong>{reference?.gcSourceLabel || 'Reference not loaded'}</strong>
-        <small>The awarded GC is shown for reference until the verified GC selector is connected.</small>
       </div>
       <button type="button" className="secondary-button" disabled={referenceBusy||busy} onClick={()=>void loadReference()}>
         {referenceBusy?'Loading…':reference?'Refresh reference':'Load reference'}
@@ -210,19 +260,34 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
 
   return <FloatingEditorShell eyebrow="PROJECT SETUP" title={record?.values.jobName || 'Project setup'}
     subtitle={record ? 'Project setup in progress' : 'Opening project setup'}
-    backLabel="Project Setup" onClose={leave} saving={busy}
-    className="bid-log-edit-drawer project-setup-editor" bodyClassName="bid-log-edit-body project-setup-body"
+    backLabel="Drafts" onClose={leave} saving={busy}
+    className="bid-log-edit-drawer project-setup-editor" bodyClassName="bid-log-edit-body project-setup-body" scrollSurface
+    headerActions={record && <div ref={checklistRef} className="project-setup-checklist-anchor"
+      onKeyDownCapture={event=>{if(event.key==='Escape' && checklistOpen){event.stopPropagation();setChecklistOpen(false);}}}>
+      <button type="button" className="project-setup-status-badge project-setup-checklist-toggle"
+        aria-expanded={checklistOpen} aria-controls="project-setup-checklist-popover"
+        onClick={()=>setChecklistOpen(v=>!v)}>Draft · {readiness.filled}/{readiness.total}</button>
+      {checklistOpen && <div id="project-setup-checklist-popover" role="group" aria-label="Setup checklist"
+        className="project-setup-checklist-popover">
+        <div className="project-setup-checklist-title"><strong>Setup checklist</strong><small>Review only · save incomplete drafts</small></div>
+        {readiness.items.map(item=><button type="button" className="project-setup-check-item" key={item.field}
+          onClick={()=>goToSection(item.sectionId)}>
+          <span className={item.filled&&!item.unverified?'is-done':'is-pending'} aria-hidden="true">{item.filled&&!item.unverified?'✓':'○'}</span>
+          <span>{item.label}</span><small>{item.unverified?'Verify':item.filled?'Done':'To do'}</small>
+        </button>)}
+        <small className="project-setup-checklist-disclaimer">This is not Form 19 creation approval.</small>
+      </div>}
+    </div>}
     footer={<footer className="bid-log-edit-footer floating-editor-footer">
       <div className="floating-editor-footer-status">
-        <small>{dirty?'Unsaved changes':record?'All confirmed changes are saved.':'No draft has been confirmed on this page.'}</small>
+        <small>{dirty?'Unsaved changes':record?'All changes saved':busy?'Opening draft…':'Draft not loaded'}</small>
       </div>
       <div className="bid-log-edit-footer-actions">
-        <button type="button" className="secondary-button" onClick={leave} disabled={busy}>Back to Project Setup</button>
         {record && author && <>
           <button type="button" className="secondary-button" onClick={()=>void save(false)} disabled={busy||conflict}>
             {uncertain?'Retry exact save':'Save draft'}</button>
-          <button type="button" className="primary-button" onClick={()=>void save(true)} disabled={busy||conflict}>
-            {busy?'Saving…':'Save & close'}</button>
+          <button type="button" className="bid-log-save-button project-setup-save-close" onClick={()=>void save(true)} disabled={busy||conflict}>
+            {busy?'Saving…':'Save & Close'}</button>
         </>}
       </div></footer>}>
     {!author && <p role="alert" className="bid-edit-message error">You do not have permission to edit project setup drafts.</p>}
@@ -231,6 +296,9 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
       {!record && <button className="secondary-button" disabled={busy} onClick={()=>void load()}>Retry setup only</button>}
       {record && <button className="secondary-button" disabled={busy} onClick={reload}>Reload saved draft</button>}
     </div>}
+    {!busy && !record && !choices && !error && author && (
+      <p role="status" className="bid-edit-message">No draft loaded. Return to Drafts to select a project.</p>
+    )}
     {notice && <p role="status" className="bid-edit-message project-setup-notice">{notice}</p>}
     {choices && <section className="bid-edit-section project-setup-choice-card">
       {sectionHeading('PROJECT RELATIONSHIP',choices.mode==='CHOOSE_CHILD'?'Choose the project setup to continue':'Review the existing project relationship',
@@ -241,162 +309,164 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
       </div>
     </section>}
     {record && form && <>
-      <div className="project-setup-status-card" role="status">
-        <div className="project-setup-status-copy">
-          <span className="project-setup-status-badge">Draft</span>
-          <div><strong>Not yet sent to Cognito</strong><small>Fill what you know now. You can save this setup and return later.</small></div>
-        </div>
-        <details className="project-setup-draft-details">
-          <summary>Draft details</summary>
-          <div><span>Revision</span><strong>{record.revision}</strong></div>
-          <div><span>Job number</span><strong>Not assigned</strong></div>
-          <div><span>Setup ID</span><strong>{record.setupId}</strong></div>
-        </details>
-      </div>
-      <section className="project-setup-readiness" aria-label="Project Setup progress">
-        <div><strong>Setup checklist: {readiness.filled}/{readiness.total}</strong>
-          <small>Advisory only. Drafts can be saved with missing information; this does not create a Cognito job.</small></div>
-        {readiness.missing.length>0 && <p>Suggested next fields: {readiness.missing.join(' · ')}</p>}
-        {readiness.unverified.length>0 && <p role="status">Previously saved selections need verification: {readiness.unverified.join(', ')}.</p>}
-      </section>
       <fieldset className="cognito-general-fields project-setup-fields" disabled={busy||uncertain||conflict||!author}>
-        <section className="bid-edit-section project-setup-section">
-          {sectionHeading('PROJECT','Project overview','Start with the project identity from the awarded bid. These values stay editable while the setup is a draft.')}
-          <div className="bid-edit-grid project-setup-overview-grid">
-            {input('jobName','Project name','text',{className:'project-setup-span-2'})}
-            {select('jobType','Project type',PROJECT_TYPES)}
-            {select('purpose','Purpose',PURPOSES)}
-            {input('numberOfBuildings','Building count','number')}
-          </div>
-        </section>
+        <div className="project-setup-layout-pair">
+          <section className="bid-edit-section project-setup-section" id="setup-section-basics">
+            {sectionHeading('PROJECT','Project basics')}
+            <div className="bid-edit-grid project-setup-basic-grid">
+              {input('jobName','Project name','text',{className:'project-setup-span-full'})}
+              {select('jobType','Project type',PROJECT_TYPES)}
+              {select('purpose','Purpose',PURPOSES)}
+              {input('numberOfBuildings','Building count','number')}
+              <div className="bid-edit-field project-setup-contract-type-preview"><span>Contract type</span><strong>LOI</strong><small>Cognito default. Draft storage mapping pending; no selection is saved yet.</small></div>
+            </div>
 
-        <section className="bid-edit-section project-setup-section">
-          {sectionHeading('LOCATION & SCHEDULE','Where and when','Use the expected project location and startup timing. These can be refined later.')}
-          <div className="bid-edit-grid project-setup-location-grid">
-            {input('streetAddress','Street address','text',{className:'project-setup-span-2'})}
-            {input('city','City')}{input('state','State')}{input('postalCode','ZIP / postal code')}
-            {input('anticipatedStartDate','Anticipated start','date')}
-            {input('estimatedDurationMonths','Estimated duration (months)','number')}
-          </div>
-        </section>
+          </section>
+          <section className="bid-edit-section project-setup-section" id="setup-section-location">
+            {sectionHeading('LOCATION','Location & schedule')}
+            <div className="bid-edit-grid project-setup-location-grid">
+              {input('streetAddress','Street address','text',{className:'project-setup-span-full'})}
+              {input('city','City')}{input('state','State')}{input('postalCode','ZIP / postal code')}
+              {input('anticipatedStartDate','Anticipated start','date')}
+              {input('estimatedDurationMonths','Duration (months)','number')}
+            </div>
+          </section>
+        </div>
 
-        <section className="bid-edit-section project-setup-section">
-          {sectionHeading('CONTRACT & ADMINISTRATION','Project commercial setup','Capture the operational startup values needed for the project record. Foundation financial values remain separate.')}
-          <div className="bid-edit-grid project-setup-commercial-grid">
-            {input('contractAmount','Starting contract amount','text',{decimal:true,help:'Operational setup value; this does not replace Foundation contract values.'})}
+        <section className="bid-edit-section project-setup-section project-setup-contract-section" id="setup-section-contract">
+          {sectionHeading('CONTRACT','Contract & Administration')}
+          <div className="bid-edit-grid project-setup-contract-grid">
+            {input('contractAmount','Starting contract amount','text',{decimal:true})}
             {input('retentionPercent','Retention (%)','text',{decimal:true})}
             {input('bond','Bond')}{input('parcel','Parcel')}
           </div>
+          <small className="setup-team-empty">Starting values only. Accounting confirmation is a later approval step.</small>
         </section>
 
-        <section className="bid-edit-section project-setup-section">
-          {sectionHeading('SCOPE & REQUIREMENTS','Project details','Add the information Operations will use to identify, organize, and prepare the job.')}
-          <div className="bid-edit-grid project-setup-requirements-grid">
-            {yesNo('leed','LEED')}{yesNo('ndaRequired','NDA required')}
-            {textarea('scope','Scope',{rows:5,className:'project-setup-span-full'})}
-            {textarea('keywords','Job keywords',{rows:3,className:'project-setup-span-full'})}
-          </div>
-          <div className="cognito-general-buildings project-setup-buildings">
-            <div className="cognito-general-row-heading"><div><strong>Building names</strong><small>Name individual buildings when this project has more than one.</small></div>
-              <button type="button" className="secondary-button" onClick={()=>change('buildingNames',[...(form.buildingNames||[]),{cognitoRowId:null,name:''}])}
-                disabled={(form.buildingNames||[]).length>=100}>Add building</button></div>
-            {(form.buildingNames||[]).map((row,index)=><div className="cognito-general-building" key={row.cognitoRowId || `new-${index}`}>
-              <label className="bid-edit-field"><span>Building {index+1}</span><input value={row.name??''} maxLength={1000}
-                onChange={event=>change('buildingNames',form.buildingNames.map((value,i)=>i===index?{...value,name:event.target.value}:value))}/></label>
-              <button type="button" className="secondary-button" onClick={()=>change('buildingNames',form.buildingNames.filter((_,i)=>i!==index))}>Remove</button>
-            </div>)}
+        <section className="bid-edit-section project-setup-section project-setup-parties-section" id="setup-section-parties">
+          {sectionHeading('PARTIES','Owner / Developer & General Contractor')}
+          <div className="project-setup-parties-grid">
+            <div className="project-setup-party-block">
+              <h4>Owner / Developer</h4>
+              <div className="bid-edit-grid project-setup-party-fields">
+                {input('projectOwnerInfo.name','Owner / developer name','text',{className:'project-setup-span-full'})}
+                {input('projectOwnerInfo.streetAddress','Street address','text',{className:'project-setup-span-full'})}
+                {input('projectOwnerInfo.cityStateZip','City / state / ZIP')}
+                {input('projectOwnerInfo.email','Email','email')}
+              </div>
+              <small className="setup-team-empty">These four Owner fields save to this project's SQL draft; they do not change a master contact.</small>
+            </div>
+            <div className="project-setup-party-block">
+              <h4>General Contractor</h4>
+              {awardedGcReference()}
+              {directoryBusy && <p role="status" className="cognito-general-note">Loading verified references…</p>}
+              {directoryError && <div role="alert" className="cognito-general-note">{directoryError}
+                <button type="button" className="secondary-button" disabled={directoryBusy} onClick={()=>setDirectoryRetry(v=>v+1)}>Retry</button></div>}
+              <div className="bid-edit-grid project-setup-party-fields">
+                <div className="project-setup-span-full"><ProjectSetupIdentityPicker label="Verified General Contractor" value={form.gcLookupId}
+                  options={directory?.gcs||[]} disabled={!directory||directoryBusy}
+                  onChange={value=>change('gcLookupId',value)}/></div>
+                <ProjectSetupGcCompany contactInfo={form.gcContactInfo} source={selectedForm140}
+                  sourcePending={form140Loading} sourceUnavailable={Boolean(form140Error)}
+                  onChange={(key,value)=>change(`gcContactInfo.${key}`,value)}/>
+                {form140Error && <small role="status" className="project-setup-span-full">GC directory unavailable; company details not inferred.</small>}
+              </div>
+              {referenceError && <p role="alert" className="cognito-general-note">{referenceError}</p>}
+            </div>
           </div>
         </section>
 
-        <section className="bid-edit-section project-setup-section">
-          {sectionHeading('GENERAL CONTRACTOR','GC contacts','Keep project-level GC contact information together. The awarded GC name remains a reference until its verified lookup is connected.')}
-          {awardedGcReference()}
-          {directoryBusy && <p role="status" className="cognito-general-note">Loading verified reference directories…</p>}
-          {directoryError && <div role="alert" className="cognito-general-note">{directoryError}
-            <button type="button" className="secondary-button" disabled={directoryBusy} onClick={()=>setDirectoryRetry(v=>v+1)}>Retry directory</button></div>}
-          <div className="bid-edit-grid project-setup-overview-grid">
-            <ProjectSetupIdentityPicker label="Verified general contractor" value={form.gcLookupId}
-              options={directory?.gcs||[]} disabled={!directory||directoryBusy}
-              help="Cognito Form 140 ID, not a typed name. The awarded bid label is reference only."
-              onChange={value=>change('gcLookupId',value)}/>
+        <section className="bid-edit-section project-setup-section project-setup-design-section" id="setup-section-design">
+          {sectionHeading('DESIGN','Design Team')}
+          <div className="project-setup-design-grid">
+            <div className="design-team-person-card">
+              <ProjectSetupIdentityPicker label="Architect of record" value={form.architectLookupId}
+                options={form206Directory?.architects||[]} unavailable={!form206Directory}
+                disabled={busy||form206Busy} onChange={value=>change('architectLookupId',value)}
+                help={form206Error?'Directory unavailable; existing draft selection unchanged.':''}/>
+              <DesignTeamContactDetails
+                contact={form206Directory?.architects?.find(row=>row.id===form.architectLookupId)||null}
+                pending={form206Busy}
+                source="Form 206 SQL mirror · shown for reference" />
+            </div>
+            <div className="design-team-person-card">
+              <ProjectSetupIdentityPicker label="Structural engineer of record" value={form.structuralEngineerLookupId}
+                options={form206Directory?.engineers||[]} unavailable={!form206Directory}
+                disabled={busy||form206Busy} onChange={value=>change('structuralEngineerLookupId',value)}
+                help={form206Error?'Directory unavailable; existing draft selection unchanged.':''}/>
+              <DesignTeamContactDetails
+                contact={form206Directory?.engineers?.find(row=>row.id===form.structuralEngineerLookupId)||null}
+                pending={form206Busy}
+                source="Form 206 SQL mirror · shown for reference" />
+            </div>
           </div>
-          {referenceError && <p role="alert" className="cognito-general-note">{referenceError}</p>}
-          <div className="project-setup-contact-section">
-            <div className="project-setup-contact-block">
-              <h4>Company</h4>
-              <div className="bid-edit-grid project-setup-contact-grid">
-                {input('gcContactInfo.generalEmail','General email')}{input('gcContactInfo.streetAddress','Street address')}
-                {input('gcContactInfo.cityStateZip','City / state / ZIP','text',{className:'project-setup-span-2'})}
+          {form206Error && <div className="design-team-directory-warning" role="status">
+            <span>Form 206 contacts could not be loaded. Saved design identities are unchanged.</span>
+            <button type="button" className="secondary-button" disabled={form206Busy}
+              onClick={()=>setDirectoryRetry(value=>value+1)}>Retry contacts</button>
+          </div>}
+          <small className="setup-team-empty">Only the verified 206-N identity is saved in this SQL draft. Cognito's AOR/SEOR address and email formulas remain provider-owned.</small>
+        </section>
+
+        <div className="project-setup-layout-pair project-setup-teams-pair" id="setup-section-riggs">
+          <section className="bid-edit-section project-setup-section">
+            {sectionHeading('TEAM','Riggs Team')}
+            <RiggsProjectTeam values={form} directory={directory} onChange={change}
+              disabled={busy||uncertain||conflict||!author||directoryBusy}/>
+          </section>
+          <section className="bid-edit-section project-setup-section">
+            {sectionHeading('TEAM','GC Team')}
+            <GcProjectTeam value={form.gcContactInfo} savedValue={record.values.gcContactInfo}
+              onChange={members=>change('gcContactInfo.teamMembers',members)}
+              disabled={busy||uncertain||conflict||!author}/>
+          </section>
+        </div>
+
+        <section className="bid-edit-section project-setup-section project-setup-scope-section" id="setup-section-scope">
+          {sectionHeading('SCOPE','Scope & Notes')}
+          <div className="project-setup-scope-grid">
+            <div className="project-setup-scope-column">
+              <h4>Scope & requirements</h4>
+              <div className="bid-edit-grid project-setup-requirements-grid">
+                {yesNo('leed','LEED')}{yesNo('ndaRequired','NDA required')}
+                {textarea('scope','Scope',{rows:5,className:'project-setup-span-full'})}
+                {textarea('keywords','Job keywords',{rows:3,className:'project-setup-span-full',
+                  help:'Legacy Cognito JobFilterKeywords is calculated from ControlProjectName; verify this field before Form 19 creation.'})}
+              </div>
+              <div className="cognito-general-buildings project-setup-buildings">
+                <div className="cognito-general-row-heading"><div><strong>Buildings</strong></div>
+                  <button type="button" className="secondary-button" onClick={()=>change('buildingNames',[...(form.buildingNames||[]),{cognitoRowId:null,name:''}])}
+                    disabled={(form.buildingNames||[]).length>=100}>Add building</button></div>
+                {(form.buildingNames||[]).map((row,index)=><div className="cognito-general-building" key={row.cognitoRowId || `new-${index}`}>
+                  <label className="bid-edit-field"><span>Building {index+1}</span><input value={row.name??''} maxLength={1000}
+                    onChange={event=>change('buildingNames',form.buildingNames.map((value,i)=>i===index?{...value,name:event.target.value}:value))}/></label>
+                  <button type="button" className="secondary-button" onClick={()=>change('buildingNames',form.buildingNames.filter((_,i)=>i!==index))}>Remove</button>
+                </div>)}
               </div>
             </div>
-            <div className="project-setup-contact-block">
-              <h4>GC Project Manager</h4>
-              <div className="bid-edit-grid project-setup-contact-grid">{CONTACT.map(([path,label])=>input(`gcContactInfo.pm.${path}`,label))}</div>
+            <div className="project-setup-scope-column project-setup-notes-section">
+              <h4>Notes</h4>
+              {textarea('comments','Project setup comments',{rows:8})}
+              <div className="project-setup-source-notes">
+                <details><summary>Original Bid Notes</summary>
+                  <p className="bid-log-read-only-note project-setup-source-note-text">{record.originatingBid.notes || 'No bid notes recorded.'}</p>
+                  <button type="button" className="secondary-button" disabled={!record.originatingBid.notes} onClick={()=>{
+                    const notes=record.originatingBid.notes;const current=form.comments || '';
+                    change('comments',current ? `${current}\n\n${notes}` : notes);
+                  }}>Copy original Bid Notes into Comments</button>
+                </details>
+                <details><summary>Current Awarded Bid Notes</summary>
+                  {!reference && <button type="button" className="secondary-button" disabled={referenceBusy} onClick={()=>void loadReference()}>
+                    {referenceBusy?'Loading…':'Load current reference'}</button>}
+                  {reference && <><p className="bid-log-read-only-note project-setup-source-note-text">{reference.bidNotes || 'No notes in the current awarded-bid reference.'}</p>
+                    <button type="button" className="secondary-button" disabled={!reference.bidNotes} onClick={()=>{
+                      const notes=reference.bidNotes;const current=form.comments || '';
+                      change('comments',current ? `${current}\n\n${notes}` : notes);
+                    }}>Copy current Bid Notes into Comments</button></>}
+                  {referenceError && <p role="alert" className="cognito-general-note">{referenceError}</p>}
+                </details>
+              </div>
             </div>
-            <div className="project-setup-contact-block">
-              <h4>GC Superintendent</h4>
-              <div className="bid-edit-grid project-setup-contact-grid">{CONTACT.map(([path,label])=>input(`gcContactInfo.superintendent.${path}`,label))}</div>
-            </div>
-          </div>
-        </section>
-
-        <section className="bid-edit-section project-setup-section">
-          {sectionHeading('RIGGS TEAM & DESIGN','Verified project relationships',
-            'Assignments here are draft references only. They do not alter current staffing or create a Cognito entry.')}
-          <div className="bid-edit-grid project-setup-overview-grid">
-            {[
-              ['pmITUserId','Riggs PM'],['apmITUserId','Riggs APM'],
-              ['peITUserId','Riggs PE'],['surveyorITUserId','Surveyor'],
-            ].map(([path,label])=><ProjectSetupIdentityPicker key={path} label={label}
-              value={form[path]} options={directory?.itUsers||[]} disabled={!directory||directoryBusy}
-              onChange={value=>change(path,value)}/>)}
-            <ProjectSetupIdentityPicker label="Superintendent" value={form.superintendentEid}
-              options={directory?.employees||[]} disabled={!directory||directoryBusy}
-              onChange={value=>change('superintendentEid',value)}/>
-            <ProjectSetupIdentityPicker label="Foremen" multiple value={form.foremanEids}
-              options={directory?.employees||[]} disabled={!directory||directoryBusy}
-              onChange={value=>change('foremanEids',value)}/>
-            <ProjectSetupIdentityPicker label="Additional team members" multiple value={form.additionalMemberITUserIds}
-              options={directory?.itUsers||[]} disabled={!directory||directoryBusy}
-              onChange={value=>change('additionalMemberITUserIds',value)}/>
-            <ProjectSetupIdentityPicker label="Architect of record" value={form.architectLookupId}
-              options={[]} unavailable help="Needs the Cognito AOR reference source; no unverified IDs are accepted."/>
-            <ProjectSetupIdentityPicker label="Structural engineer of record" value={form.structuralEngineerLookupId}
-              options={[]} unavailable help="Needs the Cognito SEOR reference source; no unverified IDs are accepted."/>
-          </div>
-        </section>
-
-        <section className="bid-edit-section project-setup-section">
-          {sectionHeading('OWNER','Project owner','Record the owner information used for the project setup.')}
-          <div className="bid-edit-grid project-setup-owner-grid">
-            {input('projectOwnerInfo.name','Owner name')}{input('projectOwnerInfo.email','Owner email')}
-            {input('projectOwnerInfo.streetAddress','Street address')}{input('projectOwnerInfo.cityStateZip','City / state / ZIP')}
-          </div>
-        </section>
-
-        <section className="bid-edit-section project-setup-section project-setup-notes-section">
-          {sectionHeading('NOTES','Project setup comments','Keep working project notes here. Bid notes remain source references unless you explicitly copy them.')}
-          {textarea('comments','Project setup comments',{rows:6})}
-          <div className="project-setup-source-notes">
-            <details>
-              <summary>Original Bid Notes</summary>
-              <p className="bid-log-read-only-note project-setup-source-note-text">{record.originatingBid.notes || 'No bid notes recorded.'}</p>
-              <button type="button" className="secondary-button" disabled={!record.originatingBid.notes} onClick={()=>{
-                const notes=record.originatingBid.notes;const current=form.comments || '';
-                change('comments',current ? `${current}\n\n${notes}` : notes);
-              }}>Copy original Bid Notes into Comments</button>
-            </details>
-            <details>
-              <summary>Current Awarded Bid Notes</summary>
-              {!reference && <button type="button" className="secondary-button" disabled={referenceBusy} onClick={()=>void loadReference()}>
-                {referenceBusy?'Loading…':'Load current reference'}</button>}
-              {reference && <><p className="bid-log-read-only-note project-setup-source-note-text">{reference.bidNotes || 'No notes in the current awarded-bid reference.'}</p>
-                <button type="button" className="secondary-button" disabled={!reference.bidNotes} onClick={()=>{
-                  const notes=reference.bidNotes;const current=form.comments || '';
-                  change('comments',current ? `${current}\n\n${notes}` : notes);
-                }}>Copy current Bid Notes into Comments</button></>}
-              {referenceError && <p role="alert" className="cognito-general-note">{referenceError}</p>}
-            </details>
           </div>
         </section>
       </fieldset>

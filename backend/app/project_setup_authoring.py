@@ -7,6 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Path, Request
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr, model_validator
 from .auth import CurrentUser, get_current_user
+from .project_setup_reviewers import require_project_setup_reviewer
 from .config import get_settings
 from . import data_api
 
@@ -57,7 +58,8 @@ class EditRequest(BaseModel):
                    "projectOwnerInfo", "bond", "parcel", "scope", "leed", "ndaRequired",
                    "keywords", "comments", "buildingNames", "gcLookupId", "pmITUserId",
                    "peITUserId", "apmITUserId", "superintendentEid", "foremanEids",
-                   "additionalMemberITUserIds", "surveyorITUserId"}
+                   "additionalMemberITUserIds", "surveyorITUserId",
+                   "architectLookupId", "structuralEngineerLookupId"}
         if not set(self.changes).issubset(allowed):
             raise ValueError("unsupported draft field")
         return self
@@ -68,6 +70,7 @@ def _admin(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
         raise HTTPException(403, "bid_log_admin_required")
     if type(user.eid) is not int or user.eid <= 0:
         raise HTTPException(401, "missing_authenticated_user")
+    require_project_setup_reviewer(user)
     return user
 
 
@@ -101,6 +104,11 @@ def _respond(call):
 @router.get("/identities")
 def setup_identity_directory(current_user: CurrentUser = Depends(_admin)):
     return _respond(lambda: data_api.get_project_setup_identity_directory(actor_eid=current_user.eid))
+
+
+@router.get("/form206")
+def form206_directory(current_user: CurrentUser = Depends(_admin)):
+    return _respond(lambda: data_api.get_project_setup_form206_directory(actor_eid=current_user.eid))
 
 
 @router.get("/awards/{bid_id}")

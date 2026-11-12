@@ -1,0 +1,23 @@
+/* The Project Setup identity picker owns the combobox and chip styles.
+   Only the inline Active Project membership controls need additional layout. */
+.additional-members-inline {
+  min-width: 0;
+  margin-top: 14px;
+  padding-top: 12px;
+}
+.additional-members-inline > .project-setup-identity-picker {
+  max-width: 520px;
+}
+.additional-members-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.additional-members-warning {
+  display: block;
+  margin-top: 8px;
+  color: var(--warning, #f0bc73);
+  font-size: 12px;
+}

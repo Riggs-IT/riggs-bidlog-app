@@ -33,16 +33,16 @@ class BFFTests(unittest.TestCase):
         main.app.dependency_overrides[get_current_user]=lambda:USER
         self.addCleanup(main.app.dependency_overrides.clear)
         self.client=TestClient(main.app);self.addCleanup(self.client.close)
-    def test_admin_and_ops_server_eid_used_not_browser_header(self):
-        for role in ('ADMIN','OPERATIONS'):
-            main.app.dependency_overrides[get_current_user]=lambda role=role:replace(USER,app_role=role)
-            with self.subTest(role=role), patch.object(main,'get_ops_project_setup_summary',return_value=sample()) as reader:
+    def test_private_reviewers_server_eid_used_not_browser_header(self):
+        for eid in (2021,176):
+            main.app.dependency_overrides[get_current_user]=lambda eid=eid:replace(USER,eid=eid)
+            with self.subTest(eid=eid), patch.object(main,'get_ops_project_setup_summary',return_value=sample()) as reader:
                 r=self.client.get(PATH,headers={'X-Riggs-User-EID':'999','X-Riggs-Passive-Read':'1'})
                 self.assertEqual(r.status_code,200)
-                self.assertEqual(reader.call_args.kwargs['actor_eid'],2021)
+                self.assertEqual(reader.call_args.kwargs['actor_eid'],eid)
                 self.assertIn('no-store',r.headers['cache-control'])
     def test_no_management_admin_or_viewer(self):
-        for role in ('MANAGEMENT_ADMIN','VIEWER','PM',''):
+        for role in ('MANAGEMENT_ADMIN','OPERATIONS','VIEWER','PM',''):
             main.app.dependency_overrides[get_current_user]=lambda role=role:replace(USER,app_role=role)
             with self.subTest(role=role),patch.object(main,'get_ops_project_setup_summary') as reader:
                 self.assertEqual(self.client.get(PATH).status_code,403)

@@ -177,6 +177,7 @@ export default function ActiveProjectCognitoSections({
   error,
   onRetry,
   jobListId,
+  compact = false,
 }) {
   if (loading) {
     return (
@@ -242,6 +243,113 @@ export default function ActiveProjectCognitoSections({
   const submittals = Array.isArray(detailing.requiredSubmittals)
     ? detailing.requiredSubmittals.filter(Boolean)
     : [];
+
+  if (compact) return (
+    <div className="active-project-compact-sections">
+      <section className="bid-edit-section information-sheet-section active-project-compact-reference">
+        <SectionHeading
+          kicker="PROJECT REFERENCE"
+          title="Buildings & Contract Details"
+          note="Read-only values from the Cognito Job Information Sheet"
+        />
+        <Subheading>Buildings & Contract Reference</Subheading>
+        <div className="bid-edit-grid three-column information-sheet-grid">
+          <ReadField label="Building count" value={payload.numberOfBuildings} />
+          <ReadField label="Building names" value={buildings.map(item => item.name).join('\n')} wide />
+          <ReadField
+            label="Contract type"
+            value={payload.contract === true ? 'Contract' : payload.contract === false ? 'LOI' : 'Not verified'}
+          />
+          <ReadField label="JIS contract amount (not Foundation total)" value={moneyValue(contract.contractAmount)} />
+          <ReadField label="JIS retention" value={contract.retention} />
+          <ReadField label="Bond" value={contract.bond} />
+          <ReadField label="Parcel" value={contract.parcel} />
+          <ReadField label="OH&P" value={contract.ohp} />
+        </div>
+        <Subheading>Lender</Subheading>
+        <div className="bid-edit-grid three-column information-sheet-grid">
+          <ReadField label="Lender" value={lender.lender} />
+          <ReadField label="Lender street" value={lender.lenderStreet} />
+          <ReadField label="Lender city / state / ZIP" value={lender.lenderCityStateZip} />
+        </div>
+      </section>
+
+      <section className="bid-edit-section information-sheet-section active-project-compact-reference">
+        <SectionHeading
+          kicker="MATERIALS"
+          title="Authorized Suppliers & Contracts"
+          note="Supplier amounts and attachment metadata only; no file actions"
+        />
+        <div className="cognito-supplier-sheet">
+          <div className="cognito-supplier-row header" aria-hidden="true">
+            <div>Category</div><div>Supplier</div><div>Amount</div><div>Contract attachment</div>
+          </div>
+          <SupplierRow title="Primary Concrete" supplier={suppliers.primaryConcreteSupplier}
+            amount={suppliers.pcsAmount} files={suppliers.pcsContract} />
+          <SupplierRow title="Secondary Concrete" supplier={suppliers.secondaryConcreteSupplier}
+            amount={suppliers.scsAmount} files={suppliers.scsContract} />
+          <SupplierRow title="Primary Aggregate" supplier={suppliers.primaryAggregateSupplier}
+            amount={suppliers.pasAmount} files={suppliers.pasContract} />
+          <SupplierRow title="Secondary Aggregate" supplier={suppliers.secondaryAggregateSupplier}
+            amount={suppliers.sasAmount} files={suppliers.sasContract} />
+          <SupplierRow title="Rebar" supplier={suppliers.rebarSupplier}
+            amount={suppliers.rebarAmount} files={suppliers.rebarContract} />
+          <SupplierRow title="Sitework" supplier={suppliers.siteSubcontractor}
+            amount={suppliers.siteAmount} files={suppliers.siteworkContract} />
+          <SupplierRow title="Patching" supplier={suppliers.patchingSubcontractor}
+            amount={suppliers.patchingAmount} files={suppliers.patchingContract} />
+        </div>
+      </section>
+
+      <section className="bid-edit-section information-sheet-section active-project-compact-reference">
+        <SectionHeading
+          kicker="CONCRETE"
+          title="Concrete & Mix Designs"
+          note="Supplier selections and approved mix references"
+        />
+        <div className="bid-edit-grid two-column information-sheet-grid">
+          <ReadField label="Primary supplier" value={concrete.primarySupplier} />
+          <ReadField label="Secondary supplier" value={concrete.secondarySupplier} />
+          <ReadField label="Primary approved mix designs"
+            value={concrete.approvedMixDesignsPrimarySupplier} wide />
+          <ReadField label="Secondary approved mix designs"
+            value={concrete.approvedMixDesignsSecondarySupplier} wide />
+        </div>
+      </section>
+
+      <section className="bid-edit-section information-sheet-section active-project-compact-reference">
+        <SectionHeading
+          kicker="OPERATIONS"
+          title="Detailing & Submittals"
+          note="Current Cognito values; editing authority to be mapped"
+        />
+        <div className="bid-edit-grid two-column information-sheet-grid">
+          <ReadField label="Required submittals" value={submittals.join('\n')} wide />
+          <ReadField label="Comments for detailing" value={detailing.commentsForDetailing} wide />
+        </div>
+      </section>
+
+      <section className="bid-edit-section information-sheet-section active-project-compact-reference">
+        <SectionHeading
+          kicker="STARTUP & CLOSEOUT"
+          title="Additional Operational Details"
+          note="Current JIS data; field staffing and SQL Additional Members remain separate"
+        />
+        <div className="bid-edit-grid three-column information-sheet-grid">
+          <ReadField label="Estimated duration"
+            value={startup.estimatedDuration == null ? null : `${startup.estimatedDuration} months`} />
+          <ReadField label="Surveyor" value={lookupLabel(startup.surveyor)} />
+          <ReadField label="Team distribution list" value={startup.teamDistributionList} />
+          <ReadField label="Dropbox folder name" value={startup.dropboxFolderName} />
+          <ReadField label="Date project completed" value={startup.dateProjectCompleted} />
+          <BooleanField label="Warranty work" value={startup.warrantyWork} />
+          <BooleanField label="Retention collected" value={startup.retentionCollected} />
+          <ReadField label="Closeout additional email 1" value={closeout.additionalEmail1} />
+          <ReadField label="Closeout additional email 2" value={closeout.additionalEmail2} />
+        </div>
+      </section>
+    </div>
+  );
 
   return (
     <>

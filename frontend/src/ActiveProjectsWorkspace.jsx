@@ -960,7 +960,7 @@ export default function ActiveProjectsWorkspace({
   ).toUpperCase();
   const canEdit = role === 'ADMIN';
   const managementPreview = role === 'MANAGEMENT_ADMIN';
-  const canReadSetupSummary = role === 'ADMIN' || role === 'OPERATIONS';
+  const canReadSetupSummary = user?.canReviewProjectSetup === true;
 
   return (
     <main className={`page-shell active-projects-workspace${managementPreview ? ' management-admin-preview' : ''}`}>
@@ -973,11 +973,11 @@ export default function ActiveProjectsWorkspace({
       <div className="page-heading bid-log-workspace-heading">
         <div>
           <div className="eyebrow">
-            PROJECT DIRECTORY
+            PROJECTS
           </div>
           <h1>Active Projects</h1>
           <p>
-            Review active project ownership and core job details, with completed projects available on demand. Select a project to view its information.
+            Projects, team and schedule.
           </p>
         </div>
 
@@ -992,15 +992,14 @@ export default function ActiveProjectsWorkspace({
         )}
       </div>
 
-      {canReadSetupSummary && <div className="active-project-filter-actions" aria-label="Project workspace views">
-        <button type="button" className="secondary-button"
-          aria-pressed={!showAwaiting} onClick={() => setShowAwaiting(false)}>Project Directory</button>
-        <button type="button" className="secondary-button"
-          aria-pressed={showAwaiting} onClick={() => {setEditProjectId(null);setShowAwaiting(true);}}>
-          Awaiting information
-        </button>
-      </div>}
-      {canEdit && setupIntent && <ProjectSetupEditor
+      {showAwaiting && canReadSetupSummary && (
+        <div className="project-setup-back-nav">
+          <button type="button" className="secondary-button" onClick={() => setShowAwaiting(false)}>
+            Projects
+          </button>
+        </div>
+      )}
+      {canEdit && canReadSetupSummary && setupIntent && <ProjectSetupEditor
         key={setupIntent.setupId || `award:${setupIntent.originalBidLogId}`}
         intent={setupIntent} user={user}
         onLeave={() => {onSetupIntentChanged?.(null);setShowAwaiting(true);setSetupRefresh(v=>v+1);}}
@@ -1096,18 +1095,28 @@ export default function ActiveProjectsWorkspace({
 
       <section className="panel bid-log-workspace-filters">
         <div className="bid-log-filter-toolbar active-project-filter-toolbar">
-          <button
-            type="button"
-            className={`project-directory-completed-toggle${
-              showCompleted ? ' active' : ''
-            }`}
-            aria-pressed={showCompleted}
-            onClick={() => setShowCompleted(current => !current)}
-          >
-            <span className="project-directory-completed-dot" aria-hidden="true" />
-            Completed
-          </button>
-
+          <div className="active-project-view-controls" role="group" aria-label="Project views">
+            <button
+              type="button"
+              className={`project-directory-completed-toggle${showCompleted ? ' active' : ''}`}
+              aria-pressed={showCompleted}
+              onClick={() => setShowCompleted(current => !current)}
+            >
+              <span className="project-directory-completed-dot" aria-hidden="true" />
+              Completed
+            </button>
+            {canReadSetupSummary && (
+              <button
+                type="button"
+                className="project-directory-completed-toggle project-setup-view-toggle"
+                aria-pressed={showAwaiting}
+                onClick={() => { setEditProjectId(null); setShowAwaiting(true); }}
+              >
+                <span className="project-directory-completed-dot" aria-hidden="true" />
+                Drafts
+              </button>
+            )}
+          </div>
           <div className="active-project-filter-actions">
             <button
               type="button"
@@ -1308,7 +1317,7 @@ export default function ActiveProjectsWorkspace({
         <div className="bid-log-list-heading">
           <div>
             <span className="section-kicker">PROJECT LIST</span>
-            <h2>Project Directory</h2>
+            <h2>Projects</h2>
           </div>
           <span className="bid-log-read-only-note">
             {loading

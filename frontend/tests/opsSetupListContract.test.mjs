@@ -34,10 +34,10 @@ test('reject more rows than requested page limit',()=>{
   assert.throws(()=>validateOpsSetupList({...data(),items:[row,row]},1));
 });
 
-test('Ops narrow navigation remains separate from broader project-directory access',()=>{
+test('Private reviewer navigation remains separate from broader project-directory access',()=>{
   const source=readFileSync(new URL('../src/App.jsx',import.meta.url),'utf8');
   assert.match(source, /canViewSetupSummary\s*=\s*canViewBidLog/);
-  assert.match(source, /\['ADMIN', 'OPERATIONS'\]/);
+  assert.match(source, /user\?\.canReviewProjectSetup === true/);
   assert.match(source, /canViewSetupSummary\s*&&\s*!canViewProjects/);
   assert.match(source, /activePage === 'project-setups'/);
 });

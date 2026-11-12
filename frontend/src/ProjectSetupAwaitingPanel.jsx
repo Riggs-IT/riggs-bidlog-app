@@ -79,9 +79,8 @@ export default function ProjectSetupAwaitingPanel({onResume = null}) {
     <section className="panel bid-log-list-card active-project-list-card project-setup-awaiting-panel" aria-label="Project setup drafts">
       <div className="bid-log-list-heading project-setup-list-heading">
         <div>
-          <span className="section-kicker">PROJECT SETUP</span>
-          <h2>Setup drafts</h2>
-          <p className="bid-log-read-only-note">Awarded projects that are still being prepared. Drafts can be saved before a job number or Cognito entry exists.</p>
+          <h2>Set Up Drafts</h2>
+          <p className="bid-log-read-only-note">Awarded Projects that need more information. They will not post on JIS until filled out.</p>
         </div>
         <div className="active-project-filter-actions">
           <button type="button" className="secondary-button" disabled={loading}
@@ -96,13 +95,21 @@ export default function ProjectSetupAwaitingPanel({onResume = null}) {
         {loading && <p role="status" className="bid-log-read-only-note">Refreshing project setups…</p>}
         <div className="bid-log-table-wrap active-project-table-wrap">
           <table className="bid-log-table active-project-table project-setup-draft-table">
-            <thead><tr><th scope="col">Project</th><th scope="col">Status</th><th scope="col">Updated</th><th scope="col">Action</th></tr></thead>
-            <tbody>{items.map(item => <tr key={item.setupId}>
+            <thead><tr><th scope="col">Project</th><th scope="col">Status</th><th scope="col">Updated</th></tr></thead>
+            <tbody>{items.map(item => <tr key={item.setupId}
+              className={onResume ? 'project-setup-draft-row is-clickable' : 'project-setup-draft-row'}
+              tabIndex={onResume ? 0 : undefined}
+              role={onResume ? 'button' : undefined}
+              aria-label={onResume ? `Open setup for ${item.jobName?.trim() || 'Unnamed project'}` : undefined}
+              onClick={onResume ? () => onResume(item.setupId) : undefined}
+              onKeyDown={onResume ? event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();onResume(item.setupId);
+                }
+              } : undefined}>
               <td><strong>{item.jobName?.trim() || 'Unnamed project'}</strong></td>
-              <td><span className="project-setup-list-status">Draft in progress</span></td>
+              <td><span className="project-setup-list-status">In progress</span></td>
               <td>{dateLabel(item.updatedAtUTC)}</td>
-              <td>{onResume ? <button type="button" className="secondary-button" onClick={() => onResume(item.setupId)}>Continue setup</button>
-                : <span className="bid-log-read-only-note">In progress</span>}</td>
             </tr>)}</tbody>
           </table>
         </div>
@@ -110,9 +117,6 @@ export default function ProjectSetupAwaitingPanel({onResume = null}) {
           disabled={loading} onClick={() => void load(nextCursor)}>Load more</button>}
         {!nextCursor && <p className="bid-log-read-only-note">{items.length} setup {items.length===1?'draft':'drafts'} shown</p>}
       </>}
-      <p className="bid-log-read-only-note project-setup-list-footnote">{onResume
-        ? 'Continue a saved draft to add or update project information.'
-        : 'This view is read-only. Project setup editing is limited to authorized Bid Log administrators.'}</p>
     </section>
   );
 }

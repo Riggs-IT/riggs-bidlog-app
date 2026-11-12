@@ -5,7 +5,7 @@ const EMPTY = Object.freeze([]);
 
 /** IDs identify choices within the picker. The existing API still persists names. */
 export default function BidLogGeneralContractorSelect({ value = EMPTY, options = EMPTY, loading = false,
-  error = null, disabled = false, multiple = true, onChange, onRetry, onOpen }) {
+  error = null, disabled = false, multiple = true, compact = false, onChange, onRetry, onOpen }) {
   const rootRef = useRef(null);
   const searchRef = useRef(null);
   const listId = useId();
@@ -71,7 +71,7 @@ export default function BidLogGeneralContractorSelect({ value = EMPTY, options =
     }
   }
   return (
-    <div ref={rootRef} className={`bid-gc-picker${open ? ' open' : ''}${disabled ? ' disabled' : ''}`}>
+    <div ref={rootRef} className={`bid-gc-picker${open ? ' open' : ''}${disabled ? ' disabled' : ''}${compact ? ' compact' : ''}`}>
       <div className="bid-gc-picker-control" onClick={openPicker}>
         {selected.length > 0 && <div className="bid-gc-selected-list">
           {selected.map(entry => <span key={entry.record ? `gc:${entry.record.id}` : `raw:${nameKey(entry.name)}`}
