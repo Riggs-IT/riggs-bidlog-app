@@ -94,10 +94,12 @@ export function summarizeAdministration(overview, terminalIncidents = null) {
   }
 
   if (terminalIncidents?.availability === 'AVAILABLE') {
-    if (wholeCount(terminalIncidents.totalCount) && terminalIncidents.totalCount > 0) {
-      issues.push(issue('terminal-incidents', 'Bid lifecycle exceptions recorded',
-        `${formatCount(terminalIncidents.blockedCount)} blocked and ${formatCount(terminalIncidents.uncertainCount)} uncertain watchdog incidents. These are recorded events, not verified current open cases.`,
+    if (wholeCount(terminalIncidents.openCount) && terminalIncidents.openCount > 0) {
+      issues.push(issue('terminal-incidents', 'Bid lifecycle cases need review',
+        `${formatCount(terminalIncidents.openCount)} unresolved cases require review; previously recorded resolved cases are retained in the history.`,
         'administration-terminal-incidents'));
+    } else if (!wholeCount(terminalIncidents.openCount)) {
+      unknown.push('Live lifecycle case resolution counts not verified');
     }
   } else if (terminalIncidents?.availability === 'UNAVAILABLE') {
     unknown.push('Bid lifecycle watchdog incident evidence unavailable');

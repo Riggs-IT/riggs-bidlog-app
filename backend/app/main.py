@@ -5,6 +5,8 @@ from datetime import date, datetime
 import json
 from urllib.parse import urlencode, urlparse
 from uuid import UUID, uuid4
+from pydantic import BaseModel, ConfigDict
+from typing import Literal
 
 from authlib.integrations.starlette_client import (
     OAuth,
@@ -33,6 +35,11 @@ from starlette.concurrency import run_in_threadpool
 from .administration import get_administration_overview, get_administration_presence, get_administration_leaderboard, get_administration_queue_events
 from .administration_sources import get_administration_source_evidence
 from .administration_terminal import get_administration_terminal_incidents
+from .administration_terminal_actions import (
+    get_administration_terminal_cases, get_administration_terminal_case_review,
+    send_administration_terminal_case_action, AdministrationCaseConflict,
+    AdministrationCaseNotFound,
+)
 from .power_platform_routes import create_power_platform_router
 from .power_platform_vault import VerifiedPrincipal
 from .power_platform_sso import bootstrap_owner_connection
@@ -1470,6 +1477,67 @@ def administration_terminal_incidents(
         ),
         headers={"Cache-Control": "no-store, private"},
     )
+
+
+
+
+class _IncidentActionBody(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    requestId: UUID
+    operation: Literal['VERIFY_RESOLVED','RETRY_NOT_PURSUING']
+    confirmed: Literal[True]
+
+
+def _admin_mutation_origin(request: Request) -> None:
+    if request.headers.get('origin') != 'https://bidlog.riggscompanies.com':
+        raise HTTPException(status_code=403,detail='invalid_request_origin')
+    if request.headers.get('content-type','').split(';')[0].strip().lower() != 'application/json':
+        raise HTTPException(status_code=415,detail='json_body_required')
+
+
+@app.get('/api/admin/terminal-cases')
+def administration_terminal_cases(
+    current_user: CurrentUser = Depends(require_administration_owner),
+):
+    try:
+        return get_administration_terminal_cases(owner_eid=current_user.eid,
+                                                 owner_oid=current_user.entra_object_id)
+    except Exception:
+        raise HTTPException(status_code=503,detail='administration_cases_unavailable') from None
+
+
+@app.get('/api/admin/terminal-cases/{incident_id}/review')
+def administration_terminal_case_review(
+    incident_id: int = FastAPIPath(gt=0),
+    current_user: CurrentUser = Depends(require_administration_owner),
+):
+    try:
+        return get_administration_terminal_case_review(incident_id=incident_id,
+                           owner_eid=current_user.eid,owner_oid=current_user.entra_object_id)
+    except AdministrationCaseNotFound:
+        raise HTTPException(status_code=404,detail='incident_not_found') from None
+    except Exception:
+        raise HTTPException(status_code=503,detail='administration_case_review_unavailable') from None
+
+
+@app.post('/api/admin/terminal-cases/{incident_id}/action')
+def administration_terminal_case_action(
+    body: _IncidentActionBody,
+    request: Request,
+    incident_id: int = FastAPIPath(gt=0),
+    current_user: CurrentUser = Depends(require_administration_owner),
+):
+    _admin_mutation_origin(request)
+    try:
+        return send_administration_terminal_case_action(incident_id=incident_id,
+             owner_eid=current_user.eid,owner_oid=current_user.entra_object_id,
+             request_id=body.requestId,operation=body.operation)
+    except AdministrationCaseConflict as exc:
+        raise HTTPException(status_code=409,detail=exc.reason) from None
+    except AdministrationCaseNotFound:
+        raise HTTPException(status_code=404,detail='incident_not_found') from None
+    except Exception:
+        raise HTTPException(status_code=503,detail='administration_case_action_unavailable') from None
 
 
 @app.get("/api/admin/source-evidence")

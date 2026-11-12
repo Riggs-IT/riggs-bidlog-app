@@ -6,25 +6,31 @@ import {summarizeAdministration} from '../src/administrationSignals.mjs';
 const component = readFileSync(new URL('../src/AdministrationTerminalIncidents.jsx', import.meta.url), 'utf8');
 const backend = readFileSync(new URL('../../backend/app/main.py', import.meta.url), 'utf8');
 
-test('Incident panel uses only owner-gated passive GET and no mutation controls', () => {
-  assert.match(component, /fetch\('\/api\/admin\/terminal-incidents'/);
+test('Incident panel is two-tab archive with on-demand readback', () => {
+  assert.match(component, /fetch\('\/api\/admin\/terminal-cases'/);
   assert.match(component, /'X-Riggs-Passive-Read': '1'/);
   assert.match(component, /document.visibilityState !== 'visible'/);
   assert.match(component, /controller\.abort\(\)/);
-  assert.doesNotMatch(component, /method: 'POST'|rawError|lastError|fetch\(.*webhook/);
-  assert.match(backend, /@app.get\("\/api\/admin\/terminal-incidents"\)[\s\S]*?Depends\(require_administration_owner\)/);
+  assert.match(component, /Needs review/);
+  assert.match(component, /Resolved/);
+  assert.match(component, /onClick=\{\(\) => openReview\(row\)\}/);
+  assert.match(component, /fetch\(`\/api\/admin\/terminal-cases\/\$\{row\.incidentId\}\/review`/);
 });
 
-test('History is presented as recorded evidence rather than live worker health', () => {
-  assert.match(component, /Incidents are audit receipts, not a live source scan/);
-  assert.match(component, /captureHealth === 'NOT_COLLECTED'/);
-  assert.match(component, /No incident records have been captured/);
-  assert.match(component, /lastGood\.incidents\.map\(/);
+test('No blind force endpoint; all mutation controls have server-derived actor and confirmation', () => {
+  assert.match(component, /review\.canVerifyResolve/);
+  assert.match(component, /review\.canRetry/);
+  assert.match(component, /review\.retryEnabled/);
+  assert.match(component, /requestId: crypto\.randomUUID\(\)/);
+  assert.match(component, /window\.confirm\(message\)/);
+  assert.doesNotMatch(component, /force:\s*true|rawError|lastError|fetch\(.*webhook/);
+  assert.match(backend, /Depends\(require_administration_owner\)/);
+  assert.match(backend, /_admin_mutation_origin\(request\)/);
 });
 
-test('Blocked and uncertain incident counts generate one attention entry', () => {
-  const result = summarizeAdministration({}, {availability:'AVAILABLE',totalCount:4,blockedCount:3,uncertainCount:1});
-  const incident = result.issues.filter(x => x.id === 'terminal-incidents');
-  assert.equal(incident.length, 1);
-  assert.match(incident[0].description, /3 blocked and 1 uncertain/);
+test('Only unresolved historic cases appear in Needs Attention', () => {
+  const old = summarizeAdministration({}, {availability:'AVAILABLE',openCount:0,resolvedCount:10});
+  assert.equal(old.issues.filter(x => x.id === 'terminal-incidents').length,0);
+  const open = summarizeAdministration({}, {availability:'AVAILABLE',openCount:3,resolvedCount:10});
+  assert.equal(open.issues.filter(x => x.id === 'terminal-incidents').length,1);
 });

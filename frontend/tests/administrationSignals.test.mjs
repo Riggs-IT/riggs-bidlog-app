@@ -96,12 +96,12 @@ test('new presentation remains read-only with original passive and owner-protect
 });
 
 
-test('recorded terminal incidents appear in Needs attention; unknown incident reads are not healthy zero', () => {
+test('unresolved lifecycle cases appear in Needs attention; resolved history does not', () => {
   const data = base();
-  const found = summarizeAdministration(data, {availability: 'AVAILABLE', totalCount: 2, blockedCount: 1, uncertainCount: 1});
+  const found = summarizeAdministration(data, {availability: 'AVAILABLE', totalCount: 2, openCount: 1, resolvedCount: 1});
   assert.equal(found.issues.at(-1).id, 'terminal-incidents');
-  assert.match(found.issues.at(-1).description, /1 blocked and 1 uncertain/);
+  assert.match(found.issues.at(-1).description, /1 unresolved cases/);
   const unknown = summarizeAdministration(data, {availability: 'UNAVAILABLE'});
   assert.match(unknown.unknown.at(-1), /watchdog incident evidence unavailable/);
-  assert.deepEqual(summarizeAdministration(data, {availability: 'AVAILABLE', totalCount: 0, blockedCount: 0, uncertainCount: 0}), {issues: [], unknown: []});
+  assert.deepEqual(summarizeAdministration(data, {availability: 'AVAILABLE', totalCount: 0, openCount: 0, resolvedCount: 0}), {issues: [], unknown: []});
 });
