@@ -22,7 +22,7 @@ test('Active Project first-row geometry and contractor form reduce vertical dead
   assert.match(active, /<Field label="Project Name">/);
   assert.match(active, /<Field label="Street Address">/);
   assert.match(active, /<Field label="City \/ State \/ ZIP">/);
-  assert.match(active, /<ActiveProjectGcPicker value=\{form.gc\|\|''\}/);
+  assert.match(active, /<ActiveProjectGcPicker value=\{displayGcName\}/);
   assert.match(gc, /export function ActiveProjectGcPicker/);
   assert.match(gc, /canonicalDirectory\(options\)/);
   assert.match(css,/\.active-project-edit-drawer \.active-project-core-grid/);

@@ -1,5 +1,7 @@
 import {notifyWriteAuthFailure} from './writeAuthRecovery.mjs';
 import useGcReference from './useGcReference.js';
+import {activeProjectGcContact} from './gcReference.js';
+import DesignTeamContactDetails from './DesignTeamContactDetails.jsx';
 import {
   useCallback,
   useEffect,
@@ -163,7 +165,8 @@ export default function ActiveProjectEditDrawer({
   const role = String(user?.appRole || '').toUpperCase();
   const canEdit = role === 'ADMIN';
   const managementPreview = role === 'MANAGEMENT_ADMIN';
-  const { items: gcOptions, loading: gcOptionsLoading, error: gcOptionsError, refresh: retryGcOptions } = useGcReference(canEdit);
+  const canInspectChoices = canEdit || managementPreview;
+  const { items: gcOptions, loading: gcOptionsLoading, error: gcOptionsError, refresh: retryGcOptions } = useGcReference(canInspectChoices);
   const { editor, state, dirty: hasUnsavedChanges, needsReview } = useActiveProjectEditor(jobListId, canEdit);
   const payload = state.project.snapshot;
   const form = state.project.draft;
@@ -173,6 +176,7 @@ export default function ActiveProjectEditDrawer({
   const [cognitoPayload, setCognitoPayload] = useState(null);
   const [cognitoLoading, setCognitoLoading] = useState(true);
   const [cognitoError, setCognitoError] = useState(null);
+  const [gcPreviewName, setGcPreviewName] = useState(null);
   const [designDirectory, setDesignDirectory] = useState(null);
   const [designDirectoryLoading, setDesignDirectoryLoading] = useState(false);
   const [designDirectoryError, setDesignDirectoryError] = useState(false);
@@ -231,8 +235,10 @@ export default function ActiveProjectEditDrawer({
     }
   }, [jobListId]);
 
+  useEffect(() => { setGcPreviewName(null); }, [jobListId]);
+
   useEffect(() => {
-    if (!canEdit || !jobListId) {
+    if (!canInspectChoices || !jobListId) {
       setDesignDirectory(null);
       setDesignDirectoryError(false);
       return undefined;
@@ -254,7 +260,7 @@ export default function ActiveProjectEditDrawer({
         if (!controller.signal.aborted) setDesignDirectoryLoading(false);
       });
     return () => controller.abort();
-  }, [canEdit, jobListId, designDirectoryRetry]);
+  }, [canInspectChoices, jobListId, designDirectoryRetry]);
 
   useEffect(() => {
     referenceEpoch.current += 1;
@@ -399,6 +405,18 @@ export default function ActiveProjectEditDrawer({
   const purposes = Array.isArray(lookups.purposes)
     ? lookups.purposes
     : [];
+  // Management choices remain local-only; ADMIN continues through the existing
+  // typed project editor. Never save preview GC text as an identity.
+  const displayGcName = managementPreview && gcPreviewName !== null
+    ? gcPreviewName : (form?.gc || '');
+  const isGcPreview = managementPreview && gcPreviewName !== null
+    && gcPreviewName !== (form?.gc || '');
+  const gcContact = activeProjectGcContact({
+    selectedName: displayGcName,
+    savedName: form?.gc,
+    options: gcOptions,
+    cognito: cognitoPayload?.generalContractor,
+  });
 
   return (
     <FloatingEditorShell
@@ -537,13 +555,17 @@ export default function ActiveProjectEditDrawer({
                     <small className="setup-team-empty">Cognito reference · Accounting ownership pending</small>
                   </div>
                   <div className="active-project-party-block"><h4>General Contractor</h4>
-                    <div className="bid-edit-grid active-project-gc-fields">
-                      <ActiveProjectGcPicker value={form.gc||''} options={gcOptions}
-                        loading={gcOptionsLoading} error={gcOptionsError} disabled={!canEdit||saving}
-                        onChange={value=>updateField('gc',value)} onRetry={retryGcOptions}/>
-                      <div className="active-project-readonly-field"><span>GC Email</span><strong>{cognitoPayload?.generalContractor?.gcEmail||'—'}</strong></div>
-                      <div className="active-project-readonly-field"><span>GC Address</span><strong>{cognitoPayload?.generalContractor?.gcStreetAddress||'—'}</strong></div>
-                      <div className="active-project-readonly-field"><span>GC City / State / ZIP</span><strong>{cognitoPayload?.generalContractor?.gcCityStateZip||'—'}</strong></div>
+                    <div className="design-team-person-card">
+                      <ActiveProjectGcPicker value={displayGcName} options={gcOptions}
+                        loading={gcOptionsLoading} error={gcOptionsError} disabled={!canInspectChoices||saving}
+                        onChange={value=>managementPreview ? setGcPreviewName(value) : updateField('gc',value)}
+                        onRetry={retryGcOptions} previewing={isGcPreview}/>
+                      <DesignTeamContactDetails
+                        contact={gcContact} showSource={false}/>
+                      {isGcPreview && <div className="design-team-preview-warning" role="status">
+                        <strong>Not saved · Preview only</strong>
+                        <button type="button" className="secondary-button" onClick={()=>setGcPreviewName(null)}>Revert</button>
+                      </div>}
                     </div>
                   </div>
                 </div>
@@ -565,7 +587,7 @@ export default function ActiveProjectEditDrawer({
                   directoryLoading={designDirectoryLoading}
                   directoryError={designDirectoryError}
                   onRetry={() => setDesignDirectoryRetry(value => value + 1)}
-                  editable={canEdit && !saving}/>
+                  editable={canInspectChoices && !saving}/>
               </section>
 
               <div className="active-project-layout-pair active-project-teams-pair">

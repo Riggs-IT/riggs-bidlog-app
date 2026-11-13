@@ -101,6 +101,43 @@ export function contractorTokens(value, directory) {
     .filter(token => { if (seen.has(token.key)) return false; seen.add(token.key); return true; });
 }
 
+/**
+ * Active Projects still writes a legacy GC name, not a verified 140-N ID.
+ * Use only a UNIQUE exact Form140 directory name for project-specific display.
+ * Old Cognito company details may be displayed only for the saved company,
+ * after independently matching the Cognito GC name/selection label.
+ * Never present the previous GC's details under an unsaved selection.
+ */
+export function activeProjectGcContact({selectedName, savedName, options = [], cognito = null}) {
+  const blank = Object.freeze({email: null, address: null, source: null});
+  const name = nameKey(selectedName);
+  if (!name || generalContractorNames(selectedName).length !== 1) return blank;
+  const matches = (Array.isArray(options) ? options : []).filter(row =>
+    row?.isActive !== false && row?.isActive !== 0 && nameKey(row?.name) === name);
+  if (matches.length > 1) return blank; // no arbitrarily chosen Form140 identity
+  if (matches.length === 1) {
+    const row = matches[0];
+    return {
+      email: String(row.email || '').trim() || null,
+      address: [row.streetAddress, row.cityStateZip].map(v => String(v || '').trim())
+        .filter(Boolean).join('\n') || null,
+      source: 'FORM140',
+    };
+  }
+  // Before a directory load (or for an unmatched historical company), fall
+  // back to JIS values only when both proven display names still agree.
+  const saved = nameKey(savedName);
+  const jisNames = [cognito?.gcName, cognito?.selectGC?.label];
+  if (!saved || name !== saved ||
+      !jisNames.some(label => label && nameKey(label) === saved)) return blank;
+  return {
+    email: String(cognito?.gcEmail || '').trim() || null,
+    address: [cognito?.gcStreetAddress, cognito?.gcCityStateZip]
+      .map(v => String(v || '').trim()).filter(Boolean).join('\n') || null,
+    source: 'COGNITO_JIS',
+  };
+}
+
 // Preserve a selected legacy name when directory loading gives it a canonical key.
 export function canonicalFilterKey(value, directory) {
   return typeof value === 'string' && value.startsWith('raw:')

@@ -80,7 +80,7 @@ export function ActiveProjectOfficeTeam({values,people=[],onChange,disabled=fals
 // One search control, not the old selected-chip + separate search bar. Active
 // Project's typed writer still saves the company NAME. Never infer or replace
 // an existing name without an explicit directory selection.
-export function ActiveProjectGcPicker({value='',options=[],loading=false,error=null,disabled=false,onChange,onRetry}) {
+export function ActiveProjectGcPicker({value='',options=[],loading=false,error=null,disabled=false,onChange,onRetry,previewing=false}) {
   const root=useRef(null);
   const listId=useId();
   const [activeIndex,setActiveIndex]=useState(0);
@@ -114,7 +114,7 @@ export function ActiveProjectGcPicker({value='',options=[],loading=false,error=n
         onMouseEnter={()=>setActiveIndex(index)} onClick={()=>{onChange(row.name);setOpen(false);}}><strong>{row.name}</strong><small>{row.cityStateZip||row.streetAddress||'Verified directory company'}</small></button>)}
       {!loading && !error && !matches.length && <p>No matching verified GC.</p>}
     </div>}
-    {value && <small>Saved company: {value}</small>}
+    {value && !previewing && <small>Saved company: {value}</small>}
   </div>;
 }
 
