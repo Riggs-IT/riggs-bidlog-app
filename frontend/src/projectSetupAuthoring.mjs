@@ -29,7 +29,14 @@ export function createSetupOperationId(cryptoApi = globalThis.crypto) {
   const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
   return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
 }
-export function mayAuthor(user) {return user?.canReviewProjectSetup === true && String(user?.appRole || '').trim().toUpperCase() === 'ADMIN';}
+export function mayInspectSetup(user) {
+  return user?.canReviewProjectSetup === true
+    && ['ADMIN','MANAGEMENT_ADMIN'].includes(String(user?.appRole || '').trim().toUpperCase());
+}
+export function mayAuthor(user) {
+  return mayInspectSetup(user) && user?.canEditProjectSetup === true
+    && String(user?.appRole || '').trim().toUpperCase() === 'ADMIN';
+}
 export function awardCompleted(result) {
   return result?.action === 'Awarded' && result?.finalStatus === 'Awarded'
     && result?.transitionApplied === true && result?.cloneCreationComplete === true

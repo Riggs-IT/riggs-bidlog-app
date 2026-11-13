@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {applyDraftChanges,awardCompleted,buildDraftChanges,currentAwardReference,mayAuthor,openSetup,requestSetup,
-  setupError,setPath,validateDraft,validateEditReceipt,createSetupOperationId} from './projectSetupAuthoring.mjs';
+  setupError,setPath,validateDraft,validateEditReceipt,createSetupOperationId,mayInspectSetup} from './projectSetupAuthoring.mjs';
 const SID='00000000-0000-4000-8000-000000000001',CID='00000000-0000-4000-8000-000000000002',OID='00000000-0000-4000-8000-000000000003';
 const completed={action:'Awarded',finalStatus:'Awarded',transitionApplied:true,cloneCreationComplete:true,
   expectedCloneCount:0,createdCloneCount:0,sharePointItemId:101};
@@ -19,7 +19,9 @@ test('partial clone result never opens setup',()=>{
 });
 test('other terminal actions never open setup',()=>assert.equal(awardCompleted({...completed,action:'Lost'}),false));
 test('ADMIN only and no role inheritance',()=>{
- assert.equal(mayAuthor({appRole:'ADMIN',canReviewProjectSetup:true}),true);
+ assert.equal(mayAuthor({appRole:'ADMIN',canReviewProjectSetup:true,canEditProjectSetup:true}),true);
+ assert.equal(mayInspectSetup({appRole:'MANAGEMENT_ADMIN',canReviewProjectSetup:true}),true);
+ assert.equal(mayAuthor({appRole:'MANAGEMENT_ADMIN',canReviewProjectSetup:true,canEditProjectSetup:false}),false);
  assert.equal(mayAuthor({appRole:'ADMIN'}),false);
  for(const role of ['OPERATIONS','MANAGEMENT_ADMIN','VIEWER','PM',''])assert.equal(mayAuthor({appRole:role,canReviewProjectSetup:true}),false);
 });
@@ -128,8 +130,8 @@ test('complete award wires to setup; partial keeps warning and never navigates',
  assert.match(workspace,/event\?\.kind === 'award_complete' && mayAuthor\(user\)/);
  assert.match(workspace,/if \(event\?\.kind !== 'award_partial'\) setEditSelection\(null\)/);
 });
-test('Awaiting resume only receives ADMIN callback; misleading directory count suppressed',()=>{
- const s=source('ActiveProjectsWorkspace.jsx');assert.match(s,/onResume=\{canEdit && onSetupIntentChanged/);
+test('Awaiting opens a saved draft in management preview; misleading directory count suppressed',()=>{
+ const s=source('ActiveProjectsWorkspace.jsx');assert.match(s,/onResume=\{onSetupIntentChanged \?/);
  assert.match(s,/!showAwaiting &&\s*\(\s*<div className="bid-log-heading-actions">\s*<div className="bid-log-workspace-count"/);
  assert.match(source('ProjectSetupAwaitingPanel.jsx'),/project-setup-draft-row is-clickable/);
 });
@@ -159,7 +161,7 @@ test('draft IDs fail closed if secure randomness is unavailable',()=>{
 });
 test('open operation ID failures are handled, not left in opening state',()=>{
  const editor=source('ProjectSetupEditor.jsx');
- assert.match(editor,/setBusy\(true\);setError\(null\);setChoices\(null\);setReference\(null\);setReferenceError\(null\);\s*try \{\s*openOperation\.current \|\|= createSetupOperationId\(\);/);
+ assert.match(editor,/setBusy\(true\);setError\(null\);setChoices\(null\);setReference\(null\);setReferenceError\(null\);\s*try \{\s*if \(author\) openOperation\.current \|\|= createSetupOperationId\(\);/);
  assert.match(editor,/pending\.current=\{operationId:createSetupOperationId\(\)/);
  assert.doesNotMatch(editor,/crypto\.randomUUID\(\)/);
 });

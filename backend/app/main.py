@@ -52,7 +52,7 @@ from .auth import (
     suppress_unchanged_passive_cookie,
 )
 from .config import get_settings
-from .project_setup_reviewers import can_review_project_setup, require_project_setup_reviewer
+from .project_setup_reviewers import can_review_project_setup, can_edit_project_setup, require_project_setup_reviewer
 from .cognito_general import general_request
 from .data_api import (
     DataAPIConfigurationError,
@@ -1449,6 +1449,7 @@ def auth_me(
         current_user, request.session.get("entra_identity")
     )
     payload["canReviewProjectSetup"] = can_review_project_setup(current_user)
+    payload["canEditProjectSetup"] = can_edit_project_setup(current_user)
     return payload
 
 
@@ -2118,8 +2119,7 @@ def active_project_setup_draft_proxy(
     current_user: CurrentUser = Depends(get_current_user),
 ):
     _require_projects_workspace_access(current_user)
-    _require_project_editor(current_user)
-    require_project_setup_reviewer(current_user)  # Separate private two-reviewer gate.
+    require_project_setup_reviewer(current_user)  # ADMIN edit / MANAGEMENT_ADMIN read-only preview.
     if setup_id.int == 0:
         raise HTTPException(422, "project_setup_invalid_request")
     try:

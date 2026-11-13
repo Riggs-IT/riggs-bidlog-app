@@ -41,8 +41,15 @@ class BFFTests(unittest.TestCase):
                 self.assertEqual(r.status_code,200)
                 self.assertEqual(reader.call_args.kwargs['actor_eid'],eid)
                 self.assertIn('no-store',r.headers['cache-control'])
-    def test_no_management_admin_or_viewer(self):
-        for role in ('MANAGEMENT_ADMIN','OPERATIONS','VIEWER','PM',''):
+    def test_management_admin_can_read_summary_only(self):
+        main.app.dependency_overrides[get_current_user]=lambda:replace(USER,eid=176,app_role='MANAGEMENT_ADMIN')
+        with patch.object(main,'get_ops_project_setup_summary',return_value=sample()) as reader:
+            response=self.client.get(PATH)
+            self.assertEqual(response.status_code,200)
+            reader.assert_called_once_with(actor_eid=176,page_size=25,cursor=None)
+
+    def test_operations_and_viewer_still_denied(self):
+        for role in ('OPERATIONS','VIEWER','PM',''):
             main.app.dependency_overrides[get_current_user]=lambda role=role:replace(USER,app_role=role)
             with self.subTest(role=role),patch.object(main,'get_ops_project_setup_summary') as reader:
                 self.assertEqual(self.client.get(PATH).status_code,403)

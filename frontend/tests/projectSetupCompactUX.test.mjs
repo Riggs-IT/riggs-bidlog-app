@@ -16,7 +16,7 @@ test('Drafts moved beside Completed; top Project Directory/Awaiting navigation r
   assert.match(workspace,/Completed\s*<\/button>[\s\S]*?project-setup-view-toggle[\s\S]*?Drafts\s*<\/button>/);
   assert.doesNotMatch(workspace,/Project Directory<\/button>|Awaiting information<\/button>/);
   assert.match(workspace,/<h1>Active Projects<\/h1>/);
-  assert.match(workspace,/onResume=\{canEdit && onSetupIntentChanged/);
+  assert.match(workspace,/onResume=\{onSetupIntentChanged \?/);
 });
 
 test('Set Up Drafts is short, whole-row clickable for ADMIN, read-only for Operations',()=>{

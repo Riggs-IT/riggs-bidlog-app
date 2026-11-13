@@ -7,7 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Path, Request
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr, model_validator
 from .auth import CurrentUser, get_current_user
-from .project_setup_reviewers import require_project_setup_reviewer
+from .project_setup_reviewers import require_project_setup_reviewer, require_project_setup_editor
 from .config import get_settings
 from . import data_api
 
@@ -65,12 +65,14 @@ class EditRequest(BaseModel):
         return self
 
 
-def _admin(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
-    if str(user.app_role).strip().upper() != "ADMIN":
-        raise HTTPException(403, "bid_log_admin_required")
-    if type(user.eid) is not int or user.eid <= 0:
-        raise HTTPException(401, "missing_authenticated_user")
+def _reader(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
+    # Real actor comes from the signed Entra session, never a browser header.
     require_project_setup_reviewer(user)
+    return user
+
+
+def _admin(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
+    require_project_setup_editor(user)
     return user
 
 
@@ -102,12 +104,12 @@ def _respond(call):
 
 
 @router.get("/identities")
-def setup_identity_directory(current_user: CurrentUser = Depends(_admin)):
+def setup_identity_directory(current_user: CurrentUser = Depends(_reader)):
     return _respond(lambda: data_api.get_project_setup_identity_directory(actor_eid=current_user.eid))
 
 
 @router.get("/form206")
-def form206_directory(current_user: CurrentUser = Depends(_admin)):
+def form206_directory(current_user: CurrentUser = Depends(_reader)):
     return _respond(lambda: data_api.get_project_setup_form206_directory(actor_eid=current_user.eid))
 
 

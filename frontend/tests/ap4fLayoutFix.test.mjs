@@ -32,7 +32,7 @@ test('Active Project first-row geometry and contractor form reduce vertical dead
 });
 
 test('Project Setup is never a visually blank modal during loading and retains explicit errors', () => {
-  assert.match(setup,/const \[busy,setBusy\] = useState\(\(\) => Boolean\(intent && mayAuthor\(user\)\)\)/);
+  assert.match(setup,/const \[busy,setBusy\] = useState\(\(\) => Boolean\(intent && mayInspectSetup\(user\)\)\)/);
   assert.match(setup,/Opening project setup…/);
   assert.match(setup,/\{error && <div role="alert"/);
   assert.match(setup,/No draft loaded\. Return to Drafts/);

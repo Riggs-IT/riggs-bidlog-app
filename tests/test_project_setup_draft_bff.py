@@ -45,12 +45,16 @@ class DraftRouteTests(unittest.TestCase):
         self.assertEqual(reader.call_args.kwargs["actor_eid"], 2021)
         self.assertIn("no-store", response.headers["cache-control"])
 
-    def test_role_boundaries(self):
-        for role in ("MANAGEMENT_ADMIN", "OPERATIONS", "VIEWER"):
+    def test_management_read_and_other_roles_denied(self):
+        main.app.dependency_overrides[get_current_user] = lambda: replace(ADMIN, eid=176, app_role="MANAGEMENT_ADMIN")
+        with patch.object(main,"get_project_setup_draft",return_value=draft()) as reader:
+            result=self.client.get(f"/api/project-setups/drafts/{SETUP}")
+            self.assertEqual(result.status_code,200)
+            reader.assert_called_once_with(setup_id=SETUP,actor_eid=176)
+        for role in ("OPERATIONS", "VIEWER"):
             main.app.dependency_overrides[get_current_user] = lambda role=role: replace(ADMIN, app_role=role)
-            with self.subTest(role=role), patch.object(main, "get_project_setup_draft") as reader:
-                result = self.client.get(f"/api/project-setups/drafts/{SETUP}")
-                self.assertEqual(result.status_code, 403)
+            with self.subTest(role=role), patch.object(main,"get_project_setup_draft") as reader:
+                self.assertEqual(self.client.get(f"/api/project-setups/drafts/{SETUP}").status_code,403)
                 reader.assert_not_called()
 
     def test_missing_or_zero_id_does_not_call_bridge(self):

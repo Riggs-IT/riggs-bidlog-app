@@ -8,7 +8,7 @@ import {gcContactContextHasData} from './projectSetupGcCompany.mjs';
 import {GcProjectTeam,RiggsProjectTeam} from './ProjectSetupTeamSections.jsx';
 import {setupReadiness} from './projectSetupReadiness.mjs';
 import {applyDraftChanges,buildDraftChanges,currentAwardReference,mayAuthor,openSetup,readPath,requestSetup,
-  setPath,setupError,validateDraft,validateEditReceipt,validateIdentityDirectory,createSetupOperationId,validateForm206Directory} from './projectSetupAuthoring.mjs';
+  setPath,setupError,validateDraft,validateEditReceipt,validateIdentityDirectory,createSetupOperationId,validateForm206Directory,mayInspectSetup} from './projectSetupAuthoring.mjs';
 
 const PROJECT_TYPES = ['Tilt','CIP','PRE','SITE','Other'];
 const PURPOSES = ['RET','OFF','PAR','IND','EDU','MED','RES','MIX','DAT','STG','SIDE'];
@@ -18,7 +18,7 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
   const [form,setForm] = useState(null);
   const [touched,setTouched] = useState(new Set());
   const [choices,setChoices] = useState(null);
-  const [busy,setBusy] = useState(() => Boolean(intent && mayAuthor(user)));
+  const [busy,setBusy] = useState(() => Boolean(intent && mayInspectSetup(user)));
   const [error,setError] = useState(null);
   const [notice,setNotice] = useState(null);
   const [reference,setReference] = useState(null);
@@ -44,9 +44,10 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
   const openOperation = useRef(null);
   const dirty = touched.size > 0;
   const author = mayAuthor(user);
-  const maySeeDraftDetails = ['ADMIN','MANAGEMENT_ADMIN'].includes(String(user?.appRole || '').trim().toUpperCase());
+  const inspector = mayInspectSetup(user);
+  const managementPreview = inspector && !author;
   const readiness=setupReadiness(form||{},directory);
-  const {items:form140Options,loading:form140Loading,error:form140Error}=useGcReference(author);
+  const {items:form140Options,loading:form140Loading,error:form140Error}=useGcReference(inspector);
   const selectedForm140=useMemo(()=>{
     if (!form?.gcLookupId || !Array.isArray(form140Options)) return null;
     const matches=form140Options.filter(row=>row.cognitoLookupId===form.gcLookupId);
@@ -61,35 +62,41 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
   },[checklistOpen]);
 
   const load = useCallback(async (selection = intent) => {
-    if (!mayAuthor(user)) return;
+    if (!mayInspectSetup(user)) return;
+    // A preview may open an already saved SetupID, never an Award-intent path
+    // because that existing GET path can perform lifecycle reconciliation.
+    if (!author && !selection?.setupId) {
+      setError('Preview is available for saved drafts only.');
+      return;
+    }
     controller.current?.abort();
     const abort = new AbortController();controller.current=abort;
     const seq = ++sequence.current;
     setBusy(true);setError(null);setChoices(null);setReference(null);setReferenceError(null);
     try {
-      openOperation.current ||= createSetupOperationId();
-      const result = await openSetup(selection,{operationId:openOperation.current,signal:abort.signal});
+      if (author) openOperation.current ||= createSetupOperationId();
+      const result = await openSetup(selection,{operationId:author ? openOperation.current : undefined,signal:abort.signal});
       if (seq !== sequence.current || abort.signal.aborted) return;
       if (result.context) {setChoices(result.context);setRecord(null);return;}
       setReference(result.reference || null);
       setRecord(result.setup);setForm(structuredClone(result.setup.values));
       setTouched(new Set());setConflict(false);setUncertain(false);pending.current=null;
       setNotice(null);
-      onSaved?.(result.setup.setupId);
+      if (author) onSaved?.(result.setup.setupId);
     } catch (cause) {
       if (seq !== sequence.current || abort.signal.aborted) return;
       setError(setupError(cause));
     } finally {
       if (seq === sequence.current) setBusy(false);
     }
-  }, [intent?.setupId,intent?.originalBidLogId,user?.eid,author]);
+  }, [intent?.setupId,intent?.originalBidLogId,user?.eid,author,inspector]);
 
   useEffect(() => {
     void load();
     return () => {sequence.current+=1;controller.current?.abort();};
   },[load]);
   useEffect(() => {
-    if (!record?.setupId || !author) {setDirectory(null);return;}
+    if (!record?.setupId || !inspector) {setDirectory(null);return;}
     const abort=new AbortController();
     setDirectoryBusy(true);setDirectoryError(null);
     requestSetup('/api/project-setups/authoring/identities',{signal:abort.signal})
@@ -97,10 +104,10 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
       .catch(()=>{if (!abort.signal.aborted) {setDirectory(null);setDirectoryError('Verified lookup directory unavailable. Existing draft fields are preserved.');}})
       .finally(()=>{if (!abort.signal.aborted) setDirectoryBusy(false);});
     return ()=>abort.abort();
-  },[record?.setupId,author,directoryRetry]);
+  },[record?.setupId,inspector,directoryRetry]);
 
   useEffect(() => {
-    if (!record?.setupId || !author) {setForm206Directory(null);return;}
+    if (!record?.setupId || !inspector) {setForm206Directory(null);return;}
     const abort=new AbortController();
     setForm206Busy(true);setForm206Error(false);setForm206Directory(null);
     requestSetup('/api/project-setups/authoring/form206',{signal:abort.signal})
@@ -108,7 +115,7 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
       .catch(()=>{if (!abort.signal.aborted) {setForm206Directory(null);setForm206Error(true);}})
       .finally(()=>{if (!abort.signal.aborted) setForm206Busy(false);});
     return ()=>abort.abort();
-  },[record?.setupId,author,directoryRetry]);
+  },[record?.setupId,inspector,directoryRetry]);
 
   useEffect(() => {
     if (!dirty && !uncertain && !busy) return;
@@ -128,6 +135,7 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
     haloTimer.current=window.setTimeout(()=>{target.classList.remove('setup-section-halo');haloNode.current=null;},1500);
   }
   function change(path,value) {
+    if (!inspector) return;
     if (path==='gcLookupId' && form?.gcLookupId!==value && gcContactContextHasData(form?.gcContactInfo)) {
       setError('This draft already has company-specific GC contacts. Changing the verified contractor requires a separate contact-history review; no changes were saved.');
       return;
@@ -139,12 +147,12 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
   }
   function leave() {
     if (busy) return;
-    if ((dirty || uncertain) && !window.confirm('Leave with unsaved or unverified changes? Your last saved draft will remain available.')) return;
+    if ((dirty || uncertain) && !window.confirm(managementPreview ? 'Discard preview selections? Nothing has been saved.' : 'Leave with unsaved or unverified changes? Your last saved draft will remain available.')) return;
     onLeave();
   }
   function reload() {
     if (busy || !record) return;
-    if ((dirty || uncertain) && !window.confirm('Replace these entries with the latest saved draft? This does not undo any confirmed save.')) return;
+    if ((dirty || uncertain) && !window.confirm(managementPreview ? 'Discard preview selections and reload the saved draft?' : 'Replace these entries with the latest saved draft? This does not undo any confirmed save.')) return;
     void load({setupId:record.setupId});
   }
   async function save(leaveAfter=false) {
@@ -259,9 +267,9 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
   }
 
   return <FloatingEditorShell eyebrow="PROJECT SETUP" title={record?.values.jobName || 'Project setup'}
-    subtitle={record ? 'Project setup in progress' : 'Opening project setup'}
+    subtitle={managementPreview ? 'Management preview · selections are not saved' : record ? 'Project setup in progress' : 'Opening project setup'}
     backLabel="Drafts" onClose={leave} saving={busy}
-    className="bid-log-edit-drawer project-setup-editor" bodyClassName="bid-log-edit-body project-setup-body" scrollSurface
+    className={`bid-log-edit-drawer project-setup-editor${managementPreview ? " project-setup-management-preview" : ""}`} bodyClassName="bid-log-edit-body project-setup-body" scrollSurface
     headerActions={record && <div ref={checklistRef} className="project-setup-checklist-anchor"
       onKeyDownCapture={event=>{if(event.key==='Escape' && checklistOpen){event.stopPropagation();setChecklistOpen(false);}}}>
       <button type="button" className="project-setup-status-badge project-setup-checklist-toggle"
@@ -280,7 +288,7 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
     </div>}
     footer={<footer className="bid-log-edit-footer floating-editor-footer">
       <div className="floating-editor-footer-status">
-        <small>{dirty?'Unsaved changes':record?'All changes saved':busy?'Opening draft…':'Draft not loaded'}</small>
+        <small>{managementPreview ? (dirty ? 'Preview selections · not saved' : 'View only · no submissions') : dirty?'Unsaved changes':record?'All changes saved':busy?'Opening draft…':'Draft not loaded'}</small>
       </div>
       <div className="bid-log-edit-footer-actions">
         {record && author && <>
@@ -290,13 +298,17 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
             {busy?'Saving…':'Save & Close'}</button>
         </>}
       </div></footer>}>
-    {!author && <p role="alert" className="bid-edit-message error">You do not have permission to edit project setup drafts.</p>}
+    {managementPreview && <div className="management-preview-notice management-preview-drawer-notice" role="note">
+      <strong>UNDER DEVELOPMENT · VIEW ONLY</strong>
+      <span>Explore fields and dropdowns. Nothing you change here is saved.</span>
+    </div>}
+    {!inspector && <p role="alert" className="bid-edit-message error">You do not have permission to view project setup drafts.</p>}
     {busy && !record && <p role="status" className="bid-edit-message">Opening project setup…</p>}
     {error && <div role="alert" className="bid-edit-message error"><span>{error}</span>
       {!record && <button className="secondary-button" disabled={busy} onClick={()=>void load()}>Retry setup only</button>}
       {record && <button className="secondary-button" disabled={busy} onClick={reload}>Reload saved draft</button>}
     </div>}
-    {!busy && !record && !choices && !error && author && (
+    {!busy && !record && !choices && !error && inspector && (
       <p role="status" className="bid-edit-message">No draft loaded. Return to Drafts to select a project.</p>
     )}
     {notice && <p role="status" className="bid-edit-message project-setup-notice">{notice}</p>}
@@ -309,7 +321,7 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
       </div>
     </section>}
     {record && form && <>
-      <fieldset className="cognito-general-fields project-setup-fields" disabled={busy||uncertain||conflict||!author}>
+      <fieldset className="cognito-general-fields project-setup-fields" disabled={busy||uncertain||conflict||!inspector}>
         <div className="project-setup-layout-pair">
           <section className="bid-edit-section project-setup-section" id="setup-section-basics">
             {sectionHeading('PROJECT','Project basics')}
@@ -412,13 +424,13 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
           <section className="bid-edit-section project-setup-section">
             {sectionHeading('TEAM','Riggs Team')}
             <RiggsProjectTeam values={form} directory={directory} onChange={change}
-              disabled={busy||uncertain||conflict||!author||directoryBusy}/>
+              disabled={busy||uncertain||conflict||!inspector||directoryBusy}/>
           </section>
           <section className="bid-edit-section project-setup-section">
             {sectionHeading('TEAM','GC Team')}
             <GcProjectTeam value={form.gcContactInfo} savedValue={record.values.gcContactInfo}
               onChange={members=>change('gcContactInfo.teamMembers',members)}
-              disabled={busy||uncertain||conflict||!author}/>
+              disabled={busy||uncertain||conflict||!inspector}/>
           </section>
         </div>
 

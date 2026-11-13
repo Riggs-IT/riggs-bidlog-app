@@ -24,6 +24,7 @@ import {
 import ActiveProjectEditDrawer from './ActiveProjectEditDrawer.jsx';
 import ProjectSetupAwaitingPanel from './ProjectSetupAwaitingPanel.jsx';
 import ProjectSetupEditor from './ProjectSetupEditor.jsx';
+import {mayAuthor} from './projectSetupAuthoring.mjs';
 import ScheduleReviewFlag from './ScheduleReviewFlag.jsx';
 import ForecastBalanceFlag from './ForecastBalanceFlag.jsx';
 import {BalanceReviewAmount} from './BalanceReviewSummary.jsx';
@@ -961,6 +962,7 @@ export default function ActiveProjectsWorkspace({
   const canEdit = role === 'ADMIN';
   const managementPreview = role === 'MANAGEMENT_ADMIN';
   const canReadSetupSummary = user?.canReviewProjectSetup === true;
+  const canAuthorSetup = mayAuthor(user);
 
   return (
     <main className={`page-shell active-projects-workspace${managementPreview ? ' management-admin-preview' : ''}`}>
@@ -999,13 +1001,13 @@ export default function ActiveProjectsWorkspace({
           </button>
         </div>
       )}
-      {canEdit && canReadSetupSummary && setupIntent && <ProjectSetupEditor
+      {canReadSetupSummary && setupIntent && (canAuthorSetup || Boolean(setupIntent.setupId)) && <ProjectSetupEditor
         key={setupIntent.setupId || `award:${setupIntent.originalBidLogId}`}
         intent={setupIntent} user={user}
         onLeave={() => {onSetupIntentChanged?.(null);setShowAwaiting(true);setSetupRefresh(v=>v+1);}}
         onSaved={() => setSetupRefresh(v=>v+1)} />}
       {showAwaiting && canReadSetupSummary ? <ProjectSetupAwaitingPanel key={setupRefresh}
-        onResume={canEdit && onSetupIntentChanged ? setupId => onSetupIntentChanged({setupId}) : null} /> : <>
+        onResume={onSetupIntentChanged ? setupId => onSetupIntentChanged({setupId}) : null} /> : <>
       <section className="bid-log-summary-grid active-project-summary-grid">
         <button
           type="button"

@@ -1831,3 +1831,36 @@
 .project-setup-gc-company-reference {color:var(--muted);font-size:10px;line-height:1.45;overflow-wrap:anywhere}
 .project-setup-gc-company-disclaimer {display:block;margin-top:12px;color:var(--text-soft);font-size:10px;line-height:1.55}
 @media(max-width:700px) {.project-setup-gc-company-grid {grid-template-columns:minmax(0,1fr)}}
+
+/* AP4F3W - management preview is not authority: server and SQL deny writes.
+   Put the same non-interactive watermark ABOVE the floating editor, not only
+   behind it on the Active Projects workspace. */
+.project-setup-editor.project-setup-management-preview {
+  position: relative;
+  isolation: isolate;
+}
+.project-setup-editor.project-setup-management-preview::after {
+  content: 'UNDER DEVELOPMENT · VIEW ONLY';
+  position: fixed;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%) rotate(-16deg);
+  max-width: 95vw;
+  font-size: clamp(1.3rem, 4vw, 4.5rem);
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  color: var(--text-primary, #cbd5e1);
+  opacity: 0.075;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  z-index: 40;
+}
+.project-setup-editor.project-setup-management-preview .management-preview-drawer-notice {
+  margin: 0.35rem 0 0.75rem;
+}
+@media (max-width: 760px) {
+  .project-setup-editor.project-setup-management-preview::after {
+    font-size: 1.15rem;
+    letter-spacing: 0.04em;
+  }
+}
