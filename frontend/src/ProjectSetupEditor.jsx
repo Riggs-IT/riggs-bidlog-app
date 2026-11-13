@@ -6,7 +6,7 @@ import DesignTeamContactDetails from './DesignTeamContactDetails.jsx';
 import {GcProjectTeam,RiggsProjectTeam} from './ProjectSetupTeamSections.jsx';
 import {setupReadiness} from './projectSetupReadiness.mjs';
 import {applyDraftChanges,buildDraftChanges,currentAwardReference,mayAuthor,openSetup,readPath,requestSetup,
-  setPath,setupError,validateDraft,validateEditReceipt,validateIdentityDirectory,createSetupOperationId,validateForm206Directory,mayInspectSetup,gcContactContextHasData} from './projectSetupAuthoring.mjs';
+  setPath,setupError,validateDraft,validateEditReceipt,validateIdentityDirectory,createSetupOperationId,validateForm206Directory,mayInspectSetup,gcContactContextHasData,resolveAwardedGcSelection} from './projectSetupAuthoring.mjs';
 
 const PROJECT_TYPES = ['Tilt','CIP','PRE','SITE','Other'];
 const PURPOSES = ['RET','OFF','PAR','IND','EDU','MED','RES','MIX','DAT','STG','SIDE'];
@@ -22,6 +22,7 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
   const [reference,setReference] = useState(null);
   const [referenceBusy,setReferenceBusy] = useState(false);
   const [referenceError,setReferenceError] = useState(null);
+  const [referenceCycle,setReferenceCycle] = useState(0);
   const [directory,setDirectory] = useState(null);
   const [directoryError,setDirectoryError] = useState(null);
   const [directoryBusy,setDirectoryBusy] = useState(false);
@@ -51,6 +52,13 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
     const matches=form140Options.filter(row=>row.cognitoLookupId===form.gcLookupId);
     return matches.length===1?matches[0]:null;
   },[form?.gcLookupId,form140Options]);
+  // Suggest a trusted Form 140 identity for the awarded GC, never an arbitrary name.
+  // The button is optional; ambiguous or missing directory evidence leaves manual selection.
+  const awardedGcLookupId=useMemo(()=>resolveAwardedGcSelection(
+    reference?.gcSourceLabel,directory,form140Options
+  ),[reference?.gcSourceLabel,directory,form140Options]);
+  const gcHistoryBlocksSelection=Boolean(awardedGcLookupId && form?.gcLookupId!==awardedGcLookupId
+    && gcContactContextHasData(form?.gcContactInfo));
   useEffect(()=>()=>{if(haloTimer.current) window.clearTimeout(haloTimer.current);},[]);
   useEffect(()=>{
     if(!checklistOpen) return;
@@ -76,7 +84,10 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
       const result = await openSetup(selection,{operationId:author ? openOperation.current : undefined,signal:abort.signal});
       if (seq !== sequence.current || abort.signal.aborted) return;
       if (result.context) {setChoices(result.context);setRecord(null);return;}
-      setReference(result.reference || null);
+      // Always refresh the awarded-bid reference for the opened saved draft.
+      // Historical/open-context reference values are not used as write identities.
+      setReference(null);
+      setReferenceCycle(value=>value+1);
       setRecord(result.setup);setForm(structuredClone(result.setup.values));
       setTouched(new Set());setConflict(false);setUncertain(false);pending.current=null;
       setNotice(null);
@@ -114,6 +125,21 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
       .finally(()=>{if (!abort.signal.aborted) setForm206Busy(false);});
     return ()=>abort.abort();
   },[record?.setupId,inspector,directoryRetry]);
+
+  // Read the current Awarded reference automatically when a draft opens/reloads.
+  // A separate AbortController prevents a stale draft response from replacing the new one.
+  useEffect(() => {
+    if (!record?.setupId || !inspector) return;
+    const abort=new AbortController();
+    setReferenceBusy(true);setReferenceError(null);
+    currentAwardReference(record.originalBidLogId,{signal:abort.signal})
+      .then(value=>{if (!abort.signal.aborted) setReference(value);})
+      .catch(()=>{if (!abort.signal.aborted) {
+        setReference(null);setReferenceError('Awarded reference unavailable.');
+      }})
+      .finally(()=>{if (!abort.signal.aborted) setReferenceBusy(false);});
+    return ()=>abort.abort();
+  },[record?.setupId,record?.originalBidLogId,referenceCycle,inspector]);
 
   useEffect(() => {
     if (!dirty && !uncertain && !busy) return;
@@ -197,17 +223,6 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
       // No redirect and no automatic retry after any failed/uncertain save.
     } finally {saving.current=false;setBusy(false);}
   }
-  async function loadReference() {
-    if (!record || referenceBusy || busy) return;
-    const signal=controller.current?.signal;
-    setReferenceBusy(true);setReferenceError(null);
-    try {
-      const value=await currentAwardReference(record.originalBidLogId,{signal});
-      if (!signal?.aborted) setReference(value);
-    } catch {
-      if (!signal?.aborted) setReferenceError('The current awarded-bid reference is unavailable. Your saved draft and original notes are unchanged.');
-    } finally {setReferenceBusy(false);}
-  }
   function input(path,label,type='text',options={}) {
     const value=readPath(form,path);
     const inputMode=options.inputMode || (options.decimal ? 'decimal' : undefined);
@@ -256,11 +271,17 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
     return <div className="project-setup-reference-card">
       <div>
         <span className="section-kicker">AWARDED GC</span>
-        <strong>{reference?.gcSourceLabel || 'Reference not loaded'}</strong>
+        <strong>{referenceBusy ? 'Loading…' : reference?.gcSourceLabel || 'Not available'}</strong>
       </div>
-      <button type="button" className="secondary-button" disabled={referenceBusy||busy} onClick={()=>void loadReference()}>
-        {referenceBusy?'Loading…':reference?'Refresh reference':'Load reference'}
-      </button>
+      {awardedGcLookupId && <button type="button"
+        className="secondary-button project-setup-reference-use"
+        disabled={busy||uncertain||conflict||directoryBusy||gcHistoryBlocksSelection
+          ||form?.gcLookupId===awardedGcLookupId}
+        title={gcHistoryBlocksSelection ? 'Review existing GC contact history before changing the contractor.'
+          : 'Select the verified awarded contractor'}
+        onClick={()=>change('gcLookupId',awardedGcLookupId)}>
+        {form?.gcLookupId===awardedGcLookupId?'Selected':'Use awarded GC'}
+      </button>}
     </div>;
   }
 
@@ -467,8 +488,7 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
                   }}>Copy original Bid Notes into Comments</button>
                 </details>
                 <details><summary>Current Awarded Bid Notes</summary>
-                  {!reference && <button type="button" className="secondary-button" disabled={referenceBusy} onClick={()=>void loadReference()}>
-                    {referenceBusy?'Loading…':'Load current reference'}</button>}
+                  {referenceBusy && <p className="bid-log-read-only-note project-setup-source-note-text">Loading…</p>}
                   {reference && <><p className="bid-log-read-only-note project-setup-source-note-text">{reference.bidNotes || 'No notes in the current awarded-bid reference.'}</p>
                     <button type="button" className="secondary-button" disabled={!reference.bidNotes} onClick={()=>{
                       const notes=reference.bidNotes;const current=form.comments || '';

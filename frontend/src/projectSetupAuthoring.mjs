@@ -260,7 +260,26 @@ export function validateEditReceipt(value,setupId,body) {
   return value;
 }
 
-// Existing authorized Awarded reader, on demand; never a source of write identities.
+// The award record contains a name, not a provider identity. Return a Form 140
+// ID ONLY if the actor-authorized SQL directory and active Form 140 reference
+// uniquely agree on that exact normalized whole name and the same 140-N ID.
+// This is a button *suggestion*, never an automatic persisted draft mutation.
+export function resolveAwardedGcSelection(gcSourceLabel,identityDirectory,form140Options) {
+  if (typeof gcSourceLabel!=='string' || !gcSourceLabel.trim() || gcSourceLabel.includes('¡')
+      || !Array.isArray(identityDirectory?.gcs) || !Array.isArray(form140Options)) return null;
+  const key=value=>String(value??'').normalize('NFC').trim()
+    .replace(/\s+/gu,' ').toLocaleLowerCase('en-US');
+  const target=key(gcSourceLabel);
+  const matches=identityDirectory.gcs.filter(row=>
+    typeof row?.id==='string' && /^140-[1-9][0-9]*$/.test(row.id)
+    && key(row.label)===target);
+  if (matches.length!==1) return null;
+  const formMatches=form140Options.filter(row=>key(row?.name)===target);
+  if (formMatches.length!==1 || formMatches[0].cognitoLookupId!==matches[0].id) return null;
+  return matches[0].id;
+}
+
+// Current Awarded reader: passive GET, for display and optional verified suggestion.
 export async function currentAwardReference(bidId,{request=requestSetup,signal}={}) {
   if (!Number.isInteger(bidId) || bidId<=0) throw new Error('Invalid bid identity.');
   const value=await request(`/api/bid-log/outcomes/${bidId}?status=Awarded`,{signal});

@@ -1607,6 +1607,17 @@
 .active-project-scope-column h4 {margin:0;font-size:14px;color:var(--text)}
 .project-setup-party-block .project-setup-reference-card {margin:0;padding:8px 10px}
 .project-setup-party-block .project-setup-reference-card strong {font-size:12px}
+/* Reuse the existing secondary button in a compact, reference-only action. */
+.project-setup-party-block .project-setup-reference-use {
+  min-width:0;
+  min-height:28px;
+  padding:4px 10px;
+  font-size:11px;
+  line-height:1.25;
+  white-space:nowrap;
+  flex-shrink:0;
+  align-self:center;
+}
 .project-setup-secondary-details,
 .active-project-secondary-details {margin-top:14px;border-top:1px solid var(--border);padding-top:12px}
 .project-setup-secondary-details summary,
