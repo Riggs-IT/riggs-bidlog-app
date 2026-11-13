@@ -8,7 +8,8 @@ test('no-PM titles are orange with a tooltip, without the old asterisk marker', 
   const pivot = read('ProjectBillingPivot.jsx');
   const app = read('App.jsx');
   assert.doesNotMatch(display, /ProjectionEstimateMarker/);
-  assert.match(display, /No PM Projection submitted\. System estimate shown/);
+  assert.match(display, /System estimate shown and included in displayed projected totals/);
+  assert.doesNotMatch(display, /No PM Projection submitted\. System estimate shown/);
   assert.match(display, /\$\{name\}\\n\$\{SYSTEM_ESTIMATE_TOOLTIP\}/);
   assert.doesNotMatch(pivot, /<ProjectionEstimateMarker/);
   assert.match(pivot, /data-no-pm=/);

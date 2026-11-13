@@ -1481,6 +1481,21 @@ body {
   font-weight: 600;
 }
 
+.signout-icon,
+.brand-copy .brand-current-user {
+  display: none;
+}
+
+.signout-icon {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .theme-toggle:hover,
 .signout-button:hover {
   border-color: #596774;
@@ -1820,15 +1835,107 @@ h2 {
   }
 }
 
-@media (max-width: 900px) {
+/* Compact two-row shell when the full navigation cannot fit in one line.
+   Keep the original navigation and account actions; no second mobile header. */
+@media (max-width: 1280px) {
   .topbar {
-    padding: 0 18px;
+    position: static;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    gap: 0 10px;
+    align-items: center;
+    padding: 8px 14px 0;
   }
 
   .brand-area {
-    gap: 16px;
+    display: contents;
   }
 
+  .brand {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+    gap: 9px;
+  }
+
+  .brand-copy {
+    min-width: 0;
+  }
+
+  .brand-copy strong,
+  .brand-copy .brand-current-user {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .brand-copy .brand-company {
+    display: none;
+  }
+
+  .brand-copy .brand-current-user {
+    margin-top: 2px;
+    font-size: 10px;
+  }
+
+  .app-nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    margin-top: 7px;
+    border-top: 1px solid var(--topbar-border);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app-nav button {
+    flex: 0 0 auto;
+    min-width: max-content;
+    min-height: 42px;
+    padding: 0 12px;
+    font-size: 12px;
+    white-space: nowrap;
+    scroll-snap-align: start;
+  }
+
+  .topbar-actions {
+    grid-column: 2;
+    grid-row: 1;
+    width: auto;
+    min-width: 0;
+    gap: 6px;
+    padding: 0;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+  }
+
+  .topbar .topbar-actions .refresh-icon-button,
+  .topbar .topbar-actions .notification-button,
+  .topbar .topbar-actions .theme-toggle {
+    flex: 0 0 36px;
+    width: 36px;
+    min-height: 36px;
+    height: 36px;
+  }
+
+  .topbar-actions .signout-button {
+    min-height: 36px;
+    white-space: nowrap;
+  }
+
+  .current-user {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
   .page-shell {
     padding: 25px 20px 42px;
   }
@@ -1845,42 +1952,6 @@ h2 {
 }
 
 @media (max-width: 760px) {
-  .topbar {
-    position: static;
-    align-items: stretch;
-    flex-direction: column;
-    gap: 0;
-    padding: 12px 16px 0;
-  }
-
-  .brand-area {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .app-nav {
-    width: 100%;
-    overflow-x: auto;
-  }
-
-  .app-nav button {
-    min-height: 44px;
-    padding: 0 12px;
-  }
-
-  .topbar-actions {
-    width: 100%;
-    justify-content: flex-end;
-    padding: 10px 0 12px;
-  }
-
-  .current-user {
-    min-width: 0;
-    margin-right: auto;
-    align-items: flex-start;
-  }
-
   .page-shell {
     padding: 22px 14px 36px;
   }
@@ -1908,29 +1979,12 @@ h2 {
   }
 }
 
-/* AP4F4H — phone-width shell: one responsive web app, no duplicate navigation. */
+/* AP4F4H — phone-width content and scrolling billing table. */
 @media (max-width: 700px) {
   html, body, #root, .app-shell { max-width: 100%; min-width: 0; }
   .app-shell { overflow-x: clip; }
-  .topbar { padding: 9px 12px 0; gap: 0; min-width: 0; }
-  .brand-area { gap: 8px; min-width: 0; width: 100%; }
-  .brand { flex: 0 0 auto; }
-  .brand-copy span { font-size: 10px; }
-  .app-nav {
-    width: 100%; min-width: 0; max-width: 100%;
-    overflow-x: auto; overscroll-behavior-x: contain;
-    -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity;
-    scrollbar-width: none;
-  }
-  .app-nav::-webkit-scrollbar { display: none; }
-  .app-nav button {
-    flex: 0 0 auto; min-height: 42px; padding-inline: 12px;
-    font-size: 12px; white-space: nowrap;
-    scroll-snap-align: start; touch-action: manipulation;
-  }
-  .topbar-actions { width: 100%; min-width: 0; flex-wrap: wrap; gap: 6px; padding: 7px 0 9px; }
-  .current-user { min-width: 0; max-width: 50%; }
-  .current-user strong, .current-user span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+  .topbar { padding-inline: 10px; }
+  .app-nav button { touch-action: manipulation; }
   .page-shell { max-width: 100%; min-width: 0; padding: 12px 8px 28px; }
   .content-card, .monthly-comparison-body, .section-heading, .monthly-heading-actions { min-width: 0; }
   .section-heading { flex-direction: column; align-items: stretch; gap: 10px; padding: 12px; }
@@ -1950,4 +2004,23 @@ h2 {
     background: var(--surface-2);
   }
   .projected-monthly-table tbody td:first-child { background: var(--surface); }
+}
+
+/* Phones: sign-out becomes an icon with the same accessible button label.
+   Avoid a third header row at 320px without losing notifications/theme. */
+@media (max-width: 460px) {
+  .topbar { column-gap: 6px; }
+  .brand { gap: 7px; }
+  .brand-mark { width: 32px; height: 32px; }
+  .brand-copy strong { font-size: 14px; }
+  .topbar-actions { gap: 5px; }
+  .topbar-actions .signout-button {
+    display: grid;
+    place-items: center;
+    flex: 0 0 36px;
+    width: 36px;
+    padding: 0;
+  }
+  .topbar-actions .signout-button span { display: none; }
+  .topbar-actions .signout-icon { display: block; }
 }

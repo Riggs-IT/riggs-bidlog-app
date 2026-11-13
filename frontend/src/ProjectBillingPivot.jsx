@@ -1029,7 +1029,7 @@ export function HeaderTotal({
     && includeBidProjection;
 
   const includedEstimateNote = includeProjectProjection && hasSystemEstimate
-    ? `Includes system estimates for ${includedSystemEstimateCount} no-PM project${includedSystemEstimateCount === 1 ? '' : 's'}: ${headerCurrency(includedSystemEstimateValue)}. These are not submitted PM projections.`
+    ? `Includes ${headerCurrency(includedSystemEstimateValue)} in system estimates across ${includedSystemEstimateCount} project${includedSystemEstimateCount === 1 ? '' : 's'}.`
     : null;
 
   const totalForecastTooltip =
@@ -1153,8 +1153,6 @@ export function HeaderTotal({
     <span className="pivot-header-total">
       <span className="pivot-header-total-label" title={includedEstimateNote || undefined}>
         {label}
-        {includedEstimateNote && <abbr className="header-estimate-source-indicator"
-          title={includedEstimateNote} aria-label={includedEstimateNote}>SE</abbr>}
       </span>
 
       {allMode ? (
@@ -1829,7 +1827,7 @@ export default function ProjectBillingPivot({
                 type="button"
                 className={`projection-source-count-toggle ${projectionSourceFilter === projectionSourceAllValue || projectionSourceFilter === 'missing' ? 'active' : ''}`}
                 aria-pressed={projectionSourceFilter === projectionSourceAllValue || projectionSourceFilter === 'missing'}
-                title="No submitted PM Projection; displayed system estimates are not submitted PM projections"
+                title="Show projects without PM projections; system estimates display where available"
                 onClick={() => onProjectionSourceFilterChange(
                   projectionSourceFilter === 'missing'
                     ? projectionSourceAllValue

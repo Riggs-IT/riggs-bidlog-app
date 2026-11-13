@@ -1362,19 +1362,3 @@ tbody > tr:nth-child(even of .pivot-project-row)
   .project-pivot-table .pivot-month-column,
   .project-pivot-table .pivot-total-column { width: 130px; min-width: 130px; max-width: 130px; }
 }
-
-/* An actual contribution gets a source marker, not an asterisk on every row.
-   It is part of the tooltip/accessible label, not a new financial series. */
-.pivot-header-total-label .header-estimate-source-indicator {
-  display: inline-block;
-  margin-inline-start: 5px;
-  padding: 1px 3px;
-  border: 1px solid var(--border-strong);
-  border-radius: 3px;
-  color: var(--warning);
-  font-size: 9px;
-  font-weight: 700;
-  text-decoration: none;
-  line-height: 1.1;
-  vertical-align: middle;
-}

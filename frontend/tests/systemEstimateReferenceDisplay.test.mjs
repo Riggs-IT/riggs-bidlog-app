@@ -50,8 +50,8 @@ test('The visual fallback never replaces the canonical primaryProjection API val
   const presentation = read('ProjectionDisplay.jsx');
   assert.match(presentation, /showSystemFallback = false/);
   assert.match(presentation, /showSystemFallback && !hasPmValue && baseline !== null && baseline !== undefined/);
-  assert.match(presentation, /No PM Projection submitted\. System estimate shown and included in displayed projected totals/);
-  assert.match(presentation, /not a submitted PM projection or part of PM-only variance/);
+  assert.match(presentation, /System estimate shown and included in displayed projected totals/);
+  assert.doesNotMatch(presentation, /not a submitted PM projection/i);
 });
 
 test('The existing pivot All/Projected cells display only verified system references', () => {

@@ -110,6 +110,6 @@ test('asterisk is gone while names retain the warning treatment',()=>{
   assert.doesNotMatch(app,/<ProjectionEstimateMarker/);
   assert.match(pivot,/data-no-pm=/);
   assert.match(name,/System estimate shown and included in displayed projected totals/);
-  assert.match(pivot,/Includes system estimates for/);
+  assert.match(pivot,/in system estimates across/);
   assert.match(app,/Includes system estimates for/);
 });

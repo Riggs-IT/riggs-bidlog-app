@@ -5437,9 +5437,8 @@ export default function App() {
 
             <div className="brand-copy">
               <strong>Bid Log</strong>
-              <span>
-                Riggs Companies
-              </span>
+              <span className="brand-company">Riggs Companies</span>
+              <span className="brand-current-user">{user.displayName}</span>
             </div>
           </div>
 
@@ -5688,9 +5687,15 @@ export default function App() {
           <button
             type="button"
             className="signout-button"
+            aria-label="Sign out"
+            title="Sign out"
             onClick={signOut}
           >
-            Sign out
+            <svg className="signout-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <path d="m16 17 5-5-5-5M21 12H9" />
+            </svg>
+            <span>Sign out</span>
           </button>
         </div>
       </header>

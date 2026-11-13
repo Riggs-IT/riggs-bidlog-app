@@ -3,7 +3,7 @@ import './ProjectionDisplay.css';
 // System estimates can be included in display-only projected totals while
 // remaining separate from submitted PM projections, variance and CSV exports.
 export const SYSTEM_ESTIMATE_TOOLTIP =
-  'No PM Projection submitted. System estimate shown and included in displayed projected totals; it is not a submitted PM projection or part of PM-only variance.';
+  'System estimate shown and included in displayed projected totals.';
 
 export function projectProjectionTitle(project, name) {
   return project && !project.projectCompleted && project.hasPmForecast === false
