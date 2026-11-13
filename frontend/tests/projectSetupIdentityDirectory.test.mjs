@@ -43,7 +43,9 @@ test('editor preserves draft-only boundary and Form206 uses server-validated can
  assert.match(source,/form206Directory\?\.architects/);
  assert.match(source,/form206Directory\?\.engineers/);
  assert.match(source,/unavailable=\{!form206Directory\}/);
- assert.match(source,/This is not Form 19 creation approval/);
+ assert.match(source,/readiness\?expected_revision=\$\{record\.revision\}/);
+ assert.match(source,/validateSavedReadiness\(value,record\.setupId,record\.revision\)/);
+ assert.match(source,/JIS blocked ·/);
  assert.doesNotMatch(source,/createEntry\(/);
 });
 

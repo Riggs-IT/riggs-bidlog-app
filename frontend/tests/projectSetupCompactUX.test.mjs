@@ -33,7 +33,9 @@ test('Header Draft checklist replaces redundant draft details and keeps advisory
   assert.match(editor,/project-setup-checklist-popover/);
   assert.match(editor,/Draft · \{readiness.filled\}\/\{readiness.total\}/);
   assert.match(editor,/goToSection\(item.sectionId\)/);
-  assert.match(editor,/This is not Form 19 creation approval/);
+  assert.match(editor,/JIS blocked ·/);
+  assert.match(editor,/savedReadiness\.missingReviewFields\.length/);
+  assert.match(editor,/savedReadiness\.blockers\.length/);
   assert.match(editor,/backLabel="Drafts"/);
 });
 

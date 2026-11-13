@@ -79,6 +79,7 @@ from .data_api import (
     get_bid_log_outcome_detail,
     get_active_project_detail,
     get_project_setup_draft,
+    get_project_setup_readiness,
     get_ops_project_setup_summary,
     get_active_project_cognito_detail,
     get_active_project_resource_schedule,
@@ -2135,6 +2136,38 @@ def active_project_setup_draft_proxy(
     except DataAPIRequestRejected as exc:
         if (exc.status_code, exc.detail) in {
             (403, "project_setup_forbidden"), (404, "project_setup_not_found"),
+        }:
+            raise HTTPException(exc.status_code, exc.detail) from None
+        raise HTTPException(503, "project_setup_unavailable") from None
+    except Exception as exc:
+        _raise_active_project_proxy_error(exc)
+
+
+@app.get("/api/project-setups/drafts/{setup_id}/readiness")
+def active_project_setup_readiness_proxy(
+    setup_id: UUID,
+    expected_revision: int = FastAPIQuery(ge=1),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    """Same signed-session + SQL authority as full draft GET; GET-only check."""
+    _require_projects_workspace_access(current_user)
+    require_project_setup_reviewer(current_user)
+    if setup_id.int == 0:
+        raise HTTPException(422, "project_setup_invalid_request")
+    try:
+        result = get_project_setup_readiness(
+            setup_id=setup_id, actor_eid=current_user.eid,
+            expected_revision=expected_revision,
+        )
+        return JSONResponse(result, headers={"Cache-Control": "private, no-store"})
+    except DataAPIProjectSetupDisabled:
+        raise HTTPException(503, "project_setup_reads_disabled") from None
+    except DataAPIProjectSetupServiceUnavailable:
+        raise HTTPException(503, "project_setup_service_auth_unavailable") from None
+    except DataAPIRequestRejected as exc:
+        if (exc.status_code, exc.detail) in {
+            (403, "project_setup_forbidden"), (404, "project_setup_not_found"),
+            (409, "project_setup_conflict"),
         }:
             raise HTTPException(exc.status_code, exc.detail) from None
         raise HTTPException(503, "project_setup_unavailable") from None

@@ -17,7 +17,8 @@ test('Project Setup is presented as an operational draft workflow',()=>{
     'GC Team','Scope & Notes','Contract & Administration',
   ]) assert.match(editor,new RegExp(heading));
   assert.match(team,/GC Project Team/);
-  assert.match(editor,/This is not Form 19 creation approval/);
+  assert.match(editor,/JIS blocked ·/);
+  assert.match(editor,/Saved-revision readiness unavailable\. Draft saves remain unchanged/);
   assert.match(editor,/Save & Close/);
   assert.match(editor,/Starting contract amount/);
   assert.doesNotMatch(editor,/Operational contract starting value/);

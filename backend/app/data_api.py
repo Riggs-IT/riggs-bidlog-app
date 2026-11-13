@@ -1528,6 +1528,59 @@ def get_project_setup_draft(*, setup_id: UUID, actor_eid: int) -> dict:
     return value
 
 
+def get_project_setup_readiness(*, setup_id: UUID, actor_eid: int,
+                                expected_revision: int) -> dict:
+    """AP4F4F read-only, verified saved-revision assessment; not a create gate."""
+    if not isinstance(setup_id, UUID) or setup_id.int == 0:
+        raise DataAPIRequestRejected(422, "project_setup_invalid_request")
+    if type(actor_eid) is not int or actor_eid <= 0:
+        raise DataAPIConfigurationError("Authenticated actor EID required.")
+    if type(expected_revision) is not int or expected_revision <= 0:
+        raise DataAPIRequestRejected(422, "project_setup_invalid_request")
+    try:
+        response = _get_http_client().get(
+            f"/v1/project-setups/drafts/{setup_id}/readiness",
+            params={"expected_revision": expected_revision},
+            headers=_request_headers(include_service_auth=True, actor_eid=actor_eid),
+        )
+    except (httpx.TimeoutException, httpx.RequestError):
+        raise DataAPIUnavailable("Project setup readiness unavailable.") from None
+    detail = _detail(response)
+    if response.status_code == 503 and detail == "project_setup_reads_disabled":
+        raise DataAPIProjectSetupDisabled()
+    if response.status_code == 503 and detail == "service_auth_unavailable":
+        raise DataAPIProjectSetupServiceUnavailable()
+    if (response.status_code, detail) in (
+        (403, "project_setup_forbidden"), (404, "project_setup_not_found"),
+        (409, "project_setup_conflict"),
+    ):
+        raise DataAPIRequestRejected(response.status_code, detail)
+    _raise_common_failure(response, operation="Project setup readiness by ID")
+    if response.status_code != 200:
+        raise DataAPIInvalidResponse("Unexpected project setup readiness response.")
+    data = _json_object(response, operation="Project setup readiness by ID")
+    try:
+        if (UUID(str(data.get("setupId"))) != setup_id
+            or data.get("revision") != expected_revision
+            or data.get("readiness") != "BLOCKED"
+            or data.get("readyForJis") is not False
+            or data.get("form19CreateAuthorized") is not False
+            or data.get("canSaveIncompleteDraft") is not True
+            or data.get("externalWrites") != 0
+            or data.get("fieldCount") != 51
+            or data.get("rootCount") != 32
+            or data.get("basis") != "SAVED_SQL_REVISION"
+            or not isinstance(data.get("fields"), list)
+            or len(data["fields"]) != 51
+            or not isinstance(data.get("missingReviewFields"), list)
+            or not isinstance(data.get("blockers"), list)
+            or len(data["blockers"]) < 1):
+            raise ValueError("invalid readiness contract")
+    except (TypeError, ValueError):
+        raise DataAPIInvalidResponse("Invalid project setup readiness contract.") from None
+    return data
+
+
 def get_active_project_detail(
     job_list_id: int,
 ) -> dict:

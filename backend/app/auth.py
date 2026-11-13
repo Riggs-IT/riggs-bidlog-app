@@ -361,6 +361,7 @@ _PASSIVE_PROJECT_SETUP_DRAFT_PATH = re.compile(
     r"/api/project-setups/drafts/"
     r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
     r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+    r"(?:/readiness)?"
 )
 _PASSIVE_SETUP_AWARD_CONTEXT_PATH = re.compile(r"/api/project-setups/authoring/awards/[1-9][0-9]*")
 _PASSIVE_PM_PATH = re.compile(

@@ -5,6 +5,7 @@ import ProjectSetupIdentityPicker from './ProjectSetupIdentityPicker.jsx';
 import DesignTeamContactDetails from './DesignTeamContactDetails.jsx';
 import {GcProjectTeam,RiggsProjectTeam} from './ProjectSetupTeamSections.jsx';
 import {setupReadiness} from './projectSetupReadiness.mjs';
+import {validateSavedReadiness} from './projectSetupServerReadiness.mjs';
 import {applyDraftChanges,buildDraftChanges,currentAwardReference,mayAuthor,openSetup,readPath,requestSetup,
   setPath,setupError,validateDraft,validateEditReceipt,validateIdentityDirectory,createSetupOperationId,validateForm206Directory,mayInspectSetup,gcContactContextHasData,resolveAwardedGcSelection} from './projectSetupAuthoring.mjs';
 
@@ -32,6 +33,8 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
   const [form206Error,setForm206Error] = useState(false);
   const [uncertain,setUncertain] = useState(false);
   const [checklistOpen,setChecklistOpen] = useState(false);
+  const [savedReadiness,setSavedReadiness] = useState(null);
+  const [readinessUnavailable,setReadinessUnavailable] = useState(false);
   const haloTimer = useRef(null);
   const haloNode = useRef(null);
   const checklistRef = useRef(null);
@@ -125,6 +128,21 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
       .finally(()=>{if (!abort.signal.aborted) setForm206Busy(false);});
     return ()=>abort.abort();
   },[record?.setupId,inspector,directoryRetry]);
+
+  // Read a saved-revision assessment from the protected Data API. UI edits are
+  // advisory; only an explicit Save changes the SQL draft revision. This GET
+  // cannot mark Ready or create a Cognito entry (including in management preview).
+  useEffect(() => {
+    if (!record?.setupId || !inspector) {setSavedReadiness(null);return;}
+    const abort=new AbortController();
+    setSavedReadiness(null);setReadinessUnavailable(false);
+    requestSetup(`/api/project-setups/drafts/${record.setupId}/readiness?expected_revision=${record.revision}`,
+      {signal:abort.signal})
+      .then(value=>{if(!abort.signal.aborted) setSavedReadiness(
+        validateSavedReadiness(value,record.setupId,record.revision));})
+      .catch(()=>{if(!abort.signal.aborted) {setSavedReadiness(null);setReadinessUnavailable(true);}});
+    return ()=>abort.abort();
+  },[record?.setupId,record?.revision,inspector]);
 
   // Read the current Awarded reference automatically when a draft opens/reloads.
   // A separate AbortController prevents a stale draft response from replacing the new one.
@@ -302,7 +320,12 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
           <span className={item.filled&&!item.unverified?'is-done':'is-pending'} aria-hidden="true">{item.filled&&!item.unverified?'✓':'○'}</span>
           <span>{item.label}</span><small>{item.unverified?'Verify':item.filled?'Done':'To do'}</small>
         </button>)}
-        <small className="project-setup-checklist-disclaimer">This is not Form 19 creation approval.</small>
+        <small className="project-setup-checklist-disclaimer">
+          {savedReadiness
+            ? `JIS blocked · ${savedReadiness.missingReviewFields.length} draft fields to review · ${savedReadiness.blockers.length} approval gates`
+            : readinessUnavailable ? 'Saved-revision readiness unavailable. Draft saves remain unchanged.'
+            : 'Checking saved-revision readiness…'}
+        </small>
       </div>}
     </div>}
     footer={<footer className="bid-log-edit-footer floating-editor-footer">
