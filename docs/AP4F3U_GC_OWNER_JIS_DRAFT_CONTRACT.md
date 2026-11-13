@@ -1,5 +1,7 @@
 # AP4F3U — GC company overrides, Owner SQL draft, and Form 19 mapping boundary
 
+> **2026-11-12 AP4F3X update:** This is a historical description of AP4F3U, not current UI behavior. The GC company override editor and reset actions were retired at the user's request. Project Setup now displays Form140 company email/address read-only using the shared Design Team contact display. Existing saved override leaves remain in SQL draft JSON for compatibility/audit, but the Data API rejects new writes to `generalEmail`, `streetAddress`, or `cityStateZip` (`GC_COMPANY_DETAILS_READ_ONLY`). Owner and dated GC team contacts remain editable. No stored procedure/data migration or Form19 creation was performed.
+
 **Prepared:** 2026-11-12. **Scope:** existing revisioned Bid Log SQL Project Setup draft; no new SQL schema, no direct SQL from Cloud Run, no new Cognito/SharePoint/Accounting/Graph writes. This document is not a Form 19 create certification.
 
 ## Accepted underlying source evidence

@@ -3,12 +3,10 @@ import useGcReference from './useGcReference.js';
 import FloatingEditorShell from './FloatingEditorShell.jsx';
 import ProjectSetupIdentityPicker from './ProjectSetupIdentityPicker.jsx';
 import DesignTeamContactDetails from './DesignTeamContactDetails.jsx';
-import ProjectSetupGcCompany from './ProjectSetupGcCompany.jsx';
-import {gcContactContextHasData} from './projectSetupGcCompany.mjs';
 import {GcProjectTeam,RiggsProjectTeam} from './ProjectSetupTeamSections.jsx';
 import {setupReadiness} from './projectSetupReadiness.mjs';
 import {applyDraftChanges,buildDraftChanges,currentAwardReference,mayAuthor,openSetup,readPath,requestSetup,
-  setPath,setupError,validateDraft,validateEditReceipt,validateIdentityDirectory,createSetupOperationId,validateForm206Directory,mayInspectSetup} from './projectSetupAuthoring.mjs';
+  setPath,setupError,validateDraft,validateEditReceipt,validateIdentityDirectory,createSetupOperationId,validateForm206Directory,mayInspectSetup,gcContactContextHasData} from './projectSetupAuthoring.mjs';
 
 const PROJECT_TYPES = ['Tilt','CIP','PRE','SITE','Other'];
 const PURPOSES = ['RET','OFF','PAR','IND','EDU','MED','RES','MIX','DAT','STG','SIDE'];
@@ -47,7 +45,7 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
   const inspector = mayInspectSetup(user);
   const managementPreview = inspector && !author;
   const readiness=setupReadiness(form||{},directory);
-  const {items:form140Options,loading:form140Loading,error:form140Error}=useGcReference(inspector);
+  const {items:form140Options,error:form140Error}=useGcReference(inspector);
   const selectedForm140=useMemo(()=>{
     if (!form?.gcLookupId || !Array.isArray(form140Options)) return null;
     const matches=form140Options.filter(row=>row.cognitoLookupId===form.gcLookupId);
@@ -330,7 +328,7 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
               {select('jobType','Project type',PROJECT_TYPES)}
               {select('purpose','Purpose',PURPOSES)}
               {input('numberOfBuildings','Building count','number')}
-              <div className="bid-edit-field project-setup-contract-type-preview"><span>Contract type</span><strong>LOI</strong><small>Cognito default. Draft storage mapping pending; no selection is saved yet.</small></div>
+              <div className="bid-edit-field project-setup-contract-type-preview"><span>Contract type</span><strong>LOI</strong></div>
             </div>
 
           </section>
@@ -352,7 +350,6 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
             {input('retentionPercent','Retention (%)','text',{decimal:true})}
             {input('bond','Bond')}{input('parcel','Parcel')}
           </div>
-          <small className="setup-team-empty">Starting values only. Accounting confirmation is a later approval step.</small>
         </section>
 
         <section className="bid-edit-section project-setup-section project-setup-parties-section" id="setup-section-parties">
@@ -366,7 +363,6 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
                 {input('projectOwnerInfo.cityStateZip','City / state / ZIP')}
                 {input('projectOwnerInfo.email','Email','email')}
               </div>
-              <small className="setup-team-empty">These four Owner fields save to this project's SQL draft; they do not change a master contact.</small>
             </div>
             <div className="project-setup-party-block">
               <h4>General Contractor</h4>
@@ -378,10 +374,15 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
                 <div className="project-setup-span-full"><ProjectSetupIdentityPicker label="Verified General Contractor" value={form.gcLookupId}
                   options={directory?.gcs||[]} disabled={!directory||directoryBusy}
                   onChange={value=>change('gcLookupId',value)}/></div>
-                <ProjectSetupGcCompany contactInfo={form.gcContactInfo} source={selectedForm140}
-                  sourcePending={form140Loading} sourceUnavailable={Boolean(form140Error)}
-                  onChange={(key,value)=>change(`gcContactInfo.${key}`,value)}/>
-                {form140Error && <small role="status" className="project-setup-span-full">GC directory unavailable; company details not inferred.</small>}
+                <div className="project-setup-span-full" aria-label="General Contractor contact information">
+                  <DesignTeamContactDetails
+                    contact={selectedForm140 ? {
+                      email:selectedForm140.email,
+                      address:[selectedForm140.streetAddress,selectedForm140.cityStateZip].filter(Boolean).join('\n'),
+                    } : null}
+                    showSource={false} />
+                </div>
+                {form140Error && <small role="status" className="project-setup-span-full">GC details unavailable.</small>}
               </div>
               {referenceError && <p role="alert" className="cognito-general-note">{referenceError}</p>}
             </div>
@@ -417,7 +418,6 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
             <button type="button" className="secondary-button" disabled={form206Busy}
               onClick={()=>setDirectoryRetry(value=>value+1)}>Retry contacts</button>
           </div>}
-          <small className="setup-team-empty">Only the verified 206-N identity is saved in this SQL draft. Cognito's AOR/SEOR address and email formulas remain provider-owned.</small>
         </section>
 
         <div className="project-setup-layout-pair project-setup-teams-pair" id="setup-section-riggs">
@@ -442,8 +442,7 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
               <div className="bid-edit-grid project-setup-requirements-grid">
                 {yesNo('leed','LEED')}{yesNo('ndaRequired','NDA required')}
                 {textarea('scope','Scope',{rows:5,className:'project-setup-span-full'})}
-                {textarea('keywords','Job keywords',{rows:3,className:'project-setup-span-full',
-                  help:'Legacy Cognito JobFilterKeywords is calculated from ControlProjectName; verify this field before Form 19 creation.'})}
+                {textarea('keywords','Job keywords',{rows:3,className:'project-setup-span-full'})}
               </div>
               <div className="cognito-general-buildings project-setup-buildings">
                 <div className="cognito-general-row-heading"><div><strong>Buildings</strong></div>

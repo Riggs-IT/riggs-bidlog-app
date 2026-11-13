@@ -4,7 +4,6 @@ import {readFileSync} from 'node:fs';
 import {setupReadiness} from '../src/projectSetupReadiness.mjs';
 const get=name=>readFileSync(new URL(`../src/${name}`,import.meta.url),'utf8');
 const setup=get('ProjectSetupEditor.jsx');
-const gcCompany=get('ProjectSetupGcCompany.jsx');
 const shell=get('FloatingEditorShell.jsx');
 const active=get('ActiveProjectEditDrawer.jsx');
 const team=get('ActiveProjectTeamSections.jsx');
@@ -28,7 +27,7 @@ test('draft checklist is in header, section-linked and never a completion gate',
 
 test('contract type is truthfully indicated as unpersisted; contract values live in their own section',()=>{
   assert.match(setup,/Contract type/);
-  assert.match(setup,/Draft storage mapping pending/);
+  assert.doesNotMatch(setup,/Draft storage mapping pending/);
   assert.match(setup,/setup-section-contract/);
   assert.match(setup,/input\('contractAmount','Starting contract amount'/);
   assert.match(setup,/input\('retentionPercent','Retention \(%\)'/);
@@ -40,9 +39,9 @@ test('contract type is truthfully indicated as unpersisted; contract values live
 test('GC preview is resolved by exact 140-N identity, never company names',()=>{
   assert.match(setup,/row.cognitoLookupId===form.gcLookupId/);
   assert.match(setup,/matches.length===1/);
-  assert.match(gcCompany,/Saved draft override/);
-  assert.match(gcCompany,/Form 140 default/);
-  assert.match(setup,/<ProjectSetupGcCompany/);
+  assert.match(setup,/<DesignTeamContactDetails/);
+  assert.match(setup,/selectedForm140\.streetAddress/);
+  assert.doesNotMatch(setup,/ProjectSetupGcCompany|Use Form 140 default|Saved draft override/);
   assert.doesNotMatch(setup,/nameKey\(.*gcLookupId/);
 });
 

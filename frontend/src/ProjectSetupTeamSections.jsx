@@ -117,7 +117,7 @@ export function GcProjectTeam({value={},savedValue={},onChange,disabled=false}) 
   }
   return <div className="setup-team-section" aria-label="GC Project Team">
     <div className="setup-team-toolbar"><div><h4>GC contacts</h4>
-      <small>Contact details for this project. Choose a primary for the Form 19-compatible fields.</small></div>
+      </div>
       <button type="button" className="secondary-button" disabled={disabled||members.length>=50} onClick={()=>openNew()}>+ Add GC contact</button></div>
     {!!legacy.length && <div className="setup-team-legacy" role="status">
       <strong>Existing primary contacts</strong><span>Import a contact before adding another person in the same role; select its actual start date.</span>
@@ -205,7 +205,7 @@ export function RiggsProjectTeam({values,directory,onChange,disabled=false}) {
   };
   return <div className="setup-team-section" aria-label="Riggs Project Team">
     <div className="setup-team-toolbar"><div><h4>Team assignments</h4>
-      <small>Employees come from the verified directory. Foremen and Additional Members support multiple selections.</small></div>
+      </div>
       <button className="secondary-button" type="button" disabled={disabled||!directory} onClick={()=>setEditor({role:RIGGS_ROLES[0],id:null})}>+ Add team member</button></div>
     <div className="setup-team-chips">{!rows.length && <p className="setup-team-empty">No Riggs team assignments selected.</p>}
       {rows.map(row=><TeamChip key={`${row.role.field}-${row.id}`} label={row.label} role={row.role.label} disabled={disabled}

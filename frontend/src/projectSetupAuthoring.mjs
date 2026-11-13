@@ -114,6 +114,22 @@ export async function openSetup(intent, {operationId,signal,request=requestSetup
   if (setup.originalBidLogId !== bidId || response.externalWrites !== 0) throw new Error('Invalid saved setup.');
   return {setup,reference:context};
 }
+// Reject GC reassignment if a draft already contains project-specific GC history.
+// Historic company overrides remain readable even though new edits are disabled.
+export function gcContactContextHasData(contactInfo) {
+  if (!contactInfo || typeof contactInfo !== 'object') return false;
+  if (Array.isArray(contactInfo.teamMembers) && contactInfo.teamMembers.length) return true;
+  for (const key of ['streetAddress','cityStateZip','generalEmail']) {
+    if (contactInfo[key] !== undefined && contactInfo[key] !== null) return true;
+  }
+  for (const role of ['pm','superintendent']) {
+    for (const key of ['name','office','mobile','email']) {
+      if (contactInfo[role]?.[key] !== undefined && contactInfo[role]?.[key] !== null) return true;
+    }
+  }
+  return false;
+}
+
 export function readPath(object,path) {return path.split('.').reduce((o,k)=>o?.[k],object);}
 export function setPath(object,path,value) {
   const keys = path.split('.');
@@ -126,7 +142,6 @@ export function setPath(object,path,value) {
 }
 const ID_FIELDS = new Set(['pmITUserId','peITUserId','apmITUserId','superintendentEid','surveyorITUserId']);
 const ARRAY_ID_FIELDS = new Set(['foremanEids','additionalMemberITUserIds']);
-const GC_COMPANY_PATHS = new Set(['gcContactInfo.streetAddress','gcContactInfo.cityStateZip','gcContactInfo.generalEmail']);
 export function validateIdentityDirectory(value) {
   if (value?.source!=='RIGGSDATAHUB_VERIFIED_REFERENCES' || value.persistence!=='SQL_DRAFT_ONLY'
     || value.externalState!=='NOT_CONNECTED'
@@ -177,11 +192,6 @@ function normalized(path,value) {
     if (typeof value!=='string' || !/^206-[1-9][0-9]*$/.test(value))
       throw new Error('Choose a verified Form 206 contact.');
     return value;
-  }
-  if (GC_COMPANY_PATHS.has(path)) {
-    if (value === null || value === undefined) return null; // revert to Form 140
-    if (typeof value !== 'string' || value.length > 1000) throw new Error('Invalid GC project contact value.');
-    return value; // even empty string is an explicit project-only blank
   }
   if (path==='gcLookupId') {
     if (value==='' || value==null) return null;

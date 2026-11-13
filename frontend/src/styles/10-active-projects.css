@@ -1816,22 +1816,6 @@
 .design-team-directory-warning button {flex-shrink:0}
 @media(max-width:600px) {.design-team-directory-warning button {width:100%}}
 
-/* AP4F3U — Project-only GC company contact overrides (not Cognito writes). */
-.project-setup-gc-company {min-width:0;margin-top:4px}
-.project-setup-gc-company-heading {display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
-.project-setup-gc-company-heading strong {color:var(--text);font-size:12px;font-weight:680}
-.project-setup-gc-company-heading small {color:var(--text-soft);font-size:11px;line-height:1.45}
-.project-setup-gc-company-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.project-setup-gc-company-field {display:flex;flex-direction:column;gap:5px;min-width:0}
-.project-setup-gc-company-field .bid-edit-field {margin:0}
-.project-setup-gc-company-field input {min-width:0;width:100%;color:var(--text)}
-.project-setup-gc-company-meta {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
-.project-setup-gc-company-meta button {font-size:10px;min-height:27px;padding:4px 8px}
-.project-setup-gc-company-status {color:var(--text-soft);font-size:10px;font-weight:600}
-.project-setup-gc-company-reference {color:var(--muted);font-size:10px;line-height:1.45;overflow-wrap:anywhere}
-.project-setup-gc-company-disclaimer {display:block;margin-top:12px;color:var(--text-soft);font-size:10px;line-height:1.55}
-@media(max-width:700px) {.project-setup-gc-company-grid {grid-template-columns:minmax(0,1fr)}}
-
 /* AP4F3W - management preview is not authority: server and SQL deny writes.
    Put the same non-interactive watermark ABOVE the floating editor, not only
    behind it on the Active Projects workspace. */

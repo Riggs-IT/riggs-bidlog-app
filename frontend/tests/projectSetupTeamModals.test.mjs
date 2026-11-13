@@ -21,7 +21,9 @@ test('GC roster uses verified draft save not provider or new SQL endpoint',()=>{
   assert.match(team,/dateRemoved/);
   assert.match(team,/isPrimary/);
   assert.match(team,/Confirm removal/);
-  assert.match(team,/Form 19-compatible fields/);
+  assert.match(team,/GC contacts/);
+  assert.match(team,/isPrimary/);
+  assert.doesNotMatch(team,/Contact details for this project\. Choose a primary/);
   assert.doesNotMatch(team,/\/v1\/|\/cognito|fetch\(/);
 });
 test('person cards offer single-click edit, keyboard access and x-confirm',()=>{

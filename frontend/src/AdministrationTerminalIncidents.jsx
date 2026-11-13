@@ -1,4 +1,5 @@
 import {useEffect, useRef, useState} from 'react';
+import {TeamDialog} from './ProjectSetupTeamSections.jsx';
 
 const REASONS = Object.freeze({
   EXISTING_LIFECYCLE_OPERATION_REQUIRES_REVIEW: 'A previous lifecycle operation exists. Review before any retry.',
@@ -45,7 +46,9 @@ export default function AdministrationTerminalIncidents({refreshKey, onStateChan
   const [actionError, setActionError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
   const sessionCallback = useRef(onSessionError);
+  const reviewAbort = useRef(null);
   useEffect(() => { sessionCallback.current = onSessionError; }, [onSessionError]);
+  useEffect(() => () => reviewAbort.current?.abort(), []);
 
   useEffect(() => {
     if (!refreshKey || document.visibilityState !== 'visible') return;
@@ -77,7 +80,21 @@ export default function AdministrationTerminalIncidents({refreshKey, onStateChan
     return () => controller.abort();
   }, [refreshKey, reloadKey, onStateChange]);
 
+  function closeReview() {
+    if (busy && review) return; // an uncertain POST cannot be dismissed mid-flight
+    reviewAbort.current?.abort();
+    reviewAbort.current=null;
+    setBusy(false);
+    setSelected(null);
+    setReview(null);
+    setActionError('');
+  }
+
   async function openReview(row) {
+    if (busy || row.resolutionCode !== null) return;
+    reviewAbort.current?.abort();
+    const abort=new AbortController();
+    reviewAbort.current=abort;
     setSelected(row);
     setReview(null);
     setActionError('');
@@ -85,36 +102,38 @@ export default function AdministrationTerminalIncidents({refreshKey, onStateChan
     try {
       const response = await fetch(`/api/admin/terminal-cases/${row.incidentId}/review`, {
         method: 'GET', credentials: 'same-origin', cache: 'no-store',
-        headers: {'Accept': 'application/json'},
+        headers: {'Accept': 'application/json'}, signal:abort.signal,
       });
+      if (abort.signal.aborted) return;
       if (response.status === 401) sessionCallback.current?.({status: 401, detail: 'authentication_required'});
       if (!response.ok) throw new Error('Live review unavailable');
       const data = await response.json();
+      if (abort.signal.aborted) return;
       if (data.incidentId !== row.incidentId || data.bidId !== row.bidId
-          || typeof data.sourcePresent !== 'boolean' || typeof data.sqlLifecycleComplete !== 'boolean') {
+          || typeof data.sourcePresent !== 'boolean' || typeof data.sqlLifecycleComplete !== 'boolean'
+          || typeof data.canVerifyResolve !== 'boolean' || typeof data.verifyResolveEnabled !== 'boolean') {
         throw new Error('Invalid case review response');
       }
       setReview(data);
     } catch (exc) {
-      setActionError('Could not verify the current SharePoint/SQL state. No action was taken.');
+      if (abort.signal.aborted) return;
+      setActionError('Current SharePoint/SQL evidence could not be verified. Nothing was changed.');
     } finally {
-      setBusy(false);
+      if (!abort.signal.aborted) setBusy(false);
+      if (reviewAbort.current===abort) reviewAbort.current=null;
     }
   }
 
-  async function takeAction(operation) {
-    if (!selected || !review || busy) return;
-    const message = operation === 'VERIFY_RESOLVED'
-      ? `Mark incident ${selected.incidentId} as verified resolved? The live source must be absent and SQL must prove completion.`
-      : `Retry the Not Pursuing move for bid ${selected.bidId}? This makes REAL SharePoint and SQL changes, only if all server safety checks pass.`;
-    if (!window.confirm(message)) return;
+  async function resolveCase() {
+    if (!selected || !review || busy || !review.canVerifyResolve || !review.verifyResolveEnabled
+        || review.sourcePresent || !review.sqlLifecycleComplete) return;
     setBusy(true);
     setActionError('');
     try {
       const response = await fetch(`/api/admin/terminal-cases/${selected.incidentId}/action`, {
         method: 'POST', credentials: 'same-origin', cache: 'no-store',
         headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
-        body: JSON.stringify({requestId: crypto.randomUUID(), operation, confirmed: true}),
+        body: JSON.stringify({requestId: crypto.randomUUID(), operation:'VERIFY_RESOLVED', confirmed:true}),
       });
       if (response.status === 401) sessionCallback.current?.({status: 401, detail: 'authentication_required'});
       if (!response.ok) throw new Error(`Action blocked (${response.status})`);
@@ -123,7 +142,8 @@ export default function AdministrationTerminalIncidents({refreshKey, onStateChan
       setReloadKey(k => k + 1);
       setTab('resolved');
     } catch (exc) {
-      setActionError('Action did not complete or was blocked. Recheck current status before retrying.');
+      setReview(null); // do not allow a new POST with stale evidence after an uncertain outcome
+      setActionError('Resolution was not confirmed. Close and reopen to verify current state.');
     } finally {
       setBusy(false);
     }
@@ -144,11 +164,11 @@ export default function AdministrationTerminalIncidents({refreshKey, onStateChan
         {' '}· checked {timestamp(lastGood.observedAtUTC)}
         {error ? ' · Latest read unavailable; showing last verified data' : ''}
       </p>
-      <div className="administration-tab-row" role="group" aria-label="Lifecycle cases">
-        <button type="button" aria-pressed={tab === 'open'} onClick={() => {setTab('open');setSelected(null);}}>
+      <div className="administration-tab-row administration-queue-actions" role="group" aria-label="Lifecycle cases">
+        <button type="button" aria-pressed={tab === 'open'} onClick={() => {closeReview();setTab('open');}}>
           Needs review ({lastGood.openCount})
         </button>
-        <button type="button" aria-pressed={tab === 'resolved'} onClick={() => {setTab('resolved');setSelected(null);}}>
+        <button type="button" aria-pressed={tab === 'resolved'} onClick={() => {closeReview();setTab('resolved');}}>
           Resolved ({lastGood.resolvedCount})
         </button>
       </div>
@@ -162,7 +182,7 @@ export default function AdministrationTerminalIncidents({refreshKey, onStateChan
             <td><strong>{row.kind === 'BLOCKED' ? 'Blocked recovery' : 'Uncertain outcome'}</strong>
               <div>{REASONS[row.reasonCode]}</div></td>
             <td>{timestamp(row.resolvedAtUTC || row.lastObservedAtUTC)}</td>
-            <td>{tab === 'open' ? <button type="button" disabled={busy} onClick={() => openReview(row)}>Review</button>
+            <td>{tab === 'open' ? <div className="administration-queue-actions"><button type="button" disabled={busy} onClick={() => openReview(row)}>Resolve</button></div>
               : <span>Verified</span>}</td>
           </tr>)}
         </tbody></table>
@@ -174,26 +194,32 @@ export default function AdministrationTerminalIncidents({refreshKey, onStateChan
       </p>}
     </> : <p className="administration-detail">{loading ? 'Checking lifecycle cases…' : 'No verified lifecycle cases loaded.'}</p>}
     {error && <div className="administration-message administration-message-warning" role="status">{error}</div>}
-    {selected && <div className="administration-section" aria-label="Selected lifecycle case review">
-      <h3>Review bid {selected.bidId}</h3>
-      {busy && <p className="administration-detail">Verifying current evidence…</p>}
-      {review && <>
-        <p className="administration-detail">Active source: {review.sourcePresent ? 'Still present' : 'Absent'} ·
-          SQL lifecycle: {review.sqlLifecycleComplete ? 'Complete' : 'Not verified complete'} ·
-          Preserved history versions: {review.preservedHistoryVersions}</p>
-        <p className="administration-detail">{review.reasonCode || 'No prewrite blocker found in current readback.'}</p>
-        <div className="administration-tab-row">
-          <button type="button" disabled={busy || !review.canVerifyResolve || !review.verifyResolveEnabled}
-                  onClick={() => takeAction('VERIFY_RESOLVED')}>Verify &amp; resolve</button>
-          <button type="button" disabled={busy || !review.canRetry || !review.retryEnabled}
-                  onClick={() => takeAction('RETRY_NOT_PURSUING')}>Review &amp; retry move</button>
-          <button type="button" disabled={busy} onClick={() => {setSelected(null);setReview(null);}}>Close review</button>
-        </div>
-        {!review.verifyResolveEnabled && <small className="administration-detail">Resolution writes are disabled by server policy.</small>}
-      </>}
-      {actionError && <div className="administration-message administration-message-warning" role="status">{actionError}</div>}
-    </div>}
-    <p className="administration-detail">Recorded incidents are retained. A retry is never a force operation;
-      it is refused if SQL, SharePoint, or the fast-path queue indicates a prior or uncertain move.</p>
+    {selected && <TeamDialog eyebrow="ADMINISTRATION" title={`Resolve bid ${selected.bidId}?`}
+      description="Check the live evidence before confirming a resolution."
+      onClose={closeReview}
+      actions={<>
+        <button type="button" className="secondary-button" disabled={busy && Boolean(review)} onClick={closeReview}>Cancel</button>
+        <button type="button" className="primary-button"
+          disabled={busy || !review?.canVerifyResolve || !review?.verifyResolveEnabled
+            || review?.sourcePresent !== false || review?.sqlLifecycleComplete !== true}
+          onClick={resolveCase}>{busy && review ? 'Resolving…' : 'Resolve'}</button>
+      </>}>
+      <dl className="administration-facts">
+        <div><dt>Bid</dt><dd>{selected.bidId}</dd></div>
+        <div><dt>Status</dt><dd>{selected.status}</dd></div>
+        <div><dt>Finding</dt><dd>{REASONS[selected.reasonCode]}</dd></div>
+        <div><dt>Last observed</dt><dd>{timestamp(selected.lastObservedAtUTC)}</dd></div>
+        {review && <>
+          <div><dt>SharePoint source</dt><dd>{review.sourcePresent ? 'Still present' : 'Absent'}</dd></div>
+          <div><dt>SQL lifecycle</dt><dd>{review.sqlLifecycleComplete ? 'Complete' : 'Not verified'}</dd></div>
+          <div><dt>History versions</dt><dd>{review.preservedHistoryVersions}</dd></div>
+        </>}
+      </dl>
+      {busy && !review && <p className="administration-detail" role="status">Verifying live evidence…</p>}
+      {review && (!review.canVerifyResolve || !review.verifyResolveEnabled
+        || review.sourcePresent || !review.sqlLifecycleComplete) &&
+        <p className="administration-detail" role="status">Resolution is blocked by current evidence or server policy.</p>}
+      {actionError && <div className="administration-message administration-message-warning" role="alert">{actionError}</div>}
+    </TeamDialog>}
   </section>;
 }
