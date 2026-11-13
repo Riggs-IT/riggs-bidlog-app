@@ -16,3 +16,14 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 .projection-source-divider { color:var(--muted); opacity:.7; }
+
+/* No-PM reference amounts and titles: use the shared warning token in both themes. */
+/* Stronger than the generic .project-cell span rule in 01-foundations. */
+.pivot-project-name-line > .projection-estimate-marker,
+.project-name-status-line > .projection-estimate-marker { color: var(--warning); }
+.pivot-project-name-line:has(> .projection-estimate-marker) > .pivot-project-name,
+.project-name-status-line:has(> .projection-estimate-marker) > .project-title-ellipsis {
+  color: var(--warning);
+}
+.primary-projection-amount > .system-estimate-reference-value { color: var(--warning); font-weight: 650; cursor: help; }
+.pivot-billing-amount-line.system-estimate-reference-value strong { color: inherit; }

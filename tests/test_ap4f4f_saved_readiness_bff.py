@@ -22,7 +22,7 @@ def response():
       'missingReviewFields':['gcLookupId'],
       'fields':[{'path':f'field{n}','state':'PRESENT','collector':'OPS'} for n in range(50)]+[
         {'path':'gcLookupId','state':'MISSING','collector':'BID'}],
-      'blockers':[{'code':'SIGNED_AWARD_AMOUNT_NOT_ATTESTED','scope':'BUSINESS'}],
+      'blockers':[{'code':'FORM19_CONDITIONAL_REQUIREDNESS_UNVERIFIED','scope':'PROVIDER'}],
       'readyForJis':False,'form19CreateAuthorized':False,'canSaveIncompleteDraft':True,'externalWrites':0}
 
 class Tests(unittest.TestCase):

@@ -1,5 +1,5 @@
 import { completedProjectPivotCell, pivotCurrentCell, pivotTotals, nullableAmount, varianceTooltipText } from './primaryProjection.js';
-import { ProjectionEstimateMarker, ProjectionAmount } from './ProjectionDisplay.jsx';
+import { ProjectionEstimateMarker, ProjectionAmount, SYSTEM_ESTIMATE_TOOLTIP, projectProjectionTitle } from './ProjectionDisplay.jsx';
 import ScheduleReviewFlag from './ScheduleReviewFlag.jsx';
 import ForecastBalanceFlag from './ForecastBalanceFlag.jsx';
 import {BalanceReviewAmount} from './BalanceReviewSummary.jsx';
@@ -531,7 +531,8 @@ function ProjectMeta({
         {row.source === 'current' && !historicalOnly && <ProjectionEstimateMarker project={row.raw} />}
         <strong
           className="pivot-project-name"
-          title={row.name}
+          title={row.source === 'current' && !historicalOnly
+            ? projectProjectionTitle(row.raw, row.name) : row.name}
         >
           {row.name}
         </strong>
@@ -775,14 +776,18 @@ function AllBillingValues({cell, currency, source, showMargin = false, completed
         const unavailable = !completedHistoryMode && key !== 'projected'
           && (source === 'bid' || cell?.hasActivity === false);
         const value = cell?.[key] ?? null;
+        const showSystemEstimate = !completedHistoryMode && key === 'projected'
+          && source === 'current' && cell?.isSystemEstimate === true
+          && cell?.projectCompleted !== true && value == null && cell?.baseline != null;
         return (
           <span
             key={key}
-            className={`pivot-billing-amount-line ${metricClass(key, value)}`}
+            className={`pivot-billing-amount-line ${metricClass(key, value)} ${showSystemEstimate ? 'system-estimate-reference-value' : ''}`}
+            title={showSystemEstimate ? SYSTEM_ESTIMATE_TOOLTIP : undefined}
           >
             {unavailable ? null : (
               <strong>
-                {value == null ? '—' : currency(value)}
+                {showSystemEstimate ? currency(cell.baseline) : value == null ? '—' : currency(value)}
               </strong>
             )}
           </span>
@@ -909,13 +914,16 @@ function BillingValue({ cell, metric, currency, source, showBaseline = false, sh
   const compare = !completedHistoryMode && showBaseline && source === 'current';
   if (metric === 'projected') {
     return <ProjectionAmount value={cell.projected} currency={currency} missing={cell.missingPmMonths}
-      baseline={cell.baseline} compare={compare} />;
+      baseline={cell.baseline} compare={compare}
+      showSystemFallback={!completedHistoryMode && source === 'current'
+        && cell.isSystemEstimate === true && cell.projectCompleted !== true} />;
   }
   if (metric === 'all') {
     return <div><AllBillingValues cell={cell} currency={currency} source={source}
       showMargin={showMargin} completedHistoryMode={completedHistoryMode} />
 
-      {compare && <small className="baseline-reference">System Estimate {cell.baseline == null ? '—' : currency(cell.baseline)}</small>}
+      {compare && !(cell?.isSystemEstimate === true && cell?.projected == null && cell?.baseline != null)
+        && <small className="baseline-reference">System Estimate {cell.baseline == null ? '—' : currency(cell.baseline)}</small>}
     </div>;
   }
   return <SingleBillingValue cell={cell} metric={metric} currency={currency} />;

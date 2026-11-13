@@ -6,7 +6,7 @@ function response(){return {setupId:sid,revision:5,mappingVersion:'AP4F4F_51',ba
   readiness:'BLOCKED',fieldReviewIsAdvisory:true,fieldCount:51,rootCount:32,
   missingReviewFields:['gcLookupId'],fields:Array.from({length:50},(_,i)=>({path:`field${i}`,state:'PRESENT',collector:'OPS'})).concat(
     [{path:'gcLookupId',state:'MISSING',collector:'BID'}]),
-  blockers:[{code:'SIGNED_AWARD_AMOUNT_NOT_ATTESTED',scope:'BUSINESS'}],readyForJis:false,
+  blockers:[{code:'FORM19_CONDITIONAL_REQUIREDNESS_UNVERIFIED',scope:'PROVIDER'}],readyForJis:false,
   form19CreateAuthorized:false,canSaveIncompleteDraft:true,externalWrites:0};}
 test('accept exact saved revision and blocked readiness',()=>{
   assert.equal(validateSavedReadiness(response(),sid,5).readiness,'BLOCKED');

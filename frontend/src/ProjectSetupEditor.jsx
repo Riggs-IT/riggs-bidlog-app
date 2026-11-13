@@ -322,7 +322,7 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
         </button>)}
         <small className="project-setup-checklist-disclaimer">
           {savedReadiness
-            ? `JIS blocked · ${savedReadiness.missingReviewFields.length} draft fields to review · ${savedReadiness.blockers.length} approval gates`
+            ? `JIS blocked · ${savedReadiness.missingReviewFields.length} draft fields to review · ${savedReadiness.blockers.length} Form 19 integration checks`
             : readinessUnavailable ? 'Saved-revision readiness unavailable. Draft saves remain unchanged.'
             : 'Checking saved-revision readiness…'}
         </small>

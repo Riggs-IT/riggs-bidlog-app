@@ -17,7 +17,7 @@ import {indexScheduleReview} from './scheduleReview.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey} from './gcReference.js';
 import { aggregateCurrentMonthly, summarizePortfolioMonths, summarizeMonthlyTotals, nullableAmount, amountDifference, pmProjectionForVariance, projectionSourceLabel, buildMonthlyProjectionExport, arizonaCalendarDay, varianceTooltipText } from './primaryProjection.js';
-import { ProjectionEstimateMarker, ProjectionAmount } from './ProjectionDisplay.jsx';
+import { ProjectionEstimateMarker, ProjectionAmount, projectProjectionTitle } from './ProjectionDisplay.jsx';
 import useGcReference, { canReadGcReference } from './useGcReference.js';
 import useProjectedBillingsFreshness from './useProjectedBillingsFreshness.js';
 import useOriginatingBidAttention from './useOriginatingBidAttention.js';
@@ -7216,7 +7216,9 @@ export default function App() {
                                                   {detail.source === 'Current Project' && <ProjectionEstimateMarker project={detail.raw} />}
                                                   <strong
                                                     className="project-title-ellipsis"
-                                                    title={displayValue(detail.name)}
+                                                    title={detail.source === 'Current Project'
+                                                      ? projectProjectionTitle(detail.raw, displayValue(detail.name))
+                                                      : displayValue(detail.name)}
                                                   >
                                                     {displayValue(
                                                       detail.name
@@ -7300,7 +7302,10 @@ export default function App() {
                                               </td>
 
                                               <td className="numeric strong-cell">
-                                                <ProjectionAmount value={detail.expected} currency={currency} missing={detail.missingPmMonths} baseline={detail.baseline} compare={false} />
+                                                <ProjectionAmount value={detail.expected} currency={currency} missing={detail.missingPmMonths}
+                                                  baseline={detail.baseline} compare={false}
+                                                  showSystemFallback={detail.source === 'Current Project'
+                                                    && !isCompleted(detail.raw) && detail.raw?.hasPmForecast === false} />
                                               </td>
 
                                               {includeActiveProjects && (
@@ -7717,7 +7722,9 @@ export default function App() {
                           {row.source === 'Current Project' && <ProjectionEstimateMarker project={row.raw} />}
                           <strong
                             className="project-title-ellipsis"
-                            title={displayValue(row.name)}
+                            title={row.source === 'Current Project'
+                              ? projectProjectionTitle(row.raw, displayValue(row.name))
+                              : displayValue(row.name)}
                           >
                             {displayValue(
                               row.name
@@ -7839,7 +7846,10 @@ export default function App() {
                       )}
 
                       <td className="numeric strong-cell">
-                        <ProjectionAmount value={row.expected} currency={currency} missing={row.raw?.selectedMissingPmMonths} baseline={row.raw?.selectedBaseline} compare={false} />
+                        <ProjectionAmount value={row.expected} currency={currency} missing={row.raw?.selectedMissingPmMonths}
+                          baseline={row.raw?.selectedBaseline} compare={false}
+                          showSystemFallback={row.source === 'Current Project'
+                            && !isCompleted(row.raw) && row.raw?.hasPmForecast === false} />
                       </td>
 
                       {includeActiveProjects && (
