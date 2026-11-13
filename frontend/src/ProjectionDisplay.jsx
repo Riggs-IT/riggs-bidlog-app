@@ -1,22 +1,16 @@
 import './ProjectionDisplay.css';
 
-// A system baseline is visible to reviewers only. It is not a PM submission
-// and must never be included in portfolio totals, variance or exported PM data.
+// System estimates can be included in display-only projected totals while
+// remaining separate from submitted PM projections, variance and CSV exports.
 export const SYSTEM_ESTIMATE_TOOLTIP =
-  'No PM Projection submitted. System Estimate is reference only. Displayed amounts are system presets, excluded from PM totals and variance.';
+  'No PM Projection submitted. System estimate shown and included in displayed projected totals; it is not a submitted PM projection or part of PM-only variance.';
 
 export function projectProjectionTitle(project, name) {
   return project && !project.projectCompleted && project.hasPmForecast === false
-    ? `${name}\n* ${SYSTEM_ESTIMATE_TOOLTIP}`
+    ? `${name}\n${SYSTEM_ESTIMATE_TOOLTIP}`
     : name;
 }
 
-export function ProjectionEstimateMarker({ project, className = '' }) {
-  if (!project || project.projectCompleted || project.hasPmForecast) return null;
-  return <span className={`projection-estimate-marker ${className}`.trim()}
-    title={SYSTEM_ESTIMATE_TOOLTIP}
-    aria-label="No PM Projection; system estimate shown for reference only">*</span>;
-}
 export function ProjectionAmount({ value, currency, missing = 0, baseline, compare = false,
   showSystemFallback = false }) {
   const hasPmValue = value !== null && value !== undefined;

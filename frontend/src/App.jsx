@@ -17,7 +17,7 @@ import {indexScheduleReview} from './scheduleReview.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey} from './gcReference.js';
 import { aggregateCurrentMonthly, summarizePortfolioMonths, summarizeMonthlyTotals, nullableAmount, amountDifference, pmProjectionForVariance, projectionSourceLabel, buildMonthlyProjectionExport, arizonaCalendarDay, varianceTooltipText } from './primaryProjection.js';
-import { ProjectionEstimateMarker, ProjectionAmount, projectProjectionTitle } from './ProjectionDisplay.jsx';
+import { ProjectionAmount, projectProjectionTitle } from './ProjectionDisplay.jsx';
 import useGcReference, { canReadGcReference } from './useGcReference.js';
 import useProjectedBillingsFreshness from './useProjectedBillingsFreshness.js';
 import useOriginatingBidAttention from './useOriginatingBidAttention.js';
@@ -3752,13 +3752,13 @@ export default function App() {
 
             const fieldMap = {
               active:
-                'currentProjected',
+                'displayCurrentProjected',
 
               potential:
                 'weightedBids',
 
               projected:
-                'combinedExpected',
+                'displayCombinedExpected',
 
               actual:
                 'currentActual',
@@ -6770,10 +6770,10 @@ export default function App() {
                         type="button"
                         className={`projection-source-count-toggle ${projectionSourceFilter === ALL || projectionSourceFilter === 'missing' ? 'active' : ''}`}
                         aria-pressed={projectionSourceFilter === ALL || projectionSourceFilter === 'missing'}
-                        title="* No submitted PM Projection"
+                        title="No PM Projection submitted; system estimates are displayed and included in projected display totals"
                         onClick={() => setProjectionSourceFilter(value => value === 'missing' ? ALL : 'missing')}
                       >
-                        {projectionCoverage.system} No PM Projection*
+                        {projectionCoverage.system} No PM Projection
                       </button>
                       <span className="projection-source-divider" aria-hidden="true">·</span>
                       <button
@@ -6937,7 +6937,10 @@ export default function App() {
 
                         {includeActiveProjects && (
                           <td className="numeric">
-                            <ProjectionAmount value={row.currentProjected} currency={currency} missing={row.missingPmMonths} baseline={row.currentBaseline} compare={false} />
+                            <span title={row.displaySystemEstimateCount
+                              ? `Includes system estimates for ${row.displaySystemEstimateCount} no-PM projects; not submitted PM projections.` : undefined}>
+                              <ProjectionAmount value={row.displayCurrentProjected} currency={currency} missing={row.missingPmMonths} baseline={row.currentBaseline} compare={false} />
+                            </span>
                           </td>
                         )}
 
@@ -6951,7 +6954,10 @@ export default function App() {
 
                         {showCombinedSources && (
                           <td className="numeric strong-cell">
-                            <ProjectionAmount value={row.combinedExpected} currency={currency} missing={row.missingPmMonths} />
+                            <span title={row.displaySystemEstimateCount
+                              ? `Includes system estimates for ${row.displaySystemEstimateCount} no-PM projects; not submitted PM projections.` : undefined}>
+                              <ProjectionAmount value={row.displayCombinedExpected} currency={currency} missing={row.missingPmMonths} />
+                            </span>
                           </td>
                         )}
 
@@ -7212,8 +7218,10 @@ export default function App() {
                                               )}
 
                                               <td className="project-cell">
-                                                <div className="project-name-status-line">
-                                                  {detail.source === 'Current Project' && <ProjectionEstimateMarker project={detail.raw} />}
+                                                <div className={`project-name-status-line ${detail.source === 'Current Project'
+                                                  && !isCompleted(detail.raw) && detail.raw?.hasPmForecast === false
+                                                  ? 'no-pm-projection' : ''}`}>
+
                                                   <strong
                                                     className="project-title-ellipsis"
                                                     title={detail.source === 'Current Project'
@@ -7393,7 +7401,10 @@ export default function App() {
 
                     {includeActiveProjects && (
                       <td className="numeric">
-                        <ProjectionAmount value={monthlyComparisonTotals.currentProjected} currency={currency} missing={monthlyComparisonTotals.missingPmMonths} baseline={monthlyComparisonTotals.currentBaseline} compare={false} />
+                        <span title={monthlyComparisonTotals.displaySystemEstimateCount
+                          ? `Includes system estimates for ${monthlyComparisonTotals.displaySystemEstimateCount} project-months; not submitted PM projections.` : undefined}>
+                          <ProjectionAmount value={monthlyComparisonTotals.displayCurrentProjected} currency={currency} missing={monthlyComparisonTotals.missingPmMonths} baseline={monthlyComparisonTotals.currentBaseline} compare={false} />
+                        </span>
                       </td>
                     )}
 
@@ -7407,7 +7418,10 @@ export default function App() {
 
                     {showCombinedSources && (
                       <td className="numeric strong-cell">
-                        <ProjectionAmount value={monthlyComparisonTotals.combinedExpected} currency={currency} missing={monthlyComparisonTotals.missingPmMonths} />
+                        <span title={monthlyComparisonTotals.displaySystemEstimateCount
+                          ? `Includes system estimates for ${monthlyComparisonTotals.displaySystemEstimateCount} project-months; not submitted PM projections.` : undefined}>
+                          <ProjectionAmount value={monthlyComparisonTotals.displayCombinedExpected} currency={currency} missing={monthlyComparisonTotals.missingPmMonths} />
+                        </span>
                       </td>
                     )}
 
@@ -7718,8 +7732,10 @@ export default function App() {
                       )}
 
                       <td className="project-cell">
-                        <div className="project-name-status-line">
-                          {row.source === 'Current Project' && <ProjectionEstimateMarker project={row.raw} />}
+                        <div className={`project-name-status-line ${row.source === 'Current Project'
+                          && !isCompleted(row.raw) && row.raw?.hasPmForecast === false
+                          ? 'no-pm-projection' : ''}`}>
+
                           <strong
                             className="project-title-ellipsis"
                             title={row.source === 'Current Project'

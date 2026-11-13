@@ -101,5 +101,6 @@ test('two tables and By Month rows expose flags; schedule does not add a filter'
   assert.match(directory, /rebalanceByJobId\.has/);
   assert.match(pivot, /data-schedule-review/);
   assert.doesNotMatch(app, /value==='scheduleReview'/);
-  assert.match(app, /No PM Projection\*/);
+  assert.match(app, /No PM Projection/);
+  assert.doesNotMatch(app, /No PM Projection\*/);
 });

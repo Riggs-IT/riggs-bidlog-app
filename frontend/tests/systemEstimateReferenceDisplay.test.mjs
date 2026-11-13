@@ -9,7 +9,7 @@ import {pivotCurrentCell, pivotTotals, completedProjectPivotCell,
 const here = path.dirname(fileURLToPath(import.meta.url));
 const read = name => readFileSync(path.resolve(here, '../src', name), 'utf8');
 
-test('No-PM estimate is retained for reference but never becomes PM, forecast totals or variance', () => {
+test('No-PM estimate becomes a display-only header total, not a PM amount or variance', () => {
   const row = {primaryProjectionSource:'SYSTEM_BASELINE', hasPmForecast:false,
     systemBaselineAmount:456.78, pmForecastAmount:null, actualAmount:123.45};
   const cell = pivotCurrentCell(row, '2026-11');
@@ -20,7 +20,11 @@ test('No-PM estimate is retained for reference but never becomes PM, forecast to
   const totals = pivotTotals([{source:'current', cells:[cell]}], 0, 'projected', false);
   assert.equal(totals.projectedValue, null);
   assert.equal(totals.baselineValue, 456.78);
+  assert.equal(totals.displayProjectedValue, 456.78);
+  assert.equal(totals.value, 456.78);
+  assert.equal(totals.includedSystemEstimateValue, 456.78);
   assert.equal(totals.activeProjectsProjected, 0);
+  assert.equal(totals.displayActiveProjectsProjected, 1);
   assert.equal(totals.varianceValue, null);
 });
 
@@ -46,8 +50,8 @@ test('The visual fallback never replaces the canonical primaryProjection API val
   const presentation = read('ProjectionDisplay.jsx');
   assert.match(presentation, /showSystemFallback = false/);
   assert.match(presentation, /showSystemFallback && !hasPmValue && baseline !== null && baseline !== undefined/);
-  assert.match(presentation, /'No PM Projection submitted\. System Estimate is reference only/);
-  assert.match(presentation, /excluded from PM totals and variance/);
+  assert.match(presentation, /No PM Projection submitted\. System estimate shown and included in displayed projected totals/);
+  assert.match(presentation, /not a submitted PM projection or part of PM-only variance/);
 });
 
 test('The existing pivot All/Projected cells display only verified system references', () => {
@@ -69,10 +73,10 @@ test('Both monthly breakdown views show reference values only on active no-PM pr
 
 test('No-PM project names use the existing warning token and have a help tooltip', () => {
   const css = read('ProjectionDisplay.css');
-  assert.match(css, /pivot-project-name-line:has\(> \.projection-estimate-marker\)/);
-  assert.match(css, /project-name-status-line:has\(> \.projection-estimate-marker\)/);
-  assert.match(css, /project-name-status-line > \.projection-estimate-marker/);
+  assert.match(css, /pivot-project-name-line\[data-no-pm/);
+  assert.match(css, /project-name-status-line\.no-pm-projection/);
+  assert.doesNotMatch(css, /\.projection-estimate-marker/);
   assert.match(css, /primary-projection-amount > \.system-estimate-reference-value/);
   assert.match(css, /color:\s*var\(--warning\)/);
-  assert.match(read('ProjectionDisplay.jsx'), /title=\{SYSTEM_ESTIMATE_TOOLTIP\}/);
+  assert.match(read('ProjectionDisplay.jsx'), /SYSTEM_ESTIMATE_TOOLTIP/);
 });

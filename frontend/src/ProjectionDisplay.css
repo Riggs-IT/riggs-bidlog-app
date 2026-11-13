@@ -5,7 +5,6 @@
 .projection-basis-controls label { display:flex; align-items:center; gap:6px; cursor:pointer; }
 .projection-coverage-note { font-size:.76rem; margin:6px 20px 10px; opacity:.85; }
 
-.projection-estimate-marker { display:inline-block; flex:0 0 auto; margin-right:4px; color:var(--muted); font-size:.8em; font-weight:700; line-height:1; cursor:help; }
 .projection-source-filter-group { display:inline-flex; align-items:center; gap:3px; flex-wrap:wrap; }
 .projection-source-count-toggle { font:inherit; font-size:12px; font-weight:600; cursor:pointer; color:var(--muted); background:var(--surface-2,transparent); border:1px solid var(--border); border-radius:999px; padding:4px 8px; }
 .projection-source-count-toggle:hover { color:var(--text); border-color:var(--border); }
@@ -17,13 +16,11 @@
 }
 .projection-source-divider { color:var(--muted); opacity:.7; }
 
-/* No-PM reference amounts and titles: use the shared warning token in both themes. */
-/* Stronger than the generic .project-cell span rule in 01-foundations. */
-.pivot-project-name-line > .projection-estimate-marker,
-.project-name-status-line > .projection-estimate-marker { color: var(--warning); }
-.pivot-project-name-line:has(> .projection-estimate-marker) > .pivot-project-name,
-.project-name-status-line:has(> .projection-estimate-marker) > .project-title-ellipsis {
+/* Asterisk-free warning: the project title itself signals a system estimate. */
+.pivot-project-name-line[data-no-pm="true"] > .pivot-project-name,
+.project-name-status-line.no-pm-projection > .project-title-ellipsis {
   color: var(--warning);
+  cursor: help;
 }
 .primary-projection-amount > .system-estimate-reference-value { color: var(--warning); font-weight: 650; cursor: help; }
 .pivot-billing-amount-line.system-estimate-reference-value strong { color: inherit; }

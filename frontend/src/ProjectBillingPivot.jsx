@@ -1,5 +1,5 @@
 import { completedProjectPivotCell, pivotCurrentCell, pivotTotals, nullableAmount, varianceTooltipText } from './primaryProjection.js';
-import { ProjectionEstimateMarker, ProjectionAmount, SYSTEM_ESTIMATE_TOOLTIP, projectProjectionTitle } from './ProjectionDisplay.jsx';
+import { ProjectionAmount, SYSTEM_ESTIMATE_TOOLTIP, projectProjectionTitle } from './ProjectionDisplay.jsx';
 import ScheduleReviewFlag from './ScheduleReviewFlag.jsx';
 import ForecastBalanceFlag from './ForecastBalanceFlag.jsx';
 import {BalanceReviewAmount} from './BalanceReviewSummary.jsx';
@@ -527,8 +527,9 @@ function ProjectMeta({
 }) {
   return (
     <div className="pivot-project-info">
-      <div className="pivot-project-name-line">
-        {row.source === 'current' && !historicalOnly && <ProjectionEstimateMarker project={row.raw} />}
+      <div className="pivot-project-name-line"
+        data-no-pm={row.source === 'current' && !historicalOnly
+          && row.raw?.hasPmForecast === false && !row.raw?.projectCompleted ? 'true' : undefined}>
         <strong
           className="pivot-project-name"
           title={row.source === 'current' && !historicalOnly
@@ -543,6 +544,11 @@ function ProjectMeta({
           </span>
         )}
       </div>
+
+      <small className="pivot-mobile-project-reference">
+        {row.source === 'current' && row.number !== '—' ? `#${row.number}` : row.sourceLabel}
+        {row.gc && row.gc !== 'No GC' ? ` · ${row.gc}` : ''}
+      </small>
 
       {/* Review badges span the name/team rows; preserve balance-before-schedule order. */}
       <div className="pivot-project-statuses">
@@ -770,7 +776,7 @@ function AllBillingValues({cell, currency, source, showMargin = false, completed
   const tracks = completedHistoryMode ? COMPLETED_VALUE_TRACKS : ALL_VALUE_TRACKS;
   return (
     <div className="pivot-billing-amounts">
-      {tracks.filter(track => showMargin || track.key !== 'marginCollected').map(({key}) => {
+      {tracks.filter(track => showMargin || track.key !== 'marginCollected').map(({key, short}) => {
         // Completed history has two tracks only: recorded Actual and the
         // authorized Margin Collected. Never show PM projections or variance.
         const unavailable = !completedHistoryMode && key !== 'projected'
@@ -783,6 +789,7 @@ function AllBillingValues({cell, currency, source, showMargin = false, completed
           <span
             key={key}
             className={`pivot-billing-amount-line ${metricClass(key, value)} ${showSystemEstimate ? 'system-estimate-reference-value' : ''}`}
+            data-metric-label={short}
             title={showSystemEstimate ? SYSTEM_ESTIMATE_TOOLTIP : undefined}
           >
             {unavailable ? null : (
@@ -987,6 +994,8 @@ export function HeaderTotal({
   includeBidProjection = true,
   missingPmMonths = 0,
   hasSystemEstimate = false,
+  includedSystemEstimateCount = 0,
+  includedSystemEstimateValue = null,
   baselineValue = null,
   showBaseline = false,
 }) {
@@ -1012,27 +1021,32 @@ export function HeaderTotal({
 
   const projectedTooltipLabel =
     includeProjectProjection
-      ? 'Submitted PM Projection'
+      ? 'Displayed active project projection'
       : 'Potential Bid Projection';
 
   const hasCombinedForecastSources =
     includeProjectProjection
     && includeBidProjection;
 
+  const includedEstimateNote = includeProjectProjection && hasSystemEstimate
+    ? `Includes system estimates for ${includedSystemEstimateCount} no-PM project${includedSystemEstimateCount === 1 ? '' : 's'}: ${headerCurrency(includedSystemEstimateValue)}. These are not submitted PM projections.`
+    : null;
+
   const totalForecastTooltip =
     [
-      'Total Forecast',
+      'Total displayed projection',
       `Active projects: ${headerCurrency(projectedValue)}`,
       `Potential bids: ${headerCurrency(bidProjectedValue)}`,
       `Total: ${headerCurrency(totalForecastValue)}`,
-    ].join('\n');
+      includedEstimateNote,
+    ].filter(Boolean).join('\n');
 
   const projectedTooltip =
     [
       projectedTooltipLabel,
       headerCurrency(projectedDisplayValue),
-      includeProjectProjection
-      && missingPmMonths
+      includedEstimateNote,
+      includeProjectProjection && missingPmMonths
         ? `PM months missing: ${missingPmMonths}`
         : null,
     ]
@@ -1137,8 +1151,10 @@ export function HeaderTotal({
 
   return (
     <span className="pivot-header-total">
-      <span className="pivot-header-total-label">
+      <span className="pivot-header-total-label" title={includedEstimateNote || undefined}>
         {label}
+        {includedEstimateNote && <abbr className="header-estimate-source-indicator"
+          title={includedEstimateNote} aria-label={includedEstimateNote}>SE</abbr>}
       </span>
 
       {allMode ? (
@@ -1813,14 +1829,14 @@ export default function ProjectBillingPivot({
                 type="button"
                 className={`projection-source-count-toggle ${projectionSourceFilter === projectionSourceAllValue || projectionSourceFilter === 'missing' ? 'active' : ''}`}
                 aria-pressed={projectionSourceFilter === projectionSourceAllValue || projectionSourceFilter === 'missing'}
-                title="* No submitted PM Projection"
+                title="No submitted PM Projection; displayed system estimates are not submitted PM projections"
                 onClick={() => onProjectionSourceFilterChange(
                   projectionSourceFilter === 'missing'
                     ? projectionSourceAllValue
                     : 'missing'
                 )}
               >
-                {projectionCoverage.system} No PM Projection*
+                {projectionCoverage.system} No PM Projection
               </button>
 
               <span
@@ -2031,9 +2047,7 @@ export default function ProjectBillingPivot({
                           ]?.value
                         }
                         projectedValue={
-                          monthTotals[
-                            index
-                          ]?.projectedValue
+                          monthTotals[index]?.displayProjectedValue
                         }
                         bidProjectedValue={
                           monthTotals[
@@ -2048,9 +2062,7 @@ export default function ProjectBillingPivot({
                         marginCollectedValue={monthTotals[index]?.marginCollectedValue}
                         showMargin={canViewMargin}
                         totalForecastValue={
-                          monthTotals[
-                            index
-                          ]?.totalForecastValue
+                          monthTotals[index]?.displayTotalForecastValue
                         }
                         varianceValue={
                           monthTotals[
@@ -2069,6 +2081,8 @@ export default function ProjectBillingPivot({
                         varianceHistoricalUnavailableProjects={monthTotals[index]?.varianceHistoricalUnavailableProjects}
                         missingPmMonths={monthTotals[index]?.missingPmMonths}
                         hasSystemEstimate={monthTotals[index]?.hasSystemEstimate}
+                        includedSystemEstimateCount={monthTotals[index]?.includedSystemEstimateCount}
+                        includedSystemEstimateValue={monthTotals[index]?.includedSystemEstimateValue}
                         baselineValue={monthTotals[index]?.baselineValue}
                         showBaseline={showBaseline}
                         metric={billingMetric}
@@ -2083,7 +2097,7 @@ export default function ProjectBillingPivot({
                             index
                           ]?.potentialBidsProjected
                         }
-                        activeProjectsProjected={monthTotals[index]?.activeProjectsProjected}
+                        activeProjectsProjected={monthTotals[index]?.displayActiveProjectsProjected}
                         includeProjectProjection={includeActiveProjects}
                         includeBidProjection={includeBids}
                         completedHistoryMode={completedHistoryMode}
@@ -2105,7 +2119,7 @@ export default function ProjectBillingPivot({
                     label="Total"
                     value={grandTotals.value}
                     projectedValue={
-                      grandTotals.projectedValue
+                      grandTotals.displayProjectedValue
                     }
                     bidProjectedValue={
                       grandTotals.bidProjectedValue
@@ -2116,7 +2130,7 @@ export default function ProjectBillingPivot({
                     marginCollectedValue={grandTotals.marginCollectedValue}
                     showMargin={canViewMargin}
                     totalForecastValue={
-                      grandTotals.totalForecastValue
+                      grandTotals.displayTotalForecastValue
                     }
                     varianceValue={
                       grandTotals.varianceValue
@@ -2134,6 +2148,8 @@ export default function ProjectBillingPivot({
                     varianceHistoricalUnavailableProjects={grandTotals.varianceHistoricalUnavailableProjects}
                     missingPmMonths={grandTotals.missingPmMonths}
                     hasSystemEstimate={grandTotals.hasSystemEstimate}
+                    includedSystemEstimateCount={grandTotals.includedSystemEstimateCount}
+                    includedSystemEstimateValue={grandTotals.includedSystemEstimateValue}
                     baselineValue={grandTotals.baselineValue}
                     showBaseline={showBaseline}
                     metric={billingMetric}
@@ -2142,7 +2158,7 @@ export default function ProjectBillingPivot({
                     includeBidProjection={includeBids}
                     completedHistoryMode={completedHistoryMode}
                     activeProjectsBilled={grandTotals.activeProjectsBilled}
-                    activeProjectsProjected={grandTotals.activeProjectsProjected}
+                    activeProjectsProjected={grandTotals.displayActiveProjectsProjected}
                     potentialBidsProjected={grandTotals.potentialBidsProjected}
                   />
                 }

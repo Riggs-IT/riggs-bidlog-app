@@ -32,10 +32,12 @@ test('project filters are labeled Active Projects and unselected balance badge r
   const css=readSource(new URL('../src/ProjectionDisplay.css',import.meta.url),'utf8');
   const pivot=readSource(new URL('../src/ProjectBillingPivot.jsx',import.meta.url),'utf8');
   assert.match(app,/<strong>Active Projects<\/strong>/);
-  assert.match(app,/No PM Projection\*/);
-  assert.match(pivot,/No PM Projection\*/);
+  assert.match(app,/No PM Projection/);
+  assert.match(pivot,/No PM Projection/);
+  assert.doesNotMatch(app,/No PM Projection\*/);
+  assert.doesNotMatch(pivot,/No PM Projection\*/);
   assert.match(css, /background:var\(--surface-2,transparent\); border:1px solid var\(--border\);/);
-  assert.match(pivot, /activeProjectsProjected=\{monthTotals\[index\]\?\.activeProjectsProjected\}/);
+  assert.match(pivot, /activeProjectsProjected=\{monthTotals\[index\]\?\.displayActiveProjectsProjected\}/);
   assert.match(pivot, /`\$\{totalProjectedCount\} projected \(active \+ bids\)`/);
 });
 
@@ -88,7 +90,7 @@ test('projected count tooltips show record counts only when sources are combined
   assert.match(combinedCount.attributes, /title="1 active project · 1 potential bid"/);
   assert.doesNotMatch(combinedCount.attributes, /\$/);
   // Financial detail stays on the T/P values, not on the count.
-  assert.match(combinedMarkup, /Total Forecast/);
+  assert.match(combinedMarkup, /Total displayed projection/);
   assert.match(combinedMarkup, /Active projects: \$100/);
   assert.match(combinedMarkup, /Potential bids: \$80/);
 });

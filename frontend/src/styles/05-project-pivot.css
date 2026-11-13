@@ -1262,3 +1262,119 @@ tbody > tr:nth-child(even of .pivot-project-row)
   vertical-align: super;
   line-height: 0;
 }
+
+/* AP4F4H — mobile billing pivot: one pinned project, swipeable month values.
+   Project/team/contract details remain available by tapping the project row.
+   The detached sticky header inherits these exact column visibility rules. */
+.pivot-mobile-project-reference { display: none; }
+@media (max-width: 700px) {
+  .project-pivot-shell { width: 100%; min-width: 0; max-width: 100%; overflow: hidden; }
+  .project-pivot-shell > .project-pivot-toolbar {
+    display: flex; align-items: stretch; justify-content: flex-start;
+    flex-direction: column; gap: 6px; min-width: 0;
+    padding: 5px 8px 8px;
+  }
+  .project-pivot-toolbar-label { display: none; }
+  .project-pivot-metric-toggle {
+    width: 100%; max-width: 100%; min-width: 0; justify-content: flex-start;
+    overflow-x: auto; scrollbar-width: thin; -webkit-overflow-scrolling: touch;
+  }
+  .project-pivot-metric-toggle button {
+    flex: 0 0 auto; min-height: 37px; white-space: nowrap;
+    padding-inline: 10px; font-size: 12px;
+  }
+  .project-pivot-month-scroll { width: 100%; min-width: 0; justify-content: space-between; min-height: 40px; }
+  .project-pivot-month-scroll-range { flex: 1 1 auto; min-width: 0; width: auto; }
+  .project-pivot-month-scroll-button { flex: 0 0 34px; width: 34px; height: 34px; }
+  .project-pivot-wrap {
+    width: 100%; max-width: 100%; overflow-x: auto;
+    overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    scrollbar-width: thin;
+  }
+  .project-pivot-wrap::-webkit-scrollbar { height: 4px; }
+  .project-pivot-wrap::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 6px; }
+  .project-pivot-table {
+    width: max-content; min-width: 100%; table-layout: fixed;
+  }
+  /* In the mobile table these desktop identity/reference columns are instead
+     available from the open-on-tap project drawer. */
+  .project-pivot-table :is(
+    .pivot-source-column, .pivot-job-column, .pivot-probability-column,
+    .pivot-project-values-column, .pivot-gc-column, .pivot-metric-labels-column
+  ) { display: none !important; }
+  .project-pivot-table th.pivot-project-column,
+  .project-pivot-table td.pivot-project-column {
+    display: table-cell; position: sticky; left: 0 !important;
+    width: 146px; min-width: 146px; max-width: 146px;
+    z-index: 7; padding: 7px 8px;
+    border-right: 1px solid var(--border-strong);
+    background: var(--surface); background-clip: padding-box;
+    box-shadow: 5px 0 8px rgba(0,0,0,.17);
+  }
+  .project-pivot-table th.pivot-project-column { z-index: 10; background: var(--surface-2); }
+  .project-pivot-table .pivot-project-name { display: block; white-space: normal; overflow-wrap: anywhere; font-size: 13px; line-height: 1.35; }
+  .project-pivot-table .pivot-project-name-line { min-width: 0; }
+  .project-pivot-table .pivot-project-info { display: flex; flex-direction: column; align-items: stretch; gap: 4px; }
+  .project-pivot-table .pivot-project-statuses { order: 2; }
+  .project-pivot-table .pivot-mobile-project-reference {
+    display: block; order: 1; max-width: 100%; overflow: hidden;
+    font-size: 10px; color: var(--muted); white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .project-pivot-table .project-team-badges { order: 3; flex-wrap: wrap; }
+  .project-pivot-table .pivot-project-context-line { display: none; }
+  .project-pivot-table .pivot-month-column,
+  .project-pivot-table .pivot-total-column,
+  .project-pivot-table:not(.pivot-metric-all) .pivot-month-column,
+  .project-pivot-table:not(.pivot-metric-all) .pivot-total-column,
+  .project-pivot-table.pivot-metric-variance .pivot-month-column,
+  .project-pivot-table.pivot-metric-variance .pivot-total-column {
+    display: table-cell; width: 142px; min-width: 142px; max-width: 142px;
+    padding: 7px 7px;
+  }
+  .project-pivot-table .pivot-total-column { min-width: 148px; }
+  .project-pivot-table .pivot-month-column .table-sort-button,
+  .project-pivot-table .pivot-total-column .table-sort-button { min-height: 70px; padding: 7px 6px; align-items: flex-start; }
+  .project-pivot-table .pivot-header-total { justify-items: end; gap: 3px; }
+  .project-pivot-table .pivot-header-total-label { font-size: 11px; }
+  .project-pivot-table .pivot-header-total-value { font-size: 11px; }
+  .project-pivot-table .pivot-header-billed-count { font-size: 9px; }
+  .project-pivot-table .pivot-single-value { font-size: 12px; }
+  /* On mobile each stacked P/A/Δ/M line carries a compact label because the
+     desktop shared frozen metric rail is hidden. */
+  .project-pivot-table.pivot-metric-all .pivot-billing-amount-line {
+    justify-content: space-between; gap: 6px;
+  }
+  .project-pivot-table.pivot-metric-all .pivot-billing-amount-line::before {
+    content: attr(data-metric-label); flex: 0 0 10px;
+    color: var(--muted); font-size: 9px; font-weight: 700;
+  }
+  .project-pivot-table.pivot-metric-all .pivot-billing-amount-line strong { font-size: 10px; }
+  /* Floating header stays horizontally synchronized, but the duplicate
+     controls are too crowded for touch and remain in the normal toolbar. */
+  .floating-table-header .floating-table-controls.project-pivot-toolbar { display: none !important; }
+  .floating-table-header-table th.pivot-project-column { background: var(--surface-2) !important; }
+}
+@media (max-width: 360px) {
+  .project-pivot-table th.pivot-project-column,
+  .project-pivot-table td.pivot-project-column { width: 132px; min-width: 132px; max-width: 132px; }
+  .project-pivot-table .pivot-month-column,
+  .project-pivot-table .pivot-total-column { width: 130px; min-width: 130px; max-width: 130px; }
+}
+
+/* An actual contribution gets a source marker, not an asterisk on every row.
+   It is part of the tooltip/accessible label, not a new financial series. */
+.pivot-header-total-label .header-estimate-source-indicator {
+  display: inline-block;
+  margin-inline-start: 5px;
+  padding: 1px 3px;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  color: var(--warning);
+  font-size: 9px;
+  font-weight: 700;
+  text-decoration: none;
+  line-height: 1.1;
+  vertical-align: middle;
+}

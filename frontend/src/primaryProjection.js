@@ -334,7 +334,17 @@ export function summarizePortfolioMonths(months, projects, currentMonthly, bids,
     const a = aggregateCurrentMonthly(grouped.get(month), month, month, asOfUTC);
     const weightedBids = sumAmounts(weighted.get(month), 0);
     const combined = sumAmounts([a.projected, ...(weighted.get(month).length ? [weightedBids] : [])]);
+    const estimateRows = (grouped.get(month) || []).filter(r => r.hasPmForecast === false
+      && r.primaryProjectionSource === SYSTEM_SOURCE && r.projectCompleted !== true
+      && nullableAmount(r.systemBaselineAmount) !== null);
+    const displayedSystemEstimate = sumAmounts(estimateRows.map(r => r.systemBaselineAmount));
+    const displayCurrentProjected = sumAmounts([a.projected, displayedSystemEstimate]);
+    const displayCombinedExpected = sumAmounts([displayCurrentProjected,
+      ...(weighted.get(month).length ? [weightedBids] : [])]);
     return { month, currentProjected: a.projected, currentBaseline: a.baseline, currentActual: a.actual,
+      displayCurrentProjected, displayCombinedExpected,
+      displaySystemEstimateCount: estimateRows.length,
+      displaySystemEstimateValue: displayedSystemEstimate,
       currentMarginCollected: a.marginCollected, currentWeightedHistoricalMarginPercent: a.weightedHistoricalMarginPercent,
       currentMissingMarginRows: a.missingMarginRows, currentMarginDataComplete: a.marginDataComplete,
       estimateValueCount:a.estimateValueCount, missingPmMonths: a.missingPmMonths,
@@ -365,6 +375,10 @@ export function summarizeMonthlyTotals(rows, asOfUTC = null) {
   const currentMarginDataComplete = rows.every(r => r.currentMarginDataComplete);
   const currentMarginCollected = currentMarginDataComplete ? sum('currentMarginCollected') : null;
   return { currentProjected, currentBaseline: sum('currentBaseline'), weightedBids: sum('weightedBids'),
+    displayCurrentProjected: sum('displayCurrentProjected'),
+    displayCombinedExpected: sum('displayCombinedExpected'),
+    displaySystemEstimateCount: rows.reduce((n,r)=>n+(r.displaySystemEstimateCount||0),0),
+    displaySystemEstimateValue: sum('displaySystemEstimateValue'),
     currentActual, combinedExpected, missingPmMonths, estimateValueCount:rows.reduce((n,r)=>n+(r.estimateValueCount||0),0),
     // Sum the displayed per-month variance. A selected range may straddle
     // the 15th cutoff; it must not silently revert to all-actual here.
@@ -421,11 +435,24 @@ export function pivotTotals(rows, index, metric, includeBids, {month = null, mon
   const cells = rows.map(row => ({ source: row.source, c: index === null ? row.total : row.cells[index] }));
   const current = cells.filter(x => x.source !== 'bid').map(x => x.c).filter(Boolean);
   const bid = cells.filter(x => x.source === 'bid').map(x => x.c).filter(Boolean);
+  // Keep official PM-only totals and variance intact. The reviewer-facing
+  // Projected/Total headers include system estimates only where a PM submission
+  // does not exist, matching the actual visible project-month cells.
   const projectedValue = sumAmounts(current.map(c => c?.isSystemEstimate === true ? null : c?.projected), current.length ? null : 0);
   const bidProjectedValue = includeBids ? sumAmounts(bid.map(c => c?.projected)) : null;
   const actualValue = sumAmounts(current.map(c => c?.actual));
   const missingPmMonths = current.reduce((n, c) => n + (c?.missingPmMonths || 0), 0);
   const totalForecastValue = sumAmounts([projectedValue, bidProjectedValue]);
+  const displayedProjectedCell = c => {
+    if (c?.projected !== null && c?.projected !== undefined && c?.isSystemEstimate !== true) return c.projected;
+    return c?.isSystemEstimate === true && c?.projectCompleted !== true
+      ? c.baseline ?? null : null;
+  };
+  const displayProjectedValue = sumAmounts(current.map(displayedProjectedCell), current.length ? null : 0);
+  const systemEstimateCells = current.filter(c => c?.isSystemEstimate === true
+    && c?.projectCompleted !== true && c?.projected == null && c?.baseline != null);
+  const includedSystemEstimateValue = sumAmounts(systemEstimateCells.map(c => c.baseline));
+  const displayTotalForecastValue = sumAmounts([displayProjectedValue, bidProjectedValue]);
 
   // Require the explicit PM marker for pivot cells. The old projected/actual
   // non-null check was also comparing unsubmitted System Estimates.
@@ -499,10 +526,14 @@ export function pivotTotals(rows, index, metric, includeBids, {month = null, mon
     (c?.marginCollected == null && c?.actual != null && c.actual !== 0)
   ) ? null : sumAmounts(current.map(c => c?.marginCollected));
   let value = sumAmounts(cells.map(x => x.c?.[metric]));
-  if (metric === 'projected') value = totalForecastValue;
+  if (metric === 'projected') value = displayTotalForecastValue;
   if (metric === 'variance') value = varianceValue;
   if (metric === 'marginCollected') value = marginCollectedValue;
-  return { value, projectedValue, bidProjectedValue, actualValue, totalForecastValue, varianceValue,
+  return { value, projectedValue, bidProjectedValue, actualValue, totalForecastValue,
+    displayProjectedValue, displayTotalForecastValue, includedSystemEstimateValue,
+    includedSystemEstimateCount: systemEstimateCells.length,
+    displayActiveProjectsProjected: current.filter(c => displayedProjectedCell(c) > 0).length,
+    varianceValue,
     actualVarianceValue, comparableVarianceValue, varianceMode, marginCollectedValue, missingPmMonths,
     varianceProjectedValue, varianceActualValue,
     varianceComparableProjects,
@@ -510,7 +541,7 @@ export function pivotTotals(rows, index, metric, includeBids, {month = null, mon
     varianceNoPmForecastProjects,
     varianceMissingEditableProjects,
     varianceHistoricalUnavailableProjects,
-    hasSystemEstimate:current.some(c=>c?.isSystemEstimate && c?.baseline!=null),
+    hasSystemEstimate:systemEstimateCells.length > 0,
     baselineValue: sumAmounts(current.map(c => c?.baseline)),
     activeProjectsBilled: current.filter(c => c?.actual != null && c.actual !== 0).length,
     activeProjectsProjected: current.filter(c => c?.isSystemEstimate !== true && c?.projected != null && c.projected > 0).length,

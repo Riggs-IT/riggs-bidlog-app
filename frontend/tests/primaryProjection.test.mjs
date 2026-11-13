@@ -262,7 +262,7 @@ test('portfolio monthly comparison uses PM-only projected total while preserving
 // Regression for September's real displayed headline amounts. The diagnostic
 // comparable-only result (-115470) is different and must NOT appear as the
 // month-header variance for P=14628551 and A=15759661.
-test('September header variance is the subtraction of its two displayed PM/actual totals', () => {
+test('PM-only variance remains unchanged while displayed projected totals include no-PM system estimates', () => {
   const rows = [
     {source:'current',cells:[{projected:14542693,actual:14427223,marginCollected:10,isPmVarianceComparable:true,hasPmForecast:true,isSystemEstimate:false}]},
     {source:'current',cells:[{projected:85858,actual:null,marginCollected:null,isPmVarianceComparable:false,hasPmForecast:true,isSystemEstimate:false}]},
@@ -274,11 +274,14 @@ test('September header variance is the subtraction of its two displayed PM/actua
   assert.equal(totals.varianceValue,1131110);
   assert.equal(totals.varianceProjectedValue,14542693); // diagnostic only
   assert.equal(totals.varianceActualValue,14427223); // diagnostic only
-  assert.equal(totals.baselineValue,9999999); // reference-only
-  assert.equal(totals.activeProjectsProjected,2); // baseline-only row excluded
-  assert.equal(pivotTotals(rows,0,'variance',false).value,1131110);
+  assert.equal(totals.baselineValue,9999999); // source estimate remains separate from submitted PM
+  assert.equal(totals.activeProjectsProjected,2); // authoritative PM-only count
+  assert.equal(totals.displayProjectedValue,24628550); // visible PM + system estimate
+  assert.equal(totals.includedSystemEstimateValue,9999999);
+  assert.equal(totals.displayActiveProjectsProjected,3);
+  assert.equal(pivotTotals(rows,0,'variance',false).value,1131110); // PM-only variance
   assert.equal(pivotTotals(rows,0,'actual',false).value,15759661);
-  assert.equal(pivotTotals(rows,0,'projected',false).value,14628551);
+  assert.equal(pivotTotals(rows,0,'projected',false).value,24628550);
 });
 
 test('no PM anywhere keeps portfolio variance unavailable instead of using baseline or zero', () => {

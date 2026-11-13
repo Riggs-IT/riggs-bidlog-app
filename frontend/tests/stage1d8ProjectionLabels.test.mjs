@@ -3,19 +3,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 const read = path => readSource(new URL(`../src/${path}`, import.meta.url), 'utf8');
 
-test('system estimates use a project-name marker instead of source badges or value stars', () => {
+test('no-PM titles are orange with a tooltip, without the old asterisk marker', () => {
   const display = read('ProjectionDisplay.jsx');
   const pivot = read('ProjectBillingPivot.jsx');
   const app = read('App.jsx');
-  assert.match(display, /ProjectionEstimateMarker/);
-  assert.match(display, /No PM Projection submitted\. System Estimate is reference only/);
-  assert.doesNotMatch(display, /ProjectionSource/);
-  assert.doesNotMatch(display, /estimate &&/);
-  assert.match(pivot, /<ProjectionEstimateMarker project=\{row\.raw\} \/>/);
-  assert.doesNotMatch(pivot, /System Baseline estimate/);
-  assert.match(app, /<ProjectionEstimateMarker project=\{detail\.raw\} \/>/);
-  assert.match(app, /<ProjectionEstimateMarker project=\{row\.raw\} \/>/);
-  assert.doesNotMatch(app, /<ProjectionSource/);
+  assert.doesNotMatch(display, /ProjectionEstimateMarker/);
+  assert.match(display, /No PM Projection submitted\. System estimate shown/);
+  assert.match(display, /\$\{name\}\\n\$\{SYSTEM_ESTIMATE_TOOLTIP\}/);
+  assert.doesNotMatch(pivot, /<ProjectionEstimateMarker/);
+  assert.match(pivot, /data-no-pm=/);
+  assert.match(app, /no-pm-projection/);
+  assert.doesNotMatch(app, /<ProjectionEstimateMarker/);
+  assert.doesNotMatch(pivot, /No PM Projection\*/);
 });
 
 test('projection coverage counts are low-key source filters with all as the shared state', () => {
