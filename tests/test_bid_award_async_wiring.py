@@ -22,11 +22,14 @@ class AwardAsyncWiring(unittest.TestCase):
         self.assertIn('"X-Riggs-User-EID"',api)
         self.assertNotIn('graph_access_token',api[api.index('def enqueue_active_bid_award('):api.index('def get_active_bid_award_status(')])
 
-    def test_badge_and_reconnect_are_local_to_create_bid(self):
-        create=(ROOT/'frontend/src/BidLogCreateDrawer.jsx').read_text()
-        css=(ROOT/'frontend/src/styles/11-lifecycle-feedback.css').read_text()
-        self.assertIn('actionLabel={reconnectNeeded',create)
-        self.assertIn('floating-editor-surface.bid-log-create-drawer',css)
+    def test_reconnect_and_shared_editor_sizing(self):
+        create = (ROOT / 'frontend/src/BidLogCreateDrawer.jsx').read_text()
+        shared_css = (ROOT / 'frontend/src/styles/10-active-projects.css').read_text()
+        create_css = (ROOT / 'frontend/src/styles/11-lifecycle-feedback.css').read_text()
+        self.assertIn('actionLabel={reconnectNeeded', create)
+        self.assertIn('floating-editor-surface.bid-log-edit-drawer', shared_css)
+        self.assertIn('max-width: 1640px', shared_css)
+        self.assertNotIn('floating-editor-surface.bid-log-create-drawer', create_css)
 
 if __name__=='__main__':
     unittest.main()

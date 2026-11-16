@@ -480,9 +480,6 @@ export default function BidLogCreateDrawer({
             <span className="section-kicker">NEW BID</span>
             <h3>Bid Information</h3>
           </div>
-          <p>
-            Enter the core information used to start the Bid Log record.
-          </p>
         </div>
 
         <div className="bid-edit-grid three-column">

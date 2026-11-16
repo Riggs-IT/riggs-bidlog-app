@@ -421,6 +421,14 @@
     width: 100%;
     height: 100%;
   }
+
+  /* One desktop size for all main record editors: Create/Edit Bid,
+     Awarded/Lost Bid, Project Setup and Active/Completed Projects.
+     Merge Bids is a separate dialog, not a master-record editor. */
+  .floating-editor-surface.bid-log-edit-drawer {
+    max-width: 1640px;
+    margin-inline: auto;
+  }
 }
 
 /* Keep long-form sections content-sized inside the scrollable editor grid. */
@@ -1324,8 +1332,6 @@
   overflow-y:auto;
   overscroll-behavior:contain;
   scrollbar-gutter:stable;
-  max-width:1640px;
-  margin-inline:auto;
 }
 .floating-editor-scroll-surface > .floating-editor-body,
 .floating-editor-scroll-surface > .floating-editor-body.bid-log-edit-body {
