@@ -1304,6 +1304,63 @@ def transition_active_bid_lifecycle(
 
 
 
+
+def enqueue_active_bid_award(
+    sharepoint_item_id: int, payload: dict, *, actor_eid: int, request_id: str,
+) -> dict:
+    """One bounded SQL queue write; no delegated Graph bearer enters the queue."""
+    operation = "Queue Awarded lifecycle"
+    body = {
+        "requestId": str(uuid4()),
+        "expectedEtag": payload.get("expectedEtag"),
+        "dateAwarded": payload.get("dateAwarded"),
+        "winningGeneralContractor": payload.get("winningGeneralContractor"),
+    }
+    try:
+        response = _timed_data_api_request(
+            "bid-award-queue",
+            lambda: _get_http_client().post(
+                f"/v1/bid-log/awards/requests/{sharepoint_item_id}",
+                json=body,
+                headers=_request_headers(include_service_auth=True,
+                                         request_id=request_id, actor_eid=actor_eid),
+            ),
+        )
+    except (httpx.TimeoutException, httpx.RequestError) as exc:
+        raise DataAPIUnavailable("Award queue request outcome is uncertain; check status before retrying.") from exc
+    if response.status_code in {400, 401, 403, 404, 409, 422, 502, 503}:
+        detail = _detail(response) or "award_queue_unavailable"
+        raise DataAPIRequestRejected(response.status_code, detail)
+    _raise_common_failure(response, operation=operation)
+    if response.status_code != 202:
+        raise DataAPIInvalidResponse("Unexpected award queue response")
+    result = _json_object(response, operation=operation)
+    if result.get("processing") is not True or result.get("sharePointItemId") != sharepoint_item_id:
+        raise DataAPIInvalidResponse("Invalid award queue acknowledgement")
+    return result
+
+
+def get_active_bid_award_status(sharepoint_item_id: int, *, actor_eid: int, request_id: str) -> dict:
+    operation = "Read Awarded lifecycle progress"
+    try:
+        response = _timed_data_api_request(
+            "bid-award-status",
+            lambda: _get_http_client().get(
+                f"/v1/bid-log/awards/requests/{sharepoint_item_id}",
+                headers=_request_headers(include_service_auth=True,
+                                         request_id=request_id, actor_eid=actor_eid),
+            ),
+        )
+    except (httpx.TimeoutException, httpx.RequestError) as exc:
+        raise DataAPIUnavailable("Award status temporarily unavailable") from exc
+    if response.status_code in {400, 401, 403, 404, 409, 422, 502, 503}:
+        raise DataAPIRequestRejected(response.status_code, _detail(response) or "award_status_unavailable")
+    _raise_common_failure(response, operation=operation)
+    if response.status_code != 200:
+        raise DataAPIInvalidResponse("Unexpected award status response")
+    return _json_object(response, operation=operation)
+
+
 def get_bid_log_outcome_bids(
     *,
     bid_status: str,

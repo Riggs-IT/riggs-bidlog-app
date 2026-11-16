@@ -374,6 +374,16 @@ export default function BidLogCreateDrawer({
           </div>
 
           <div className="bid-log-edit-footer-actions">
+            {reconnectNeeded && (
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={saving || reconnecting}
+                onClick={() => { void reconnectCreateMicrosoft(); }}
+              >
+                {reconnecting ? 'Connecting…' : 'Reconnect Microsoft'}
+              </button>
+            )}
             <button
               type="button"
               className="secondary-button"
@@ -425,6 +435,8 @@ export default function BidLogCreateDrawer({
       <ActionToast
         message={saveError || saveMessage}
         type={saveError ? 'error' : 'success'}
+        actionLabel={reconnectNeeded ? 'Reconnect Microsoft' : null}
+        onAction={reconnectNeeded ? () => { void reconnectCreateMicrosoft(); } : null}
         onDismiss={() => { setSaveError(null); setSaveMessage(null); }}
       />
 

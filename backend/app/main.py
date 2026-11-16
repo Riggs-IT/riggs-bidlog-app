@@ -94,6 +94,8 @@ from .data_api import (
     delete_bid_log_delegated_session,
     save_active_bid_projected_billing_settings,
     transition_active_bid_lifecycle,
+    enqueue_active_bid_award,
+    get_active_bid_award_status,
     update_active_bid,
     merge_active_bids,
     update_bid_log_outcome,
@@ -2916,6 +2918,14 @@ async def bid_log_active_lifecycle_proxy(
     )
 
     try:
+        if (settings.bid_log_award_async_enabled
+                and str(payload.get("action") or "").strip().upper() == "AWARDED"):
+            return _role_scoped_bid_log_payload(
+                enqueue_active_bid_award(
+                    sharepoint_item_id, payload, actor_eid=current_user.eid,
+                    request_id=_browser_request_id(request),
+                ), current_user,
+            )
         return _role_scoped_bid_log_payload(
             transition_active_bid_lifecycle(
                 sharepoint_item_id,
@@ -2928,6 +2938,23 @@ async def bid_log_active_lifecycle_proxy(
             current_user,
         )
 
+    except Exception as exc:
+        _raise_active_bid_proxy_error(exc)
+
+
+@app.get("/api/bid-log/active/{sharepoint_item_id}/award-progress")
+def bid_log_award_progress_proxy(
+    request: Request,
+    sharepoint_item_id: int = FastAPIPath(..., ge=1),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    _require_bid_log_workspace_access(current_user)
+    try:
+        return _role_scoped_bid_log_payload(
+            get_active_bid_award_status(sharepoint_item_id,
+                actor_eid=current_user.eid, request_id=_browser_request_id(request)),
+            current_user,
+        )
     except Exception as exc:
         _raise_active_bid_proxy_error(exc)
 

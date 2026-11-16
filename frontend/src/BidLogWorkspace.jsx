@@ -922,6 +922,22 @@ export default function BidLogWorkspace({
   ] = useState(false);
 
   const [mergeTargetBid, setMergeTargetBid] = useState(null);
+  // Only non-secret SharePoint item IDs, scoped to the signed-in employee.
+  // Session persistence lets a reload resume read-only progress polling.
+  const pendingAwardStoreKey = `riggs.pending-awards.${user?.eid || 'unknown'}`;
+  const [pendingAwardIds, setPendingAwardIds] = useState(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const parsed = JSON.parse(window.sessionStorage.getItem(pendingAwardStoreKey) || '[]');
+      return Array.isArray(parsed)
+        ? [...new Set(parsed.filter(value => Number.isInteger(value) && value > 0))].slice(0, 25)
+        : [];
+    } catch { return []; }
+  });
+  useEffect(() => {
+    try { window.sessionStorage.setItem(pendingAwardStoreKey, JSON.stringify(pendingAwardIds)); }
+    catch { /* Session storage unavailable; live in-memory polling continues. */ }
+  }, [pendingAwardStoreKey, pendingAwardIds]);
 
   const [
     actionToast,
@@ -1787,6 +1803,10 @@ export default function BidLogWorkspace({
 
 
   function openBidEditor(row) {
+    if (activeView && pendingAwardIds.includes(Number(row?.sharePointItemId))) {
+      showActionToast('info', 'This bid is processing its Awarded lifecycle. Editing is paused until verification.');
+      return;
+    }
     const id = rowIdentity(row);
 
     if (
@@ -1857,7 +1877,67 @@ export default function BidLogWorkspace({
   }
 
 
+  // Progress polling is read-only. A queued Award does not remove an Active
+  // row or trigger project setup until SQL confirms the final lifecycle state.
+  const pendingAwardKey = pendingAwardIds.join(',');
+  useEffect(() => {
+    if (!pendingAwardKey) return undefined;
+    let cancelled = false;
+    let busy = false;
+    const poll = async () => {
+      if (busy || cancelled) return;
+      busy = true;
+      try {
+        for (const rawId of pendingAwardKey.split(',')) {
+          const id = Number(rawId);
+          if (!Number.isInteger(id) || id <= 0 || cancelled) continue;
+          const response = await window.fetch(
+            `/api/bid-log/active/${id}/award-progress`,
+            {credentials: 'same-origin', cache: 'no-store',
+             headers: {'X-Riggs-Passive-Read': '1'}},
+          );
+          if (!response.ok) continue;
+          const value = await response.json();
+          const state = String(value?.status || '');
+          if (!['COMPLETE', 'DRAFT_REVIEW', 'REVIEW'].includes(state)) continue;
+          if (cancelled) return;
+          setPendingAwardIds(previous => previous.filter(item => item !== id));
+          if (state === 'REVIEW') {
+            showActionToast('error', `Bid #${id} requires lifecycle review. Do not award it again.`);
+          } else {
+            bidLogListCache = {
+              ...bidLogListCache,
+              awarded: {...bidLogListCache.awarded, loadedAt: 0},
+              active: {...bidLogListCache.active, loadedAt: 0},
+            };
+            void refreshBidViewAfterMutation('active');
+            onBidDataChanged?.();
+            showActionToast(state === 'COMPLETE' ? 'success' : 'info',
+              state === 'COMPLETE'
+                ? `Bid #${id} awarded. Project Setup draft is available.`
+                : `Bid #${id} awarded, but its Project Setup draft needs review.`);
+          }
+        }
+      } catch {
+        // A transient status-read failure is not permission to replay an
+        // Awarded write. Keep the pending badge and retry the GET next poll.
+      } finally { busy = false; }
+    };
+    void poll();
+    const timer = window.setInterval(() => { void poll(); }, 3000);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [pendingAwardKey]);
+
   function handleBidSaved(updated, event = null) {
+    if (event?.kind === 'award_queued') {
+      const id = Number(event.sharePointItemId);
+      if (Number.isInteger(id) && id > 0) {
+        setPendingAwardIds(previous => previous.includes(id) ? previous : [...previous, id]);
+      }
+      setEditSelection(null);
+      showActionToast('info', 'Award processing in the background. The Active bid remains until the outcome is verified.');
+      return;
+    }
     const updatedIdentity = activeView
       ? Number(updated?.sharePointItemId)
       : Number(updated?.originalBidLogId);
@@ -2669,7 +2749,9 @@ export default function BidLogWorkspace({
 
                       <td>
                         <span className="bid-log-status-pill">
-                          {displayValue(row.status)}
+                          {activeView && pendingAwardIds.includes(identity)
+                            ? 'Processing Award'
+                            : displayValue(row.status)}
                         </span>
                       </td>
 

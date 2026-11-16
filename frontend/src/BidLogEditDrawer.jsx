@@ -483,6 +483,7 @@ export default function BidLogEditDrawer({
   const [winningGeneralContractor, setWinningGeneralContractor] = useState('');
   const [lifecycleReason, setLifecycleReason] = useState('');
   const [lifecycleComplete, setLifecycleComplete] = useState(false);
+  const [awardQueued, setAwardQueued] = useState(false);
   const [requiredFields, setRequiredFields] = useState([]);
   const [requiredAction, setRequiredAction] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
@@ -1103,7 +1104,7 @@ export default function BidLogEditDrawer({
       return;
     }
 
-    if (lifecycleComplete) {
+    if (lifecycleComplete || awardQueued) {
       onClose();
       return;
     }
@@ -1135,7 +1136,7 @@ export default function BidLogEditDrawer({
   }
 
   async function save(skipLifecycleConfirm = false) {
-    if (!canEdit || !detail?.etag || !form || saving || lifecycleComplete) {
+    if (!canEdit || !detail?.etag || !form || saving || lifecycleComplete || awardQueued) {
       return;
     }
 
@@ -1277,6 +1278,20 @@ export default function BidLogEditDrawer({
           },
         );
 
+        if (lifecycleAction === 'Awarded' && lifecycleResult?.processing === true) {
+          // This is a durable queue ACK, NOT an Awarded destination receipt.
+          // The workspace polls SQL before removing the Active row or showing
+          // success; never retry the mutation automatically on a timeout.
+          setAwardQueued(true);
+          setSaveMessage('Award accepted for background processing. You can return to Bid Log.');
+          onSaved?.(workingDetail, {
+            kind: 'award_queued',
+            sharePointItemId,
+            requestId: lifecycleResult.requestId,
+          });
+          return;
+        }
+
         const finalStatus = lifecycleResult?.finalStatus || lifecycleAction;
         const completedDetail = {
           ...workingDetail,
@@ -1357,6 +1372,7 @@ export default function BidLogEditDrawer({
 
   const hasUnsavedChanges = Boolean(
     !lifecycleComplete
+    && !awardQueued
     && form
     && detail
     && (
@@ -1416,11 +1432,13 @@ export default function BidLogEditDrawer({
         !loading && !loadError && detail && form ? (
           <footer className="bid-log-edit-footer floating-editor-footer">
             <div className="floating-editor-footer-status">
-              {(lifecycleComplete || selectedLifecycleAction) && (
+              {(lifecycleComplete || selectedLifecycleAction || awardQueued) && (
                 <small>
-                  {lifecycleComplete
-                    ? 'Lifecycle action complete. Use Back to Bid Log when finished reviewing.'
-                    : 'Save will apply field updates first, then complete the selected lifecycle action.'}
+                  {awardQueued
+                    ? 'Award queued. Processing continues independently; status will update in Bid Log.'
+                    : lifecycleComplete
+                      ? 'Lifecycle action complete. Use Back to Bid Log when finished reviewing.'
+                      : 'Save will apply field updates first, then complete the selected lifecycle action.'}
                 </small>
               )}
               {hasUnsavedChanges && (
@@ -1443,7 +1461,7 @@ export default function BidLogEditDrawer({
                   type="button"
                   className="primary-button bid-log-save-button"
                   onClick={save}
-                  disabled={saving || lifecycleComplete || !detail.etag || !hasUnsavedChanges}
+                  disabled={saving || lifecycleComplete || awardQueued || !detail.etag || !hasUnsavedChanges}
                 >
                   {saving
                     ? 'Saving…'

@@ -23,6 +23,7 @@ class Settings(BaseSettings):
 
     bid_log_delegated_auth_enabled: bool = False
     bid_log_delegated_writes_enabled: bool = False
+    bid_log_award_async_enabled: bool = False  # gated independently from production API/worker
 
     session_secret: str = ""
     session_cookie_secure: bool = True

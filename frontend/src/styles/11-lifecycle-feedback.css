@@ -319,3 +319,25 @@
     width: auto;
   }
 }
+
+/* CREATE BID ONLY: keep short inputs readable without a full-viewport editor.
+   Do not shrink the shared FloatingEditorShell used by Project Setup. */
+@media (min-width: 761px) {
+  .floating-editor-surface.bid-log-create-drawer {
+    width: min(1024px, calc(100vw - 48px));
+    height: min(830px, calc(100vh - 64px));
+    max-width: 1024px;
+    max-height: calc(100vh - 64px);
+    margin: auto;
+  }
+  .bid-log-create-drawer .bid-edit-grid.three-column {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .bid-log-create-drawer .bid-edit-grid.three-column .bid-edit-field:has(textarea),
+  .bid-log-create-drawer .bid-edit-grid.three-column .bid-edit-field.wide {
+    grid-column: 1 / -1;
+  }
+  .bid-log-create-drawer .bid-edit-section {
+    padding: 16px 18px;
+  }
+}
