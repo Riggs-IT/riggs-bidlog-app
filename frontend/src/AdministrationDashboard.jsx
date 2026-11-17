@@ -7,6 +7,7 @@ import AdministrationQueueDetails from './AdministrationQueueDetails.jsx';
 import AdministrationSources from './AdministrationSources.jsx';
 import AdministrationPowerAutomate from './AdministrationPowerAutomate.jsx';
 import AdministrationTerminalIncidents from './AdministrationTerminalIncidents.jsx';
+import AdministrationForecastDeadline from './AdministrationForecastDeadline.jsx';
 
 export function displayUTC(value) {
   if (!value) return 'Not recorded';
@@ -98,6 +99,7 @@ export function AdministrationView({
       onModeChange={onUsageModeChange} onDaysChange={onLeaderboardDaysChange}
       onAppChange={onLeaderboardAppChange} />
     </div>
+    <AdministrationForecastDeadline onSessionError={onSessionError}/>
     <AdministrationPowerAutomate onSessionError={onSessionError}/>
     <AdministrationSources onSessionError={onSessionError}/>
     <AdministrationTerminalIncidents refreshKey={overview?.observedAtUTC}
@@ -413,7 +415,7 @@ export default function AdministrationDashboard({onSessionError, refreshApiRef, 
   return <main className="page-shell administration-page">
     <div className="administration-heading">
       <div>
-        <p className="administration-eyebrow">PRIVATE · READ ONLY</p>
+        <p className="administration-eyebrow">PRIVATE · MONITORING & CONTROLS</p>
         <h1>Administration</h1>
         <p className="administration-subtitle">Integrations, people and issues in one place.</p>
       </div>

@@ -1383,9 +1383,9 @@ export default function PMForecastPanel({
 
                         {row.monthEditState && (
                           <small className="billing-month-state">
-                            {row.isEditable
-                              ? 'Editable'
-                              : 'Locked'}
+                            {row.monthEditState === 'EDITABLE_EXCEPTION'
+                              ? 'Late exception'
+                              : row.isEditable ? 'Editable' : 'Locked'}
                           </small>
                         )}
                       </td>

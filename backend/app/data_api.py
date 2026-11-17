@@ -4240,3 +4240,58 @@ def get_project_setup_form206_directory(*, actor_eid: int) -> dict:
     if {x["id"] for x in result["architects"]} & {x["id"] for x in result["engineers"]}:
         raise DataAPIInvalidResponse("Overlapping Form 206 identity types.")
     return result
+
+
+# ============================================================
+# PRIVATE PM FORECAST DEADLINE — EID + SIGNED OID ARE RECHECKED IN SQL
+# ============================================================
+
+def _pm_deadline_admin_request(method: str, *, actor_eid: int,
+                               entra_object_id: str, payload: dict | None = None,
+                               request_id: str | None = None) -> dict:
+    if type(actor_eid) is not int or actor_eid not in (2021, 176):
+        raise DataAPIConfigurationError('Administrative actor unavailable')
+    try:
+        oid = UUID(entra_object_id)
+        if not oid.int:
+            raise ValueError('zero UUID')
+    except (ValueError, TypeError, AttributeError) as exc:
+        raise DataAPIConfigurationError('Administrative identity unavailable') from exc
+    headers = _request_headers(include_service_auth=True, actor_eid=actor_eid,
+                               request_id=request_id)
+    headers['X-Riggs-Actor-Entra-OID'] = str(oid)
+    operation = 'PM forecast deadline control'
+    try:
+        response = _timed_data_api_request(
+            'pm_deadline_admin',
+            lambda: _get_http_client().request(
+                method, '/v1/bid-log/admin/pm-forecast-deadline',
+                headers=headers, json=payload if method == 'POST' else None,
+            ),
+        )
+    except (httpx.TimeoutException, httpx.RequestError) as exc:
+        raise DataAPIUnavailable('Deadline service unavailable') from exc
+    if response.status_code in (400, 403, 409, 422):
+        raise DataAPIRequestRejected(response.status_code,
+                                     _detail(response) or 'pm_deadline_request_rejected')
+    _raise_common_failure(response, operation=operation)
+    if response.status_code != 200:
+        raise DataAPIInvalidResponse('Unexpected deadline status')
+    result = _json_object(response, operation=operation)
+    if not isinstance(result.get('policy'), dict) or not isinstance(result.get('events'), list) or not isinstance(result.get('lateSubmissions'), list):
+        raise DataAPIInvalidResponse('Invalid deadline response')
+    return result
+
+
+def get_pm_deadline_admin(*, actor_eid: int, entra_object_id: str) -> dict:
+    return _pm_deadline_admin_request('GET', actor_eid=actor_eid,
+                                      entra_object_id=entra_object_id)
+
+
+def set_pm_deadline_admin(*, actor_eid: int, entra_object_id: str,
+                          request_id: str, payload: dict) -> dict:
+    if actor_eid != 2021:
+        raise DataAPIConfigurationError('Deadline administrator required')
+    return _pm_deadline_admin_request('POST', actor_eid=actor_eid,
+                                      entra_object_id=entra_object_id,
+                                      request_id=request_id, payload=payload)

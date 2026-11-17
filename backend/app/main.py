@@ -1471,6 +1471,68 @@ def administration_overview(
     )
 
 
+# Deadline rules are exposed only inside the existing signed Entra Administration gate.
+# Rodney EID 176 can inspect this record; only EID 2021 can change it.
+from .data_api import get_pm_deadline_admin, set_pm_deadline_admin
+
+
+class _DeadlineExceptionBody(BaseModel):
+    model_config = ConfigDict(extra='forbid', strict=True)
+    enabled: bool
+    durationHours: int | None = None
+    reason: str
+    expectedRevision: int
+    confirmed: Literal[True]
+
+
+@app.get('/api/admin/pm-forecast-deadline')
+def admin_pm_forecast_deadline(
+    current_user: CurrentUser = Depends(require_administration_owner),
+):
+    try:
+        return JSONResponse(get_pm_deadline_admin(
+            actor_eid=current_user.eid, entra_object_id=current_user.entra_object_id,
+        ), headers={'Cache-Control': 'no-store, private'})
+    except DataAPIRequestRejected as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(exc)
+
+
+@app.post('/api/admin/pm-forecast-deadline')
+def admin_set_pm_forecast_deadline(
+    request: Request, payload: _DeadlineExceptionBody,
+    current_user: CurrentUser = Depends(require_administration_owner),
+):
+    _admin_mutation_origin(request)
+    if current_user.eid != 2021 or current_user.app_role.strip().upper() != 'ADMIN':
+        raise HTTPException(status_code=403, detail='pm_deadline_admin_denied')
+    if not isinstance(payload.reason, str) or not (10 <= len(payload.reason.strip()) <= 500):
+        raise HTTPException(status_code=422, detail='pm_deadline_invalid_reason')
+    if type(payload.expectedRevision) is not int or payload.expectedRevision < 0:
+        raise HTTPException(status_code=422, detail='pm_deadline_invalid_revision')
+    if payload.enabled:
+        if type(payload.durationHours) is not int or not (1 <= payload.durationHours <= 72):
+            raise HTTPException(status_code=422, detail='pm_deadline_invalid_duration')
+    elif payload.durationHours is not None:
+        raise HTTPException(status_code=422, detail='pm_deadline_invalid_duration')
+    try:
+        result = set_pm_deadline_admin(
+            actor_eid=current_user.eid, entra_object_id=current_user.entra_object_id,
+            request_id=_browser_request_id(request),
+            payload={
+                'enabled': payload.enabled, 'durationHours': payload.durationHours,
+                'reason': payload.reason.strip(), 'expectedRevision': payload.expectedRevision,
+                'confirmed': True,
+            },
+        )
+        return JSONResponse(result, headers={'Cache-Control': 'no-store, private'})
+    except DataAPIRequestRejected as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
+    except Exception as exc:
+        _raise_pm_forecast_proxy_error(exc)
+
+
 @app.get("/api/admin/terminal-incidents")
 def administration_terminal_incidents(
     current_user: CurrentUser = Depends(require_administration_owner),

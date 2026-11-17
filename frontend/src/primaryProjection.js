@@ -131,7 +131,7 @@ export function validatePrimaryProjection(payload) {
     const p = projects.get(m.jobListId);
     if (!p || m.primaryProjectionSource !== p.primaryProjectionSource
         || m.latestForecastVersionId !== p.latestForecastVersionId || typeof m.isEditable !== 'boolean'
-        || !['LOCKED_PAST', 'LOCKED_CURRENT', 'EDITABLE_CURRENT', 'EDITABLE_FUTURE'].includes(m.monthEditState)) fail();
+        || !['LOCKED_PAST', 'LOCKED_CURRENT', 'EDITABLE_CURRENT', 'EDITABLE_EXCEPTION', 'EDITABLE_FUTURE'].includes(m.monthEditState)) fail();
     for (const k of ['primaryProjectedAmount', 'pmForecastAmount', 'systemBaselineAmount', 'foundationActualAmount']) {
       if (!own(m, k)) fail(); nullableAmount(m[k]);
     }
