@@ -137,8 +137,10 @@ class PassiveFreshnessAuthTests(unittest.TestCase):
     def test_bad_signature_is_still_401(self):
         self.client.cookies.clear();self.client.cookies.set(COOKIE,'not-signed');r=self.client.get(PATH,headers=HEADER);self.assertEqual(r.status_code,401)
     def test_expired_idle_still_clears_session_cookie(self):
-        self.clock.stop();self.clock=patch.object(auth,'time',return_value=4601);self.clock.start()
-        r=self.client.get(PATH,headers=HEADER);self.assertEqual(r.status_code,401);self.assertEqual(r.json()['detail'],'session_inactive_timeout');self.assertIn('expires=',r.headers['set-cookie'].lower())
+        # Keep the expired-clock override scoped; preserve the setUp mock cleanup.
+        with patch.object(auth, 'time', return_value=4601):
+            r=self.client.get(PATH,headers=HEADER)
+        self.assertEqual(r.status_code,401);self.assertEqual(r.json()['detail'],'session_inactive_timeout');self.assertIn('expires=',r.headers['set-cookie'].lower())
     def test_changed_revision_still_clears_cookie(self):
         self.seed['session_revision']='old';self.client.get('/seed');r=self.client.get(PATH,headers=HEADER)
         self.assertEqual(r.status_code,401);self.assertEqual(r.json()['detail'],'application_updated');self.assertIn('expires=',r.headers['set-cookie'].lower())

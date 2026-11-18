@@ -1128,7 +1128,7 @@ async def _complete_delegated_reconnect(request: Request) -> HTMLResponse:
     try:
         # The old login/session must still be valid; reconnect does not
         # revive an expired full application session.
-        existing_user = get_current_user(request)
+        existing_user = await run_in_threadpool(get_current_user, request)
         if (
             existing_user.entra_object_id.lower() != pinned_oid
             or existing_user.eid != pinned_eid
@@ -1139,7 +1139,7 @@ async def _complete_delegated_reconnect(request: Request) -> HTMLResponse:
         userinfo = token.get("userinfo")
         if not userinfo or not callable(getattr(userinfo, "get", None)):
             raise ValueError("no_microsoft_identity")
-        new_user = resolve_entra_user(userinfo)
+        new_user = await run_in_threadpool(resolve_entra_user, userinfo)
         if (
             new_user.eid != existing_user.eid
             or new_user.entra_object_id.lower() != pinned_oid
@@ -1149,7 +1149,8 @@ async def _complete_delegated_reconnect(request: Request) -> HTMLResponse:
         assertion = str(token.get("access_token") or "").strip()
         if not assertion:
             raise ValueError("missing_delegated_assertion")
-        delegated = create_bid_log_delegated_session(
+        delegated = await run_in_threadpool(
+            create_bid_log_delegated_session,
             user_assertion=assertion,
             actor_eid=existing_user.eid,
             request_id=str(uuid4()),
@@ -1235,8 +1236,9 @@ async def auth_callback(
 
     try:
         current_user = (
-            resolve_entra_user(
-                identity
+            await run_in_threadpool(
+                resolve_entra_user,
+                identity,
             )
         )
 
@@ -1275,7 +1277,8 @@ async def auth_callback(
 
         try:
             delegated_session = (
-                create_bid_log_delegated_session(
+                await run_in_threadpool(
+                    create_bid_log_delegated_session,
                     user_assertion=
                         microsoft_access_token,
 

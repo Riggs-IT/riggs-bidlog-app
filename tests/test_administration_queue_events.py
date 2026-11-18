@@ -108,6 +108,8 @@ class AdministrationQueueBffTests(unittest.TestCase):
             r=self.client.get('/api/admin/queue-events?lane=project_forecast')
         self.assertEqual(r.status_code,200)
         self.assertIn('set-cookie',r.headers)
+        # Discard the refreshed test cookie before seeding expiry.
+        self.client.cookies.clear()
         self.owner.seed_cookie(last=int(time.time())-3605)
         with patch.object(administration,'get_bid_log_administration_queue_events') as upstream:
             expired=self.client.get('/api/admin/queue-events?lane=project_forecast',

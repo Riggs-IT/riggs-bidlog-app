@@ -230,6 +230,7 @@ class SelectedFlowRuntimeRouteTests(unittest.TestCase):
     def _client(self, runtime_enabled=True):
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
+        from starlette.middleware.sessions import SessionMiddleware
         from backend.app.auth import CurrentUser, require_administration_owner
         from backend.app.power_platform_routes import create_power_platform_router
 
@@ -243,6 +244,7 @@ class SelectedFlowRuntimeRouteTests(unittest.TestCase):
             power_platform_token_key="mock-secret-key-never-used",
         )
         app = FastAPI()
+        app.add_middleware(SessionMiddleware, secret_key='synthetic-owner-test-only')
         app.include_router(create_power_platform_router(oauth=SimpleNamespace(), settings=settings))
         owner = CurrentUser(eid=2021, it_user_id=1, display_name="Synthetic Owner",
             app_role="ADMIN", employee_trade=None, can_edit_billing=False,
@@ -296,9 +298,13 @@ class SelectedFlowRuntimeRouteTests(unittest.TestCase):
         from backend.app.auth import require_administration_owner
         client, app = self._client()
         app.dependency_overrides.clear()
-        with patch("backend.app.power_platform_routes.EncryptedPowerPlatformVault") as storage:
+        # No signed session: the real auth dependency must fail closed at 401.
+        # Pin synthetic Entra mode to avoid host-specific .env behavior.
+        with patch('backend.app.auth.settings', SimpleNamespace(auth_mode='entra', entra_configured=True)), \
+             patch("backend.app.power_platform_routes.EncryptedPowerPlatformVault") as storage:
             response = client.get(f"/api/admin/power-platform/environments/{ENV}/flows/{FLOW}/inspect")
-            self.assertIn(response.status_code, (401, 403, 503))
+            self.assertEqual(response.status_code, 401)
+            self.assertEqual(response.json().get('detail'), 'authentication_required')
             storage.assert_not_called()
 
     def test_denied_runtime_token_is_nonsecret_unverified_response(self):

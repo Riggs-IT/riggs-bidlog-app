@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from starlette.middleware.sessions import SessionMiddleware
 
 from backend.app.auth import CurrentUser, require_administration_owner
 from backend.app.power_platform_routes import create_power_platform_router
@@ -30,6 +31,7 @@ def route_client(runtime_enabled=True):
         power_platform_token_key='not-a-live-credential',
     )
     app = FastAPI()
+    app.add_middleware(SessionMiddleware, secret_key='synthetic-batch-test-only')
     app.include_router(create_power_platform_router(oauth=SimpleNamespace(), settings=settings))
     owner = CurrentUser(eid=2021,it_user_id=1,display_name='Synthetic Owner',
         app_role='ADMIN',employee_trade=None,can_edit_billing=False,
@@ -117,8 +119,12 @@ class RunBatchTests(unittest.TestCase):
     def test_owner_gate_denies_other_admin_before_grant(self):
         client,app=route_client()
         app.dependency_overrides.clear()
-        with patch('backend.app.power_platform_routes.EncryptedPowerPlatformVault',FakeVault):
-            self.assertIn(self.query(client,FLOW1).status_code,(401,403,503))
+        # No signed user may reach runtime credentials or the downstream reader.
+        with patch('backend.app.auth.settings', SimpleNamespace(auth_mode='entra', entra_configured=True)), \
+             patch('backend.app.power_platform_routes.EncryptedPowerPlatformVault', FakeVault):
+            response = self.query(client,FLOW1)
+        self.assertEqual(response.status_code,401)
+        self.assertEqual(response.json().get('detail'),'authentication_required')
         self.assertEqual(FakeVault.calls,[])
 
     def test_runtime_credential_denial_returns_unverified_not_success(self):
