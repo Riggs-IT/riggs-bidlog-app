@@ -1655,6 +1655,73 @@ def get_active_project_detail(
     )
 
 
+def get_active_project_metrics(
+    job_list_id: int,
+    *,
+    actor_eid: int,
+) -> dict:
+    """Read current quantities through the owner-authorized Data API procedure.
+
+    Unlike generic service reads, this call MUST carry a session-derived actor
+    EID; the SQL procedure separately checks the user's project access.
+    """
+    operation = "Read Active Project metrics"
+    try:
+        response = _timed_data_api_request(
+            operation,
+            lambda: _get_http_client().get(
+                f"/v1/jobs/{job_list_id}/metrics",
+                headers=_request_headers(
+                    include_service_auth=True,
+                    actor_eid=actor_eid,
+                ),
+            ),
+        )
+    except (httpx.TimeoutException, httpx.RequestError) as exc:
+        raise DataAPIUnavailable("Active Project metrics read unavailable.") from exc
+
+    # An OFF feature is an intentional staged release, not an error in the
+    # existing Active Projects viewer. Pass through only this exact code.
+    if response.status_code == 503 and _detail(response) == "project_metrics_reads_disabled":
+        raise DataAPIRequestRejected(503, "project_metrics_reads_disabled")
+    # A provider 403 with no machine-readable detail may be Cloudflare Access.
+    if response.status_code in {400, 404, 409, 422} or (
+        response.status_code == 403 and _detail(response) is not None
+    ):
+        raise DataAPIRequestRejected(
+            response.status_code,
+            _detail(response) or "project_metrics_read_rejected",
+        )
+    _raise_common_failure(response, operation=operation)
+    if response.status_code != 200:
+        raise DataAPIInvalidResponse("Unexpected metrics read response.")
+    payload = _json_object(response, operation=operation)
+    if type(payload.get("jobListId")) is not int or payload["jobListId"] != job_list_id:
+        raise DataAPIInvalidResponse("Mismatched project metrics identity.")
+    return payload
+
+
+def save_active_project_metrics(
+    job_list_id: int,
+    payload: dict,
+    *,
+    actor_eid: int,
+    request_id: str,
+) -> dict:
+    """One PATCH only; retries and request fingerprints belong to SQL."""
+    result = _active_project_write_request(
+        "PATCH",
+        f"/v1/jobs/{job_list_id}/metrics",
+        operation="Save Active Project metrics",
+        actor_eid=actor_eid,
+        request_id=request_id,
+        payload=payload,
+    )
+    if type(result.get("jobListId")) is not int or result["jobListId"] != job_list_id:
+        raise DataAPIInvalidResponse("Mismatched project metrics save identity.")
+    return result
+
+
 def get_active_project_cognito_detail(
     job_list_id: int,
 ) -> dict:

@@ -22,6 +22,7 @@ import ActiveProjectStaffingOrganizer from './ActiveProjectStaffingOrganizer.jsx
 import ActiveProjectAdditionalMembers from './ActiveProjectAdditionalMembers.jsx';
 import {ActiveProjectOfficeTeam,ActiveProjectGcTeam,ActiveProjectGcPicker} from './ActiveProjectTeamSections.jsx';
 import useActiveProjectEditor from './useActiveProjectEditor.js';
+import useActiveProjectMetrics from './useActiveProjectMetrics.js';
 
 
 function requestErrorMessage(detail, fallback) {
@@ -168,11 +169,16 @@ export default function ActiveProjectEditDrawer({
   const canInspectChoices = canEdit || managementPreview;
   const { items: gcOptions, loading: gcOptionsLoading, error: gcOptionsError, refresh: retryGcOptions } = useGcReference(canInspectChoices);
   const { editor, state, dirty: hasUnsavedChanges, needsReview } = useActiveProjectEditor(jobListId, canEdit);
+  const {editor: metricsEditor, state: metricsState, dirty: metricsDirty} = useActiveProjectMetrics(jobListId, canEdit);
+  const [combinedSaving, setCombinedSaving] = useState(false);
+  const combinedSavingRef = useRef(false);
   const payload = state.project.snapshot;
   const form = state.project.draft;
   const loading = state.project.loading && !payload;
   const loadError = !payload ? state.project.error : null;
-  const saving = state.saving;
+  const saving = state.saving || metricsState.saving || combinedSaving;
+  const anyDirty = hasUnsavedChanges || metricsDirty;
+  const anyNeedsReview = needsReview || metricsState.unresolved || metricsState.conflict;
   const [cognitoPayload, setCognitoPayload] = useState(null);
   const [cognitoLoading, setCognitoLoading] = useState(true);
   const [cognitoError, setCognitoError] = useState(null);
@@ -378,16 +384,43 @@ export default function ActiveProjectEditDrawer({
     [form],
   );
 
+  async function saveChanges() {
+    if (combinedSavingRef.current || state.saving || metricsState.saving || anyNeedsReview || !canEdit) return;
+    combinedSavingRef.current = true;
+    setCombinedSaving(true);
+    try {
+      // The two destinations are independent commits. Stop on an unconfirmed
+      // metrics save; never replay PATCH or imply a cross-system transaction.
+      if (metricsDirty) {
+        const saved = await metricsEditor.save();
+        if (!saved) return;
+        Promise.resolve().then(() => onSavedRef.current?.()).catch(() => {});
+      }
+      if (hasUnsavedChanges) await editor.save();
+    } finally {
+      combinedSavingRef.current = false;
+      setCombinedSaving(false);
+    }
+  }
+
   function requestClose() {
     if (saving) return;
-    if ((hasUnsavedChanges || needsReview || additionalDirty) && !window.confirm('Leave this project and discard unsaved edits? Saved changes are not undone.')) return;
+    if ((anyDirty || anyNeedsReview || additionalDirty) && !window.confirm('Leave this project and discard unsaved edits? Saved changes are not undone.')) return;
     onClose();
   }
 
   function discardChanges() {
-    if (saving) return;
+    if (saving || metricsState.unresolved) return;
     if (!window.confirm('Discard all unsaved edits? Changes that already saved will stay saved.')) return;
     editor.discard();
+    metricsEditor.discard();
+  }
+
+  function reloadMetrics() {
+    if (saving) return;
+    if ((metricsDirty || metricsState.unresolved || metricsState.conflict)
+      && !window.confirm('Reload saved quantities? Your unsaved quantity edits will be replaced. No write will be repeated.')) return;
+    void metricsEditor.load({force: true});
   }
 
   if (!jobListId) {
@@ -438,10 +471,10 @@ export default function ActiveProjectEditDrawer({
           <footer ref={footerRef} className="bid-log-edit-footer floating-editor-footer">
             <div className="floating-editor-footer-status">
               <small>
-                {saving ? state.phase : needsReview ? 'Review the highlighted changes before saving.'
-                  : hasUnsavedChanges ? 'Your project edits will be saved together.' : 'No unsaved changes.'}
+                {saving ? (state.phase || 'Saving quantities…') : anyNeedsReview ? 'Review the latest values before saving.'
+                  : anyDirty ? 'Unsaved project changes · independent SQL/Cognito saves.' : 'No unsaved changes.'}
               </small>
-              {hasUnsavedChanges && (
+              {anyDirty && (
                 <span className="floating-editor-dirty-indicator">
                   Unsaved changes
                 </span>
@@ -450,11 +483,11 @@ export default function ActiveProjectEditDrawer({
 
             <div className="bid-log-edit-footer-actions">
               <button type="button" className="secondary-button" onClick={discardChanges}
-                disabled={saving || (!hasUnsavedChanges && !state.conflicts.length)}>
+                disabled={saving || metricsState.unresolved || (!anyDirty && !state.conflicts.length)}>
                 Discard Changes
               </button>
-              <button type="button" className="bid-log-save-button" onClick={() => editor.save()}
-                disabled={!canEdit || saving || needsReview || !hasUnsavedChanges || state.project.loading || state.general.loading}>
+              <button type="button" className="bid-log-save-button" onClick={saveChanges}
+                disabled={!canEdit || saving || anyNeedsReview || !anyDirty || state.project.loading || state.general.loading || (metricsDirty && !metricsState.snapshot)}>
                 {saving ? 'Saving…' : 'Save Changes'}
               </button>
             </div>
@@ -494,8 +527,8 @@ export default function ActiveProjectEditDrawer({
                 </div>
               ) : null}
 
-              <ActionToast message={state.notice?.message} type={state.notice?.type || 'success'} style={{ bottom: toastBottom }}
-                onDismiss={editor.dismissNotice} />
+              <ActionToast message={metricsState.notice || state.notice?.message} type={metricsState.notice ? 'success' : (state.notice?.type || 'success')} style={{ bottom: toastBottom }}
+                onDismiss={() => {editor.dismissNotice(); metricsEditor.dismissNotice();}} />
               <ActiveProjectSaveReview state={state} editor={editor} />
 
               <div className="active-project-layout-pair">
@@ -510,6 +543,20 @@ export default function ActiveProjectEditDrawer({
                     <Field label="Purpose"><input type="text" list="active-project-purpose-options" value={form.purpose}
                       disabled={!canEdit || saving} onChange={event=>updateField('purpose',event.target.value)}/>
                       <datalist id="active-project-purpose-options">{purposes.map(value=><option key={value} value={value}/>)}</datalist></Field>
+                    {!metricsState.disabled && <Field label="Square Footage (SF)" hint="Project Metrics override; otherwise linked bid">
+                      <input type="text" inputMode="decimal" value={metricsState.draft?.squareFootage ?? String(projectSummary?.squareFootage ?? '')}
+                        disabled={!canEdit || saving || !metricsState.snapshot?.canEdit || metricsState.unresolved || metricsState.conflict}
+                        onChange={event=>metricsEditor.edit('squareFootage',event.target.value)} />
+                    </Field>}
+                    {!metricsState.disabled && <Field label="Cubic Yards (CY)" hint="Project Metrics override; otherwise linked bid">
+                      <input type="text" inputMode="decimal" value={metricsState.draft?.cubicYards ?? String(projectSummary?.cubicYards ?? '')}
+                        disabled={!canEdit || saving || !metricsState.snapshot?.canEdit || metricsState.unresolved || metricsState.conflict}
+                        onChange={event=>metricsEditor.edit('cubicYards',event.target.value)} />
+                    </Field>}
+                    {metricsState.error && <div className="bid-edit-message error" role="alert">
+                      <span>{metricsState.error}</span>
+                      <button type="button" className="secondary-button" onClick={reloadMetrics} disabled={saving}>Reload quantities</button>
+                    </div>}
                   </div>
                   <details className="active-project-secondary-details">
                     <summary>Additional project details</summary>

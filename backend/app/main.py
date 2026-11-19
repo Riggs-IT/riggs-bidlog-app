@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from datetime import date, datetime
+import re
 import json
 from urllib.parse import urlencode, urlparse
 from uuid import UUID, uuid4
@@ -78,6 +79,8 @@ from .data_api import (
     get_bid_log_outcome_bids,
     get_bid_log_outcome_detail,
     get_active_project_detail,
+    get_active_project_metrics,
+    save_active_project_metrics,
     get_project_setup_draft,
     get_project_setup_readiness,
     get_ops_project_setup_summary,
@@ -2385,6 +2388,78 @@ def active_project_detail_proxy(
             current_user,
         )
 
+    except Exception as exc:
+        _raise_active_project_proxy_error(exc)
+
+
+@app.get("/api/active-projects/{job_list_id}/metrics")
+def active_project_metrics_read_proxy(
+    job_list_id: int = FastAPIPath(..., ge=1),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    _require_projects_workspace_access(current_user)
+    try:
+        result = get_active_project_metrics(job_list_id, actor_eid=current_user.eid)
+        return JSONResponse(result, headers={"Cache-Control": "private, no-store"})
+    except Exception as exc:
+        _raise_active_project_proxy_error(exc)
+
+
+def _validated_project_metrics_patch(raw: object) -> dict:
+    """No browser-derived job ID, actor EID, arbitrary SQL fields or writes."""
+    required = {
+        "operationId", "expectedRevision", "setSquareFootage", "setCubicYards",
+    }
+    allowed = required | {"squareFootage", "cubicYards"}
+    if not isinstance(raw, dict) or not required.issubset(raw) or not set(raw).issubset(allowed):
+        raise HTTPException(422, "project_metrics_invalid_request")
+    try:
+        operation_id = UUID(raw["operationId"]) if type(raw["operationId"]) is str else None
+    except ValueError:
+        operation_id = None
+    if operation_id is None or not operation_id.int:
+        raise HTTPException(422, "project_metrics_invalid_request")
+    revision = raw["expectedRevision"]
+    if type(revision) is not int or revision < 0 or revision >= 9223372036854775807:
+        raise HTTPException(422, "project_metrics_invalid_request")
+    for key in ("setSquareFootage", "setCubicYards"):
+        if type(raw[key]) is not bool:
+            raise HTTPException(422, "project_metrics_invalid_request")
+    if not (raw["setSquareFootage"] or raw["setCubicYards"]):
+        raise HTTPException(422, "project_metrics_invalid_request")
+    for flag, field in (("setSquareFootage", "squareFootage"), ("setCubicYards", "cubicYards")):
+        if raw[flag]:
+            if field not in raw:
+                raise HTTPException(422, "project_metrics_invalid_request")
+            value = raw[field]
+            # The typed Data API permits explicit NULL clears. No N/A state.
+            if value is not None and (type(value) is not str or not re.fullmatch(r"\d{1,15}(?:\.\d{1,4})?", value)):
+                raise HTTPException(422, "project_metrics_invalid_request")
+        elif field in raw:
+            raise HTTPException(422, "project_metrics_invalid_request")
+    return {**raw, "operationId": str(operation_id)}
+
+
+@app.patch("/api/active-projects/{job_list_id}/metrics")
+async def active_project_metrics_save_proxy(
+    request: Request,
+    job_list_id: int = FastAPIPath(..., ge=1),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    _require_projects_workspace_access(current_user)
+    _require_project_editor(current_user)
+    try:
+        raw = await request.json()
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(400, "invalid_json_body") from exc
+    payload = _validated_project_metrics_patch(raw)
+    try:
+        result = save_active_project_metrics(
+            job_list_id, payload,
+            actor_eid=current_user.eid,
+            request_id=_browser_request_id(request),
+        )
+        return JSONResponse(result, headers={"Cache-Control": "private, no-store"})
     except Exception as exc:
         _raise_active_project_proxy_error(exc)
 

@@ -179,12 +179,9 @@ function dateLabel(value) {
 
 
 function quantityLabel(value) {
+  if (value === null || value === undefined || value === '') return '—';
   const number = Number(value);
-
-  if (!Number.isFinite(number) || number <= 0) {
-    return '—';
-  }
-
+  if (!Number.isFinite(number) || number < 0) return '—';
   return Math.round(number).toLocaleString('en-US');
 }
 
