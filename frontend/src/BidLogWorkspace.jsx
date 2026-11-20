@@ -1,4 +1,4 @@
-import {awardCompleted, mayAuthor} from './projectSetupAuthoring.mjs';
+import {awardCompleted, mayAuthor, mayInspectSetup} from './projectSetupAuthoring.mjs';
 import {activePmChoices, asyncAwardSetupId} from './bidLogWorkspaceRules.mjs';
 import {teamBadgeTextColor} from './teamBadgeIdentity.js';
 import {facetRows} from './viewFilters.js';
@@ -1940,7 +1940,7 @@ export default function BidLogWorkspace({
       if (Number.isSafeInteger(id) && id > 0) {
         // A parent-level coordinator survives navigation away from Bid Log.
         // The callback only returns true when it owns monitoring this ID.
-        if (mayAuthor(user) && onAwardQueued?.(id) === true) return;
+        if (mayInspectSetup(user) && onAwardQueued?.(id) === true) return;
         setPendingAwardIds(previous => previous.includes(id) ? previous : [...previous, id]);
       }
       return;

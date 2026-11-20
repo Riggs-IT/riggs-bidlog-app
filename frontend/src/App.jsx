@@ -6,8 +6,8 @@ import { isTerminalUsageHeartbeat } from './usageSessionFeedback.js';
 import {facetRows, hasMonthlyValues, isCompleted} from './viewFilters.js';
 import {resolveSignedInPmOption} from './pmScope.js';
 import {activePmChoices} from './bidLogWorkspaceRules.mjs';
-import {awardCompleted, mayAuthor} from './projectSetupAuthoring.mjs';
-import {queuedAwardProgress, queuedAwardSourceId} from './queuedAwardSetup.mjs';
+import {awardCompleted, mayAuthor, mayInspectSetup} from './projectSetupAuthoring.mjs';
+import {queuedAwardProgress, queuedAwardSourceId, resolveVerifiedPreviewSetupId} from './queuedAwardSetup.mjs';
 import {resolveVisiblePortfolioReviews, VISIBLE_REVIEW_SOURCE} from './acceptedReviewPair.js';
 import ForecastBalanceFlag from './ForecastBalanceFlag.jsx';
 import MonthInput from './MonthInput.jsx';
@@ -45,7 +45,6 @@ import ActiveProjectsWorkspace, {
   prefetchProjectsWorkspace,
 } from './ActiveProjectsWorkspace.jsx';
 import ProjectSetupAwaitingPanel from './ProjectSetupAwaitingPanel.jsx';
-import ProjectSetupEditor from './ProjectSetupEditor.jsx';
 import BidLogEditDrawer from './BidLogEditDrawer.jsx';
 import ActiveProjectEditDrawer from './ActiveProjectEditDrawer.jsx';
 import CurrentProjectBillingDrawer from './CurrentProjectBillingDrawer.jsx';
@@ -1561,8 +1560,6 @@ export default function App() {
     setActivePage,
   ] = useState('projected');
   const [projectSetupIntent, setProjectSetupIntent] = useState(null);
-  // An M6 award opens its saved editor directly, without mounting Active Projects.
-  const [directQueuedSetupIntent, setDirectQueuedSetupIntent] = useState(null);
   const [queuedSetupSourceId, setQueuedSetupSourceId] = useState(null);
   const [queuedSetupIssue, setQueuedSetupIssue] = useState(null);
   const [queuedSetupTerminal, setQueuedSetupTerminal] = useState(false);
@@ -2251,7 +2248,7 @@ export default function App() {
   const queuedSetupStoreKey = user?.eid
     ? `riggs.project-setup-queued-award.${user.eid}`
     : null;
-  const canAutoOpenSetup = canViewProjects && mayAuthor(user);
+  const canAutoOpenSetup = canViewProjects && mayInspectSetup(user);
 
   useEffect(() => {
     if (!canAutoOpenSetup || !queuedSetupStoreKey || queuedSetupSourceId !== null) return;
@@ -2282,12 +2279,40 @@ export default function App() {
         const result = queuedAwardProgress(await response.json());
         if (cancelled) return;
         if (result.kind === 'ready') {
+          let editorIntent = {originalBidLogId: result.originalBidLogId};
+          if (!mayAuthor(user)) {
+            // MANAGEMENT_ADMIN may preview saved drafts but cannot call the
+            // award-context GET (which is an authorized write/reconcile path).
+            // Match the exact SQL-backed draft using an existing reviewer read.
+            try {
+              const setupId = await resolveVerifiedPreviewSetupId(result.originalBidLogId, {
+                fetcher: window.fetch.bind(window),
+              });
+              if (cancelled) return;
+              editorIntent = {setupId};
+            } catch {
+              if (cancelled) return;
+              // Fail closed: never send MANAGEMENT_ADMIN down the author-only
+              // award-context path. The saved-draft directory remains available.
+              try { window.sessionStorage.removeItem(queuedSetupStoreKey); }
+              catch { /* In-memory state is still cleared. */ }
+              setQueuedSetupSourceId(null);
+              setQueuedSetupIssue(null);
+              setQueuedSetupTerminal(false);
+              setProjectSetupIntent({showDrafts: true});
+              setActivePage('active-projects');
+              return;
+            }
+          }
           try { window.sessionStorage.removeItem(queuedSetupStoreKey); }
           catch { /* In-memory state is still cleared. */ }
           setQueuedSetupSourceId(null);
           setQueuedSetupIssue(null);
           setQueuedSetupTerminal(false);
-          setDirectQueuedSetupIntent({originalBidLogId: result.originalBidLogId});
+          // Enter the real Active Projects > Drafts workspace, then open the
+          // verified draft using its existing editor. Never mount a Bid Log overlay.
+          setProjectSetupIntent(editorIntent);
+          setActivePage('active-projects');
         } else if (result.kind === 'review') {
           setQueuedSetupIssue(result.message);
           setQueuedSetupTerminal(true);
@@ -2303,7 +2328,7 @@ export default function App() {
     void poll();
     const timer = window.setInterval(() => { void poll(); }, 1000);
     return () => { cancelled = true; window.clearInterval(timer); };
-  }, [canAutoOpenSetup, queuedSetupSourceId, queuedSetupStoreKey, queuedSetupTerminal]);
+  }, [canAutoOpenSetup, queuedSetupSourceId, queuedSetupStoreKey, queuedSetupTerminal, user?.appRole, user?.canEditProjectSetup]);
 
   function beginQueuedProjectSetup(sharePointItemId) {
     if (!canAutoOpenSetup || !Number.isSafeInteger(sharePointItemId)
@@ -2315,7 +2340,6 @@ export default function App() {
     setQueuedSetupIssue(null);
     setQueuedSetupTerminal(false);
     setProjectSetupIntent(null);
-    setDirectQueuedSetupIntent(null);
     setEditProjectedBidId(null);
     return true;
   }
@@ -8127,7 +8151,7 @@ export default function App() {
             aria-hidden="true">{queuedSetupTerminal ? '!' : '↻'}</span>
           <div className="action-toast-content">
             <strong>{queuedSetupTerminal ? 'Award requires review' : 'Preparing Project Setup'}</strong>
-            <span>{queuedSetupIssue || 'Award queued. Do not submit it again. The draft editor opens when SQL verifies the winner and saved draft.'}</span>
+            <span>{queuedSetupIssue || 'Award queued. Do not submit it again. Active Projects > Drafts opens the verified draft automatically.'}</span>
           </div>
           {queuedSetupTerminal && (
             <button type="button" className="action-toast-action" onClick={dismissQueuedProjectSetupReview}>
@@ -8135,16 +8159,6 @@ export default function App() {
             </button>
           )}
         </div>
-      )}
-
-      {directQueuedSetupIntent && canAutoOpenSetup && queuedSetupSourceId === null && (
-        <ProjectSetupEditor
-          key={`queued-award:${directQueuedSetupIntent.originalBidLogId}`}
-          intent={directQueuedSetupIntent}
-          user={user}
-          backLabel="Back to workspace"
-          onLeave={() => setDirectQueuedSetupIntent(null)}
-        />
       )}
 
       <CsvExportDialog

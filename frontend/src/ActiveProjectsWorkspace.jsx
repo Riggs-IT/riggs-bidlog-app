@@ -567,7 +567,8 @@ export default function ActiveProjectsWorkspace({
     () => completedProjectsCache.items || [],
   );
   const [showCompleted, setShowCompleted] = useState(false);
-  const [showAwaiting, setShowAwaiting] = useState(false);
+  // A verified award lands directly on Drafts, with no Projects flash.
+  const [showAwaiting, setShowAwaiting] = useState(() => Boolean(setupIntent));
   const [setupRefresh, setSetupRefresh] = useState(0);
   useEffect(() => {
     if (setupIntent) {setShowAwaiting(true);setEditProjectId(null);}
