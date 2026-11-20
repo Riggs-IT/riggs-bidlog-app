@@ -1,5 +1,6 @@
 import {notifyWriteAuthFailure} from './writeAuthRecovery.mjs';
 import {awardCompleted} from './projectSetupAuthoring.mjs';
+import {isValidAwardQuantity} from './bidLogAwardQuantity.mjs';
 import MoneyInput from './MoneyInput.jsx';
 import useGcReference from './useGcReference.js';
 import { gcReference } from './gcReference.js';
@@ -633,6 +634,8 @@ export default function BidLogEditDrawer({
         missing: !Number.isFinite(estimatedPrice) || estimatedPrice <= 0,
       },
       { key: 'margin', label: 'Margin', missing: margin === null || Number.isNaN(margin) },
+      { key: 'squareFootage', label: 'Square Footage (SF)', missing: !isValidAwardQuantity(form?.squareFootage) },
+      { key: 'cubicYards', label: 'Cubic Yards (CY)', missing: !isValidAwardQuantity(form?.cubicYards) },
       {
         key: 'retentionPercent',
         label: 'Retention',
@@ -663,8 +666,16 @@ export default function BidLogEditDrawer({
   }
 
 
+  // Surface missing Award fields before submission. The server remains authoritative.
+  const missingAwardFields = selectedLifecycleAction === 'Awarded' && form
+    ? awardMissingFields()
+    : [];
+  const visibleRequiredFields = selectedLifecycleAction === 'Awarded'
+    ? [...new Set([...requiredFields, ...missingAwardFields.map(item => item.key)])]
+    : requiredFields;
+
   function sectionNeedsAttention(fieldKeys) {
-    return fieldKeys.some(key => requiredFields.includes(key));
+    return fieldKeys.some(key => visibleRequiredFields.includes(key));
   }
 
 
@@ -1441,6 +1452,12 @@ export default function BidLogEditDrawer({
                       : 'Save will apply field updates first, then complete the selected lifecycle action.'}
                 </small>
               )}
+              {selectedLifecycleAction === 'Awarded' && missingAwardFields.length > 0 && (
+                <small role="status">
+                  Complete {missingAwardFields.length} required {missingAwardFields.length === 1 ? 'field' : 'fields'} to enable Award.
+                  {' '}First: {missingAwardFields[0].label}.
+                </small>
+              )}
               {hasUnsavedChanges && (
                 <span className="floating-editor-dirty-indicator">
                   Unsaved changes
@@ -1460,8 +1477,9 @@ export default function BidLogEditDrawer({
                 <button
                   type="button"
                   className="primary-button bid-log-save-button"
-                  onClick={save}
-                  disabled={saving || lifecycleComplete || awardQueued || !detail.etag || !hasUnsavedChanges}
+                  onClick={() => { void save(); }}
+                  disabled={saving || lifecycleComplete || awardQueued || !detail.etag || !hasUnsavedChanges
+                     || (selectedLifecycleAction === 'Awarded' && missingAwardFields.length > 0)}
                 >
                   {saving
                     ? 'Saving…'
@@ -1627,7 +1645,7 @@ export default function BidLogEditDrawer({
                     label="Bid Name"
                     wide
                     fieldKey="bidName"
-                    invalid={requiredFields.includes('bidName')}
+                    invalid={visibleRequiredFields.includes('bidName')}
                   >
                     <input
                       type="text"
@@ -1640,7 +1658,7 @@ export default function BidLogEditDrawer({
                   <Field
                     label="PM"
                     fieldKey="pm"
-                    invalid={requiredFields.includes('pm')}
+                    invalid={visibleRequiredFields.includes('pm')}
                     hint="Only approved Riggs PMs can be assigned. Selecting a PM automatically makes the bid Assigned."
                   >
                     <button
@@ -1663,7 +1681,7 @@ export default function BidLogEditDrawer({
                   <Field
                     label="Due Date"
                     fieldKey="dueDate"
-                    invalid={requiredFields.includes('dueDate')}
+                    invalid={visibleRequiredFields.includes('dueDate')}
                     hint="Change the Due Date on the Bid Log calendar invite; it will update here."
                   >
                     <input
@@ -1710,7 +1728,7 @@ export default function BidLogEditDrawer({
                   <Field
                     label="Project Type"
                     fieldKey="projectType"
-                    invalid={requiredFields.includes('projectType')}
+                    invalid={visibleRequiredFields.includes('projectType')}
                   >
                     <select
                       value={form.projectType}
@@ -1727,7 +1745,7 @@ export default function BidLogEditDrawer({
                   <Field
                     label="Purpose"
                     fieldKey="purpose"
-                    invalid={requiredFields.includes('purpose')}
+                    invalid={visibleRequiredFields.includes('purpose')}
                   >
                     <select
                       value={form.purpose}
@@ -1781,7 +1799,7 @@ export default function BidLogEditDrawer({
                     label="General Contractors"
                     wide
                     fieldKey="generalContractors"
-                    invalid={requiredFields.includes('generalContractors')}
+                    invalid={visibleRequiredFields.includes('generalContractors')}
                     hint={
                       canEdit
                         ? `${gcOptions.length || '—'} General Contractors available. Search by company, city, or email; multiple GCs may be selected.`
@@ -1812,7 +1830,7 @@ export default function BidLogEditDrawer({
                   <Field
                     label="Street Address"
                     fieldKey="streetAddress"
-                    invalid={requiredFields.includes('streetAddress')}
+                    invalid={visibleRequiredFields.includes('streetAddress')}
                   >
                     <input
                       type="text"
@@ -1825,7 +1843,7 @@ export default function BidLogEditDrawer({
                   <Field
                     label="City"
                     fieldKey="city"
-                    invalid={requiredFields.includes('city')}
+                    invalid={visibleRequiredFields.includes('city')}
                   >
                     <input
                       type="text"
@@ -1848,7 +1866,7 @@ export default function BidLogEditDrawer({
                   <Field
                     label="State"
                     fieldKey="state"
-                    invalid={requiredFields.includes('state')}
+                    invalid={visibleRequiredFields.includes('state')}
                   >
                     <BidLogStateSelect
                       value={form.state}
@@ -1864,6 +1882,8 @@ export default function BidLogEditDrawer({
                   'estimatedPrice',
                   'margin',
                   'retentionPercent',
+                  'squareFootage',
+                  'cubicYards',
                 ]) ? ' required-attention' : ''}`}
               >
                 <div className="bid-edit-section-heading">
@@ -1877,7 +1897,7 @@ export default function BidLogEditDrawer({
                   <Field
                     label="Estimated Price"
                     fieldKey="estimatedPrice"
-                    invalid={requiredFields.includes('estimatedPrice')}
+                    invalid={visibleRequiredFields.includes('estimatedPrice')}
                   >
                     <MoneyInput value={form.estimatedPrice} disabled={!canEdit} onValueChange={value => updateField('estimatedPrice', value)} />
                   </Field>
@@ -1885,7 +1905,7 @@ export default function BidLogEditDrawer({
                   <Field
                     label="Margin"
                     fieldKey="margin"
-                    invalid={requiredFields.includes('margin')}
+                    invalid={visibleRequiredFields.includes('margin')}
                   >
                     <input type="number" step="0.0001" value={form.margin} disabled={!canEdit} onChange={event => updateField('margin', event.target.value)} />
                   </Field>
@@ -1897,7 +1917,7 @@ export default function BidLogEditDrawer({
                   <Field
                     label="Retention %"
                     fieldKey="retentionPercent"
-                    invalid={requiredFields.includes('retentionPercent')}
+                    invalid={visibleRequiredFields.includes('retentionPercent')}
                   >
                     <input type="number" min="0" max="100" step="0.1" value={form.retentionPercent} disabled={!canEdit} onChange={event => updateField('retentionPercent', event.target.value)} />
                   </Field>
@@ -1914,11 +1934,11 @@ export default function BidLogEditDrawer({
                     <input type="number" min="0" step="1" value={form.manHours} disabled={!canEdit} onChange={event => updateField('manHours', event.target.value)} />
                   </Field>
 
-                  <Field label="Cubic Yards">
+                  <Field label="Cubic Yards" fieldKey="cubicYards" invalid={visibleRequiredFields.includes('cubicYards')}>
                     <input type="number" min="0" step="0.01" value={form.cubicYards} disabled={!canEdit} onChange={event => updateField('cubicYards', event.target.value)} />
                   </Field>
 
-                  <Field label="Square Footage">
+                  <Field label="Square Footage" fieldKey="squareFootage" invalid={visibleRequiredFields.includes('squareFootage')}>
                     <input type="number" min="0" step="0.01" value={form.squareFootage} disabled={!canEdit} onChange={event => updateField('squareFootage', event.target.value)} />
                   </Field>
 
@@ -1953,7 +1973,7 @@ export default function BidLogEditDrawer({
                   <Field
                     label="Anticipated Start"
                     fieldKey="anticipatedStartDate"
-                    invalid={requiredFields.includes('anticipatedStartDate')}
+                    invalid={visibleRequiredFields.includes('anticipatedStartDate')}
                   >
                     <input type="date" value={form.anticipatedStartDate} disabled={!canEdit} onChange={event => updateField('anticipatedStartDate', event.target.value)} />
                   </Field>
@@ -1961,7 +1981,7 @@ export default function BidLogEditDrawer({
                   <Field
                     label="Estimated Project Duration"
                     fieldKey="estimatedDurationMonths"
-                    invalid={requiredFields.includes('estimatedDurationMonths')}
+                    invalid={visibleRequiredFields.includes('estimatedDurationMonths')}
                     hint={
                       forecastError
                         ? forecastError
@@ -2023,7 +2043,7 @@ export default function BidLogEditDrawer({
                         <Field
                           label="Date Awarded"
                           fieldKey="dateAwarded"
-                          invalid={requiredFields.includes('dateAwarded')}
+                          invalid={visibleRequiredFields.includes('dateAwarded')}
                         >
                           <input
                             type="date"
@@ -2040,7 +2060,7 @@ export default function BidLogEditDrawer({
                         <Field
                           label="Winning General Contractor"
                           fieldKey="winningGeneralContractor"
-                          invalid={requiredFields.includes('winningGeneralContractor')}
+                          invalid={visibleRequiredFields.includes('winningGeneralContractor')}
                           hint={
                             generalContractorNames(form.generalContractors).length > 1
                               ? 'Required because this bid has multiple GCs.'
@@ -2074,7 +2094,7 @@ export default function BidLogEditDrawer({
                       </div>
 
                       <div className="bid-edit-rule-note">
-                        Award requires a real PM, Due Date, Project Type, Purpose, GC, Estimated Price, Margin, Retention, Anticipated Start, Estimated Project Duration, Street Address, City, State, and Date Awarded. Losing GCs are automatically created as GC Not Awarded.
+                        Award requires a real PM, Due Date, Project Type, Purpose, GC, Estimated Price, Margin, Retention, Anticipated Start, Estimated Project Duration, Street Address, City, State, Square Footage (SF), Cubic Yards (CY), and Date Awarded. Losing GCs are automatically created as GC Not Awarded.
                       </div>
                     </>
                   ) : (
@@ -2082,7 +2102,7 @@ export default function BidLogEditDrawer({
                       label={`${selectedLifecycleAction} Reason`}
                       wide
                       fieldKey="lifecycleReason"
-                      invalid={requiredFields.includes('lifecycleReason')}
+                      invalid={visibleRequiredFields.includes('lifecycleReason')}
                       hint="Required before this bid can leave Active Bids."
                     >
                       <textarea
