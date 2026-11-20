@@ -44,7 +44,8 @@ test('queued award is not misreported as a finished Award', () => {
   assert.match(source, /kind: 'award_queued'/);
   assert.match(workspace, /award-progress/);
   assert.match(workspace, /\['COMPLETE', 'DRAFT_REVIEW', 'REVIEW'\]/);
-  assert.match(workspace, /Processing Award/);
+  assert.doesNotMatch(workspace, /'Processing Award'/);
+  assert.match(workspace, /pendingAwardIds\.includes\(Number\(row\?\.sharePointItemId\)\)/);
   assert.match(workspace, /window\.sessionStorage\.setItem/);
   assert.match(workspace, /if \(state === 'REVIEW'\)/);
 });

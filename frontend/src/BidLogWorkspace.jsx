@@ -1,4 +1,5 @@
 import {awardCompleted, mayAuthor} from './projectSetupAuthoring.mjs';
+import {activePmChoices, asyncAwardSetupId} from './bidLogWorkspaceRules.mjs';
 import {teamBadgeTextColor} from './teamBadgeIdentity.js';
 import {facetRows} from './viewFilters.js';
 import {hasMissingEstimate, isOverdueForDays} from './bidLogOverdue.js';
@@ -1237,36 +1238,12 @@ export default function BidLogWorkspace({
   );
 
 
+  // Historical PM assignments remain visible in read/filter paths. New PM
+  // assignments include ALL non-separated Cognito OfficeDepartment=Operations
+  // people, even if they have no badge or have never appeared on a bid.
   const approvedPmOptions = useMemo(
-    () => {
-      const values = new Map();
-
-      for (const row of pmDirectory) {
-        const name = String(row?.pm || '').trim();
-        const key = pmDirectoryKey(name);
-        const hasDirectoryIdentity = Boolean(
-          String(row?.pmInitials || '').trim()
-          || String(row?.pmHexColor || '').trim(),
-        );
-
-        if (
-          !key
-          || key === 'no pm assigned'
-          || !hasDirectoryIdentity
-        ) {
-          continue;
-        }
-
-        if (!values.has(key)) {
-          values.set(key, name);
-        }
-      }
-
-      return Array.from(values.values()).sort(
-        (a, b) => a.localeCompare(b),
-      );
-    },
-    [pmDirectory],
+    () => activePmChoices(pmBadgeDirectory),
+    [pmBadgeDirectory],
   );
 
 
@@ -1887,6 +1864,12 @@ export default function BidLogWorkspace({
     const poll = async () => {
       if (busy || cancelled) return;
       busy = true;
+      // Update session storage synchronously on terminal completion. Navigating
+      // to Project Setup unmounts this workspace, so its persistence effect may
+      // not run before the route changes.
+      const remainingIds = new Set(
+        pendingAwardKey.split(',').map(Number).filter(Number.isInteger),
+      );
       try {
         for (const rawId of pendingAwardKey.split(',')) {
           const id = Number(rawId);
@@ -1901,6 +1884,12 @@ export default function BidLogWorkspace({
           const state = String(value?.status || '');
           if (!['COMPLETE', 'DRAFT_REVIEW', 'REVIEW'].includes(state)) continue;
           if (cancelled) return;
+          remainingIds.delete(id);
+          try {
+            window.sessionStorage.setItem(
+              pendingAwardStoreKey, JSON.stringify([...remainingIds]),
+            );
+          } catch { /* The in-memory pending list remains authoritative. */ }
           setPendingAwardIds(previous => previous.filter(item => item !== id));
           if (state === 'REVIEW') {
             showActionToast('error', `Bid #${id} requires lifecycle review. Do not award it again.`);
@@ -1912,10 +1901,25 @@ export default function BidLogWorkspace({
             };
             void refreshBidViewAfterMutation('active');
             onBidDataChanged?.();
-            showActionToast(state === 'COMPLETE' ? 'success' : 'info',
-              state === 'COMPLETE'
-                ? `Bid #${id} awarded. Project Setup draft is available.`
-                : `Bid #${id} awarded, but its Project Setup draft needs review.`);
+            if (state === 'DRAFT_REVIEW') {
+              showActionToast('error',
+                `Bid #${id} was awarded, but Project Setup needs review. Do not award it again.`);
+              continue;
+            }
+            const setupBidId = asyncAwardSetupId(value, mayAuthor(user));
+            if (setupBidId !== null && typeof onOpenProjectSetup === 'function') {
+              onOpenProjectSetup(setupBidId);
+              return;
+            }
+            // Never navigate based on the award alone; the queue must confirm
+            // that its SQL draft is ready. Keep recoverable results visible.
+            if (mayAuthor(user)) {
+              showActionToast('error',
+                `Bid #${id} completed, but its Project Setup identity was not verified. Open it from Awarded; do not award again.`);
+            } else {
+              showActionToast('success',
+                `Bid #${id} awarded. Its Project Setup draft is available to authorized editors.`);
+            }
           }
         }
       } catch {
@@ -1935,7 +1939,8 @@ export default function BidLogWorkspace({
         setPendingAwardIds(previous => previous.includes(id) ? previous : [...previous, id]);
       }
       setEditSelection(null);
-      showActionToast('info', 'Award processing in the background. The Active bid remains until the outcome is verified.');
+      // No routine Attention toast: the pending row retains a small processing
+      // indicator; the poller opens the verified SQL draft on COMPLETE.
       return;
     }
     const updatedIdentity = activeView
@@ -2749,9 +2754,7 @@ export default function BidLogWorkspace({
 
                       <td>
                         <span className="bid-log-status-pill">
-                          {activeView && pendingAwardIds.includes(identity)
-                            ? 'Processing Award'
-                            : displayValue(row.status)}
+                          {displayValue(row.status)}
                         </span>
                       </td>
 

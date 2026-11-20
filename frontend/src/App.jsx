@@ -5,6 +5,7 @@ import { resolveSessionIdleTimeoutMs } from './sessionPolicy.js';
 import { isTerminalUsageHeartbeat } from './usageSessionFeedback.js';
 import {facetRows, hasMonthlyValues, isCompleted} from './viewFilters.js';
 import {resolveSignedInPmOption} from './pmScope.js';
+import {activePmChoices} from './bidLogWorkspaceRules.mjs';
 import {resolveVisiblePortfolioReviews, VISIBLE_REVIEW_SOURCE} from './acceptedReviewPair.js';
 import ForecastBalanceFlag from './ForecastBalanceFlag.jsx';
 import MonthInput from './MonthInput.jsx';
@@ -8125,18 +8126,7 @@ export default function App() {
       <BidLogEditDrawer
         sharePointItemId={editProjectedBidId}
         user={user}
-        pmOptions={[
-          ...new Set(
-            activeBids
-              .filter(
-                row =>
-                  row?.pm
-                  && (row?.pmInitials || row?.pmHexColor)
-                  && String(row.pm).trim().toUpperCase() !== 'NO PM ASSIGNED',
-              )
-              .map(row => row.pm),
-          ),
-        ]}
+        pmOptions={activePmChoices(teamBadgeDirectory)}
         onClose={() => setEditProjectedBidId(null)}
         onSaved={() => {
           invalidateBidLogWorkspaceCache();
