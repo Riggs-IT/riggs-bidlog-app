@@ -2300,7 +2300,7 @@ export default function App() {
       } finally { busy = false; }
     };
     void poll();
-    const timer = window.setInterval(() => { void poll(); }, 3000);
+    const timer = window.setInterval(() => { void poll(); }, 1000);
     return () => { cancelled = true; window.clearInterval(timer); };
   }, [canAutoOpenSetup, queuedSetupSourceId, queuedSetupStoreKey, queuedSetupTerminal]);
 
