@@ -6,6 +6,8 @@ import { isTerminalUsageHeartbeat } from './usageSessionFeedback.js';
 import {facetRows, hasMonthlyValues, isCompleted} from './viewFilters.js';
 import {resolveSignedInPmOption} from './pmScope.js';
 import {activePmChoices} from './bidLogWorkspaceRules.mjs';
+import {awardCompleted, mayAuthor} from './projectSetupAuthoring.mjs';
+import {queuedAwardProgress, queuedAwardSourceId} from './queuedAwardSetup.mjs';
 import {resolveVisiblePortfolioReviews, VISIBLE_REVIEW_SOURCE} from './acceptedReviewPair.js';
 import ForecastBalanceFlag from './ForecastBalanceFlag.jsx';
 import MonthInput from './MonthInput.jsx';
@@ -1558,6 +1560,9 @@ export default function App() {
     setActivePage,
   ] = useState('projected');
   const [projectSetupIntent, setProjectSetupIntent] = useState(null);
+  const [queuedSetupSourceId, setQueuedSetupSourceId] = useState(null);
+  const [queuedSetupIssue, setQueuedSetupIssue] = useState(null);
+  const [queuedSetupTerminal, setQueuedSetupTerminal] = useState(false);
 
 
   const usageSessionIdRef =
@@ -2236,6 +2241,95 @@ export default function App() {
     === true;
 
   const canViewSetupSummary = canViewBidLog && user?.canReviewProjectSetup === true;
+
+  // The queue's SharePoint ID is not the resulting SQL BidLogID. Keep the
+  // accepted award in the App (rather than Bid Log's unmountable component)
+  // until SQL reports COMPLETE + draftReady + its verified original identity.
+  const queuedSetupStoreKey = user?.eid
+    ? `riggs.project-setup-queued-award.${user.eid}`
+    : null;
+  const canAutoOpenSetup = canViewProjects && mayAuthor(user);
+
+  useEffect(() => {
+    if (!canAutoOpenSetup || !queuedSetupStoreKey || queuedSetupSourceId !== null) return;
+    try {
+      const saved = Number(window.sessionStorage.getItem(queuedSetupStoreKey));
+      if (Number.isSafeInteger(saved) && saved > 0) {
+        setQueuedSetupSourceId(saved);
+        setQueuedSetupIssue(null);
+        setQueuedSetupTerminal(false);
+        setActivePage('active-projects');
+      }
+    } catch { /* In-memory coordination still works if storage is disabled. */ }
+  }, [canAutoOpenSetup, queuedSetupStoreKey, queuedSetupSourceId]);
+
+  useEffect(() => {
+    if (!canAutoOpenSetup || !queuedSetupSourceId || queuedSetupTerminal) return undefined;
+    let cancelled = false;
+    let busy = false;
+    const poll = async () => {
+      if (cancelled || busy) return;
+      busy = true;
+      try {
+        const response = await window.fetch(
+          `/api/bid-log/active/${queuedSetupSourceId}/award-progress`,
+          {credentials: 'same-origin', cache: 'no-store',
+           headers: {'X-Riggs-Passive-Read': '1'}},
+        );
+        if (!response.ok) throw new Error('status_read_unavailable');
+        const result = queuedAwardProgress(await response.json());
+        if (cancelled) return;
+        if (result.kind === 'ready') {
+          try { window.sessionStorage.removeItem(queuedSetupStoreKey); }
+          catch { /* In-memory state is still cleared. */ }
+          setQueuedSetupSourceId(null);
+          setQueuedSetupIssue(null);
+          setQueuedSetupTerminal(false);
+          setProjectSetupIntent({originalBidLogId: result.originalBidLogId});
+          setActivePage('active-projects');
+        } else if (result.kind === 'review') {
+          setQueuedSetupIssue(result.message);
+          setQueuedSetupTerminal(true);
+        } else {
+          setQueuedSetupIssue(null);
+        }
+      } catch {
+        if (!cancelled) {
+          setQueuedSetupIssue('Unable to confirm award status right now. The original request may still be processing. Do not submit it again; status checks will retry.');
+        }
+      } finally { busy = false; }
+    };
+    void poll();
+    const timer = window.setInterval(() => { void poll(); }, 3000);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [canAutoOpenSetup, queuedSetupSourceId, queuedSetupStoreKey, queuedSetupTerminal]);
+
+  function beginQueuedProjectSetup(sharePointItemId) {
+    if (!canAutoOpenSetup || !Number.isSafeInteger(sharePointItemId)
+        || sharePointItemId <= 0) return false;
+    if (queuedSetupSourceId !== null && queuedSetupSourceId !== sharePointItemId) return false;
+    try { window.sessionStorage.setItem(queuedSetupStoreKey, String(sharePointItemId)); }
+    catch { /* The in-memory poller stays active. */ }
+    setQueuedSetupSourceId(sharePointItemId);
+    setQueuedSetupIssue(null);
+    setQueuedSetupTerminal(false);
+    setProjectSetupIntent(null);
+    setEditProjectedBidId(null);
+    setActivePage('active-projects');
+    return true;
+  }
+
+  function returnToBidLogFromPending() {
+    if (queuedSetupTerminal) {
+      // Dismiss only local navigation state; SQL/SharePoint remain untouched.
+      try { window.sessionStorage.removeItem(queuedSetupStoreKey); }
+      catch { /* Nothing to remove from SQL. */ }
+      setQueuedSetupSourceId(null);
+      setQueuedSetupIssue(null);
+      setQueuedSetupTerminal(false);
+    }
+    setActivePage('bid-log');
+  }
 
 
   const canViewCompletedBillings =
@@ -7944,6 +8038,7 @@ export default function App() {
           onBidDataChanged={() => {
             void refreshProjectedBidData();
           }}
+          onAwardQueued={beginQueuedProjectSetup}
           onOpenProjectSetup={originalBidLogId => {
             if (user?.canReviewProjectSetup !== true) return;
             setProjectSetupIntent({originalBidLogId});
@@ -7954,6 +8049,25 @@ export default function App() {
         activePage === 'active-projects'
         && canViewProjects
       ) ? (
+        queuedSetupSourceId !== null ? (
+          <main className="page-shell active-projects-workspace" aria-live="polite">
+            <div className="page-heading bid-log-workspace-heading">
+              <div>
+                <div className="eyebrow">PROJECT SETUP</div>
+                <h1>{queuedSetupTerminal ? 'Award needs review' : 'Preparing Project Setup'}</h1>
+                <p>{queuedSetupTerminal
+                  ? 'The award result requires attention. Do not submit the award again.'
+                  : 'The award is being finalized and its Project Setup draft will open automatically when verified.'}</p>
+              </div>
+            </div>
+            {queuedSetupIssue && <div className="bid-edit-message error" role="alert">
+              {queuedSetupIssue}
+            </div>}
+            <button type="button" className="secondary-button" onClick={returnToBidLogFromPending}>
+              Back to Bid Log
+            </button>
+          </main>
+        ) : (
         <ActiveProjectsWorkspace
           user={user}
           setupIntent={projectSetupIntent}
@@ -7965,6 +8079,7 @@ export default function App() {
           onOpenBillingProject={canViewProjectedBillings ? openBillingProjectFromDirectory : null}
           onProjectDataChanged={refreshProjectedCurrentProjectData}
         />
+        )
       ) : (
         activePage === 'project-setups'
         && canViewSetupSummary
@@ -8128,9 +8243,22 @@ export default function App() {
         user={user}
         pmOptions={activePmChoices(teamBadgeDirectory)}
         onClose={() => setEditProjectedBidId(null)}
-        onSaved={() => {
+        onSaved={(_updated, event) => {
           invalidateBidLogWorkspaceCache();
           void refreshProjectedBidData();
+          if (queuedAwardSourceId(event) !== null) {
+            // Projected Billings previously discarded the award_queued receipt,
+            // so its completed award had no owner to open Project Setup.
+            beginQueuedProjectSetup(queuedAwardSourceId(event));
+          } else if (event?.kind === 'award_complete'
+                     && canAutoOpenSetup && awardCompleted(event.lifecycleResult)) {
+            const id = event.lifecycleResult.originalBidLogId;
+            if (Number.isSafeInteger(id) && id > 0) {
+              setEditProjectedBidId(null);
+              setProjectSetupIntent({originalBidLogId: id});
+              setActivePage('active-projects');
+            }
+          }
         }}
       />
     </div>

@@ -1219,18 +1219,15 @@ export default function BidLogEditDrawer({
       return;
     }
 
-    if (lifecycleAction && !skipLifecycleConfirm) {
+    // Awarded requires one deliberate Save & Award Bid click, not a second
+    // confirmation. All required fields, winner identity and server checks
+    // still run before the write. Other lifecycle confirmations are unchanged.
+    if (lifecycleAction && lifecycleAction !== 'Awarded' && !skipLifecycleConfirm) {
       setConfirmDialog({
         kind: 'lifecycle',
-        title: lifecycleAction === 'Awarded'
-          ? 'Award this bid?'
-          : `Mark this bid ${lifecycleAction}?`,
-        message: lifecycleAction === 'Awarded'
-          ? 'The winning GC will remain on the Awarded record. Any losing GCs will be created as GC Not Awarded records.'
-          : `This will complete the bid and move it to the ${lifecycleAction === 'Not Pursuing' ? 'Unpursued' : lifecycleAction === 'Dead' ? 'Lost' : lifecycleAction} view.`,
-        confirmLabel: lifecycleAction === 'Awarded'
-          ? 'Award Bid'
-          : `Mark ${lifecycleAction}`,
+        title: `Mark this bid ${lifecycleAction}?`,
+        message: `This will complete the bid and move it to the ${lifecycleAction === 'Not Pursuing' ? 'Unpursued' : lifecycleAction === 'Dead' ? 'Lost' : lifecycleAction} view.`,
+        confirmLabel: `Mark ${lifecycleAction}`,
       });
       return;
     }

@@ -790,6 +790,7 @@ export default function BidLogWorkspace({
   pmBadgeDirectory = [],
   onBidDataChanged,
   onOpenProjectSetup = null,
+  onAwardQueued = null,
   refreshApiRef,
 }) {
   const gcDirectory = useGcReference(canReadGcReference(user));
@@ -1935,12 +1936,13 @@ export default function BidLogWorkspace({
   function handleBidSaved(updated, event = null) {
     if (event?.kind === 'award_queued') {
       const id = Number(event.sharePointItemId);
-      if (Number.isInteger(id) && id > 0) {
+      setEditSelection(null);
+      if (Number.isSafeInteger(id) && id > 0) {
+        // A parent-level coordinator survives navigation away from Bid Log.
+        // The callback only returns true when it owns monitoring this ID.
+        if (mayAuthor(user) && onAwardQueued?.(id) === true) return;
         setPendingAwardIds(previous => previous.includes(id) ? previous : [...previous, id]);
       }
-      setEditSelection(null);
-      // No routine Attention toast: the pending row retains a small processing
-      // indicator; the poller opens the verified SQL draft on COMPLETE.
       return;
     }
     const updatedIdentity = activeView

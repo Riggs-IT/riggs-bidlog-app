@@ -26,6 +26,6 @@ test('UI enforces SF/CY before Award click, with live feedback', () => {
 test('click does not forward React event as skipLifecycleConfirm', () => {
   assert.doesNotMatch(editor, /onClick=\{save\}/);
   assert.match(editor, /onClick=\{\(\) => \{ void save\(\); \}\}/);
-  assert.match(editor, /if \(lifecycleAction && !skipLifecycleConfirm\)/);
+  assert.match(editor, /if \(lifecycleAction && lifecycleAction !== 'Awarded' && !skipLifecycleConfirm\)/);
   assert.match(editor, /if \(kind === 'lifecycle'\)/);
 });
