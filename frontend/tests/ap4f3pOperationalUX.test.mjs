@@ -46,7 +46,8 @@ test('GC preview is resolved by exact 140-N identity, never company names',()=>{
 });
 
 test('setup Back and drafts Projects navigation are not duplicated',()=>{
-  assert.match(setup,/backLabel="Drafts"/);
+  assert.match(setup,/backLabel='Drafts'/);
+  assert.match(setup,/backLabel=\{backLabel\}/);
   assert.doesNotMatch(setup,/>Back to Drafts<\/button>/);
   assert.match(workspace,/>\s*Projects\s*<\/button>/);
   assert.doesNotMatch(workspace,/<span className="project-setup-list-status">Set Up Drafts<\/span>/);

@@ -45,6 +45,7 @@ import ActiveProjectsWorkspace, {
   prefetchProjectsWorkspace,
 } from './ActiveProjectsWorkspace.jsx';
 import ProjectSetupAwaitingPanel from './ProjectSetupAwaitingPanel.jsx';
+import ProjectSetupEditor from './ProjectSetupEditor.jsx';
 import BidLogEditDrawer from './BidLogEditDrawer.jsx';
 import ActiveProjectEditDrawer from './ActiveProjectEditDrawer.jsx';
 import CurrentProjectBillingDrawer from './CurrentProjectBillingDrawer.jsx';
@@ -1560,6 +1561,8 @@ export default function App() {
     setActivePage,
   ] = useState('projected');
   const [projectSetupIntent, setProjectSetupIntent] = useState(null);
+  // An M6 award opens its saved editor directly, without mounting Active Projects.
+  const [directQueuedSetupIntent, setDirectQueuedSetupIntent] = useState(null);
   const [queuedSetupSourceId, setQueuedSetupSourceId] = useState(null);
   const [queuedSetupIssue, setQueuedSetupIssue] = useState(null);
   const [queuedSetupTerminal, setQueuedSetupTerminal] = useState(false);
@@ -2258,7 +2261,6 @@ export default function App() {
         setQueuedSetupSourceId(saved);
         setQueuedSetupIssue(null);
         setQueuedSetupTerminal(false);
-        setActivePage('active-projects');
       }
     } catch { /* In-memory coordination still works if storage is disabled. */ }
   }, [canAutoOpenSetup, queuedSetupStoreKey, queuedSetupSourceId]);
@@ -2285,8 +2287,7 @@ export default function App() {
           setQueuedSetupSourceId(null);
           setQueuedSetupIssue(null);
           setQueuedSetupTerminal(false);
-          setProjectSetupIntent({originalBidLogId: result.originalBidLogId});
-          setActivePage('active-projects');
+          setDirectQueuedSetupIntent({originalBidLogId: result.originalBidLogId});
         } else if (result.kind === 'review') {
           setQueuedSetupIssue(result.message);
           setQueuedSetupTerminal(true);
@@ -2314,12 +2315,12 @@ export default function App() {
     setQueuedSetupIssue(null);
     setQueuedSetupTerminal(false);
     setProjectSetupIntent(null);
+    setDirectQueuedSetupIntent(null);
     setEditProjectedBidId(null);
-    setActivePage('active-projects');
     return true;
   }
 
-  function returnToBidLogFromPending() {
+  function dismissQueuedProjectSetupReview() {
     if (queuedSetupTerminal) {
       // Dismiss only local navigation state; SQL/SharePoint remain untouched.
       try { window.sessionStorage.removeItem(queuedSetupStoreKey); }
@@ -2328,7 +2329,6 @@ export default function App() {
       setQueuedSetupIssue(null);
       setQueuedSetupTerminal(false);
     }
-    setActivePage('bid-log');
   }
 
 
@@ -8049,25 +8049,6 @@ export default function App() {
         activePage === 'active-projects'
         && canViewProjects
       ) ? (
-        queuedSetupSourceId !== null ? (
-          <main className="page-shell active-projects-workspace" aria-live="polite">
-            <div className="page-heading bid-log-workspace-heading">
-              <div>
-                <div className="eyebrow">PROJECT SETUP</div>
-                <h1>{queuedSetupTerminal ? 'Award needs review' : 'Preparing Project Setup'}</h1>
-                <p>{queuedSetupTerminal
-                  ? 'The award result requires attention. Do not submit the award again.'
-                  : 'The award is being finalized and its Project Setup draft will open automatically when verified.'}</p>
-              </div>
-            </div>
-            {queuedSetupIssue && <div className="bid-edit-message error" role="alert">
-              {queuedSetupIssue}
-            </div>}
-            <button type="button" className="secondary-button" onClick={returnToBidLogFromPending}>
-              Back to Bid Log
-            </button>
-          </main>
-        ) : (
         <ActiveProjectsWorkspace
           user={user}
           setupIntent={projectSetupIntent}
@@ -8079,7 +8060,6 @@ export default function App() {
           onOpenBillingProject={canViewProjectedBillings ? openBillingProjectFromDirectory : null}
           onProjectDataChanged={refreshProjectedCurrentProjectData}
         />
-        )
       ) : (
         activePage === 'project-setups'
         && canViewSetupSummary
@@ -8138,6 +8118,33 @@ export default function App() {
           </span>
           {activePage === 'projected' ? refreshFeedback : workspaceRefreshFeedback.message}
         </div>
+      )}
+
+      {queuedSetupSourceId !== null && (
+        <div className={`action-toast ${queuedSetupTerminal ? 'error' : 'info'}`}
+          style={{bottom: 104}} role={queuedSetupTerminal ? 'alert' : 'status'}>
+          <span className={`refresh-toast-indicator ${queuedSetupTerminal ? '' : 'is-progress'}`}
+            aria-hidden="true">{queuedSetupTerminal ? '!' : '↻'}</span>
+          <div className="action-toast-content">
+            <strong>{queuedSetupTerminal ? 'Award requires review' : 'Preparing Project Setup'}</strong>
+            <span>{queuedSetupIssue || 'Award queued. Do not submit it again. The draft editor opens when SQL verifies the winner and saved draft.'}</span>
+          </div>
+          {queuedSetupTerminal && (
+            <button type="button" className="action-toast-action" onClick={dismissQueuedProjectSetupReview}>
+              Dismiss
+            </button>
+          )}
+        </div>
+      )}
+
+      {directQueuedSetupIntent && canAutoOpenSetup && queuedSetupSourceId === null && (
+        <ProjectSetupEditor
+          key={`queued-award:${directQueuedSetupIntent.originalBidLogId}`}
+          intent={directQueuedSetupIntent}
+          user={user}
+          backLabel="Back to workspace"
+          onLeave={() => setDirectQueuedSetupIntent(null)}
+        />
       )}
 
       <CsvExportDialog

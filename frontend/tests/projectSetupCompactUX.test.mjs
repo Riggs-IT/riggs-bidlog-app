@@ -36,7 +36,8 @@ test('Header Draft checklist replaces redundant draft details and keeps advisory
   assert.match(editor,/JIS blocked ·/);
   assert.match(editor,/savedReadiness\.missingReviewFields\.length/);
   assert.match(editor,/savedReadiness\.blockers\.length/);
-  assert.match(editor,/backLabel="Drafts"/);
+  assert.match(editor,/backLabel='Drafts'/);
+  assert.match(editor,/backLabel=\{backLabel\}/);
 });
 
 test('Form sections have a practical order without dropping any known editable path',()=>{

@@ -48,8 +48,18 @@ test('both Bid Log and Projected Billings queue into App-owned coordinator', () 
   assert.match(app,/beginQueuedProjectSetup\(queuedAwardSourceId\(event\)\)/);
   assert.match(app,/setEditProjectedBidId\(null\)/);
   assert.match(app,/setQueuedSetupSourceId\(sharePointItemId\)/);
-  assert.match(app,/setActivePage\('active-projects'\)/);
-  assert.match(app,/setProjectSetupIntent\(\{originalBidLogId: result\.originalBidLogId\}\)/);
+  assert.match(app,/setDirectQueuedSetupIntent\(\{originalBidLogId: result\.originalBidLogId\}\)/);
+  assert.match(app,/directQueuedSetupIntent && canAutoOpenSetup/);
+  assert.match(app,/<ProjectSetupEditor/);
+  assert.match(app,/backLabel="Back to workspace"/);
+  assert.match(app,/queuedSetupTerminal \? 'Award requires review' : 'Preparing Project Setup'/);
+  assert.doesNotMatch(app,/queuedSetupSourceId !== null \? \(/);
+  const accepted = app.split('function beginQueuedProjectSetup(sharePointItemId) {')[1]
+    .split('function dismissQueuedProjectSetupReview() {')[0];
+  assert.doesNotMatch(accepted,/setActivePage\(/);
+  const ready = app.split("if (result.kind === 'ready') {")[1].split("} else if (result.kind === 'review')")[0];
+  assert.doesNotMatch(ready,/setActivePage\(/);
+  assert.doesNotMatch(ready,/setProjectSetupIntent\(/);
   assert.match(app,/award-progress/);
   assert.match(app,/window\.sessionStorage\.setItem\(queuedSetupStoreKey/);
   assert.match(app,/window\.sessionStorage\.removeItem\(queuedSetupStoreKey/);

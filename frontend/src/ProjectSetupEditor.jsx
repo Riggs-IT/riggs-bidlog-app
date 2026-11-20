@@ -12,7 +12,7 @@ import {applyDraftChanges,buildDraftChanges,currentAwardReference,mayAuthor,open
 const PROJECT_TYPES = ['Tilt','CIP','PRE','SITE','Other'];
 const PURPOSES = ['RET','OFF','PAR','IND','EDU','MED','RES','MIX','DAT','STG','SIDE'];
 
-export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
+export default function ProjectSetupEditor({intent,user,onLeave,onSaved,backLabel='Drafts'}) {
   const [record,setRecord] = useState(null);
   const [form,setForm] = useState(null);
   const [touched,setTouched] = useState(new Set());
@@ -305,7 +305,7 @@ export default function ProjectSetupEditor({intent,user,onLeave,onSaved}) {
 
   return <FloatingEditorShell eyebrow="PROJECT SETUP" title={record?.values.jobName || 'Project setup'}
     subtitle={managementPreview ? 'Management preview · selections are not saved' : record ? 'Project setup in progress' : 'Opening project setup'}
-    backLabel="Drafts" onClose={leave} saving={busy}
+    backLabel={backLabel} onClose={leave} saving={busy}
     className={`bid-log-edit-drawer project-setup-editor${managementPreview ? " project-setup-management-preview" : ""}`} bodyClassName="bid-log-edit-body project-setup-body" scrollSurface
     headerActions={record && <div ref={checklistRef} className="project-setup-checklist-anchor"
       onKeyDownCapture={event=>{if(event.key==='Escape' && checklistOpen){event.stopPropagation();setChecklistOpen(false);}}}>
