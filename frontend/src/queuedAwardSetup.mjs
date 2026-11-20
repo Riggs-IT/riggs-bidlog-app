@@ -8,15 +8,22 @@ export function queuedAwardSourceId(event) {
   return Number.isSafeInteger(value) && value > 0 ? value : null;
 }
 
-// The SQL worker does not mark COMPLETE until its Awarded operation and
-// exactly one draft have been verified. Anything less must not open setup.
+// The project can be ready BEFORE the five losing GCs finish. The Data API
+// derives winnerVerified + draftReady from SQL (never from client claims).
+// Keep a completed legacy award compatible with the earlier M5 contract.
 export function queuedAwardProgress(progress) {
   const status = String(progress?.status || '');
+  const id = progress?.originalBidLogId;
+  if (['RUNNING', 'COMPLETE'].includes(status)
+      && progress?.winnerVerified === true && progress?.draftReady === true
+      && Number.isSafeInteger(id) && id > 0) {
+    return {kind: 'ready', originalBidLogId: id};
+  }
   if (status === 'COMPLETE') {
-    const id = asyncAwardSetupId(progress, true);
-    return id === null
+    const completedId = asyncAwardSetupId(progress, true);
+    return completedId === null
       ? {kind: 'review', message: 'Award completed but Project Setup identity was not verified. Review the award; do not submit it again.'}
-      : {kind: 'ready', originalBidLogId: id};
+      : {kind: 'ready', originalBidLogId: completedId};
   }
   if (status === 'REVIEW') {
     return {kind: 'review', message: 'This award requires lifecycle review. Do not award the bid again.'};

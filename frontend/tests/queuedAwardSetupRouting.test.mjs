@@ -19,6 +19,10 @@ test('only SQL verified COMPLETE and ready draft route to setup', () => {
   for(const status of ['QUEUED','CLAIMED','RUNNING','AWARDED']) {
     assert.deepEqual(queuedAwardProgress({...completed,status}),{kind:'pending'});
   }
+  assert.deepEqual(queuedAwardProgress({...completed,status:'RUNNING',winnerVerified:true}),
+    {kind:'ready',originalBidLogId:4931});
+  assert.equal(queuedAwardProgress({...completed,status:'RUNNING',winnerVerified:false}).kind,'pending');
+  assert.equal(queuedAwardProgress({...completed,status:'REVIEW',winnerVerified:true}).kind,'review');
   for(const patch of [{awardCompleted:false},{draftReady:false},
     {originalBidLogId:null},{originalBidLogId:'4931'}]) {
     assert.equal(queuedAwardProgress({...completed,...patch}).kind,'review');
