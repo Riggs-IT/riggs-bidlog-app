@@ -1,3 +1,4 @@
+import ActiveProjectSection from './ActiveProjectSection.jsx';
 import './ActiveProjectGeneralEditor.css';
 
 // Controlled by the project editor: no local save, refresh, or independent draft.
@@ -11,10 +12,7 @@ export default function ActiveProjectGeneralEditor({ section, canEdit, blocked, 
   }
 
   return (
-    <section className="bid-edit-section information-sheet-section cognito-general-editor">
-      <div className="bid-edit-section-heading information-sheet-heading">
-        <div><span className="section-kicker">GENERAL INFORMATION</span><h3>Scope & Project Requirements</h3></div>
-      </div>
+    <ActiveProjectSection sectionId="general-editor" kicker="GENERAL INFORMATION" title="Scope & Project Requirements" className="bid-edit-section information-sheet-section cognito-general-editor" initiallyOpen>
       {loading && <div className="bid-edit-message">Loading current General Information…</div>}
       {!loading && !snapshot && <div className="bid-edit-message">This section is not ready. The existing project save is unaffected.</div>}
       {error && !snapshot && <div className="bid-edit-message error" role="alert"><span>{error}</span>
@@ -63,6 +61,6 @@ export default function ActiveProjectGeneralEditor({ section, canEdit, blocked, 
         <p className="cognito-general-note">Contract / LOI remains read-only while its label mapping is verified. </p>
 
       </>}
-    </section>
+    </ActiveProjectSection>
   );
 }

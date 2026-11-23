@@ -1865,3 +1865,31 @@
     letter-spacing: 0.04em;
   }
 }
+
+
+/* M9A — independent disclosures; retain the existing paired desktop flow. */
+.active-project-edit-drawer .active-project-section-flow {display:grid;gap:14px;min-width:0}
+.active-project-edit-drawer .active-project-section-flow > .bid-edit-section {margin:0}
+.active-project-edit-drawer .active-project-section-flow .active-project-layout-pair {align-items:start}
+.active-project-edit-drawer .active-project-disclosure {display:block;min-width:0;overflow:visible}
+.active-project-edit-drawer .active-project-disclosure-summary {display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;list-style:none;color:var(--text);padding:0;min-width:0}
+.active-project-edit-drawer .active-project-disclosure-summary::-webkit-details-marker {display:none}
+.active-project-edit-drawer .active-project-disclosure-summary:focus-visible {outline:2px solid var(--accent);outline-offset:5px;border-radius:4px}
+.active-project-edit-drawer .active-project-disclosure-title {display:grid;gap:4px;min-width:0}
+.active-project-edit-drawer .active-project-disclosure-name {font-size:16px;font-weight:650;line-height:1.35;overflow-wrap:anywhere}
+.active-project-edit-drawer .active-project-disclosure-title > small {font-size:12px;color:var(--muted);line-height:1.4}
+.active-project-edit-drawer .active-project-disclosure-chevron {width:8px;height:8px;flex:none;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);margin:0 4px 3px 0;color:var(--muted)}
+.active-project-edit-drawer .active-project-disclosure[open] > .active-project-disclosure-summary .active-project-disclosure-chevron {transform:rotate(225deg);margin-bottom:-3px}
+.active-project-edit-drawer .active-project-disclosure-content {margin-top:14px;min-width:0}
+.active-project-edit-drawer .active-project-jis-reference {display:grid;gap:12px;min-width:0}
+.active-project-edit-drawer .active-project-compact-sections {margin-top:0}
+.active-project-edit-drawer .active-project-reference-pair > .bid-edit-section {margin:0;min-width:0}
+.active-project-edit-drawer .active-project-section-actions {display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+.active-project-edit-drawer .active-project-section-actions > button {font-size:12px;white-space:nowrap;min-height:32px;padding:6px 10px}
+@media(max-width:600px) {
+  .active-project-edit-drawer .active-project-section-actions > button {font-size:11px;min-height:28px;padding:4px 7px}
+}
+.active-project-edit-drawer .active-project-layout-pair > .active-project-disclosure {height:auto}
+.active-project-edit-drawer .active-project-disclosure[open] > .active-project-disclosure-summary {padding-bottom:9px;border-bottom:1px solid var(--border)}
+
+.active-project-edit-drawer .active-project-disclosure-title > .section-kicker {display:none}

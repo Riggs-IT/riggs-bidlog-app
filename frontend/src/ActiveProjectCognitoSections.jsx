@@ -1,3 +1,4 @@
+import ActiveProjectSection from './ActiveProjectSection.jsx';
 
 function textValue(value) {
   if (value === null || value === undefined || value === '') {
@@ -246,12 +247,9 @@ export default function ActiveProjectCognitoSections({
 
   if (compact) return (
     <div className="active-project-compact-sections">
-      <section className="bid-edit-section information-sheet-section active-project-compact-reference">
-        <SectionHeading
-          kicker="PROJECT REFERENCE"
-          title="Buildings & Contract Details"
-          note="Read-only values from the Cognito Job Information Sheet"
-        />
+      <ActiveProjectSection sectionId="buildings-contract"
+          className="bid-edit-section information-sheet-section active-project-compact-reference"
+          kicker="PROJECT REFERENCE" title="Buildings & Contract Details" note="Read-only values from the Cognito Job Information Sheet">
         <Subheading>Buildings & Contract Reference</Subheading>
         <div className="bid-edit-grid three-column information-sheet-grid">
           <ReadField label="Building count" value={payload.numberOfBuildings} />
@@ -272,14 +270,11 @@ export default function ActiveProjectCognitoSections({
           <ReadField label="Lender street" value={lender.lenderStreet} />
           <ReadField label="Lender city / state / ZIP" value={lender.lenderCityStateZip} />
         </div>
-      </section>
+      </ActiveProjectSection>
 
-      <section className="bid-edit-section information-sheet-section active-project-compact-reference">
-        <SectionHeading
-          kicker="MATERIALS"
-          title="Authorized Suppliers & Contracts"
-          note="Supplier amounts and attachment metadata only; no file actions"
-        />
+      <ActiveProjectSection sectionId="suppliers"
+          className="bid-edit-section information-sheet-section active-project-compact-reference"
+          kicker="MATERIALS" title="Authorized Suppliers & Contracts" note="Supplier amounts and attachment metadata only; no file actions">
         <div className="cognito-supplier-sheet">
           <div className="cognito-supplier-row header" aria-hidden="true">
             <div>Category</div><div>Supplier</div><div>Amount</div><div>Contract attachment</div>
@@ -299,14 +294,12 @@ export default function ActiveProjectCognitoSections({
           <SupplierRow title="Patching" supplier={suppliers.patchingSubcontractor}
             amount={suppliers.patchingAmount} files={suppliers.patchingContract} />
         </div>
-      </section>
+      </ActiveProjectSection>
 
-      <section className="bid-edit-section information-sheet-section active-project-compact-reference">
-        <SectionHeading
-          kicker="CONCRETE"
-          title="Concrete & Mix Designs"
-          note="Supplier selections and approved mix references"
-        />
+      <div className="active-project-layout-pair active-project-reference-pair">
+      <ActiveProjectSection sectionId="concrete"
+          className="bid-edit-section information-sheet-section active-project-compact-reference"
+          kicker="CONCRETE" title="Concrete & Mix Designs" note="Supplier selections and approved mix references">
         <div className="bid-edit-grid two-column information-sheet-grid">
           <ReadField label="Primary supplier" value={concrete.primarySupplier} />
           <ReadField label="Secondary supplier" value={concrete.secondarySupplier} />
@@ -315,26 +308,22 @@ export default function ActiveProjectCognitoSections({
           <ReadField label="Secondary approved mix designs"
             value={concrete.approvedMixDesignsSecondarySupplier} wide />
         </div>
-      </section>
+      </ActiveProjectSection>
 
-      <section className="bid-edit-section information-sheet-section active-project-compact-reference">
-        <SectionHeading
-          kicker="OPERATIONS"
-          title="Detailing & Submittals"
-          note="Current Cognito values; editing authority to be mapped"
-        />
+      <ActiveProjectSection sectionId="detailing"
+          className="bid-edit-section information-sheet-section active-project-compact-reference"
+          kicker="OPERATIONS" title="Detailing & Submittals" note="Current Cognito values; editing authority to be mapped">
         <div className="bid-edit-grid two-column information-sheet-grid">
           <ReadField label="Required submittals" value={submittals.join('\n')} wide />
           <ReadField label="Comments for detailing" value={detailing.commentsForDetailing} wide />
         </div>
-      </section>
+      </ActiveProjectSection>
 
-      <section className="bid-edit-section information-sheet-section active-project-compact-reference">
-        <SectionHeading
-          kicker="STARTUP & CLOSEOUT"
-          title="Additional Operational Details"
-          note="Current JIS data; field staffing and SQL Additional Members remain separate"
-        />
+      </div>
+
+      <ActiveProjectSection sectionId="startup-closeout"
+          className="bid-edit-section information-sheet-section active-project-compact-reference"
+          kicker="STARTUP & CLOSEOUT" title="Additional Operational Details" note="Current JIS data; field staffing and SQL Additional Members remain separate">
         <div className="bid-edit-grid three-column information-sheet-grid">
           <ReadField label="Estimated duration"
             value={startup.estimatedDuration == null ? null : `${startup.estimatedDuration} months`} />
@@ -344,10 +333,12 @@ export default function ActiveProjectCognitoSections({
           <ReadField label="Date project completed" value={startup.dateProjectCompleted} />
           <BooleanField label="Warranty work" value={startup.warrantyWork} />
           <BooleanField label="Retention collected" value={startup.retentionCollected} />
+          <ReadField label="Closeout additional name 1" value={closeout.additionalName1} />
           <ReadField label="Closeout additional email 1" value={closeout.additionalEmail1} />
+          <ReadField label="Closeout additional name 2" value={closeout.additionalName2} />
           <ReadField label="Closeout additional email 2" value={closeout.additionalEmail2} />
         </div>
-      </section>
+      </ActiveProjectSection>
     </div>
   );
 

@@ -61,6 +61,7 @@ test('AP4F3Q keeps existing write paths and top-level Active Project layout inta
   assert.match(drawer, /writeEnabled=\{Number\(jobListId\) === 24\}/);
   assert.match(drawer, /title=\{job.jobName \|\| projectSummary\?\.jobName/);
   assert.match(drawer, /<ActiveProjectDesignTeam/);
-  assert.match(drawer, /Additional JIS details · design, suppliers, detailing & closeout/);
+  assert.doesNotMatch(drawer, /<details className="active-project-full-reference"/);
+  assert.match(drawer, /className="active-project-jis-reference"/);
   assert.match(css, /active-project-compact-sections/);
 });

@@ -55,7 +55,7 @@ test('Active Project heading prioritizes job name and retains source-specific wr
   assert.match(active,/<ActiveProjectAdditionalMembers/);
   assert.match(active,/writeEnabled=\{Number\(jobListId\) === 24\}/);
   assert.match(active,/editor\.save\(\)/);
-  assert.match(active,/active-project-full-reference/);
+  assert.match(active,/active-project-jis-reference/);
   assert.match(active,/compact payload=\{cognitoPayload\}/);
 });
 test('Active team editing is limited to verified office roles and legacy GC PM',()=>{

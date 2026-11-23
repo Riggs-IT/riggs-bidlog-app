@@ -1,3 +1,4 @@
+import ActiveProjectSection, {setProjectSectionsOpen} from './ActiveProjectSection.jsx';
 import {notifyWriteAuthFailure} from './writeAuthRecovery.mjs';
 import useGcReference from './useGcReference.js';
 import {activeProjectGcContact} from './gcReference.js';
@@ -197,6 +198,7 @@ export default function ActiveProjectEditDrawer({
   const referenceEpoch = useRef(0);
   const notifiedRevision = useRef(0);
   const footerRef = useRef(null);
+  const sectionsRef = useRef(null);
   const [toastBottom, setToastBottom] = useState(140);
   const onSavedRef = useRef(onSaved);
   onSavedRef.current = onSaved;
@@ -466,6 +468,12 @@ export default function ActiveProjectEditDrawer({
       className={`bid-log-edit-drawer active-project-edit-drawer${managementPreview ? ' management-admin-project-drawer' : ''}`}
       bodyClassName="bid-log-edit-body"
       scrollSurface
+      headerActions={!loading && !loadError && payload && form ? (
+        <div className="active-project-section-actions" aria-label="Project sections">
+          <button type="button" className="secondary-button" disabled={saving || cognitoLoading} onClick={() => setProjectSectionsOpen(sectionsRef.current, true)}>Expand all</button>
+          <button type="button" className="secondary-button" disabled={saving || cognitoLoading} onClick={() => setProjectSectionsOpen(sectionsRef.current, false)}>Collapse all</button>
+        </div>
+      ) : null}
       footer={
         canEdit && !loading && !loadError && payload && form ? (
           <footer ref={footerRef} className="bid-log-edit-footer floating-editor-footer">
@@ -531,9 +539,9 @@ export default function ActiveProjectEditDrawer({
                 onDismiss={() => {editor.dismissNotice(); metricsEditor.dismissNotice();}} />
               <ActiveProjectSaveReview state={state} editor={editor} />
 
+              <div ref={sectionsRef} key={jobListId} className="active-project-section-flow">
               <div className="active-project-layout-pair">
-                <section className="bid-edit-section">
-                  <div className="bid-edit-section-heading"><div><span className="section-kicker">PROJECT</span><h3>Project basics</h3></div></div>
+                <ActiveProjectSection sectionId="basics" kicker="PROJECT" title="Project basics" className="bid-edit-section" initiallyOpen>
                   <div className="bid-edit-grid active-project-core-grid">
                     <Field label="Project Name"><input type="text" value={form.jobName}
                       disabled={!canEdit || saving} onChange={event=>updateField('jobName',event.target.value)}/></Field>
@@ -558,7 +566,7 @@ export default function ActiveProjectEditDrawer({
                       <button type="button" className="secondary-button" onClick={reloadMetrics} disabled={saving}>Reload quantities</button>
                     </div>}
                   </div>
-                  <details className="active-project-secondary-details">
+                  <details data-project-disclosure className="active-project-secondary-details">
                     <summary>Additional project details</summary>
                     <div className="bid-edit-grid two-column">
                       <Field label="Retention"><input type="text" value={form.retention}
@@ -566,9 +574,8 @@ export default function ActiveProjectEditDrawer({
                       <div className="active-project-readonly-field"><span>Contract (Foundation reference)</span><strong>{money(job.contractAmount)}</strong></div>
                     </div>
                   </details>
-                </section>
-                <section className="bid-edit-section">
-                  <div className="bid-edit-section-heading"><div><span className="section-kicker">LOCATION</span><h3>Location & schedule</h3></div></div>
+                </ActiveProjectSection>
+                <ActiveProjectSection sectionId="location" kicker="LOCATION" title="Location & schedule" className="bid-edit-section" initiallyOpen>
                   <div className="bid-edit-grid active-project-location-grid">
                     <Field label="Street Address"><input type="text" value={form.streetAddress}
                       disabled={!canEdit || saving} onChange={event=>updateField('streetAddress',event.target.value)}/></Field>
@@ -582,15 +589,14 @@ export default function ActiveProjectEditDrawer({
                       disabled={!canEdit || saving} onChange={event=>updateField('plannedEndDate',event.target.value)}/></Field>
                     <div className="active-project-readonly-field"><span>Planned duration</span><strong>{duration?`${duration} days`:'Not scheduled'}</strong></div>
                   </div>
-                  <details className="active-project-secondary-details"><summary>Schedule notes</summary>
+                  <details data-project-disclosure className="active-project-secondary-details"><summary>Schedule notes</summary>
                     <Field label="Schedule Notes" wide><textarea rows="3" value={form.scheduleNotes}
                       disabled={!canEdit || saving} onChange={event=>updateField('scheduleNotes',event.target.value)}/></Field>
                   </details>
-                </section>
+                </ActiveProjectSection>
               </div>
 
-              <section className="bid-edit-section active-project-parties-section">
-                <div className="bid-edit-section-heading"><div><span className="section-kicker">PARTIES</span><h3>Owner / Developer & General Contractor</h3></div></div>
+              <ActiveProjectSection sectionId="parties" kicker="PARTIES" title="Owner / Developer & General Contractor" className="bid-edit-section active-project-parties-section" initiallyOpen>
                 <div className="active-project-parties-grid">
                   <div className="active-project-party-block"><h4>Owner / Developer</h4>
                     <div className="active-project-readonly-grid">
@@ -616,10 +622,9 @@ export default function ActiveProjectEditDrawer({
                     </div>
                   </div>
                 </div>
-              </section>
+              </ActiveProjectSection>
 
-              <section className="bid-edit-section active-project-design-section">
-                <div className="bid-edit-section-heading"><div><span className="section-kicker">DESIGN</span><h3>Design Team</h3></div></div>
+              <ActiveProjectSection sectionId="design" kicker="DESIGN" title="Design Team" className="bid-edit-section active-project-design-section" initiallyOpen>
                 <ActiveProjectDesignTeam
                   key={jobListId}
                   architect={{id:cognitoPayload?.architectOfRecord?.aorName?.id,
@@ -635,11 +640,10 @@ export default function ActiveProjectEditDrawer({
                   directoryError={designDirectoryError}
                   onRetry={() => setDesignDirectoryRetry(value => value + 1)}
                   editable={canInspectChoices && !saving}/>
-              </section>
+              </ActiveProjectSection>
 
               <div className="active-project-layout-pair active-project-teams-pair">
-                <section className="bid-edit-section">
-                  <div className="bid-edit-section-heading"><div><span className="section-kicker">TEAM</span><h3>Riggs Team</h3></div></div>
+                <ActiveProjectSection sectionId="riggs" kicker="TEAM" title="Riggs Team" className="bid-edit-section" initiallyOpen>
                   <ActiveProjectOfficeTeam values={form} people={people} onChange={updateField}
                     disabled={!canEdit || saving}/>
                   {!!staffingPayload?.activeAssignments?.length && <div className="active-project-field-summary">
@@ -651,7 +655,7 @@ export default function ActiveProjectEditDrawer({
                       </span>)}
                     </div>
                   </div>}
-                  <details className="active-project-secondary-details active-project-field-team-details">
+                  <details data-project-disclosure className="active-project-secondary-details active-project-field-team-details">
                     <summary>Field staffing & Additional Members · separate save controls</summary>
                     <ActiveProjectStaffingOrganizer
                       payload={staffingPayload} loading={staffingLoading} error={staffingError}
@@ -660,18 +664,16 @@ export default function ActiveProjectEditDrawer({
                     <ActiveProjectAdditionalMembers jobListId={jobListId} canEdit={canEdit} blocked={saving}
                       onDirtyChange={setAdditionalDirty} onSaved={()=>onSavedRef.current?.()}/>
                   </details>
-                </section>
-                <section className="bid-edit-section">
-                  <div className="bid-edit-section-heading"><div><span className="section-kicker">TEAM</span><h3>GC Team</h3></div></div>
+                </ActiveProjectSection>
+                <ActiveProjectSection sectionId="gc" kicker="TEAM" title="GC Team" className="bid-edit-section" initiallyOpen>
                   <ActiveProjectGcTeam pmName={form.gcpm}
                     superName={cognitoPayload?.gcSuperintendent?.gcSuperName||''}
                     pmReference={cognitoPayload?.gcProjectManagement||null}
                     onChange={updateField} disabled={!canEdit || saving}/>
-                </section>
+                </ActiveProjectSection>
               </div>
 
-              <section className="bid-edit-section active-project-scope-section">
-                <div className="bid-edit-section-heading"><div><span className="section-kicker">SCOPE</span><h3>Scope & Notes</h3></div></div>
+              <ActiveProjectSection sectionId="scope" kicker="SCOPE" title="Scope & Notes" className="bid-edit-section active-project-scope-section" initiallyOpen>
                 <div className="active-project-scope-grid">
                   <div className="active-project-scope-column"><h4>Scope & requirements</h4>
                     <div className="active-project-readonly-field"><span>Scope · Cognito reference</span>
@@ -686,21 +688,21 @@ export default function ActiveProjectEditDrawer({
                       <strong>{cognitoPayload?.riggsStartup?.comments||'—'}</strong></div>
                   </div>
                 </div>
-              </section>
+              </ActiveProjectSection>
 
               {Number(jobListId) === 24 && <ActiveProjectGeneralEditor
                 section={state.general} canEdit={canEdit} blocked={saving}
                 onEdit={(field, value) => editor.edit('general', field, value)}
                 onRetry={() => editor.load('general')} />}
-              <details className="active-project-full-reference">
-                <summary>Additional JIS details · design, suppliers, detailing & closeout</summary>
+              <div className="active-project-jis-reference">
                 {referenceRefreshing && <p className="project-reference-refresh-note" role="status">Updating reference information…</p>}
                 <ActiveProjectCognitoSections compact payload={cognitoPayload}
                   loading={cognitoLoading} error={cognitoError}
                   onRetry={() => loadCognitoDetail()} jobListId={jobListId}/>
                 {job.entryLink && <a className="active-project-source-link" href={job.entryLink}
                   target="_blank" rel="noreferrer">Open original Cognito entry ↗</a>}
-              </details>
+              </div>
+              </div>
             </>
           )}
     </FloatingEditorShell>

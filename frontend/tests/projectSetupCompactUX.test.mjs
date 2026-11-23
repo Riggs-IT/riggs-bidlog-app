@@ -86,11 +86,11 @@ test('Whole-surface scrolling applies only to Setup and Active Project editor',(
 });
 
 test('Active Project edit groups retain safe writes and move start date into Schedule',()=>{
-  assert.match(project,/<h3>Project basics<\/h3>/);
-  assert.match(project,/<h3>Owner \/ Developer & General Contractor<\/h3>/);
-  assert.match(project,/<h3>Riggs Team<\/h3>/);
-  assert.match(project,/<h3>Location & schedule<\/h3>/);
-  assert.ok(project.indexOf('label="Anticipated Start"') > project.indexOf('<h3>Location & schedule</h3>'));
+  assert.match(project,/<ActiveProjectSection sectionId="basics" kicker="PROJECT" title="Project basics"/);
+  assert.match(project,/<ActiveProjectSection sectionId="parties" kicker="PARTIES" title="Owner \/ Developer & General Contractor"/);
+  assert.match(project,/<ActiveProjectSection sectionId="riggs" kicker="TEAM" title="Riggs Team"/);
+  assert.match(project,/<ActiveProjectSection sectionId="location" kicker="LOCATION" title="Location & schedule"/);
+  assert.ok(project.indexOf('label="Anticipated Start"') > project.indexOf("<ActiveProjectSection sectionId=\"location\" kicker=\"LOCATION\" title=\"Location & schedule\""));
   assert.match(project,/editor\.save\(\)/);
   assert.match(project,/writeEnabled=\{Number\(jobListId\) === 24\}/);
 });
