@@ -566,14 +566,7 @@ export default function ActiveProjectEditDrawer({
                       <button type="button" className="secondary-button" onClick={reloadMetrics} disabled={saving}>Reload quantities</button>
                     </div>}
                   </div>
-                  <details data-project-disclosure className="active-project-secondary-details">
-                    <summary>Additional project details</summary>
-                    <div className="bid-edit-grid two-column">
-                      <Field label="Retention"><input type="text" value={form.retention}
-                        disabled={!canEdit || saving} onChange={event=>updateField('retention',event.target.value)}/></Field>
-                      <div className="active-project-readonly-field"><span>Contract (Foundation reference)</span><strong>{money(job.contractAmount)}</strong></div>
-                    </div>
-                  </details>
+
                 </ActiveProjectSection>
                 <ActiveProjectSection sectionId="location" kicker="LOCATION" title="Location & schedule" className="bid-edit-section" initiallyOpen>
                   <div className="bid-edit-grid active-project-location-grid">
@@ -589,12 +582,20 @@ export default function ActiveProjectEditDrawer({
                       disabled={!canEdit || saving} onChange={event=>updateField('plannedEndDate',event.target.value)}/></Field>
                     <div className="active-project-readonly-field"><span>Planned duration</span><strong>{duration?`${duration} days`:'Not scheduled'}</strong></div>
                   </div>
-                  <details data-project-disclosure className="active-project-secondary-details"><summary>Schedule notes</summary>
+                  <div className="active-project-schedule-notes">
                     <Field label="Schedule Notes" wide><textarea rows="3" value={form.scheduleNotes}
                       disabled={!canEdit || saving} onChange={event=>updateField('scheduleNotes',event.target.value)}/></Field>
-                  </details>
+                  </div>
                 </ActiveProjectSection>
               </div>
+
+                  <ActiveProjectSection sectionId="contract-admin" kicker="CONTRACT" title="Contract & Administration" initiallyOpen>
+                    <div className="bid-edit-grid two-column">
+                      <Field label="Retention"><input type="text" value={form.retention}
+                        disabled={!canEdit || saving} onChange={event=>updateField('retention',event.target.value)}/></Field>
+                      <div className="active-project-readonly-field"><span>Contract (Foundation reference)</span><strong>{money(job.contractAmount)}</strong></div>
+                    </div>
+                  </ActiveProjectSection>
 
               <ActiveProjectSection sectionId="parties" kicker="PARTIES" title="Owner / Developer & General Contractor" className="bid-edit-section active-project-parties-section" initiallyOpen>
                 <div className="active-project-parties-grid">

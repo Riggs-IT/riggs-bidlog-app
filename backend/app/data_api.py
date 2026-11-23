@@ -4362,3 +4362,34 @@ def set_pm_deadline_admin(*, actor_eid: int, entra_object_id: str,
     return _pm_deadline_admin_request('POST', actor_eid=actor_eid,
                                       entra_object_id=entra_object_id,
                                       request_id=request_id, payload=payload)
+
+
+# M9B: separate CREATED_UNNUMBERED contract, not the old SQL_DRAFT_ONLY envelope.
+def request_unnumbered_project_editor(*, actor_eid: int, setup_id: UUID | None = None,
+                                      body: dict | None = None) -> dict:
+    if type(actor_eid) is not int or actor_eid <= 0 or (body is not None and setup_id is None):
+        raise DataAPIRequestRejected(422, 'project_setup_invalid_request')
+    path = '/v1/project-setups/jis' + (f'/{setup_id}' if setup_id is not None else '')
+    try:
+        response = _get_http_client().request('PATCH' if body is not None else 'GET', path, json=body,
+            headers=_request_headers(include_service_auth=True, actor_eid=actor_eid))
+    except (httpx.TimeoutException, httpx.RequestError):
+        raise DataAPIUnavailable('Project editor request unavailable; never replay an uncertain write.') from None
+    if response.status_code != 200:
+        code = _detail(response)
+        if code in _SETUP_ERRORS.get(response.status_code, set()):
+            raise DataAPIRequestRejected(response.status_code, code)
+        if response.status_code == 422:
+            raise DataAPIRequestRejected(422, 'project_setup_invalid_request')
+        _raise_common_failure(response, operation='Unnumbered project editor')
+        raise DataAPIInvalidResponse('Invalid project editor response.')
+    result = _json_object(response, operation='Unnumbered project editor')
+    detail = result.get('detail') if body is not None else result
+    if not isinstance(detail, dict) or detail.get('externalState') != 'CREATED_UNNUMBERED':
+        raise DataAPIInvalidResponse('Invalid project editor state.')
+    if setup_id is not None and (detail.get('setupId') != str(setup_id) or detail.get('jobNumber') is not None
+                                or detail.get('jobListId') is not None or detail.get('cognitoEntryId') == 966):
+        raise DataAPIInvalidResponse('Invalid project editor identity.')
+    if body is not None and result.get('result') not in ('NO_CHANGE','VERIFIED'):
+        raise DataAPIInvalidResponse('Invalid project editor receipt.')
+    return result

@@ -1,3 +1,4 @@
+import UnnumberedProjectsPanel from './UnnumberedProjectsPanel.jsx';
 import {teamBadgeTextColor} from './teamBadgeIdentity.js';
 import {facetRows, projectDirectoryRows, isCompleted} from './viewFilters.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
@@ -1006,6 +1007,7 @@ export default function ActiveProjectsWorkspace({
         onSaved={() => setSetupRefresh(v=>v+1)} />}
       {showAwaiting && canReadSetupSummary ? <ProjectSetupAwaitingPanel key={setupRefresh}
         onResume={onSetupIntentChanged ? setupId => onSetupIntentChanged({setupId}) : null} /> : <>
+      {canReadSetupSummary && !setupIntent && !editProjectId && !showCompleted && <UnnumberedProjectsPanel user={user}/> }
       <section className="bid-log-summary-grid active-project-summary-grid">
         <button
           type="button"

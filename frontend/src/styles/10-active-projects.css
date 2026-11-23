@@ -1893,3 +1893,13 @@
 .active-project-edit-drawer .active-project-disclosure[open] > .active-project-disclosure-summary {padding-bottom:9px;border-bottom:1px solid var(--border)}
 
 .active-project-edit-drawer .active-project-disclosure-title > .section-kicker {display:none}
+
+/* M9B — reuse Project Setup inputs and existing Active Projects disclosures. */
+.m9b-unnumbered-panel {margin-bottom:14px}
+.m9b-read-value {min-width:0;min-height:36px;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--text);white-space:pre-wrap;overflow-wrap:anywhere;box-sizing:border-box}
+.m9b-supplier-grid {display:grid;gap:8px;min-width:0}
+.m9b-supplier-header,.m9b-supplier-row {display:grid;grid-template-columns:minmax(120px,1fr) minmax(140px,1.7fr) minmax(90px,.8fr) minmax(150px,1.5fr);gap:12px;align-items:start}
+.m9b-supplier-row {padding:10px 0;border-top:1px solid var(--border)}
+.m9b-supplier-row > .bid-edit-field {min-width:0;grid-column:auto;margin:0}
+.m9b-supplier-row > strong {padding-top:8px}
+@media(max-width:760px){.m9b-supplier-header{display:none}.m9b-supplier-row{grid-template-columns:repeat(2,minmax(0,1fr))}.m9b-supplier-row > strong,.m9b-supplier-row > .wide{grid-column:1/-1}}

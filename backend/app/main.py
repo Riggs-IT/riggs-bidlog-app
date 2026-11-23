@@ -4460,6 +4460,8 @@ def gong_favicon():
 # AP4F authoring must be registered before the SPA catch-all.
 from .project_setup_authoring import router as project_setup_authoring_router
 app.include_router(project_setup_authoring_router)
+from .unnumbered_project_editor import router as unnumbered_project_editor_router
+app.include_router(unnumbered_project_editor_router)
 from .project_additional_members import router as project_additional_members_router
 app.include_router(project_additional_members_router)
 
