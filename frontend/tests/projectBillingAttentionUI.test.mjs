@@ -141,7 +141,9 @@ test('contract values, warning filter and Billing vs Projection are wired withou
   assert.match(drawer, /Revise|PMForecastPanel/);
   assert.match(pivot, /project\.totalContractAmount/);
   assert.doesNotMatch(pivot, /project\.originalContractAmount/);
-  assert.match(projects, /aValue = a\.totalContractAmount/);
+  assert.match(projects, /aValue\s*=\s*a\.setupId\s*&&\s*a\.jobListId\s*==\s*null\s*\?\s*a\.operationalContractAmount\s*:\s*a\.totalContractAmount/);
+  assert.match(projects, /bValue\s*=\s*b\.setupId\s*&&\s*b\.jobListId\s*==\s*null\s*\?\s*b\.operationalContractAmount\s*:\s*b\.totalContractAmount/);
+  assert.match(projects, /value=\{project\.operationalContractAmount\}/);
   assert.match(projects, /value=\{project\.totalContractAmount\}/);
   assert.match(cards, /onClick=\{\(\) => onOpenForecast\(item\)\}/);
   // API still owns the PM-first/System Estimate fallback and SQL's rebalance decision.

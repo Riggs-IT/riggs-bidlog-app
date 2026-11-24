@@ -267,19 +267,19 @@ function CurrentAssignmentRow({
         <div className="staffing-current-readout">
           <span>Current Start</span>
           <strong>{displayAssignmentDate(row.assignedAt)}</strong>
-          <small>Operations assignment history</small>
+
         </div>
 
         <div className="staffing-current-readout">
           <span>End</span>
           <strong>Indefinite</strong>
-          <small>Until current staffing changes</small>
+
         </div>
 
         <div className="staffing-current-readout">
           <span>Status</span>
           <strong className="staffing-current-status">Current</strong>
-          <small>Active assignment</small>
+
         </div>
       </div>
 
@@ -557,9 +557,6 @@ function OrganizerRows({
       <div className="project-team-organizer-heading">
         <div>
           <strong>Organizer Planning</strong>
-          <small>
-            Current staffing appears first. Future Organizer rows follow underneath.
-          </small>
         </div>
         <button
           type="button"
@@ -957,18 +954,12 @@ export default function ActiveProjectStaffingOrganizer({
           <span className="section-kicker">FIELD STAFFING</span>
           <h4>Superintendent & Foremen</h4>
         </div>
-        <div className="project-team-staffing-heading-meta">
-          <small>Operations staffing authority</small>
-        </div>
-      </div>
 
-      <p className="cognito-general-note staffing-organizer-note">
-        Current assignments are shown in the Organizer timeline using their Operations assignment start date. The first active Foreman and current Superintendent remain the people projected to Cognito.
-      </p>
+      </div>
 
       {canEdit && !writeEnabled && (
         <div className="bid-edit-message">
-          Staffing writes are currently restricted to the controlled test project.
+          View only.
         </div>
       )}
 

@@ -134,13 +134,12 @@ export function ActiveProjectGcTeam({pmName='',superName='',pmReference=null,onC
     <div className="setup-team-chips">
       {pmName && <TeamChip label={pmName} role="GC Project Manager" disabled={disabled}
         onEdit={()=>{setNext(pmName);setEditor(true);}} onRemove={()=>setRemove(true)}/>}
-      {superName && <div className="setup-team-readonly-chip" title="Read-only Cognito superintendent — no approved writer yet">
+      {superName && <div className="setup-team-readonly-chip" title="View only">
         <span className="setup-team-avatar" aria-hidden="true">GC</span>
         <span className="setup-team-chip-info"><strong>{superName}</strong><small>GC Superintendent · JIS</small></span>
       </div>}
-      {!pmName && !superName && <p className="setup-team-empty">No GC contacts on the current project record.</p>}
+      {!pmName && !superName && <p className="setup-team-empty">No GC contacts.</p>}
     </div>
-    <small className="setup-team-empty">Additional GC contact history is currently SQL-draft only; existing jobs remain source-controlled.</small>
     {editor && <TeamDialog eyebrow="ACTIVE PROJECT" title="GC Project Manager" onClose={()=>setEditor(false)}
       actions={<><button type="button" className="secondary-button" onClick={()=>setEditor(false)}>Cancel</button>
         <button type="button" className="primary-button" onClick={()=>{onChange('gcpm',next);setEditor(false);}}>Add to changes</button></>}>
@@ -152,13 +151,13 @@ export function ActiveProjectGcTeam({pmName='',superName='',pmReference=null,onC
         <label>Date added<input type="date" disabled readOnly value="" placeholder="Not yet tracked"/></label>
         <label>Date removed<input type="date" disabled readOnly value="" placeholder="Not yet tracked"/></label>
       </div>
-      <small className="setup-team-removal-note">Only the GC PM name can be saved on existing jobs today. Phones, email and effective dates need the approved SQL contact-roster writer; current JIS values are displayed for reference.</small>
+      <small className="setup-team-removal-note">Only the name is editable.</small>
     </TeamDialog>}
     {remove && <TeamDialog eyebrow="ACTIVE PROJECT" title="Remove GC PM?"
       description="Clear the current GC Project Manager text on this Active Project?"
       onClose={()=>setRemove(false)} actions={<>
         <button type="button" className="secondary-button" onClick={()=>setRemove(false)}>Cancel</button>
         <button type="button" className="setup-team-danger-button" onClick={()=>{onChange('gcpm','');setRemove(false);}}>Confirm removal</button>
-      </>}><p className="setup-team-removal-note">This does not delete the GC's Form 140 record or alter SQL draft contact history.</p></TeamDialog>}
+      </>}><p className="setup-team-removal-note">The GC company remains unchanged.</p></TeamDialog>}
   </div>;
 }

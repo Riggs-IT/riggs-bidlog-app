@@ -21,7 +21,7 @@ class ActiveProjectStaffingWiringTests(unittest.TestCase):
         )
         self.assertIn("get_active_project_resource_schedule", source)
 
-    def test_frontend_loads_and_writes_resource_schedule(self):
+    def test_frontend_loads_resource_schedule_with_read_only_availability(self):
         drawer = (
             ROOT
             / "frontend/src/ActiveProjectEditDrawer.jsx"
@@ -31,10 +31,10 @@ class ActiveProjectStaffingWiringTests(unittest.TestCase):
             '`/api/active-projects/${jobListId}/resource-schedule`',
             drawer,
         )
-        self.assertIn("<ActiveProjectStaffingOrganizer", drawer)
-        self.assertIn("const writeStaffing = useCallback", drawer)
-        self.assertIn("onWrite={writeStaffing}", drawer)
-        self.assertIn(
+        self.assertIn("<ProjectFieldTeam", drawer)
+        self.assertNotIn("const writeStaffing = useCallback", drawer)
+        self.assertNotIn("onWrite={writeStaffing}", drawer)
+        self.assertNotIn(
             "writeEnabled={Number(jobListId) === 24}",
             drawer,
         )
@@ -59,8 +59,8 @@ class ActiveProjectStaffingWiringTests(unittest.TestCase):
         self.assertIn("onChange={updateField}", drawer)
         self.assertIn('aria-label="Riggs Team"', office_team)
         self.assertIn("const OFFICE_ROLES = [", office_team)
-        self.assertIn("<ActiveProjectStaffingOrganizer", drawer)
-        self.assertIn("onWrite={writeStaffing}", drawer)
+        self.assertIn("<ProjectFieldTeam", drawer)
+        self.assertNotIn("onWrite={writeStaffing}", drawer)
         self.assertIn("<ActiveProjectAdditionalMembers", drawer)
         self.assertNotIn("staffing/assign", office_team)
         self.assertNotIn("staffing/unassign", office_team)
@@ -121,7 +121,8 @@ class ActiveProjectStaffingWiringTests(unittest.TestCase):
         self.assertIn("row.isCognitoProjected", source)
         self.assertIn("row.isCognitoProjectedPerson", source)
         self.assertIn("row.assignedAt", source)
-        self.assertIn("Operations assignment history", source)
+        self.assertIn("displayAssignmentDate(row.assignedAt)", source)
+        self.assertNotIn("Operations assignment history", source)
         self.assertIn("Add Current Foreman", source)
         self.assertIn("End current", source)
         self.assertIn("Projected to Cognito", source)

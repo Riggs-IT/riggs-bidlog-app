@@ -119,7 +119,7 @@ export default function ActiveProjectAdditionalMembers({ jobListId, canEdit, blo
       if (cause.status === 409) {
         setError('Another edit changed this roster, or the operation ID was already used. Reload before editing.');
       } else if (cause.message === 'project_additional_members_writes_disabled') {
-        setError('Membership editing is not enabled on the SQL bridge yet.');
+        setError('Membership editing unavailable.');
       } else {
         setError(notCertain
           ? 'Save outcome unknown. Retry the SAME request, or reload and verify before changing anything.'

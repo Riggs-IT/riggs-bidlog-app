@@ -70,9 +70,9 @@ test('compact reference retains useful design/contract fields without rendering 
   assert.match(sheet,/if \(compact\) return/);
   assert.match(sheet,/Architect of Record/);
   assert.match(sheet,/Structural Engineer/);
-  assert.match(sheet,/Contract type/);
+  assert.match(active,/<ProjectContractType value=\{cognitoPayload\?\.contract\}\/>/);
   const branch=sheet.split('if (compact) return')[1].split('  return (')[0];
   assert.doesNotMatch(branch,/ControlProjectName|RiggsPMEmail|FolderCreated|NotifyEveryone/);
-  assert.match(active,/writeEnabled=\{Number\(jobListId\) === 24\}/);
+  assert.doesNotMatch(active,/writeEnabled=\{Number\(jobListId\) === 24\}/);
   assert.match(active,/<ActiveProjectAdditionalMembers/);
 });

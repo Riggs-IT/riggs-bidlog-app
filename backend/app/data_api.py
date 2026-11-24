@@ -1723,13 +1723,14 @@ def save_active_project_metrics(
 
 
 def get_active_project_cognito_detail(
-    job_list_id: int,
+    job_list_id: int, *, fresh: bool = False,
 ) -> dict:
     operation = "Active Project Cognito detail"
 
     response = _get_service_response(
         f"/v1/jobs/{job_list_id}/cognito-detail",
         operation=operation,
+        **({"params": {"fresh": "true"}} if fresh else {}),
         resource_not_found=True,
     )
 
@@ -4366,12 +4367,13 @@ def set_pm_deadline_admin(*, actor_eid: int, entra_object_id: str,
 
 # M9B: separate CREATED_UNNUMBERED contract, not the old SQL_DRAFT_ONLY envelope.
 def request_unnumbered_project_editor(*, actor_eid: int, setup_id: UUID | None = None,
-                                      body: dict | None = None) -> dict:
+                                      body: dict | None = None, fresh: bool = False) -> dict:
     if type(actor_eid) is not int or actor_eid <= 0 or (body is not None and setup_id is None):
         raise DataAPIRequestRejected(422, 'project_setup_invalid_request')
     path = '/v1/project-setups/jis' + (f'/{setup_id}' if setup_id is not None else '')
     try:
         response = _get_http_client().request('PATCH' if body is not None else 'GET', path, json=body,
+            **({'params': {'fresh': 'true'}} if fresh and body is None and setup_id is not None else {}),
             headers=_request_headers(include_service_auth=True, actor_eid=actor_eid))
     except (httpx.TimeoutException, httpx.RequestError):
         raise DataAPIUnavailable('Project editor request unavailable; never replay an uncertain write.') from None
@@ -4392,4 +4394,67 @@ def request_unnumbered_project_editor(*, actor_eid: int, setup_id: UUID | None =
         raise DataAPIInvalidResponse('Invalid project editor identity.')
     if body is not None and result.get('result') not in ('NO_CHANGE','VERIFIED'):
         raise DataAPIInvalidResponse('Invalid project editor receipt.')
+    return result
+
+
+def request_unnumbered_project_metrics(*, actor_eid: int, setup_id: UUID, body: dict | None = None) -> dict:
+    """M9D2: independent SQL-only SetupID metrics request; never retry a PATCH."""
+    if type(actor_eid) is not int or actor_eid <= 0 or not setup_id.int:
+        raise DataAPIRequestRejected(422, 'project_setup_invalid_request')
+    method = 'PATCH' if body is not None else 'GET'
+    try:
+        response = _get_http_client().request(method, f'/v1/project-setups/jis/{setup_id}/metrics', json=body,
+            headers=_request_headers(include_service_auth=True, actor_eid=actor_eid))
+    except (httpx.TimeoutException, httpx.RequestError):
+        raise DataAPIUnavailable('Project metrics unavailable; never replay an uncertain write.') from None
+    if response.status_code != 200:
+        code = _detail(response)
+        metric_errors = {
+            403: {'project_metrics_forbidden'}, 404: {'project_metrics_job_not_found'},
+            409: {'project_metrics_active_job_required','project_metrics_operation_conflict',
+                  'project_metrics_revision_conflict','project_metrics_award_link_pending'},
+            422: {'project_metrics_invalid_request'},
+            503: {'project_metrics_busy','project_metrics_unavailable'},
+        }
+        if code in metric_errors.get(response.status_code,set()) | _SETUP_ERRORS.get(response.status_code,set()):
+            raise DataAPIRequestRejected(response.status_code, code)
+        if response.status_code == 422:
+            raise DataAPIRequestRejected(422,'project_metrics_invalid_request')
+        _raise_common_failure(response,operation='Unnumbered project metrics')
+        raise DataAPIInvalidResponse('Invalid project metrics response.')
+    result = _json_object(response,operation='Unnumbered project metrics')
+    if (result.get('setupId') != str(setup_id) or result.get('projectMetricId') != 1
+            or type(result.get('revision')) is not int or result['revision'] < 1):
+        raise DataAPIInvalidResponse('Invalid project metrics identity.')
+    if body is not None and result.get('result') not in ('UPDATED','REPLAYED'):
+        raise DataAPIInvalidResponse('Invalid project metrics receipt.')
+    return result
+
+
+def request_field_team_availability(*, actor_eid: int, role: str, employee_eid: int | None = None) -> dict:
+    """M9D3A: same-origin BFF read; no browser actor or SQL/provider writes."""
+    if (type(actor_eid) is not int or not 0 < actor_eid <= 2147483647 or role not in ('SUPER','FOREMAN')
+            or employee_eid is not None and (type(employee_eid) is not int or not 0 < employee_eid <= 2147483647)):
+        raise DataAPIRequestRejected(422, 'field_team_invalid_request')
+    params = {'role': role}
+    if employee_eid is not None:
+        params['employeeEid'] = employee_eid
+    try:
+        response = _get_http_client().request('GET', '/v1/project-setups/jis/field-team/availability',
+            params=params, headers=_request_headers(include_service_auth=True, actor_eid=actor_eid))
+    except (httpx.TimeoutException, httpx.RequestError):
+        raise DataAPIUnavailable('Field team availability unavailable.') from None
+    if response.status_code != 200:
+        code = _detail(response)
+        allowed = {403: {'field_team_forbidden'}, 404: {'field_team_employee_not_found'},
+                   422: {'field_team_invalid_request'}, 503: {'field_team_unavailable'}}
+        if code in allowed.get(response.status_code,set()):
+            raise DataAPIRequestRejected(response.status_code, code)
+        _raise_common_failure(response, operation='Field team availability')
+        raise DataAPIInvalidResponse('Invalid availability response.')
+    result = _json_object(response, operation='Field team availability')
+    if (result.get('role') != role or result.get('employeeEid') != employee_eid or result.get('readOnly') is not True
+            or not all(isinstance(result.get(k),list) for k in ('employees','currentAssignments','schedules'))
+            or employee_eid is None and (result['currentAssignments'] or result['schedules'])):
+        raise DataAPIInvalidResponse('Invalid field team identity.')
     return result

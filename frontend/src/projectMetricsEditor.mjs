@@ -14,6 +14,21 @@ export function quantityDecimal(value) {
   return places ? `${whole}.${places}` : whole;
 }
 
+// Display whole quantities without rewriting existing fractional SQL values.
+export function quantityWholeDisplay(value) {
+  if(value==null||value==='')return '';
+  try {
+    const normalized=quantityDecimal(value);
+    const [whole,fraction='']=normalized.split('.');
+    return String(BigInt(whole)+(fraction[0]>='5'?1n:0n));
+  } catch {return '';}
+}
+export function quantityWholeEdit(value) {
+  const normalized=quantityDecimal(value);
+  if(normalized!==null&&normalized.includes('.'))throw new Error('Enter a whole number.');
+  return normalized;
+}
+
 function sameQuantity(a, b) {
   try { return quantityDecimal(a) === quantityDecimal(b); }
   catch { return String(a ?? '') === String(b ?? ''); }
@@ -21,23 +36,25 @@ function sameQuantity(a, b) {
 
 export function metricsChanges(base, draft) {
   if (!base || !draft) return [];
-  return ['squareFootage', 'cubicYards'].filter(key => !sameQuantity(base[key], draft[key]));
+  return ['squareFootage', 'cubicYards'].filter(key => !sameQuantity(quantityWholeDisplay(base[key]), draft[key]));
 }
 
 function draftFrom(payload) {
   return {
-    squareFootage: payload.squareFootage === null ? '' : String(payload.squareFootage),
-    cubicYards: payload.cubicYards === null ? '' : String(payload.cubicYards),
+    squareFootage: quantityWholeDisplay(payload.squareFootage),
+    cubicYards: quantityWholeDisplay(payload.cubicYards),
   };
 }
 
 export function createProjectMetricsEditor({
-  jobListId, canEdit, fetcher = (...args) => globalThis.fetch(...args),
+  jobListId, setupId = null, canEdit, fetcher = (...args) => globalThis.fetch(...args),
   newId = () => globalThis.crypto.randomUUID(), timeoutMs = 25000,
   onAuthFailure = () => {},
 }) {
   const id = Number(jobListId);
-  const path = `/api/active-projects/${id}/metrics`;
+  const setup = typeof setupId === 'string' ? setupId.toLowerCase() : null;
+  const validSetup = setup !== null && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(setup) && setup !== '00000000-0000-0000-0000-000000000000';
+  const path = setup !== null ? `/api/project-setups/jis/${setup}/metrics` : `/api/active-projects/${id}/metrics`;
   const listeners = new Set();
   const controllers = new Set();
   let epoch = 0;
@@ -62,7 +79,7 @@ export function createProjectMetricsEditor({
     try {
       const response = await fetcher(path, {
         method, cache: 'no-store', credentials: 'same-origin', signal: controller.signal,
-        ...(body ? {headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)} : {}),
+        ...(body ? {headers: {'Content-Type': 'application/json', ...(setup !== null ? {'X-Riggs-Setup-Write': '1'} : {})}, body: JSON.stringify(body)} : setup !== null ? {headers: {'X-Riggs-Passive-Read': '1'}} : {}),
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
@@ -72,7 +89,7 @@ export function createProjectMetricsEditor({
         error.detail = typeof payload?.detail === 'string' ? payload.detail : null;
         throw error;
       }
-      if (!payload || Number(payload.jobListId) !== id) throw new Error('Project metrics identity mismatch.');
+      if (!payload || (setup !== null ? payload.setupId !== setup || payload.projectMetricId !== 1 : Number(payload.jobListId) !== id)) throw new Error('Project metrics identity mismatch.');
       return payload;
     } finally {
       clearTimeout(timer);
@@ -120,7 +137,7 @@ export function createProjectMetricsEditor({
     let values;
     try {
       values = Object.fromEntries(fields.map(field => {
-        const value = quantityDecimal(state.draft[field]);
+        const value = quantityWholeEdit(state.draft[field]);
         // A blank input is not N/A. Explicit override clearing requires a
         // separate UI action; never silently replace a real value with NULL.
         if (value === null) throw new Error('Enter a value or 0 for the quantity being edited.');
@@ -151,7 +168,7 @@ export function createProjectMetricsEditor({
       };
       patchStarted = true;
       const receipt = await request('PATCH', payload);
-      if (!Number.isSafeInteger(receipt.revision) || receipt.revision < fresh.revision) {
+      if (!Number.isSafeInteger(receipt.revision) || (setup !== null ? receipt.revision !== fresh.revision + 1 || !['UPDATED','REPLAYED'].includes(receipt.result) : receipt.revision < fresh.revision)) {
         throw new Error('Project metrics save receipt invalid.');
       }
       acknowledged = true;
@@ -159,13 +176,17 @@ export function createProjectMetricsEditor({
       try {
         const after = await request('GET');
         if (!live(generation)) return false;
-        if (!isValidRead(after) || fields.some(field => !sameQuantity(after[field], values[field]))) {
+        if (!isValidRead(after) || (setup !== null && after.revision !== receipt.revision) || fields.some(field => !sameQuantity(after[field], values[field])) || (setup !== null && ['squareFootage','cubicYards'].some(field => !fields.includes(field) && !sameQuantity(after[field], fresh[field])))) {
           emit({unresolved: true, error: 'Save was accepted, but the resulting values differ. Reload and review; nothing was resent.'});
           return false;
         }
         accept(after);
       } catch {
         if (!live(generation)) return false;
+        if (setup !== null) {
+          emit({unresolved: true, error: 'SQL accepted the save, but fresh readback is unavailable. Reload and review; nothing was resent.'});
+          return false;
+        }
         const revised = {...fresh, revision: receipt.revision};
         for (const field of fields) revised[field] = values[field];
         accept(revised);
@@ -197,7 +218,7 @@ export function createProjectMetricsEditor({
     getSnapshot() { return state; },
     async start() {
       active = true; epoch++;
-      if (Number.isSafeInteger(id) && id > 0) await load();
+      if (setup !== null ? validSetup : Number.isSafeInteger(id) && id > 0) await load();
     },
     dispose() { active = false; epoch++; for (const c of controllers) c.abort(); controllers.clear(); },
     load, save,

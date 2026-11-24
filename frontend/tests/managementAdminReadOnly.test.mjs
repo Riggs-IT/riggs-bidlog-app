@@ -9,12 +9,12 @@ test('management role shows read-only Active Projects preview and Cognito instru
   const page = source('ActiveProjectsWorkspace.jsx');
   assert.match(page, /role === 'MANAGEMENT_ADMIN'/);
   assert.match(page, /management-admin-preview/);
-  assert.match(page, /UNDER DEVELOPMENT · VIEW ONLY/);
-  assert.match(page, /Cognito’s Job Information Sheet/);
+  assert.match(page, /VIEW ONLY/);
+  assert.match(page, /Project information is read-only for your role/);
   const drawer = source('ActiveProjectEditDrawer.jsx');
   assert.match(drawer, /const canEdit = role === 'ADMIN'/);
   assert.match(drawer, /managementPreview/);
-  assert.match(drawer, /Operations Schedule controls here are not the approved workflow/);
+  assert.match(drawer, /Use Cognito’s Job Information Sheet to make changes/);
   assert.match(drawer, /job\.entryLink/);
   assert.match(drawer, /canEdit && !loading && !loadError && payload && form/);
 });

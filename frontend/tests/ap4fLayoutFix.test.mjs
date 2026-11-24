@@ -28,7 +28,7 @@ test('Active Project first-row geometry and contractor form reduce vertical dead
   assert.match(css,/\.active-project-edit-drawer \.active-project-core-grid/);
   assert.match(css,/\.active-project-gc-combobox/);
   assert.match(active,/editor\.save\(\)/);
-  assert.match(active,/writeEnabled=\{Number\(jobListId\) === 24\}/);
+  assert.doesNotMatch(active,/writeEnabled=\{Number\(jobListId\) === 24\}/);
 });
 
 test('Project Setup is never a visually blank modal during loading and retains explicit errors', () => {

@@ -49,7 +49,8 @@ test('compact JIS reference no longer duplicates Design Team',()=>{
   const sections=source('ActiveProjectCognitoSections.jsx');
   const compact=sections.split('if (compact) return (')[1]?.split('\n  return (')[0]||'';
   assert.doesNotMatch(compact,/Subheading>Design Team/);
-  assert.match(compact,/Buildings & Contract Details/);
+  assert.match(source('ActiveProjectEditDrawer.jsx'),/title="Buildings"/);
+  assert.doesNotMatch(compact,/title="Buildings"/);
 });
 
 test('design contact CSS remains responsive',()=>{

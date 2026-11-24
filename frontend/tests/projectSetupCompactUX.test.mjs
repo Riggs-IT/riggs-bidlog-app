@@ -92,5 +92,5 @@ test('Active Project edit groups retain safe writes and move start date into Sch
   assert.match(project,/<ActiveProjectSection sectionId="location" kicker="LOCATION" title="Location & schedule"/);
   assert.ok(project.indexOf('label="Anticipated Start"') > project.indexOf("<ActiveProjectSection sectionId=\"location\" kicker=\"LOCATION\" title=\"Location & schedule\""));
   assert.match(project,/editor\.save\(\)/);
-  assert.match(project,/writeEnabled=\{Number\(jobListId\) === 24\}/);
+  assert.doesNotMatch(project,/writeEnabled=\{Number\(jobListId\) === 24\}/);
 });

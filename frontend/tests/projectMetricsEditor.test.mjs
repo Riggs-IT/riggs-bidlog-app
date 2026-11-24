@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createProjectMetricsEditor, metricsChanges, quantityDecimal} from '../src/projectMetricsEditor.mjs';
+import {createProjectMetricsEditor, metricsChanges, quantityDecimal,quantityWholeDisplay,quantityWholeEdit} from '../src/projectMetricsEditor.mjs';
 
 function response(body, status = 200) {
   return {ok: status >= 200 && status < 300, status, json: async () => structuredClone(body)};
@@ -42,18 +42,18 @@ test('no write on initial read, unchanged zero, or discard', async t => {
   h.editor.edit('cubicYards', '0.0000');
   assert.deepEqual(metricsChanges(h.state().snapshot, h.state().draft), []);
   h.editor.edit('squareFootage', '250'); h.editor.discard();
-  assert.equal(h.state().draft.squareFootage, '100.0000');
+  assert.equal(h.state().draft.squareFootage, '100');
   assert.equal(h.writes().length, 0);
 });
 
 test('one-field edit keeps unrelated CY unset; successful save does not retry', async t => {
   const h = setup(t); await h.editor.start();
-  h.editor.edit('squareFootage', '250.25');
+  h.editor.edit('squareFootage', '250');
   assert.equal(await h.editor.save(), true);
   assert.equal(h.writes().length, 1);
   assert.deepEqual(h.writes()[0].body, {
     operationId: 'ad76a88e-a605-4ef9-b069-cacc75bfc423', expectedRevision: 0,
-    setSquareFootage: true, setCubicYards: false, squareFootage: '250.25',
+    setSquareFootage: true, setCubicYards: false, squareFootage: '250',
   });
   assert.equal(h.server.cubicYards, '0');
   assert.equal(await h.editor.save(), true);
@@ -100,4 +100,14 @@ test('view-only sessions cannot mutate', async t => {
   h.editor.edit('squareFootage', '500');
   assert.equal(await h.editor.save(), false);
   assert.equal(h.writes().length, 0);
+});
+
+test('whole quantity display preserves historical decimals until an explicit edit',async t=>{
+  const h=setup(t,{initial:{squareFootage:'100.2500',cubicYards:'50.7500'}});await h.editor.start();
+  assert.equal(h.state().draft.squareFootage,'100');assert.equal(h.state().draft.cubicYards,'51');
+  assert.deepEqual(metricsChanges(h.state().snapshot,h.state().draft),[]);
+  h.editor.edit('squareFootage','250.25');assert.equal(await h.editor.save(),false);assert.equal(h.writes().length,0);
+  h.editor.edit('squareFootage','250');assert.equal(await h.editor.save(),true);assert.equal(h.server.cubicYards,'50.7500');
+  assert.equal(quantityWholeDisplay('999999999999999.5000'),'1000000000000000');
+  assert.equal(quantityWholeEdit('0.0000'),'0');
 });

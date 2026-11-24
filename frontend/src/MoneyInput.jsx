@@ -5,12 +5,12 @@ import {displayMoneyValue, moneyCaretPosition, parseMoneyDraft} from './moneyInp
  * Grouped dollar input. The parent continues to own an unformatted string;
  * no financial rounding, percentages, or API contracts change.
  */
-export default function MoneyInput({value, onValueChange, className = '', ...props}) {
+export default function MoneyInput({value, onValueChange, className = '', maxFractionDigits = 2, ...props}) {
   const [editing, setEditing] = useState(false);
   const inputRef = useRef(null);
   const pendingCaret = useRef(null);
   const raw = String(value ?? '');
-  const formatted = displayMoneyValue(raw, editing);
+  const formatted = displayMoneyValue(raw, editing, maxFractionDigits);
 
   useLayoutEffect(() => {
     if (pendingCaret.current === null || !inputRef.current) return;
@@ -23,9 +23,9 @@ export default function MoneyInput({value, onValueChange, className = '', ...pro
 
   function handleChange(event) {
     const text = event.currentTarget.value;
-    const next = parseMoneyDraft(text);
-    if (next === null) return; // Ignore unsupported characters or >2 cent digits.
-    const nextShown = displayMoneyValue(next, true);
+    const next = parseMoneyDraft(text, maxFractionDigits);
+    if (next === null) return; // Ignore unsupported characters or excess precision.
+    const nextShown = displayMoneyValue(next, true, maxFractionDigits);
     const desiredCaret = moneyCaretPosition(
       text, event.currentTarget.selectionStart ?? text.length, nextShown,
     );
@@ -46,7 +46,7 @@ export default function MoneyInput({value, onValueChange, className = '', ...pro
       ref={inputRef}
       className={`money-input${className ? ` ${className}` : ''}`}
       type="text"
-      inputMode="decimal"
+      inputMode={maxFractionDigits === 0 ? 'numeric' : 'decimal'}
       autoComplete="off"
       spellCheck={false}
       value={formatted}

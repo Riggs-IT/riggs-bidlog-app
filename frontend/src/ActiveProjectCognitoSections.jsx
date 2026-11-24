@@ -1,3 +1,5 @@
+import ProjectSubmittals from './ProjectSubmittals.jsx';
+import ProjectBuildingRows from './ProjectBuildingRows.jsx';
 import ActiveProjectSection from './ActiveProjectSection.jsx';
 
 function textValue(value) {
@@ -55,7 +57,7 @@ function fileSize(value) {
 }
 
 
-function ReadField({
+export function ReadField({
   label,
   value,
   hint = null,
@@ -186,10 +188,9 @@ export default function ActiveProjectCognitoSections({
         <SectionHeading
           kicker="JOB INFORMATION SHEET"
           title="Additional Project Information"
-          note="Live from Cognito"
         />
         <div className="bid-edit-message">
-          Loading the rest of the Job Information Sheet…
+          Loading details…
         </div>
       </section>
     );
@@ -201,7 +202,6 @@ export default function ActiveProjectCognitoSections({
         <SectionHeading
           kicker="JOB INFORMATION SHEET"
           title="Additional Project Information"
-          note="Live from Cognito"
         />
         <div className="bid-edit-message error">
           <span>{error}</span>
@@ -210,7 +210,7 @@ export default function ActiveProjectCognitoSections({
             className="secondary-button"
             onClick={onRetry}
           >
-            Retry Cognito Detail
+            Retry
           </button>
         </div>
       </section>
@@ -239,42 +239,17 @@ export default function ActiveProjectCognitoSections({
   const entry = payload.entry || {};
 
   const buildings = Array.isArray(general.buildingNames)
-    ? general.buildingNames.filter(item => item?.name)
-    : [];
+    ? general.buildingNames
+    : null;
   const submittals = Array.isArray(detailing.requiredSubmittals)
     ? detailing.requiredSubmittals.filter(Boolean)
     : [];
 
   if (compact) return (
     <div className="active-project-compact-sections">
-      <ActiveProjectSection sectionId="buildings-contract"
-          className="bid-edit-section information-sheet-section active-project-compact-reference"
-          kicker="PROJECT REFERENCE" title="Buildings & Contract Details" note="Read-only values from the Cognito Job Information Sheet">
-        <Subheading>Buildings & Contract Reference</Subheading>
-        <div className="bid-edit-grid three-column information-sheet-grid">
-          <ReadField label="Building count" value={payload.numberOfBuildings} />
-          <ReadField label="Building names" value={buildings.map(item => item.name).join('\n')} wide />
-          <ReadField
-            label="Contract type"
-            value={payload.contract === true ? 'Contract' : payload.contract === false ? 'LOI' : 'Not verified'}
-          />
-          <ReadField label="JIS contract amount (not Foundation total)" value={moneyValue(contract.contractAmount)} />
-          <ReadField label="JIS retention" value={contract.retention} />
-          <ReadField label="Bond" value={contract.bond} />
-          <ReadField label="Parcel" value={contract.parcel} />
-          <ReadField label="OH&P" value={contract.ohp} />
-        </div>
-        <Subheading>Lender</Subheading>
-        <div className="bid-edit-grid three-column information-sheet-grid">
-          <ReadField label="Lender" value={lender.lender} />
-          <ReadField label="Lender street" value={lender.lenderStreet} />
-          <ReadField label="Lender city / state / ZIP" value={lender.lenderCityStateZip} />
-        </div>
-      </ActiveProjectSection>
-
       <ActiveProjectSection sectionId="suppliers"
           className="bid-edit-section information-sheet-section active-project-compact-reference"
-          kicker="MATERIALS" title="Authorized Suppliers & Contracts" note="Supplier amounts and attachment metadata only; no file actions">
+          kicker="MATERIALS" title="Authorized Suppliers & Contracts">
         <div className="cognito-supplier-sheet">
           <div className="cognito-supplier-row header" aria-hidden="true">
             <div>Category</div><div>Supplier</div><div>Amount</div><div>Contract attachment</div>
@@ -299,7 +274,7 @@ export default function ActiveProjectCognitoSections({
       <div className="active-project-layout-pair active-project-reference-pair">
       <ActiveProjectSection sectionId="concrete"
           className="bid-edit-section information-sheet-section active-project-compact-reference"
-          kicker="CONCRETE" title="Concrete & Mix Designs" note="Supplier selections and approved mix references">
+          kicker="CONCRETE" title="Concrete & Mix Designs">
         <div className="bid-edit-grid two-column information-sheet-grid">
           <ReadField label="Primary supplier" value={concrete.primarySupplier} />
           <ReadField label="Secondary supplier" value={concrete.secondarySupplier} />
@@ -312,9 +287,9 @@ export default function ActiveProjectCognitoSections({
 
       <ActiveProjectSection sectionId="detailing"
           className="bid-edit-section information-sheet-section active-project-compact-reference"
-          kicker="OPERATIONS" title="Detailing & Submittals" note="Current Cognito values; editing authority to be mapped">
+          kicker="OPERATIONS" title="Detailing & Submittals">
         <div className="bid-edit-grid two-column information-sheet-grid">
-          <ReadField label="Required submittals" value={submittals.join('\n')} wide />
+          <ProjectSubmittals value={submittals} />
           <ReadField label="Comments for detailing" value={detailing.commentsForDetailing} wide />
         </div>
       </ActiveProjectSection>
@@ -323,20 +298,22 @@ export default function ActiveProjectCognitoSections({
 
       <ActiveProjectSection sectionId="startup-closeout"
           className="bid-edit-section information-sheet-section active-project-compact-reference"
-          kicker="STARTUP & CLOSEOUT" title="Additional Operational Details" note="Current JIS data; field staffing and SQL Additional Members remain separate">
+          kicker="CLOSEOUT" title="Closeout">
         <div className="bid-edit-grid three-column information-sheet-grid">
-          <ReadField label="Estimated duration"
-            value={startup.estimatedDuration == null ? null : `${startup.estimatedDuration} months`} />
-          <ReadField label="Surveyor" value={lookupLabel(startup.surveyor)} />
-          <ReadField label="Team distribution list" value={startup.teamDistributionList} />
-          <ReadField label="Dropbox folder name" value={startup.dropboxFolderName} />
           <ReadField label="Date project completed" value={startup.dateProjectCompleted} />
+          <BooleanField label="Project completed" value={startup.projectCompleted} />
           <BooleanField label="Warranty work" value={startup.warrantyWork} />
           <BooleanField label="Retention collected" value={startup.retentionCollected} />
           <ReadField label="Closeout additional name 1" value={closeout.additionalName1} />
           <ReadField label="Closeout additional email 1" value={closeout.additionalEmail1} />
           <ReadField label="Closeout additional name 2" value={closeout.additionalName2} />
           <ReadField label="Closeout additional email 2" value={closeout.additionalEmail2} />
+        </div>
+      </ActiveProjectSection>
+      <ActiveProjectSection sectionId="services" kicker="INFORMATION" title="Project Information">
+        <div className="project-information-grid">
+          {[["Project email",startup.teamDistributionList],
+            ["Dropbox folder",startup.dropboxFolderName],["Folder created",startup.folderCreated===true?'Yes':startup.folderCreated===false?'No':null]].map(([label,value])=><div className="project-information-item" key={label}><span>{label}</span><strong>{value??'—'}</strong></div>)}
         </div>
       </ActiveProjectSection>
     </div>
@@ -349,14 +326,9 @@ export default function ActiveProjectCognitoSections({
         <SectionHeading
           kicker="GENERAL INFORMATION"
           title="Scope & Project Requirements"
-          note="Cognito master record"
         />
 
         <div className="bid-edit-grid four-column information-sheet-grid">
-          <ReadField
-            label="Number of Buildings"
-            value={payload.numberOfBuildings}
-          />
           <BooleanField label="LEED" value={general.leed} />
           <BooleanField label="NDA Required" value={general.ndaRequired} />
           <BooleanField
@@ -369,11 +341,7 @@ export default function ActiveProjectCognitoSections({
             value={general.scope}
             wide
           />
-          <ReadField
-            label="Building Names"
-            value={buildings.map(item => item.name).join('\n')}
-            wide
-          />
+          <div className="wide"><ProjectBuildingRows rows={buildings} /></div>
         </div>
       </section>
       )}
@@ -558,7 +526,6 @@ export default function ActiveProjectCognitoSections({
         <SectionHeading
           kicker="RIGGS STARTUP"
           title="Startup & Operations"
-          note="Staffing and lifecycle actions remain controlled"
         />
 
         <div className="bid-edit-grid four-column information-sheet-grid">
@@ -571,7 +538,6 @@ export default function ActiveProjectCognitoSections({
                 ? null
                 : `${startup.estimatedDuration} months`
             }
-            hint="Cognito is the duration authority"
           />
           <ReadField label="Foreman" value={lookupLabel(startup.foreman)} />
           <ReadField label="Surveyor" value={lookupLabel(startup.surveyor)} />

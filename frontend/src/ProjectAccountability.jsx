@@ -1,3 +1,4 @@
+import {visibleProjects} from './projectVisibility.mjs';
 import {teamBadgeTextColor} from './teamBadgeIdentity.js';
 import {facetRows} from './viewFilters.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
@@ -57,7 +58,7 @@ function completedProjectCacheIsFresh() {
 
 function writeCompletedProjectCache(items) {
   completedProjectListCache = {
-    items,
+    items:visibleProjects(items),
     loadedAt: Date.now(),
   };
 }
@@ -855,7 +856,7 @@ export default function ProjectAccountability({
       );
       if (isCurrent() && Array.isArray(payload)) {
         writeCompletedProjectCache(payload);
-        setRows(payload);
+        setRows(visibleProjects(payload));
         if (updateSelectedProject) {
           setSelectedProject(current => current
             ? payload.find(item => item.jobListId === current.jobListId) || current

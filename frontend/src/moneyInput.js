@@ -3,12 +3,17 @@
  * presentation-only: the API and existing validation never receive commas.
  * Keep blank distinct from an explicitly entered zero.
  */
-const MONEY_DRAFT = /^\d*(?:\.\d{0,2})?$/;
-const MONEY_VALUE = /^(?:\d+(?:\.\d{0,2})?|\.\d{1,2})$/;
+// Project quantities use zero fractional digits. Existing forecast inputs
+// keep the original two-cent contract; project money may retain more precision.
+function fractionPattern(maxFractionDigits) {
+  if (maxFractionDigits === 0) return /^\d*$/;
+  if (maxFractionDigits === null) return /^\d*(?:\.\d*)?$/;
+  return new RegExp(`^\\d*(?:\\.\\d{0,${maxFractionDigits}})?$`);
+}
 
-export function parseMoneyDraft(value) {
+export function parseMoneyDraft(value, maxFractionDigits = 2) {
   const clean = String(value ?? '').replace(/[$,\s]/g, '');
-  return MONEY_DRAFT.test(clean) ? clean : null;
+  return fractionPattern(maxFractionDigits).test(clean) ? clean : null;
 }
 
 export function groupMoneyDraft(value) {
@@ -19,10 +24,10 @@ export function groupMoneyDraft(value) {
   return parts.length === 2 ? `${integer}.${parts[1]}` : integer;
 }
 
-export function displayMoneyValue(value, editing = false) {
+export function displayMoneyValue(value, editing = false, maxFractionDigits = 2) {
   const raw = String(value ?? '').replaceAll(',', '');
   if (!raw) return '';
-  if (editing || !MONEY_VALUE.test(raw)) return groupMoneyDraft(raw);
+  if (editing || maxFractionDigits === 0 || raw === '.' || !fractionPattern(maxFractionDigits).test(raw)) return groupMoneyDraft(raw);
 
   const [integer, fraction = ''] = raw.split('.');
   const normalizedInteger = (integer || '0').replace(/^0+(?=\d)/, '');

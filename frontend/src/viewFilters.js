@@ -1,14 +1,18 @@
+import {visibleProjects} from './projectVisibility.mjs';
 /** Read-only population/facet rules shared by the overview and directories. */
 export const ALL_FILTER = '__ALL__';
 export function isCompleted(project) {
   const value = project?.projectCompleted;
   return value === true || value === 1 || String(value ?? '').trim().toLowerCase() === 'true' || value === '1';
 }
+export function projectDirectoryKey(row) {
+  return row?.setupId && row.jobListId == null ? `setup:${row.setupId}` : `job:${row?.jobListId}`;
+}
 export function projectDirectoryRows(active, completed = [], includeCompleted = false) {
   const unique = new Map();
-  for (const row of active || []) if (!isCompleted(row)) unique.set(row.jobListId, row);
-  if (includeCompleted) for (const row of [...(active || []), ...(completed || [])]) {
-    if (isCompleted(row)) unique.set(row.jobListId, row);
+  for (const row of visibleProjects(active)) if (!isCompleted(row)) unique.set(projectDirectoryKey(row), row);
+  if (includeCompleted) for (const row of visibleProjects([...(active || []), ...(completed || [])])) {
+    if (isCompleted(row)) unique.set(projectDirectoryKey(row), row);
   }
   return [...unique.values()];
 }

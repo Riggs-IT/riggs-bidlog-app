@@ -34,8 +34,39 @@ test('all 15 sections and 7 supplier rows are integrated into existing editor sh
   const source=readFileSync(new URL('../src/UnnumberedProjectEditor.jsx',import.meta.url),'utf8');
   const workspace=readFileSync(new URL('../src/ActiveProjectsWorkspace.jsx',import.meta.url),'utf8');
   assert.match(source,/<FloatingEditorShell/);assert.match(source,/<ActiveProjectSection/);
-  assert.match(source,/setProjectSectionsOpen\(root.current,true\)/);assert.match(source,/SUPPLIERS.map/);
+  assert.match(source,/<ProjectSectionsToggle rootRef=\{root\}/);assert.match(source,/SUPPLIERS.map/);
   assert.match(source,/expectedEntryId:detail.cognitoEntryId/);assert.match(source,/expectedVersion:detail.entryVersion/);
-  assert.match(workspace,/canReadSetupSummary && !setupIntent && !editProjectId && !showCompleted && <UnnumberedProjectsPanel/);
+  assert.doesNotMatch(workspace,/UnnumberedProjectsPanel/);
+  assert.match(workspace,/projectDirectoryRows\(activeDirectoryItems,completedItems,showCompleted\)/);
+  assert.match(workspace,/setupId=\{selectedProject\?\.jobListId==null\?selectedProject\?\.setupId:null\}/);
   assert.match(source,/canEdit=author&&detail\?\.writeEnabled===true&&!busy&&!uncertain/);
+});
+
+test('lookups use strict SQL identity and provider namespaces, never display names',()=>{
+  const d=makeDetail();const add=(key,id,kind)=>({key,kind:'lookup',value:'Existing selection',label:key,section:'riggs',lane:'reference',mappedEdit:true,editable:true,choices:[],options:[{id,label:'Person or firm'},{id:kind==='staff'?52:kind==='gc'?'140-52':'206-52',label:'Other'}],selectionId:id});
+  d.fields.splice(-3,3,add('pmITUserId',12,'staff'),add('gcLookupId','140-12','gc'),add('architectLookupId','206-12','design'));
+  assert.equal(validateJisDetail(d,sid),d);
+  assert.deepEqual(buildJisChanges(d,{pmITUserId:52,gcLookupId:'140-52',architectLookupId:'206-52'}),{pmITUserId:52,gcLookupId:'140-52',architectLookupId:'206-52'});
+  assert.deepEqual(buildJisChanges(d,{pmITUserId:12}),{});
+  for(const v of [{pmITUserId:'52'},{pmITUserId:'Person or firm'},{gcLookupId:'206-52'},{architectLookupId:null},{leed:'No'}])assert.throws(()=>buildJisChanges(d,v));
+  d.fields.at(-1).options=[{id:'140-1',label:'Wrong namespace'}];assert.throws(()=>validateJisDetail(d,sid));
+});
+test('same identity picker as Project Setup; automatic fields use readouts',()=>{
+  const editor=readFileSync(new URL('../src/UnnumberedProjectEditor.jsx',import.meta.url),'utf8');
+  const numbered=readFileSync(new URL('../src/ActiveProjectCognitoSections.jsx',import.meta.url),'utf8');
+  assert.match(editor,/<ProjectSetupIdentityPicker label=\{field.label\} value=\{value\}/);
+  assert.match(editor,/options=\{field.options\|\|\[\]\}/);
+  assert.match(editor,/allowClear=\{field.allowClear===true\}/);
+  assert.match(editor,/field.section==='services'\)return <div className="project-information-item"/);
+  assert.match(numbered,/title="Project Information"/);
+});
+
+test('existing entry requires an explicit accepted baseline; clears and building IDs preserved',()=>{
+  const d=makeDetail();d.cognitoEntryId=1199;d.baselineAccepted=true;assert.equal(validateJisDetail(d,sid),d);
+  d.fields.find(f=>f.key==='scope').allowClear=true;
+  d.fields.find(f=>f.key==='requiredSubmittals').allowClear=true;
+  d.fields.splice(-1,1,field('buildingNames','rows',[{id:'r1',name:'A'}],[],'buildings'));
+  const rows=[{id:'r1',name:'B'},{id:null,name:'C'}];
+  assert.deepEqual(buildJisChanges(d,{scope:'',requiredSubmittals:[],buildingNames:rows}),{scope:'',requiredSubmittals:[],buildingNames:rows});
+  assert.throws(()=>buildJisChanges(d,{buildingNames:[{id:null,name:''}]}));
 });

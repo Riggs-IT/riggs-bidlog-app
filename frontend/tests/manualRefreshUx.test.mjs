@@ -45,7 +45,7 @@ test('manual page refresh returns genuine reader outcomes, preserving old data o
   assert.match(bid, /throw refreshError/);
   assert.doesNotMatch(bid.slice(bid.indexOf('async function refreshCurrentBidView'),
     bid.indexOf('function rowIdentity')), /showActionToast/);
-  assert.match(projects, /results\.slice\(0, showCompleted \? 2 : 1\)\.some\(result => result !== true\)/);
+  assert.match(projects, /results\.slice\(0, showCompleted \? 3 : 2\)\.some\(result => result !== true\)/);
   assert.match(completed, /await Promise\.allSettled\(\[/);
   assert.match(completed, /monthly\.status !== 'fulfilled'/);
   assert.match(admin, /if \(updated !== true\) throw new Error/);

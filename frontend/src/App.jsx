@@ -1,3 +1,4 @@
+import {visibleProjects,visibleProjectRelated,isHiddenProject,isHiddenProjectName} from './projectVisibility.mjs';
 import {DATA_UPDATED_MESSAGE, DATA_UPDATING_MESSAGE, DATA_REFRESH_FAILED_MESSAGE, hasCacheReadProblem} from './refreshFeedback.js';
 import {PASSIVE_IDLE_WINDOW_MS} from './browserFreshness.js';
 import {FilterToggleGroup, RefreshButton} from './ViewControls.jsx';
@@ -2487,8 +2488,9 @@ export default function App() {
   const originatingBidAttentionData =
     originatingBidAttention.data;
 
-  const originatingBidAttentionItems =
-    originatingBidAttentionData.items || [];
+  const originatingBidAttentionItems = visibleProjectRelated(originatingBidAttentionData.items,currentProjects);
+  const visibleForecastAttention=visibleProjectRelated(forecastAttention,currentProjects);
+  const visibleScheduleAttention=visibleProjectRelated(scheduleReviewAttention.items,currentProjects);
 
   // The server owns the provisional financial review label only
   // when its certified response pair is STILL exactly what this screen shows.
@@ -2510,9 +2512,9 @@ export default function App() {
   );
 
   const notificationCount =
-    forecastAttention.length
-    + originatingBidAttentionData.attentionCount
-    + scheduleReviewAttention.items.length;
+    visibleForecastAttention.length
+    + originatingBidAttentionItems.length
+    + visibleScheduleAttention.length;
 
   const notificationsLoading =
     attentionLoading
@@ -2617,6 +2619,7 @@ export default function App() {
   }
 
   function openScheduleReviewProject(item) {
+    if(!visibleProjectRelated([item],currentProjects).length)return;
     setAttentionOpen(false);
     if (canViewProjectedBillings) {
       openAttentionProject(item);
@@ -2632,6 +2635,7 @@ export default function App() {
     const target = currentProjects.find(
       project => Number(project.jobListId) === Number(jobListId),
     );
+    if (isHiddenProject(target)) return;
     if (target) {
       setActivePage('projected');
       openCurrentProjectDrawer(target, 'pm-forecast');
@@ -2644,6 +2648,7 @@ export default function App() {
   function openAttentionProject(
     attention,
   ) {
+    if(!visibleProjectRelated([attention],currentProjects).length)return;
     const target =
       currentProjects.find(
         project =>
@@ -2681,6 +2686,7 @@ export default function App() {
   function openOriginatingBidAttentionProject(
     attention,
   ) {
+    if(!visibleProjectRelated([attention],currentProjects).length)return;
     const target =
       currentProjects.find(
         project =>
@@ -3547,12 +3553,10 @@ export default function App() {
         }
 
         if (bidScope === 'potential') {
-          return activeBids.filter(
-            isPotentialBid
-          );
+          return activeBids.filter(row=>!isHiddenProjectName(row.bidName)&&isPotentialBid(row));
         }
 
-        return activeBids;
+        return activeBids.filter(row=>!isHiddenProjectName(row.bidName));
       },
       [
         activeBids,
@@ -3736,7 +3740,7 @@ export default function App() {
   const normalizedSearch = search.trim().toLowerCase();
   // Scope the overview to represented month values. Preserve its existing completed-
   // project actual-history inclusion; the editable Projects directory is active-only.
-  const currentRangeRows = useMemo(() => !rangeValid ? [] : currentProjects
+  const currentRangeRows = useMemo(() => !rangeValid ? [] : visibleProjects(currentProjects)
     .filter(row => hasMonthlyValues(currentMonthly.get(row.jobListId), fromMonth, throughMonth,
       ['projectedAmount','actualAmount','systemBaselineAmount']))
     .map(row => {
@@ -3765,7 +3769,7 @@ export default function App() {
     [rangeValid,selectedBidSourceRows,bidMonthly,fromMonth,throughMonth]);
 
   const scopedPotentialBidCount = activeBids.filter(row =>
-    (pmFilter === ALL || pmKey(row.pm) === pmFilter)
+    !isHiddenProjectName(row.bidName) && (pmFilter === ALL || pmKey(row.pm) === pmFilter)
     && isPotentialBid(row)
     && hasMonthlyValues(bidMonthly.get(row.sharePointItemId), fromMonth, throughMonth,
       ['weightedMonthlyForecastAmount', 'monthlyForecastAmount'])
@@ -5761,13 +5765,13 @@ export default function App() {
                 {notificationCount > 0 && (
                   <div className="notification-list">
                     <NotificationProjectCards
-                      forecastItems={forecastAttention.map(item => {
+                      forecastItems={visibleForecastAttention.map(item => {
                         const review = rebalanceByJobId.get(String(item.jobListId));
                         return {...item, reviewStatus: review?.forecastVersionId === item.forecastVersionId
                           ? review.reviewStatus : undefined};
                       })}
                       originatingItems={originatingBidAttentionItems}
-                      scheduleItems={scheduleReviewAttention.items}
+                      scheduleItems={visibleScheduleAttention}
                       onOpenSchedule={openScheduleReviewProject}
                       onOpenForecast={openAttentionProject}
                       onOpenOriginating={openOriginatingBidAttentionProject}
@@ -8056,8 +8060,8 @@ export default function App() {
           pmBadgeDirectory={teamBadgeDirectory}
           refreshApiRef={bidLogRefreshRef}
           pmDirectory={[
-            ...currentProjects,
-            ...activeBids,
+            ...visibleProjects(currentProjects),
+            ...activeBids.filter(row=>!isHiddenProjectName(row.bidName)),
           ]}
           onBidDataChanged={() => {
             void refreshProjectedBidData();
@@ -8103,8 +8107,8 @@ export default function App() {
           teamIdentityByName={teamIdentityByName}
           refreshApiRef={completedRefreshRef}
           pmDirectory={[
-            ...currentProjects,
-            ...activeBids,
+            ...visibleProjects(currentProjects),
+            ...activeBids.filter(row=>!isHiddenProjectName(row.bidName)),
           ]}
         />
       ) : (

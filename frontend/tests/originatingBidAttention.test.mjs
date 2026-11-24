@@ -20,7 +20,7 @@ test('notification bell shows flat project cards and refreshes after a successfu
   const app = src('App.jsx');
   assert.match(app, /<NotificationProjectCards/);
   assert.match(app, /originatingItems=\{originatingBidAttentionItems\}/);
-  assert.match(app, /originatingBidAttentionData\.attentionCount/);
+  assert.match(app, /originatingBidAttentionItems\.length/);
   assert.match(app, /originatingBidAttention\.refresh\(\{ passive: false \}\)/);
   assert.match(app, /openOriginatingBidAttentionProject/);
   assert.match(app, /'originating-bid'/);

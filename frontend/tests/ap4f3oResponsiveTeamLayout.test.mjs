@@ -51,9 +51,9 @@ test('Active Project heading prioritizes job name and retains source-specific wr
   assert.match(active,/active-project-scope-grid/);
   assert.match(active,/<ActiveProjectOfficeTeam/);
   assert.match(active,/<ActiveProjectGcTeam/);
-  assert.match(active,/<ActiveProjectStaffingOrganizer/);
+  assert.match(active,/<ProjectFieldTeam/);
   assert.match(active,/<ActiveProjectAdditionalMembers/);
-  assert.match(active,/writeEnabled=\{Number\(jobListId\) === 24\}/);
+  assert.doesNotMatch(active,/writeEnabled=\{Number\(jobListId\) === 24\}/);
   assert.match(active,/editor\.save\(\)/);
   assert.match(active,/active-project-jis-reference/);
   assert.match(active,/compact payload=\{cognitoPayload\}/);
@@ -64,7 +64,9 @@ test('Active team editing is limited to verified office roles and legacy GC PM',
   assert.match(activeTeams,/sharePointId/);
   assert.match(activeTeams,/onChange\('gcpm',/);
   assert.match(activeTeams,/GC Superintendent · JIS/);
-  assert.match(activeTeams,/SQL-draft only/);
+  assert.match(activeTeams,/Only the name is editable/);
+  assert.match(activeTeams,/type="tel"[^>]*disabled readOnly/);
+  assert.match(activeTeams,/type="email"[^>]*disabled readOnly/);
   assert.doesNotMatch(activeTeams,/fetch\(|\/api\/|cognito\/forms|onChange\('gcSuper/);
 });
 test('CSS stacks cards and retains person selection access on narrow screens',()=>{

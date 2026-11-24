@@ -1,3 +1,4 @@
+import {isHiddenProjectName} from './projectVisibility.mjs';
 import {awardCompleted, mayAuthor, mayInspectSetup} from './projectSetupAuthoring.mjs';
 import {activePmChoices, asyncAwardSetupId} from './bidLogWorkspaceRules.mjs';
 import {teamBadgeTextColor} from './teamBadgeIdentity.js';
@@ -1103,7 +1104,7 @@ export default function BidLogWorkspace({
       }
 
       const rows = Array.isArray(payload?.items)
-        ? payload.items
+        ? payload.items.filter(row=>!isHiddenProjectName(row.bidName))
         : [];
 
       if (activeView) {

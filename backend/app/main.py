@@ -2472,6 +2472,7 @@ def active_project_cognito_detail_proxy(
         ...,
         ge=1,
     ),
+    fresh: bool = False,
     current_user: CurrentUser = Depends(
         get_current_user
     ),
@@ -2481,7 +2482,7 @@ def active_project_cognito_detail_proxy(
     try:
         return _role_scoped_financial_payload(
             get_active_project_cognito_detail(
-                job_list_id
+                job_list_id, **({"fresh": True} if fresh else {})
             ),
             current_user,
         )

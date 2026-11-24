@@ -33,13 +33,13 @@ test('existing paired layout, global controls and full-width supplier table rema
   const drawer = read('ActiveProjectEditDrawer.jsx');
   const sheet = read('ActiveProjectCognitoSections.jsx');
   const css = read('styles/10-active-projects.css');
-  for (const id of ['basics','location','parties','design','riggs','gc','scope'])
+  for (const id of ['basics','location','parties','design','riggs','gc','scope','admin','buildings'])
     assert.match(drawer, new RegExp(`sectionId="${id}"`));
-  for (const id of ['buildings-contract','suppliers','concrete','detailing','startup-closeout'])
+  for (const id of ['suppliers','concrete','detailing','startup-closeout','services'])
     assert.match(sheet, new RegExp(`sectionId="${id}"`));
   assert.match(drawer, /headerActions=\{/);
-  assert.match(drawer, /setProjectSectionsOpen\(sectionsRef.current, true\)/);
-  assert.match(drawer, /setProjectSectionsOpen\(sectionsRef.current, false\)/);
+  assert.match(drawer, /<ProjectSectionsToggle rootRef=\{sectionsRef\}/);
+  assert.match(read('ProjectSectionsToggle.jsx'), /setProjectSectionsOpen\(rootRef.current,next\)/);
   assert.match(drawer, /active-project-layout-pair active-project-teams-pair/);
   assert.match(sheet, /active-project-layout-pair active-project-reference-pair/);
   assert.ok(sheet.indexOf('sectionId="suppliers"') < sheet.indexOf('active-project-reference-pair'));

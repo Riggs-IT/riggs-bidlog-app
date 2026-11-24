@@ -5,3 +5,8 @@ export function setProjectSectionsOpen(root, open) {
     section.open = Boolean(open);
   }
 }
+
+export function allProjectSectionsOpen(root) {
+  const sections = root ? Array.from(root.querySelectorAll('details[data-project-disclosure]')) : [];
+  return sections.length > 0 && sections.every(section => section.open);
+}

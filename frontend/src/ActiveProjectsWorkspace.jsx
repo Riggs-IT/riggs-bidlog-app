@@ -1,6 +1,7 @@
-import UnnumberedProjectsPanel from './UnnumberedProjectsPanel.jsx';
+import {compareBlankJobNumbers,comparePendingProjects} from './projectDirectorySort.mjs';
+import {readUnnumberedDirectory} from './unnumberedProjectDirectory.mjs';
 import {teamBadgeTextColor} from './teamBadgeIdentity.js';
-import {facetRows, projectDirectoryRows, isCompleted} from './viewFilters.js';
+import {facetRows, projectDirectoryRows, projectDirectoryKey, isCompleted} from './viewFilters.js';
 import useFacetSelectionCleanup from './useFacetSelectionCleanup.js';
 import {contractorTokens, canonicalFilterKey, contractorFilterOptions, contractorFilterMatch} from './gcReference.js';
 import useGcReference, { canReadGcReference } from './useGcReference.js';
@@ -25,7 +26,7 @@ import {
 import ActiveProjectEditDrawer from './ActiveProjectEditDrawer.jsx';
 import ProjectSetupAwaitingPanel from './ProjectSetupAwaitingPanel.jsx';
 import ProjectSetupEditor from './ProjectSetupEditor.jsx';
-import {mayAuthor} from './projectSetupAuthoring.mjs';
+import {mayAuthor,mayInspectSetup} from './projectSetupAuthoring.mjs';
 import ScheduleReviewFlag from './ScheduleReviewFlag.jsx';
 import ForecastBalanceFlag from './ForecastBalanceFlag.jsx';
 import {BalanceReviewAmount} from './BalanceReviewSummary.jsx';
@@ -589,6 +590,32 @@ export default function ActiveProjectsWorkspace({
   const [gcFilter, setGcFilter] = useState(ALL);
   const [quickFilter, setQuickFilter] = useState(null);
   const [editProjectId, setEditProjectId] = useState(null);
+  const [unnumberedItems,setUnnumberedItems]=useState([]);
+  const [unnumberedError,setUnnumberedError]=useState(null);
+  const unnumberedReadRef=useRef(null);
+  const canReadSetupSummary = user?.canReviewProjectSetup === true;
+  const canReadCreatedProjects=mayInspectSetup(user);
+  const loadUnnumbered=useCallback(async({fresh=false}={})=>{
+    unnumberedReadRef.current?.abort();
+    if(!canReadCreatedProjects){setUnnumberedItems([]);setUnnumberedError(null);return true;}
+    const controller=new AbortController();unnumberedReadRef.current=controller;
+    setUnnumberedError(null);
+    try {
+      const result=await readUnnumberedDirectory({signal:controller.signal,fresh});
+      if(controller.signal.aborted)return false;
+      setUnnumberedItems(result.items);
+      if(result.partial)setUnnumberedError('Some project details are unavailable.');
+      return !result.partial;
+    }catch(error){
+      if(!controller.signal.aborted)setUnnumberedError('Some projects could not be loaded.');
+      return false;
+    }
+  },[canReadCreatedProjects,user?.eid]);
+  useEffect(()=>{
+    setUnnumberedItems([]);
+    void loadUnnumbered();
+    return ()=>unnumberedReadRef.current?.abort();
+  },[loadUnnumbered,setupRefresh]);
   const [sortState, setSortState] = useState({
     key: 'job',
     direction: 'desc',
@@ -679,12 +706,13 @@ export default function ActiveProjectsWorkspace({
     refresh: async () => {
       const results = await Promise.all([
         loadProjects({ quiet: false }),
+        loadUnnumbered({fresh:true}),
         ...(showCompleted ? [loadCompletedProjects({ quiet: false })] : []),
         ...(canReadGcReference(user) ? [gcDirectory.refresh()] : []),
       ]);
       // GC reference is supplemental; both requested job directories must
       // complete before the header can announce successful project refresh.
-      if (results.slice(0, showCompleted ? 2 : 1).some(result => result !== true)) {
+      if (results.slice(0, showCompleted ? 3 : 2).some(result => result !== true)) {
         throw new Error('Unable to refresh the project directory.');
       }
       return true;
@@ -729,7 +757,8 @@ export default function ActiveProjectsWorkspace({
     [loadCompletedProjects, showCompleted],
   );
 
-  const items=useMemo(()=>projectDirectoryRows(activeItems,completedItems,showCompleted),[activeItems,completedItems,showCompleted]);
+  const activeDirectoryItems=useMemo(()=>[...activeItems,...(canReadCreatedProjects?unnumberedItems:[])],[activeItems,unnumberedItems,canReadCreatedProjects]);
+  const items=useMemo(()=>projectDirectoryRows(activeDirectoryItems,completedItems,showCompleted),[activeDirectoryItems,completedItems,showCompleted]);
   const filters={pm:pmFilter,type:typeFilter,purpose:purposeFilter,pe:peFilter,super:superFilter,gc:gcFilter};
   const facets=useMemo(()=>{
     const text=v=>String(v||'').trim();
@@ -785,24 +814,26 @@ export default function ActiveProjectsWorkspace({
 
   const counts = useMemo(
     () => ({
-      active: projectDirectoryRows(activeItems).length,
-      completed: projectDirectoryRows(activeItems,completedItems,true).filter(isCompleted).length,
-      noPm: projectDirectoryRows(activeItems).filter(row => isUnassigned(row.pm)).length,
-      noSuper: projectDirectoryRows(activeItems).filter(row => isUnassigned(row.superintendent)).length,
-      noDuration: projectDirectoryRows(activeItems).filter(
+      active: projectDirectoryRows(activeDirectoryItems).length,
+      completed: projectDirectoryRows(activeDirectoryItems,completedItems,true).filter(isCompleted).length,
+      noPm: projectDirectoryRows(activeDirectoryItems).filter(row => isUnassigned(row.pm)).length,
+      noSuper: projectDirectoryRows(activeDirectoryItems).filter(row => isUnassigned(row.superintendent)).length,
+      noDuration: projectDirectoryRows(activeDirectoryItems).filter(
         row => !Number.isFinite(Number(row.estimatedDurationMonths))
           || Number(row.estimatedDurationMonths) <= 0,
       ).length,
-      noStart: projectDirectoryRows(activeItems).filter(
+      noStart: projectDirectoryRows(activeDirectoryItems).filter(
         row => !dateOnly(row.effectiveStartDate),
       ).length,
     }),
-    [activeItems, completedItems],
+    [activeDirectoryItems, completedItems],
   );
 
   const filteredItems = useMemo(
     () => [...facets.rows]
       .sort((a, b) => {
+        const pendingOrder=comparePendingProjects(a,b);
+        if(pendingOrder)return pendingOrder;
         let aValue;
         let bValue;
 
@@ -844,8 +875,8 @@ export default function ActiveProjectsWorkspace({
             bValue = b.projectedCompletionDate;
             break;
           case 'contract':
-            aValue = a.totalContractAmount;
-            bValue = b.totalContractAmount;
+            aValue = a.setupId&&a.jobListId==null?a.operationalContractAmount:a.totalContractAmount;
+            bValue = b.setupId&&b.jobListId==null?b.operationalContractAmount:b.totalContractAmount;
             break;
           case 'squareFootage':
             aValue = a.squareFootage;
@@ -862,7 +893,8 @@ export default function ActiveProjectsWorkspace({
             break;
         }
 
-        const comparison = compareValues(
+        const blankJobComparison = sortState.key === 'job' ? compareBlankJobNumbers(aValue,bValue,sortState.direction) : null;
+        const comparison = blankJobComparison ?? compareValues(
           aValue,
           bValue,
           sortState.type,
@@ -952,7 +984,7 @@ export default function ActiveProjectsWorkspace({
 
   const selectedProject =
     items.find(
-      project => project.jobListId === editProjectId,
+      project => projectDirectoryKey(project) === editProjectId,
     ) || null;
 
   const role = String(
@@ -960,15 +992,14 @@ export default function ActiveProjectsWorkspace({
   ).toUpperCase();
   const canEdit = role === 'ADMIN';
   const managementPreview = role === 'MANAGEMENT_ADMIN';
-  const canReadSetupSummary = user?.canReviewProjectSetup === true;
   const canAuthorSetup = mayAuthor(user);
 
   return (
     <main className={`page-shell active-projects-workspace${managementPreview ? ' management-admin-preview' : ''}`}>
       {managementPreview && (
         <div className="management-preview-notice" role="note">
-          <strong>UNDER DEVELOPMENT · VIEW ONLY</strong>
-          <span>Active Projects is a preview. Make job-information changes in Cognito’s Job Information Sheet, not here. Open a project and use the original Cognito entry link at the bottom.</span>
+          <strong>VIEW ONLY</strong>
+          <span>Project information is read-only for your role.</span>
         </div>
       )}
       <div className="page-heading bid-log-workspace-heading">
@@ -1007,7 +1038,7 @@ export default function ActiveProjectsWorkspace({
         onSaved={() => setSetupRefresh(v=>v+1)} />}
       {showAwaiting && canReadSetupSummary ? <ProjectSetupAwaitingPanel key={setupRefresh}
         onResume={onSetupIntentChanged ? setupId => onSetupIntentChanged({setupId}) : null} /> : <>
-      {canReadSetupSummary && !setupIntent && !editProjectId && !showCompleted && <UnnumberedProjectsPanel user={user}/> }
+
       <section className="bid-log-summary-grid active-project-summary-grid">
         <button
           type="button"
@@ -1289,6 +1320,7 @@ export default function ActiveProjectsWorkspace({
         </div>
       </section>
 
+      {unnumberedError && canReadSetupSummary && <div className="bid-edit-message error active-project-list-error"><span>{unnumberedError}</span><button type="button" className="secondary-button" onClick={()=>void loadUnnumbered()}>Retry</button></div>}
       {error && (
         <div className="bid-edit-message error active-project-list-error">
           <span>{error}</span>
@@ -1412,22 +1444,22 @@ export default function ActiveProjectsWorkspace({
             <tbody>
               {!loading && filteredItems.map(project => (
                 <tr
-                  key={project.jobListId}
+                  key={projectDirectoryKey(project)}
                   className="bid-log-data-row active-project-data-row"
                   tabIndex="0"
-                  onClick={() => setEditProjectId(project.jobListId)}
+                  onClick={() => setEditProjectId(projectDirectoryKey(project))}
                   onKeyDown={event => {
                     if (
                       event.key === 'Enter'
                       || event.key === ' '
                     ) {
                       event.preventDefault();
-                      setEditProjectId(project.jobListId);
+                      setEditProjectId(projectDirectoryKey(project));
                     }
                   }}
                 >
                   <td className="active-project-job-cell">
-                    <strong>{displayValue(project.jobNumber)}</strong>
+                    <strong>{project.setupId&&project.jobListId==null?'Pending':displayValue(project.jobNumber)}</strong>
                   </td>
 
                   <td className="active-project-name-cell">
@@ -1504,7 +1536,7 @@ export default function ActiveProjectsWorkspace({
                   </td>
 
                   <td className="numeric active-project-contract-cell">
-                    <MoneyValue value={project.totalContractAmount} />
+                    {project.setupId&&project.jobListId==null ? <span title="JIS contract amount"><MoneyValue value={project.operationalContractAmount}/></span> : <MoneyValue value={project.totalContractAmount} />}
                   </td>
 
                   <td className="numeric active-project-quantity-cell">
@@ -1540,13 +1572,15 @@ export default function ActiveProjectsWorkspace({
       </>}
 
       <ActiveProjectEditDrawer
-        jobListId={editProjectId}
+        jobListId={selectedProject?.jobListId}
+        setupId={selectedProject?.jobListId==null?selectedProject?.setupId:null}
         projectSummary={selectedProject}
         user={user}
         onClose={() => setEditProjectId(null)}
         onSaved={() => {
           void Promise.resolve().then(() => onProjectDataChanged?.()).catch(() => {});
           void loadProjects({ quiet: true });
+          void loadUnnumbered();
           if (showCompleted) {
             void loadCompletedProjects({ quiet: true });
           }

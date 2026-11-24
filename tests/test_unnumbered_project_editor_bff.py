@@ -33,6 +33,14 @@ class Tests(unittest.TestCase):
             self.assertEqual(self.client.get(self.path).status_code,200)
             self.assertEqual(self.client.patch(self.path,json=self.body,headers=self.write_headers).status_code,403)
             relay.assert_called_once_with(actor_eid=176,setup_id=SID)
+    def test_management_directory_and_contract_preview_remain_visible(self):
+        self.user=SimpleNamespace(eid=176,app_role='MANAGEMENT_ADMIN')
+        with patch.object(data_api,'request_unnumbered_project_editor',return_value={'externalState':'CREATED_UNNUMBERED'}) as relay:
+            self.assertEqual(self.client.get('/api/project-setups/jis').status_code,200)
+            relay.assert_called_once_with(actor_eid=176)
+            relay.reset_mock()
+            self.assertEqual(self.client.patch(self.path,json={**self.body,'changes':{'contractFlag':True}},headers=self.write_headers).status_code,403)
+            relay.assert_not_called()
     def test_viewer_denied_and_actor_in_body_rejected(self):
         with patch.object(data_api,'request_unnumbered_project_editor') as relay:
             self.user=SimpleNamespace(eid=2021,app_role='VIEWER')
@@ -43,3 +51,12 @@ class Tests(unittest.TestCase):
     def test_safe_error_response(self):
         with patch.object(data_api,'request_unnumbered_project_editor',side_effect=data_api.DataAPIRequestRejected(409,'project_setup_conflict')):
             r=self.client.patch(self.path,json=self.body,headers=self.write_headers);self.assertEqual(r.status_code,409);self.assertEqual(r.json()['detail'],'project_setup_conflict')
+
+    def test_manual_refresh_preserves_session_authorization(self):
+        with patch.object(data_api,'request_unnumbered_project_editor',return_value={'externalState':'CREATED_UNNUMBERED'}) as relay:
+            self.assertEqual(self.client.get(self.path+'?fresh=true').status_code,200)
+            relay.assert_called_once_with(actor_eid=2021,setup_id=SID,fresh=True)
+            relay.reset_mock()
+            self.user=SimpleNamespace(eid=176,app_role='VIEWER')
+            self.assertEqual(self.client.get(self.path+'?fresh=true').status_code,403)
+            relay.assert_not_called()

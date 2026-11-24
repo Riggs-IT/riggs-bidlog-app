@@ -1,3 +1,4 @@
+import {visibleProjects} from './projectVisibility.mjs';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {validateOpsSetupList} from './opsSetupListContract.mjs';
 
@@ -54,8 +55,8 @@ export default function ProjectSetupAwaitingPanel({onResume = null}) {
       }
       const checked = validateOpsSetupList(body, PAGE_SIZE);
       if (controller.signal.aborted || sequence !== sequenceRef.current) return;
-      setItems(old => cursor ? [...old, ...checked.items.filter(item =>
-        !old.some(previous => previous.setupId === item.setupId))] : checked.items);
+      setItems(old => cursor ? [...old, ...visibleProjects(checked.items).filter(item =>
+        !old.some(previous => previous.setupId === item.setupId))] : visibleProjects(checked.items));
       setNextCursor(checked.nextCursor);
       setLoaded(true);
     } catch (cause) {

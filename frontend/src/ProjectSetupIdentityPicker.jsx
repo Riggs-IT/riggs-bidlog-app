@@ -3,7 +3,7 @@ import {useEffect, useId, useMemo, useRef, useState} from 'react';
 // Display names are for search only. The draft receives verified directory IDs.
 // Stale IDs remain visible and are never silently replaced by matching names.
 export default function ProjectSetupIdentityPicker({label,value,options=[],onChange,multiple=false,
-  disabled=false,unavailable=false,help=''}) {
+  disabled=false,unavailable=false,help='',currentLabel='',allowClear=true}) {
   const inputId = useId();
   const listId = useId();
   const rootRef = useRef(null);
@@ -48,7 +48,7 @@ export default function ProjectSetupIdentityPicker({label,value,options=[],onCha
     onChange(null);setOpen(false);setQuery('');
   };
   const shownValue = open ? query : multiple ? '' :
-    (selected?.label || (value==null ? '' : `Unverified ID ${String(value)}`));
+    (selected?.label || currentLabel || (value==null ? '' : `Unverified ID ${String(value)}`));
 
   return <div ref={rootRef} className="bid-edit-field project-setup-identity-picker"
     onBlurCapture={event => {
@@ -77,7 +77,7 @@ export default function ProjectSetupIdentityPicker({label,value,options=[],onCha
             else if (event.key==='ArrowUp') {event.preventDefault();setActiveIndex(i=>Math.max(i-1,0));}
             else if (event.key==='Enter' && open && matches[activeIndex]) {event.preventDefault();select(matches[activeIndex]);}
           }}/>
-        {!multiple && value!=null && canChoose && <button type="button" className="project-setup-combobox-clear"
+        {!multiple && allowClear && value!=null && canChoose && <button type="button" className="project-setup-combobox-clear"
           aria-label={`Clear ${label}`} title="Clear selection" onClick={clear}>×</button>}
         <span className="project-setup-combobox-caret" aria-hidden="true">⌄</span>
         {open && canChoose && <div id={listId} role="listbox" aria-label={`${label} options`}
