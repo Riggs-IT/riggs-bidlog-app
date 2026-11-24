@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {GROUPS,SUPPLIERS,validateJisList,validateJisDetail,buildJisChanges} from '../src/unnumberedProjectEditor.mjs';
+import {GROUPS,SUPPLIERS,validateJisList,validateJisDetail,validateNumberedJisDetail,buildJisChanges} from '../src/unnumberedProjectEditor.mjs';
 const sid='b83c8aa6-558b-545e-8bf8-7779236745f8';
 const row={setupId:sid,originalBidLogId:4970,revision:2,cognitoEntryId:1200,jobName:'TEST BID RODNEY 2'};
 const field=(key,kind,value,choices=[],section='scope',editable=true)=>({key,kind,value,choices,section,label:key,lane:editable?'ordinary':'reference',mappedEdit:editable,editable});
@@ -69,4 +69,11 @@ test('existing entry requires an explicit accepted baseline; clears and building
   const rows=[{id:'r1',name:'B'},{id:null,name:'C'}];
   assert.deepEqual(buildJisChanges(d,{scope:'',requiredSubmittals:[],buildingNames:rows}),{scope:'',requiredSubmittals:[],buildingNames:rows});
   assert.throws(()=>buildJisChanges(d,{buildingNames:[{id:null,name:''}]}));
+});
+
+test('numbered contract validates real job and provider identity independently of SetupID',()=>{
+ const d={...makeDetail(),setupId:null,originalBidLogId:null,jobListId:777,jobNumber:'30001',revision:1,externalState:'NUMBERED'};
+ assert.equal(validateNumberedJisDetail(d,777),d);
+ for(const change of [{jobListId:24},{jobNumber:'11111'},{setupId:sid},{cognitoEntryId:966},{cognitoEntryId:1199},{jobListId:778},{jobNumber:null}])assert.throws(()=>validateNumberedJisDetail({...d,...change},777));
+ assert.deepEqual(buildJisChanges(d,{scope:'New',leed:false}),{scope:'New',leed:false});
 });

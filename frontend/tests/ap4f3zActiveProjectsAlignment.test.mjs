@@ -52,16 +52,16 @@ test('Cognito fallback only for the saved company and independently matching nam
     options:[],cognito:{...gc,gcName:'Different JIS company'}}).source,null);
 });
 
-test('role-gated browsing uses the existing GET and management cannot call save',()=>{
+test('role-gated browsing uses authorized JIS fields; metrics use separate editor',()=>{
   const drawer=code('ActiveProjectEditDrawer.jsx');
   const routes=code('../../backend/app/project_setup_authoring.py');
   const picker=code('ActiveProjectDesignTeam.jsx');
   assert.match(drawer,/const canInspectChoices = canEdit \|\| managementPreview/);
   assert.match(drawer,/useGcReference\(canInspectChoices\)/);
   assert.match(drawer,/if \(!canInspectChoices \|\| !jobListId\)/);
-  assert.match(drawer,/editable=\{canInspectChoices && !saving\}/);
+  assert.match(drawer,/editable=\{false\}/);assert.match(drawer,/disabled=\{!jis.canEdit\|\|saving\}/);
   assert.match(drawer,/managementPreview \? setGcPreviewName\(value\) : updateField\('gc',value\)/);
-  assert.match(drawer,/canEdit && !loading && !loadError/);
+  assert.match(drawer,/\(canEdit \|\| canEditMetrics\) && !loading && !loadError/);
   assert.match(drawer,/gcPreviewName.*?\[jobListId\]/s);
   assert.match(picker,/Not saved · Preview only/);
   assert.match(routes,/@router.get\("\/form206"\)/);

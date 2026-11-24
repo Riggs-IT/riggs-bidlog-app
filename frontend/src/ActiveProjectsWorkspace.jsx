@@ -990,16 +990,17 @@ export default function ActiveProjectsWorkspace({
   const role = String(
     user?.appRole || '',
   ).toUpperCase();
-  const canEdit = role === 'ADMIN';
-  const managementPreview = role === 'MANAGEMENT_ADMIN';
+  const canEdit = ['ADMIN','OPERATIONS','MANAGEMENT_ADMIN'].includes(role);
+  const canEditMetrics = ['ADMIN','OPERATIONS','MANAGEMENT_ADMIN'].includes(role);
+  const managementPreview = false; // numbered ordinary fields are now role-authorized
   const canAuthorSetup = mayAuthor(user);
 
   return (
     <main className={`page-shell active-projects-workspace${managementPreview ? ' management-admin-preview' : ''}`}>
       {managementPreview && (
         <div className="management-preview-notice" role="note">
-          <strong>VIEW ONLY</strong>
-          <span>Project information is read-only for your role.</span>
+          <strong>PROJECT REVIEW</strong>
+          <span>Eligible numbered project information and metrics are editable; specialized workflows retain their permissions.</span>
         </div>
       )}
       <div className="page-heading bid-log-workspace-heading">
@@ -1316,7 +1317,7 @@ export default function ActiveProjectsWorkspace({
         <div className="active-project-filter-note bid-log-read-only-note">
           {canEdit
             ? 'Click any row to edit project information.'
-            : 'Click any row to view project information.'}
+            : canEditMetrics ? 'Click a row to view project information or edit project metrics.' : 'Click any row to view project information.'}
         </div>
       </section>
 

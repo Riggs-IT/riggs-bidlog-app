@@ -1,4 +1,4 @@
-"""Management admin permissions: business admin, no Active Projects writes.
+"""Management admin permissions: ordinary numbered writes, specialized boundaries.
 
 No live SQL, Microsoft, or bridge requests are made by this test.
 """
@@ -39,7 +39,7 @@ class ManagementAdminBoundaryTests(unittest.TestCase):
         self.assertEqual(main._role_scoped_financial_payload(payload, MANAGEMENT), payload)
         self.assertNotIn("marginCollected", main._role_scoped_financial_payload(payload, replace(MANAGEMENT, app_role="VIEWER")))
 
-    def test_project_writes_fail_closed_before_upstream(self):
+    def test_protected_and_specialized_writes_fail_closed_before_upstream(self):
         paths = [
             ("put", "/api/active-projects/24", {"jobName": "Blocked"}, "update_active_project"),
             ("patch", "/api/active-projects/24/cognito-general", {"expectedVersion": 1, "changes": {}}, "general_request"),
@@ -53,7 +53,7 @@ class ManagementAdminBoundaryTests(unittest.TestCase):
             with self.subTest(path=path, method=method), patch.object(main, name) as upstream:
                 opts = {} if body is None else {"json": body}
                 response = getattr(self.client, method)(path, **opts)
-                self.assertEqual(response.status_code, 403, response.text)
+                self.assertEqual(response.status_code, 404 if method=="put" and path.endswith("/24") else 403, response.text)
                 upstream.assert_not_called()
 
     def test_active_project_read_allowed(self):
@@ -103,12 +103,19 @@ class ManagementAdminBoundaryTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400, response.text)
         upstream.assert_not_called()
 
-    def test_admin_retains_project_write(self):
-        main.app.dependency_overrides[get_current_user] = lambda: ADMIN
-        with patch.object(main, "update_active_project", return_value={"jobListId": 24}) as writer:
-            result = self.client.put("/api/active-projects/24", json={"jobName": "Permitted"})
-        self.assertEqual(result.status_code, 200, result.text)
-        self.assertEqual(writer.call_args.kwargs["actor_eid"], 2021)
+    def test_authorized_roles_can_edit_numbered_core(self):
+        for user in (ADMIN, MANAGEMENT, replace(ADMIN, app_role="OPERATIONS")):
+            main.app.dependency_overrides[get_current_user] = lambda: user
+            with patch.object(main, "update_active_project", return_value={"jobListId": 777}) as writer:
+                result = self.client.put("/api/active-projects/777", json={"jobName": "Permitted"})
+            self.assertEqual(result.status_code, 200, result.text)
+            self.assertEqual(writer.call_args.kwargs["actor_eid"], user.eid)
+    def test_viewer_and_protected_core_denied(self):
+        for user,job,status in ((replace(ADMIN,app_role="VIEWER"),777,403),(ADMIN,24,404)):
+            main.app.dependency_overrides[get_current_user]=lambda:user
+            with patch.object(main,"update_active_project") as writer:
+                response=self.client.put(f"/api/active-projects/{job}",json={"jobName":"Blocked"})
+            self.assertEqual(response.status_code,status,response.text);writer.assert_not_called()
 
 
 if __name__ == "__main__":

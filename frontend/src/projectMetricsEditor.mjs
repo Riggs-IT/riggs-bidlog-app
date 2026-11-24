@@ -36,13 +36,15 @@ function sameQuantity(a, b) {
 
 export function metricsChanges(base, draft) {
   if (!base || !draft) return [];
-  return ['squareFootage', 'cubicYards'].filter(key => !sameQuantity(quantityWholeDisplay(base[key]), draft[key]));
+  const keys = base.panelApplicable === true ? ['squareFootage','cubicYards','numberOfPanels'] : ['squareFootage','cubicYards'];
+  return keys.filter(key => !sameQuantity(quantityWholeDisplay(base[key]), draft[key]));
 }
 
 function draftFrom(payload) {
   return {
     squareFootage: quantityWholeDisplay(payload.squareFootage),
     cubicYards: quantityWholeDisplay(payload.cubicYards),
+    ...(payload.panelApplicable === true ? {numberOfPanels: quantityWholeDisplay(payload.numberOfPanels)} : {}),
   };
 }
 
@@ -141,6 +143,7 @@ export function createProjectMetricsEditor({
         // A blank input is not N/A. Explicit override clearing requires a
         // separate UI action; never silently replace a real value with NULL.
         if (value === null) throw new Error('Enter a value or 0 for the quantity being edited.');
+        if (field === 'numberOfPanels' && Number(value) > 2147483647) throw new Error('Enter a panel count no greater than 2,147,483,647.');
         return [field, value];
       }));
     } catch (error) {
@@ -165,6 +168,7 @@ export function createProjectMetricsEditor({
         setCubicYards: fields.includes('cubicYards'),
         ...(fields.includes('squareFootage') ? {squareFootage: values.squareFootage} : {}),
         ...(fields.includes('cubicYards') ? {cubicYards: values.cubicYards} : {}),
+        ...(fields.includes('numberOfPanels') ? {setNumberOfPanels: true, numberOfPanels: Number(values.numberOfPanels)} : {}),
       };
       patchStarted = true;
       const receipt = await request('PATCH', payload);
@@ -176,14 +180,14 @@ export function createProjectMetricsEditor({
       try {
         const after = await request('GET');
         if (!live(generation)) return false;
-        if (!isValidRead(after) || (setup !== null && after.revision !== receipt.revision) || fields.some(field => !sameQuantity(after[field], values[field])) || (setup !== null && ['squareFootage','cubicYards'].some(field => !fields.includes(field) && !sameQuantity(after[field], fresh[field])))) {
+        if (!isValidRead(after) || (setup !== null && after.revision !== receipt.revision) || fields.some(field => !sameQuantity(after[field], values[field])) || (fields.includes('numberOfPanels') && after.panelApplicable !== true) || (setup !== null && ['squareFootage','cubicYards'].some(field => !fields.includes(field) && !sameQuantity(after[field], fresh[field])))) {
           emit({unresolved: true, error: 'Save was accepted, but the resulting values differ. Reload and review; nothing was resent.'});
           return false;
         }
         accept(after);
       } catch {
         if (!live(generation)) return false;
-        if (setup !== null) {
+        if (setup !== null || fields.includes('numberOfPanels')) {
           emit({unresolved: true, error: 'SQL accepted the save, but fresh readback is unavailable. Reload and review; nothing was resent.'});
           return false;
         }
@@ -225,7 +229,7 @@ export function createProjectMetricsEditor({
     dismissNotice() { emit({notice: null}); },
     edit(field, value) {
       if (!active || !canEdit || !state.snapshot?.canEdit || writing || state.unresolved || state.conflict) return;
-      if (!['squareFootage', 'cubicYards'].includes(field)) return;
+      if (!['squareFootage', 'cubicYards'].includes(field) && !(field === 'numberOfPanels' && state.snapshot?.panelApplicable === true)) return;
       emit({draft: {...state.draft, [field]: value}, error: null, notice: null});
     },
     discard() {

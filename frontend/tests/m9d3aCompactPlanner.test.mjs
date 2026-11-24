@@ -43,9 +43,9 @@ test('100 projects remain a single searchable list without losing plans',()=>{
  const s={currentAssignments:Array.from({length:100},(_,i)=>job(100+i)),schedules:Array.from({length:100},(_,i)=>plan(100+i,i+1,...window))};
  const rows=commitmentRows(s,...window);assert.equal(rows.length,100);assert.equal(filterCommitments(rows,'overlaps').length,100);assert.equal(filterCommitments(rows,'all','27199').length,1);
 });
-test('popup uses single bounded table and compact non-input preview status; no write route',()=>{
+test('popup uses single bounded table and compact non-input status; setup-specific save controls',()=>{
  const src=readFileSync(new URL('../src/ProjectFieldTeam.jsx',import.meta.url),'utf8');const css=readFileSync(new URL('../src/ProjectFieldTeam.css',import.meta.url),'utf8');
- assert.match(src,/commitmentRows\(snapshot,start,end,jobListId\)/);assert.match(src,/shown\.map\(row=>/);assert.match(src,/<table className="field-team-table">/);assert.match(src,/className="field-team-preview-status"/);assert.match(src,/Changes here are not saved/);assert.doesNotMatch(src,/field-team-commitments|field-team-warning|<h4>Current assignments|Save Assignment|method:\s*['"](?:POST|PATCH|PUT|DELETE)/);
+ assert.match(src,/commitmentRows\(snapshot,start,end,jobListId,setupId\)/);assert.match(src,/shown\.map\(row=>/);assert.match(src,/<table className="field-team-table">/);assert.match(src,/className="field-team-preview-status"/);assert.match(src,/Changes here are not saved/);assert.doesNotMatch(src,/field-team-commitments|field-team-warning|<h4>Current assignments|Save Assignment|method:\s*['"](?:POST|PATCH|PUT|DELETE)/);
  assert.match(css,/\.field-team-table-scroll\{max-height:[^}]+overflow:auto/);assert.match(css,/\.field-team-table thead th\{position:sticky/);
 });
 

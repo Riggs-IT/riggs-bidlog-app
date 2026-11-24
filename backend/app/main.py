@@ -730,7 +730,8 @@ def _workspace_capabilities(
             },
 
         "canViewProjects":
-            profile
+            _normalized_app_role(current_user) == "OPERATIONS"
+            or profile
             in {
                 "ADMIN",
                 "VIEWER",
@@ -2398,6 +2399,8 @@ def active_project_metrics_read_proxy(
     current_user: CurrentUser = Depends(get_current_user),
 ):
     _require_projects_workspace_access(current_user)
+    if job_list_id == 24:
+        raise HTTPException(404, "active_project_not_found")
     try:
         result = get_active_project_metrics(job_list_id, actor_eid=current_user.eid)
         return JSONResponse(result, headers={"Cache-Control": "private, no-store"})
@@ -2410,7 +2413,7 @@ def _validated_project_metrics_patch(raw: object) -> dict:
     required = {
         "operationId", "expectedRevision", "setSquareFootage", "setCubicYards",
     }
-    allowed = required | {"squareFootage", "cubicYards"}
+    allowed = required | {"squareFootage", "cubicYards", "setNumberOfPanels", "numberOfPanels"}
     if not isinstance(raw, dict) or not required.issubset(raw) or not set(raw).issubset(allowed):
         raise HTTPException(422, "project_metrics_invalid_request")
     try:
@@ -2425,7 +2428,12 @@ def _validated_project_metrics_patch(raw: object) -> dict:
     for key in ("setSquareFootage", "setCubicYards"):
         if type(raw[key]) is not bool:
             raise HTTPException(422, "project_metrics_invalid_request")
-    if not (raw["setSquareFootage"] or raw["setCubicYards"]):
+    set_panels = raw.get("setNumberOfPanels", False)
+    if type(set_panels) is not bool or set_panels != ("numberOfPanels" in raw):
+        raise HTTPException(422, "project_metrics_invalid_request")
+    if set_panels and (type(raw["numberOfPanels"]) is not int or not 0 <= raw["numberOfPanels"] <= 2147483647):
+        raise HTTPException(422, "project_metrics_invalid_request")
+    if not (raw["setSquareFootage"] or raw["setCubicYards"] or set_panels):
         raise HTTPException(422, "project_metrics_invalid_request")
     for flag, field in (("setSquareFootage", "squareFootage"), ("setCubicYards", "cubicYards")):
         if raw[flag]:
@@ -2447,7 +2455,10 @@ async def active_project_metrics_save_proxy(
     current_user: CurrentUser = Depends(get_current_user),
 ):
     _require_projects_workspace_access(current_user)
-    _require_project_editor(current_user)
+    if _normalized_app_role(current_user) not in {"ADMIN", "OPERATIONS", "MANAGEMENT_ADMIN"}:
+        raise HTTPException(403, "project_metrics_forbidden")
+    if job_list_id == 24:
+        raise HTTPException(404, "active_project_not_found")
     try:
         raw = await request.json()
     except (TypeError, ValueError) as exc:
@@ -2762,7 +2773,9 @@ async def active_project_update_proxy(
     ),
 ):
     _require_projects_workspace_access(current_user)
-    _require_project_editor(current_user)
+    if _normalized_app_role(current_user) not in {"ADMIN","OPERATIONS","MANAGEMENT_ADMIN"}:
+        raise HTTPException(403,"project_setup_forbidden")
+    if job_list_id==24:raise HTTPException(404,"active_project_not_found")
 
     try:
         payload = await request.json()

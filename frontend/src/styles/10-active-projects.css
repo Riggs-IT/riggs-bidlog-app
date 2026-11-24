@@ -859,7 +859,7 @@
 }
 
 .active-projects-workspace.management-admin-preview::after {
-  content: 'UNDER DEVELOPMENT · VIEW ONLY';
+  content: none;
   position: fixed;
   top: 51%;
   left: 28%;

@@ -2,6 +2,7 @@ import {useEffect,useRef,useState} from 'react';
 import ProjectSetupIdentityPicker from './ProjectSetupIdentityPicker.jsx';
 import {requestSetup} from './projectSetupAuthoring.mjs';
 import {availabilityPath,validateAvailability,projectWindow,validWindow,commitmentRows,filterCommitments,plannerRange,clippedPlan,plannerTicks} from './fieldTeamAvailability.mjs';
+import {supportsSetupStaffing,loadStaffing,saveStaffing,staffingCommand} from './setupStaffing.mjs';
 import './ProjectFieldTeam.css';
 
 const nameOf=role=>role==='SUPER'?'Superintendent':'Foreman';
@@ -16,9 +17,9 @@ function PlanBar({plan,range,overlap=false,proposal=false}){
   return <div className="field-team-track" title={label} aria-label={label}><div className={`field-team-bar ${proposal?'proposal':plan.status==='COMPLETED'?'completed':overlap?'overlap':''}`} style={{left:`${bar.left}%`,width:`${bar.width}%`}}/></div>;
 }
 
-function Timeline({snapshot,start,end,jobListId}){
+function Timeline({snapshot,start,end,jobListId,setupId}){
   const [filter,setFilter]=useState('all'),[query,setQuery]=useState(''),[rangeMode,setRangeMode]=useState('proposal');
-  const rows=commitmentRows(snapshot,start,end,jobListId);
+  const rows=commitmentRows(snapshot,start,end,jobListId,setupId);
   const current=rows.filter(r=>r.current.length).length,overlaps=rows.filter(r=>r.conflicts.length).length,undated=rows.filter(r=>r.needsDates).length;
   const filters=[['all','Projects',rows.length],['current','Current',current],['overlaps','Overlaps',overlaps],['undated','Needs dates',undated]];
   const shown=filterCommitments(rows,filter,query),range=plannerRange(snapshot.schedules,start,end,rangeMode),ticks=plannerTicks(range);
@@ -45,7 +46,7 @@ function Timeline({snapshot,start,end,jobListId}){
             const plans=row.openPlans.length?row.openPlans:row.current.length?[]:row.plans;
             const datePlan=plans[0];
             const roles=[...new Set(row.current.map(c=>c.resourceRole))].map(nameOf);
-            return <tr key={row.jobListId} className={row.conflicts.length?'field-team-conflict-row':''}>
+            return <tr key={row.projectKey} className={row.conflicts.length?'field-team-conflict-row':''}>
               <th scope="row"><strong>{projectLabel(row)}</strong>{row.isCurrentProject&&<small>This project</small>}</th>
               <td><div className="field-team-status-stack">{roles.length>0&&<span title={roles.join(', ')}>Current</span>}{row.openPlans.length>1&&<small>{row.openPlans.length} open plans</small>}{row.openPlans.length===1&&!row.current.length&&<span>{row.openPlans[0].status==='PLANNED'?'Planned':'Confirmed'}</span>}{!row.current.length&&!row.openPlans.length&&<small>Completed plan</small>}{row.conflicts.length>0&&<span className="field-team-attention">Overlap</span>}{row.needsDates&&<span className="field-team-attention">Needs dates</span>}</div></td>
               <td>{datePlan?<><span>{dateLabel(datePlan.effectiveStartDate)}</span><small>to {dateLabel(datePlan.effectiveEndDate)}</small></>:<small>No open plan</small>}
@@ -61,10 +62,14 @@ function Timeline({snapshot,start,end,jobListId}){
   </section>;
 }
 
-function AvailabilityDialog({role,jobListId,projectName,anticipatedStart,duration,projectPlans,close}){
-  const dialog=useRef(null),[eid,setEid]=useState(null),[directory,setDirectory]=useState([]),[snapshot,setSnapshot]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState(null),[retry,setRetry]=useState(0);
-  const initial=projectWindow(anticipatedStart,duration);
-  const [start,setStart]=useState(initial.start),[end,setEnd]=useState(initial.end);
+function AvailabilityDialog({role,jobListId,setupId,projectName,anticipatedStart,duration,projectPlans,staffing,canSave,onSnapshot,close}){
+  const first=staffing?(projectPlans[0]??null):null, initial=projectWindow(anticipatedStart,duration);
+  const dialog=useRef(null),[eid,setEid]=useState(first?.employeeEid??null),[directory,setDirectory]=useState([]),[snapshot,setSnapshot]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState(null),[retry,setRetry]=useState(0);
+  const [planId,setPlanId]=useState(first?.scheduleId??null),[start,setStart]=useState(first?.effectiveStartDate??initial.start),[end,setEnd]=useState(first?.effectiveEndDate??initial.end);
+  const [saving,setSaving]=useState(false),[pending,setPending]=useState(null),[review,setReview]=useState(false),[saveError,setSaveError]=useState(null),[notice,setNotice]=useState(null);
+  const inFlight=useRef(false), editable=canSave&&staffing?.canEdit===true;
+  const locked=saving||pending!==null||review;
+  const plan=projectPlans.find(p=>p.scheduleId===planId)??null;
   useEffect(()=>{const node=dialog.current;node.showModal();return()=>{if(node.open)node.close();};},[]);
   useEffect(()=>{
     const controller=new AbortController();setLoading(true);setError(null);setSnapshot(null);
@@ -75,34 +80,96 @@ function AvailabilityDialog({role,jobListId,projectName,anticipatedStart,duratio
       .finally(()=>{if(!controller.signal.aborted)setLoading(false);});
     return()=>controller.abort();
   },[role,eid,retry]);
-  return <dialog ref={dialog} className="field-team-dialog" aria-modal="true" aria-label={`${nameOf(role)} availability`} onCancel={e=>{e.preventDefault();close();}} onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();if(!e.defaultPrevented){e.preventDefault();close();}}}}>
-    <header className="field-team-dialog-header"><div><span className="section-kicker">FIELD TEAM</span><h2>{nameOf(role)} availability</h2><small>{projectName}</small></div><button type="button" className="secondary-button" onClick={close} aria-label="Close field team planner">Close</button></header>
+  function selectPlan(p){
+    setPlanId(p?.scheduleId??null);setEid(p?.employeeEid??null);setSnapshot(null);setRetry(x=>x+1);
+    setStart(p?.effectiveStartDate??initial.start);setEnd(p?.effectiveEndDate??initial.end);
+    setSaveError(null);setNotice(null);
+  }
+  function chooseEmployee(value){
+    if(value===eid)return;
+    if(editable&&role==='FOREMAN'){
+      const existing=projectPlans.find(p=>p.employeeEid===value);
+      if(existing){selectPlan(existing);return;}
+    }
+    setSnapshot(null);setEid(value);setNotice(null);
+  }
+  function tryClose(){
+    if(inFlight.current)return;
+    if(pending&&!window.confirm('A staffing save could not be confirmed. Close and reload the saved plans next time?'))return;
+    close();
+  }
+  async function submit(body){
+    if(!editable||inFlight.current)return;
+    inFlight.current=true;setSaving(true);setPending(body);setSaveError(null);setNotice(null);
+    try{
+      const result=await saveStaffing(setupId,body);
+      onSnapshot(result.snapshot);
+      const saved=result.snapshot.plans.find(p=>p.scheduleId===result.receipt.scheduleId);
+      selectPlan(saved??null);setPending(null);setReview(false);
+      setNotice(result.snapshot.revision>result.receipt.revision?'Saved. Newer staffing changes have also been loaded.':'Staffing plan saved.');
+    }catch(e){
+      // A known validation/conflict rejection permits a fresh read. Ambiguous
+      // transport/readback outcomes retain the identical command for explicit replay.
+      const rejected=[401,403,404,409,422].includes(e?.status);
+      if(rejected){setPending(null);setReview(true);}
+      setSaveError(e?.status===409?'Staffing changed or this selection conflicts. Reload plans before editing.':rejected?'Staffing change was rejected. Reload and review the selection.':'Save outcome not confirmed. Retry the exact operation to reconcile; do not submit another change.');
+    }finally{inFlight.current=false;setSaving(false);}
+  }
+  function save(remove=false){
+    if(!editable||locked||inFlight.current)return;
+    try{void submit(staffingCommand({snapshot:staffing,resourceRole:role,plan,employeeEid:eid,startDate:start,endDate:end,remove}));}
+    catch{setSaveError('Select an eligible employee and valid dates, or reload the saved plans.');}
+  }
+  async function reloadPlans(){
+    if(inFlight.current||pending)return;
+    inFlight.current=true;setSaving(true);setSaveError(null);
+    try{const fresh=await loadStaffing(setupId);onSnapshot(fresh);selectPlan(fresh.plans.find(p=>p.scheduleId===planId&&p.resourceRole===role)??fresh.plans.find(p=>p.resourceRole===role)??null);setReview(false);}
+    catch{setReview(true);setSaveError('Unable to reload saved staffing plans.');}
+    finally{inFlight.current=false;setSaving(false);}
+  }
+  const selectionReady=Boolean(eid!=null&&directory.some(p=>p.id===eid)&&snapshot?.employeeEid===eid&&!loading&&!error&&validWindow(start,end));
+  const changed=!plan||plan.employeeEid!==eid||plan.effectiveStartDate!==start||plan.effectiveEndDate!==end;
+  return <dialog ref={dialog} className="field-team-dialog" aria-modal="true" aria-label={`${nameOf(role)} availability`} onCancel={e=>{e.preventDefault();tryClose();}} onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();if(!e.defaultPrevented){e.preventDefault();tryClose();}}}}>
+    <header className="field-team-dialog-header"><div><span className="section-kicker">FIELD TEAM</span><h2>{nameOf(role)} availability</h2><small>{projectName}</small></div><button type="button" className="secondary-button" disabled={saving} onClick={tryClose} aria-label="Close field team planner">Close</button></header>
     <div className="field-team-dialog-body">
-      <small className="field-team-preview-status">Availability preview · Changes here are not saved.</small>
-      {projectPlans.length>0&&<div className="field-team-existing"><h4>Plans for this project</h4>{projectPlans.map(r=><div key={r.scheduleId}><strong>{r.employeeName||`EID ${r.employeeEid}`}</strong><small>{dateLabel(r.effectiveStartDate)} → {dateLabel(r.effectiveEndDate)} · {r.status}</small>{r.notes&&<small>{r.notes}</small>}</div>)}</div>}
-      <ProjectSetupIdentityPicker label={`Select ${nameOf(role)}`} value={eid} options={directory} onChange={value=>{if(value!==eid){setSnapshot(null);setEid(value);}}} disabled={!directory.length&&loading}/>
-      <div className="field-team-date-grid"><label className="bid-edit-field"><span>Proposed start</span><input type="date" value={start} onChange={e=>setStart(e.target.value)}/></label><label className="bid-edit-field"><span>Proposed end</span><input type="date" value={end} onChange={e=>setEnd(e.target.value)}/></label></div>
+      <small className="field-team-preview-status">{editable?'Staffing plans · Saved in Operations': 'Availability preview · Changes here are not saved.'}</small>
+      {projectPlans.length>0&&<div className="field-team-existing"><h4>Plans for this project</h4>{projectPlans.map(r=><div key={r.scheduleId}><strong>{r.employeeName||`EID ${r.employeeEid}`}</strong><small>{dateLabel(r.effectiveStartDate)} → {dateLabel(r.effectiveEndDate)} · {r.status}{r.eligible===false?' · No longer eligible':''}</small>{r.notes&&<small>{r.notes}</small>}{editable&&<button type="button" className="secondary-button" disabled={locked} aria-pressed={r.scheduleId===planId} onClick={()=>selectPlan(r)}>Edit plan</button>}</div>)}{editable&&role==='FOREMAN'&&<button type="button" className="secondary-button" disabled={locked} onClick={()=>selectPlan(null)}>Add another Foreman</button>}</div>}
+      <ProjectSetupIdentityPicker label={`Select ${nameOf(role)}`} value={eid} options={directory} onChange={chooseEmployee} disabled={locked||!directory.length&&loading}/>
+      <div className="field-team-date-grid"><label className="bid-edit-field"><span>Proposed start</span><input type="date" disabled={locked} value={start} onChange={e=>setStart(e.target.value)}/></label><label className="bid-edit-field"><span>Proposed end</span><input type="date" disabled={locked} value={end} onChange={e=>setEnd(e.target.value)}/></label></div>
       {!validWindow(start,end)&&<small className="field-team-muted">Enter both dates with end on or after start to preview overlap.</small>}
       {loading&&<p role="status">Loading {eid==null?'field team':'employee availability'}…</p>}
-      {error&&<div role="alert" className="bid-edit-message error">{error} <button type="button" className="secondary-button" onClick={()=>setRetry(x=>x+1)}>Retry</button></div>}
+      {error&&<div role="alert" className="bid-edit-message error">{error} <button type="button" className="secondary-button" disabled={saving} onClick={()=>setRetry(x=>x+1)}>Retry</button></div>}
       {!loading&&!error&&eid==null&&<p className="field-team-muted">{directory.length?'Select an employee to see current assignments and upcoming plans.':'No eligible employees returned.'}</p>}
-      {snapshot?.employeeEid===eid&&eid!=null&&!loading&&!error&&<Timeline key={eid} snapshot={snapshot} start={start} end={end} jobListId={jobListId}/>}
+      {snapshot?.employeeEid===eid&&eid!=null&&!loading&&!error&&<Timeline key={eid} snapshot={snapshot} start={start} end={end} jobListId={jobListId} setupId={setupId}/>}
+      {saveError&&<div role="alert" className="bid-edit-message error">{saveError}</div>}{notice&&<p role="status">{notice}</p>}
     </div>
-    <footer className="field-team-dialog-footer"><small>Operations · SQL staffing and Organizer plans</small><button type="button" className="secondary-button" onClick={close}>Done</button></footer>
+    <footer className="field-team-dialog-footer"><small>Operations · SQL staffing and Organizer plans</small><div className="field-team-save-actions">{editable&&<>{pending?<button type="button" className="bid-log-save-button" disabled={saving} onClick={()=>void submit(pending)}>Resolve Save</button>:review?<button type="button" className="secondary-button" disabled={saving} onClick={()=>void reloadPlans()}>Reload Plans</button>:<>{plan&&<button type="button" className="secondary-button" disabled={locked} onClick={()=>save(true)}>Remove Plan</button>}<button type="button" className="bid-log-save-button" disabled={locked||!selectionReady||!changed} onClick={()=>save()}>{saving?'Saving…':'Save Plan'}</button></>}</>}<button type="button" className="secondary-button" disabled={saving} onClick={tryClose}>Done</button></div></footer>
   </dialog>;
 }
 
-export default function ProjectFieldTeam({jobListId=null,projectName,anticipatedStart,duration,payload,loading=false,error=null,onRetry,canInspect=false,blocked=false}){
-  const [role,setRole]=useState(null);
-  const assignments=Array.isArray(payload?.activeAssignments)?payload.activeAssignments:[], schedules=Array.isArray(payload?.schedules)?payload.schedules:[];
-  useEffect(()=>setRole(null),[jobListId,projectName]);
+export default function ProjectFieldTeam({jobListId=null,setupId=null,projectName,anticipatedStart,duration,payload,loading=false,error=null,onRetry,canInspect=false,canSaveStaffing=false,blocked=false}){
+  const [role,setRole]=useState(null),[staffing,setStaffing]=useState(null),[planLoading,setPlanLoading]=useState(false),[planError,setPlanError]=useState(null),[cycle,setCycle]=useState(0);
+  const pendingProject=jobListId==null&&supportsSetupStaffing(setupId)&&canInspect;
+  const activeStaffing=pendingProject&&staffing?.setupId===setupId?.toLowerCase()?staffing:null;
+  const assignments=Array.isArray(payload?.activeAssignments)?payload.activeAssignments:[], schedules=pendingProject?(activeStaffing?.plans??[]):Array.isArray(payload?.schedules)?payload.schedules:[];
+  useEffect(()=>setRole(null),[jobListId,setupId,projectName]);
+  useEffect(()=>{
+    if(!pendingProject){setStaffing(null);setPlanLoading(false);setPlanError(null);return;}
+    const controller=new AbortController();setStaffing(null);setPlanLoading(true);setPlanError(null);
+    loadStaffing(setupId,{signal:controller.signal}).then(value=>{if(!controller.signal.aborted)setStaffing(value);})
+      .catch(()=>{if(!controller.signal.aborted)setPlanError('Unable to load saved field team plans.');})
+      .finally(()=>{if(!controller.signal.aborted)setPlanLoading(false);});
+    return()=>controller.abort();
+  },[pendingProject,setupId,cycle]);
   return <div className="field-team-summary">
     {jobListId!=null&&loading&&<small role="status">Loading current field team…</small>}
     {jobListId!=null&&error&&<div role="alert" className="bid-edit-message error">Unable to load project staffing. <button type="button" className="secondary-button" onClick={onRetry}>Retry</button></div>}
+    {pendingProject&&planLoading&&<small role="status">Loading field team plans…</small>}
+    {pendingProject&&planError&&<div role="alert" className="bid-edit-message error">{planError} <button type="button" className="secondary-button" onClick={()=>setCycle(x=>x+1)}>Retry</button></div>}
     {['SUPER','FOREMAN'].map(r=>{
       const current=assignments.filter(a=>a.resourceRole===r),plans=schedules.filter(p=>p.resourceRole===r&&p.status!=='CANCELLED');
-      return <div key={r} className="field-team-summary-row"><div><small>{r==='SUPER'?'Superintendent':'Foremen'}</small><strong>{jobListId!=null&&(loading||error)?'Current assignment unavailable':current.length?current.map(a=>a.employeeName||`EID ${a.employeeEid}`).join(', '):'Not assigned'}</strong>{jobListId!=null&&plans.length>0&&<small>{plans.length} Organizer plan(s)</small>}{!canInspect&&!loading&&!error&&plans.map(p=><div key={p.scheduleId} className="field-team-undated"><strong>{p.employeeName||`EID ${p.employeeEid}`}</strong> · {dateLabel(p.effectiveStartDate)} → {dateLabel(p.effectiveEndDate)} · {p.status}{p.notes&&<small>{p.notes}</small>}</div>)}</div>{canInspect&&<button type="button" className="secondary-button" disabled={blocked} onClick={()=>setRole(r)}>{r==='SUPER'?'Select Superintendent':'View Foremen'}</button>}</div>;
+      return <div key={r} className="field-team-summary-row"><div><small>{r==='SUPER'?'Superintendent':'Foremen'}</small><strong>{pendingProject?(planLoading?'Loading…':!activeStaffing?'Plans unavailable':plans.length?plans.map(p=>p.employeeName).join(', '):'Not assigned'):jobListId!=null&&(loading||error)?'Current assignment unavailable':current.length?current.map(a=>a.employeeName||`EID ${a.employeeEid}`).join(', '):'Not assigned'}</strong>{pendingProject&&plans.length>0&&<small>Planned · {plans.length} assignment(s)</small>}{jobListId!=null&&plans.length>0&&<small>{plans.length} Organizer plan(s)</small>}{!canInspect&&!loading&&!error&&plans.map(p=><div key={p.scheduleId} className="field-team-undated"><strong>{p.employeeName||`EID ${p.employeeEid}`}</strong> · {dateLabel(p.effectiveStartDate)} → {dateLabel(p.effectiveEndDate)} · {p.status}{p.notes&&<small>{p.notes}</small>}</div>)}</div>{canInspect&&<button type="button" className="secondary-button" disabled={blocked||pendingProject&&(!activeStaffing||planLoading)} onClick={()=>setRole(r)}>{r==='SUPER'?'Select Superintendent':'View Foremen'}</button>}</div>;
     })}
-    {role&&canInspect&&<AvailabilityDialog key={role} role={role} jobListId={jobListId==null?null:Number(jobListId)} projectName={projectName} anticipatedStart={anticipatedStart} duration={duration} projectPlans={schedules.filter(p=>p.resourceRole===role&&p.status!=='CANCELLED')} close={()=>setRole(null)}/>}
+    {role&&canInspect&&<AvailabilityDialog key={role} role={role} jobListId={jobListId==null?null:Number(jobListId)} setupId={pendingProject?setupId:null} projectName={projectName} anticipatedStart={anticipatedStart} duration={duration} projectPlans={schedules.filter(p=>p.resourceRole===role&&p.status!=='CANCELLED')} staffing={activeStaffing} canSave={pendingProject&&canSaveStaffing&&!blocked} onSnapshot={setStaffing} close={()=>{setRole(null);if(pendingProject)setCycle(x=>x+1);}}/>}
   </div>;
 }

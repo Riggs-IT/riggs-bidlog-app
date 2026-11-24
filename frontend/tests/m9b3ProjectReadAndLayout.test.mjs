@@ -30,7 +30,7 @@ test('numbered field staffing occupies its own full-width section, not paired of
 });
 test('manual reload and existing post-save refresh bypass cache; no browser persistent storage',()=>{
   const drawer=read('ActiveProjectEditDrawer.jsx'),pending=read('UnnumberedProjectEditor.jsx');
-  assert.match(drawer,/quiet: true, fresh: true/);assert.match(drawer,/onClick=\{\(\)=>void loadCognitoDetail\(\{fresh:true\}\)\}/);
+  assert.match(drawer,/quiet: true, fresh: true/);assert.match(drawer,/jis.reload\(\);void loadCognitoDetail\(\{fresh:true\}\)/);
   assert.match(pending,/cycle\?'\?fresh=true'/);assert.doesNotMatch(pending,/localStorage|sessionStorage/);
 });
 

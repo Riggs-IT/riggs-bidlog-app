@@ -1,6 +1,6 @@
 import {notifyWriteAuthFailure} from './writeAuthRecovery.mjs';
 import {awardCompleted} from './projectSetupAuthoring.mjs';
-import {isValidAwardQuantity} from './bidLogAwardQuantity.mjs';
+import {isValidAwardQuantity,isTiltProject,isValidAwardPanelCount} from './bidLogAwardQuantity.mjs';
 import MoneyInput from './MoneyInput.jsx';
 import useGcReference from './useGcReference.js';
 import { gcReference } from './gcReference.js';
@@ -636,6 +636,7 @@ export default function BidLogEditDrawer({
       { key: 'margin', label: 'Margin', missing: margin === null || Number.isNaN(margin) },
       { key: 'squareFootage', label: 'Square Footage (SF)', missing: !isValidAwardQuantity(form?.squareFootage) },
       { key: 'cubicYards', label: 'Cubic Yards (CY)', missing: !isValidAwardQuantity(form?.cubicYards) },
+      { key: 'numberOfPanels', label: 'Number of Panels', missing: isTiltProject(form?.projectType) && !isValidAwardPanelCount(form?.numberOfPanels) },
       {
         key: 'retentionPercent',
         label: 'Retention',
@@ -1923,7 +1924,7 @@ export default function BidLogEditDrawer({
                     <input type="number" min="0" step="1" value={form.numberOfBuildings} disabled={!canEdit} onChange={event => updateField('numberOfBuildings', event.target.value)} />
                   </Field>
 
-                  <Field label="# Panels">
+                  <Field label="# Panels" fieldKey="numberOfPanels" invalid={visibleRequiredFields.includes('numberOfPanels')}>
                     <input type="number" min="0" step="1" value={form.numberOfPanels} disabled={!canEdit} onChange={event => updateField('numberOfPanels', event.target.value)} />
                   </Field>
 

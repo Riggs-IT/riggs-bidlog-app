@@ -44,11 +44,12 @@ test('timeline uses actual range, supports one-day previews and leaves missing d
  assert.ok(g.rows[0].width<100);assert.equal(timelineGeometry([],'2027-01-01','2027-01-01').rows[0].width,100);
  assert.equal(timelineGeometry([],'',''),null);
 });
-test('both editors use project-specific popup, no protected write gate or save route',()=>{
+test('both editors share popup; only the SetupID pilot can save',()=>{
  const numbered=read('ActiveProjectEditDrawer.jsx'),pending=read('UnnumberedProjectEditor.jsx'),popup=read('ProjectFieldTeam.jsx');
  assert.match(numbered,/<ProjectFieldTeam jobListId=\{jobListId\}/);assert.match(numbered,/canInspect=\{canInspectChoices\}/);assert.match(numbered,/<ActiveProjectAdditionalMembers/);
  assert.match(pending,/<ProjectFieldTeam projectName=\{detail.jobName\}/);assert.match(pending,/canInspect=\{inspector\}/);
  assert.doesNotMatch(popup,/awaiting job number/i);assert.match(popup,/Availability preview · Changes here are not saved/);assert.match(popup,/Current assignment unavailable.*Not assigned/);assert.match(popup,/showModal\(\)/);assert.match(popup,/requestSetup\(availabilityPath\(role,eid\),\{signal:controller.signal\}\)/);
+ assert.match(pending,/setupId=\{setupId\} canSaveStaffing=\{author\}/);assert.match(popup,/pendingProject&&canSaveStaffing&&!blocked/);assert.match(popup,/editable=canSave&&staffing\?\.canEdit===true/);
  assert.doesNotMatch(popup,/method:\s*['"](?:POST|PATCH|PUT|DELETE)|\/staffing\/assign|Save Assignment/);
  assert.doesNotMatch(numbered,/writeEnabled=\{Number\(jobListId\) === 24\}/);
 });

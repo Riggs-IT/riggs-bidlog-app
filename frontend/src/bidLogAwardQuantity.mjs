@@ -6,3 +6,14 @@ export function isValidAwardQuantity(value) {
   const number = Number(text.replaceAll(',', ''));
   return Number.isFinite(number) && number >= 0;
 }
+
+export function isTiltProject(value) {
+  return typeof value === 'string' && value.trim().toUpperCase() === 'TILT';
+}
+export function isValidAwardPanelCount(value) {
+  if (value === null || value === undefined || typeof value === 'boolean') return false;
+  const text = String(value).trim();
+  if (!/^\d+$/.test(text)) return false;
+  const number = Number(text);
+  return Number.isSafeInteger(number) && number >= 1 && number <= 2147483647;
+}

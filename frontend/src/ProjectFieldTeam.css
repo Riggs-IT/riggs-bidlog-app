@@ -61,3 +61,6 @@
 .field-team-dialog .project-setup-combobox-clear{margin-right:28px}
 .field-team-dialog .project-setup-combobox-caret{margin-right:11px}
 .field-team-dialog .project-setup-combobox-list{position:static;grid-area:2/1;margin-top:4px;max-height:min(450px,50dvh);overflow-y:auto;box-shadow:none}
+
+.field-team-save-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+.field-team-existing button.secondary-button{justify-self:start}

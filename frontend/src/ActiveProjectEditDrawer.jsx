@@ -5,7 +5,10 @@ import {displayMoneyValue} from './moneyInput.js';
 import {quantityWholeDisplay} from './projectMetricsEditor.mjs';
 import ActiveProjectSection from './ActiveProjectSection.jsx';
 import ProjectSectionsToggle from './ProjectSectionsToggle.jsx';
-import UnnumberedProjectEditor from './UnnumberedProjectEditor.jsx';
+import UnnumberedProjectEditor,{Field as JisField} from './UnnumberedProjectEditor.jsx';
+import useNumberedProjectJis from './useNumberedProjectJis.js';
+import {SUPPLIERS,referenceValue} from './unnumberedProjectEditor.mjs';
+import {projectEditorSectionFields} from './projectEditorLayout.mjs';
 import {isHiddenProject} from './projectVisibility.mjs';
 import {notifyWriteAuthFailure} from './writeAuthRecovery.mjs';
 import useGcReference from './useGcReference.js';
@@ -156,21 +159,23 @@ function NumberedProjectEditDrawer({
   onSaved,
 }) {
   const role = String(user?.appRole || '').toUpperCase();
-  const canEdit = role === 'ADMIN';
-  const managementPreview = role === 'MANAGEMENT_ADMIN';
+  const canEdit = ['ADMIN','OPERATIONS','MANAGEMENT_ADMIN'].includes(role) && Number(jobListId) !== 24 && !projectSummary?.projectCompleted;
+  const canEditMetrics = ['ADMIN','OPERATIONS','MANAGEMENT_ADMIN'].includes(role) && Number(jobListId) !== 24;
+  const managementPreview = false; // management has explicit numbered-project authoring approval
   const canInspectChoices = canEdit || managementPreview;
   const { items: gcOptions, loading: gcOptionsLoading, error: gcOptionsError, refresh: retryGcOptions } = useGcReference(canInspectChoices);
   const { editor, state, dirty: hasUnsavedChanges, needsReview } = useActiveProjectEditor(jobListId, canEdit);
-  const {editor: metricsEditor, state: metricsState, dirty: metricsDirty} = useActiveProjectMetrics(jobListId, canEdit);
+  const {editor: metricsEditor, state: metricsState, dirty: metricsDirty} = useActiveProjectMetrics(jobListId, canEditMetrics);
   const [combinedSaving, setCombinedSaving] = useState(false);
   const combinedSavingRef = useRef(false);
+  const jis=useNumberedProjectJis(jobListId,canEdit,()=>onSaved?.());
   const payload = state.project.snapshot;
   const form = state.project.draft;
   const loading = state.project.loading && !payload;
   const loadError = !payload ? state.project.error : null;
-  const saving = state.saving || metricsState.saving || combinedSaving;
-  const anyDirty = hasUnsavedChanges || metricsDirty;
-  const anyNeedsReview = needsReview || metricsState.unresolved || metricsState.conflict;
+  const saving = state.saving || metricsState.saving || combinedSaving || jis.busy;
+  const anyDirty = hasUnsavedChanges || metricsDirty || jis.dirty;
+  const anyNeedsReview = needsReview || metricsState.unresolved || metricsState.conflict || jis.review;
   const [cognitoPayload, setCognitoPayload] = useState(null);
   const [cognitoLoading, setCognitoLoading] = useState(true);
   const [cognitoError, setCognitoError] = useState(null);
@@ -327,11 +332,16 @@ function NumberedProjectEditDrawer({
   }, [state.refreshKey, state.saving, loadCognitoDetail]);
 
 
+  const jisFields=new Map((jis.detail?.fields||[]).map(field=>[field.key,field]));
+  function jf(key,fallback=null,compact=false){
+    const field=jisFields.get(key);
+    return field?<JisField key={key} field={field} compact={compact} value={Object.hasOwn(jis.values,key)?jis.values[key]:referenceValue(field)} onChange={v=>jis.change(field,v)} disabled={!jis.canEdit||saving}/>:fallback;
+  }
   function updateField(name, value) { editor.edit('project', name, value); }
   const loadDetail = () => editor.load('project');
 
   async function saveChanges() {
-    if (combinedSavingRef.current || state.saving || metricsState.saving || anyNeedsReview || !canEdit) return;
+    if (combinedSavingRef.current || state.saving || metricsState.saving || anyNeedsReview || (!canEdit && !canEditMetrics)) return;
     combinedSavingRef.current = true;
     setCombinedSaving(true);
     try {
@@ -342,7 +352,9 @@ function NumberedProjectEditDrawer({
         if (!saved) return;
         Promise.resolve().then(() => onSavedRef.current?.()).catch(() => {});
       }
-      if (hasUnsavedChanges) await editor.save();
+      // Direct JIS details first; SQL core update workers may then project a new version.
+      if (jis.dirty && !await jis.save()) return;
+      if (hasUnsavedChanges && canEdit) {await editor.save();jis.reload();}
     } finally {
       combinedSavingRef.current = false;
       setCombinedSaving(false);
@@ -360,6 +372,7 @@ function NumberedProjectEditDrawer({
     if (!window.confirm('Discard all unsaved edits? Changes that already saved will stay saved.')) return;
     editor.discard();
     metricsEditor.discard();
+    jis.discard();
   }
 
   function reloadMetrics() {
@@ -402,7 +415,7 @@ function NumberedProjectEditDrawer({
       eyebrow={
         job.projectCompleted || projectSummary?.projectCompleted
           ? (canEdit ? 'COMPLETED PROJECT · EDIT PROJECT' : 'COMPLETED PROJECT · VIEW PROJECT')
-          : (canEdit ? 'ACTIVE PROJECT' : 'ACTIVE PROJECT · VIEW ONLY')
+          : (canEdit ? 'ACTIVE PROJECT' : (canEditMetrics ? 'ACTIVE PROJECT · METRICS' : 'ACTIVE PROJECT · VIEW ONLY'))
       }
       title={job.jobName || projectSummary?.jobName || 'Loading project…'}
       subtitle={job.jobNumber ? `Job #${job.jobNumber}` : 'Job number unavailable'}
@@ -413,10 +426,10 @@ function NumberedProjectEditDrawer({
       bodyClassName="bid-log-edit-body project-setup-body"
       scrollSurface
       headerActions={!loading && !loadError && payload && form ? (
-        <div className="active-project-header-controls"><button type="button" className="secondary-button project-sections-toggle" disabled={saving || cognitoLoading || referenceRefreshing} onClick={()=>void loadCognitoDetail({fresh:true})}>Reload details</button><ProjectSectionsToggle rootRef={sectionsRef} disabled={saving || cognitoLoading}/></div>
+        <div className="active-project-header-controls"><button type="button" className="secondary-button project-sections-toggle" disabled={saving || cognitoLoading || referenceRefreshing} onClick={()=>{if((jis.dirty||jis.review)&&!window.confirm('Reload project information and discard local changes?'))return;jis.reload();void loadCognitoDetail({fresh:true});}}>Reload details</button><ProjectSectionsToggle rootRef={sectionsRef} disabled={saving || cognitoLoading}/></div>
       ) : null}
       footer={
-        canEdit && !loading && !loadError && payload && form ? (
+        (canEdit || canEditMetrics) && !loading && !loadError && payload && form ? (
           <footer ref={footerRef} className="bid-log-edit-footer floating-editor-footer">
             <div className="floating-editor-footer-status">
               <small>
@@ -436,7 +449,7 @@ function NumberedProjectEditDrawer({
                 Discard Changes
               </button>
               <button type="button" className="bid-log-save-button" onClick={saveChanges}
-                disabled={!canEdit || saving || anyNeedsReview || !anyDirty || state.project.loading || state.general.loading || (metricsDirty && !metricsState.snapshot)}>
+                disabled={(!canEdit && !canEditMetrics) || saving || anyNeedsReview || !anyDirty || state.project.loading || state.general.loading || (metricsDirty && !metricsState.snapshot)}>
                 {saving ? 'Saving…' : 'Save Changes'}
               </button>
             </div>
@@ -467,18 +480,21 @@ function NumberedProjectEditDrawer({
             <>
               {managementPreview ? (
                 <div className="management-preview-notice management-preview-drawer-notice" role="note">
-                  <strong>VIEW ONLY</strong>
-                  <span>Use Cognito’s Job Information Sheet to make changes.</span>
+                  <strong>{canEditMetrics ? 'PROJECT REVIEW' : 'VIEW ONLY'}</strong>
+                  <span>Project Metrics can be edited when available. Other project fields remain view only.</span>
                 </div>
               ) : !canEdit ? (
                 <div className="bid-edit-message">
-                  View only.
+                  {canEditMetrics ? 'Project Metrics editable; other fields are view only.' : 'View only.'}
                 </div>
               ) : null}
 
               <ActionToast message={metricsState.notice || state.notice?.message} type={metricsState.notice ? 'success' : (state.notice?.type || 'success')} style={{ bottom: toastBottom }}
                 onDismiss={() => {editor.dismissNotice(); metricsEditor.dismissNotice();}} />
               <ActiveProjectSaveReview state={state} editor={editor} />
+              {jis.error&&<div className="bid-edit-message error" role="alert">{jis.error} <button type="button" className="secondary-button" disabled={saving} onClick={()=>{if(!jis.dirty||window.confirm('Discard local project information changes?'))jis.reload();}}>Reload information</button></div>}
+              {jis.loading&&<small role="status">Loading editable project information…</small>}
+              {jis.detail?.holdReason==='SYNC_PENDING'&&<small role="status">Project sync in progress. Reload details when it finishes to edit supplemental fields.</small>}
 
               <div ref={sectionsRef} key={jobListId} className="active-project-section-flow">
               <div className="active-project-layout-pair">
@@ -492,7 +508,7 @@ function NumberedProjectEditDrawer({
                     <Field label="Purpose"><select value={form.purpose}
                       disabled={!canEdit || saving} onChange={event=>updateField('purpose',event.target.value)}>
                       <option value="">Select…</option>{[...new Set([...purposes,form.purpose].filter(Boolean))].map(value=><option key={value} value={value}>{value}</option>)}</select></Field>
-                    <ProjectContractType value={cognitoPayload?.contract}/>
+                    {jf("contractFlag",<ProjectContractType value={cognitoPayload?.contract}/>)}
                   </div>
 
                 </ActiveProjectSection>
@@ -504,26 +520,31 @@ function NumberedProjectEditDrawer({
                       disabled={!canEdit || saving} onChange={event=>updateField('cityStateZip',event.target.value)}/></Field>
                     <Field label="Anticipated Start"><input type="date" value={form.anticipatedStartDate}
                       disabled={!canEdit || saving} onChange={event=>updateField('anticipatedStartDate',event.target.value)}/></Field>
-                    <ReadField label="Estimated duration (months)" value={cognitoPayload?.riggsStartup?.estimatedDuration}/>
+                    {jf("estimatedDurationMonths",<ReadField label="Estimated duration (months)" value={cognitoPayload?.riggsStartup?.estimatedDuration}/>)}
                   </div>
                 </ActiveProjectSection>
               </div>
 
               <ActiveProjectSection sectionId="metrics" kicker="METRICS" title="Project Metrics" className="bid-edit-section" initiallyOpen>
-                <div className="bid-edit-grid two-column">
+                <div className={`bid-edit-grid ${metricsState.snapshot?.panelApplicable === true ? 'three-column' : 'two-column'}`}>
                     {metricsState.disabled && <>
                       <ReadField label="Square Footage (SF)" value={displayMoneyValue(quantityWholeDisplay(projectSummary?.squareFootage),false,0)} hint="Reference"/>
                       <ReadField label="Cubic Yards (CY)" value={displayMoneyValue(quantityWholeDisplay(projectSummary?.cubicYards),false,0)} hint="Reference"/>
                     </>}
                     {!metricsState.disabled && <Field label="Square Footage (SF)">
                       <MoneyInput maxFractionDigits={0} value={metricsState.draft?.squareFootage ?? quantityWholeDisplay(projectSummary?.squareFootage)}
-                        disabled={!canEdit || saving || !metricsState.snapshot?.canEdit || metricsState.unresolved || metricsState.conflict}
+                        disabled={!canEditMetrics || saving || !metricsState.snapshot?.canEdit || metricsState.unresolved || metricsState.conflict}
                         onValueChange={value=>metricsEditor.edit('squareFootage',value)} />
                     </Field>}
                     {!metricsState.disabled && <Field label="Cubic Yards (CY)">
                       <MoneyInput maxFractionDigits={0} value={metricsState.draft?.cubicYards ?? quantityWholeDisplay(projectSummary?.cubicYards)}
-                        disabled={!canEdit || saving || !metricsState.snapshot?.canEdit || metricsState.unresolved || metricsState.conflict}
+                        disabled={!canEditMetrics || saving || !metricsState.snapshot?.canEdit || metricsState.unresolved || metricsState.conflict}
                         onValueChange={value=>metricsEditor.edit('cubicYards',value)} />
+                    </Field>}
+                    {metricsState.snapshot?.panelApplicable === true && <Field label="Number of Panels">
+                      <MoneyInput maxFractionDigits={0} value={metricsState.draft?.numberOfPanels ?? ''}
+                        disabled={!canEditMetrics || saving || !metricsState.snapshot?.canEdit || metricsState.unresolved || metricsState.conflict}
+                        onValueChange={value=>metricsEditor.edit('numberOfPanels',value)} />
                     </Field>}
                     {metricsState.error && <div className="bid-edit-message error" role="alert">
                       <span>{metricsState.error}</span>
@@ -538,9 +559,9 @@ function NumberedProjectEditDrawer({
                       <Field label="Retention"><span className="project-value-affix suffix">{!String(form.retention??'').trim().endsWith('%')&&<span aria-hidden="true">%</span>}<input type="text" value={form.retention}
                         disabled={!canEdit || saving} onChange={event=>updateField('retention',event.target.value)}/></span></Field>
                       <ReadField label="Foundation contract amount" value={job.contractAmount==null?null:money(job.contractAmount)} />
-                      <ReadField label="JIS contract amount (not Foundation total)" value={cognitoPayload?.contractsAndAdministration?.contractAmount==null?null:money(cognitoPayload.contractsAndAdministration.contractAmount)}/>
-                      <ReadField label="Bond" value={cognitoPayload?.contractsAndAdministration?.bond}/>
-                      <ReadField label="Parcel" value={cognitoPayload?.contractsAndAdministration?.parcel}/>
+                      {jf("operationalContractAmount",<ReadField label="JIS contract amount (not Foundation total)" value={cognitoPayload?.contractsAndAdministration?.contractAmount==null?null:money(cognitoPayload.contractsAndAdministration.contractAmount)}/>)}
+                      {jf("bond",<ReadField label="Bond" value={cognitoPayload?.contractsAndAdministration?.bond}/>)}
+                      {jf("parcel",<ReadField label="Parcel" value={cognitoPayload?.contractsAndAdministration?.parcel}/>)}
                       <ReadField label="OH&P" value={cognitoPayload?.contractsAndAdministration?.ohp}/>
                       <ReadField label="Lender" value={cognitoPayload?.lenderInformation?.lender}/>
                       <ReadField label="Lender street" value={cognitoPayload?.lenderInformation?.lenderStreet}/>
@@ -549,18 +570,15 @@ function NumberedProjectEditDrawer({
                   </ActiveProjectSection>
 
                 <ActiveProjectSection sectionId="buildings" kicker="BUILDINGS" title="Buildings" initiallyOpen>
-                  <ProjectBuildingRows rows={cognitoPayload?.generalInformation?.buildingNames}/>
+                  {jf("buildingNames",<ProjectBuildingRows rows={cognitoPayload?.generalInformation?.buildingNames}/>)}
                 </ActiveProjectSection>
               </div>
 
               <ActiveProjectSection sectionId="parties" kicker="PARTIES" title="Owner / Developer & General Contractor" className="bid-edit-section active-project-parties-section" initiallyOpen>
                 <div className="active-project-parties-grid">
                   <div className="active-project-party-block"><h4>Owner / Developer</h4>
-                    <div className="active-project-readonly-grid">
-                      <div className="active-project-readonly-field"><span>Name</span><strong>{cognitoPayload?.owner?.ownerName||'—'}</strong></div>
-                      <div className="active-project-readonly-field"><span>Email</span><strong>{cognitoPayload?.owner?.ownerEmail||'—'}</strong></div>
-                      <div className="active-project-readonly-field"><span>Street Address</span><strong>{cognitoPayload?.owner?.ownerStreetAddress||'—'}</strong></div>
-                      <div className="active-project-readonly-field"><span>City / State / ZIP</span><strong>{cognitoPayload?.owner?.ownerCityStateZip||'—'}</strong></div>
+                    <div className="bid-edit-grid two-column">
+                      {['ownerName','ownerEmail','ownerStreetAddress','ownerCityStateZip'].map(key=>jf(key,<ReadField key={key} label={key} value={cognitoPayload?.owner?.[key]}/>))}
                     </div>
 
                   </div>
@@ -582,7 +600,9 @@ function NumberedProjectEditDrawer({
               </ActiveProjectSection>
 
               <ActiveProjectSection sectionId="design" kicker="DESIGN" title="Design Team" className="bid-edit-section active-project-design-section" initiallyOpen>
-                <ActiveProjectDesignTeam
+                {jis.detail?<div className="bid-edit-grid two-column">
+                  {['architectLookupId','structuralEngineerLookupId','architectEmail','structuralEngineerEmail','architectAddress','structuralEngineerAddress'].map(key=>jf(key))}
+                </div>:<ActiveProjectDesignTeam
                   key={jobListId}
                   architect={{id:cognitoPayload?.architectOfRecord?.aorName?.id,
                     label:cognitoPayload?.architectOfRecord?.aorName?.label,
@@ -596,20 +616,21 @@ function NumberedProjectEditDrawer({
                   directoryLoading={designDirectoryLoading}
                   directoryError={designDirectoryError}
                   onRetry={() => setDesignDirectoryRetry(value => value + 1)}
-                  editable={canInspectChoices && !saving}/>
+                  editable={false}/>}
               </ActiveProjectSection>
 
               <div className="active-project-layout-pair active-project-teams-pair">
                 <ActiveProjectSection sectionId="riggs" kicker="TEAM" title="Riggs Team" className="bid-edit-section" initiallyOpen>
                   <ActiveProjectOfficeTeam values={form} people={people} onChange={updateField}
                     disabled={!canEdit || saving}/>
-                  <ReadField label="Surveyor" value={cognitoPayload?.riggsStartup?.surveyor?.label}/>
+                  {jf("surveyorITUserId",<ReadField label="Surveyor" value={cognitoPayload?.riggsStartup?.surveyor?.label}/>)}
                 </ActiveProjectSection>
                 <ActiveProjectSection sectionId="gc" kicker="TEAM" title="GC Team" className="bid-edit-section" initiallyOpen>
                   <ActiveProjectGcTeam pmName={form.gcpm}
                     superName={cognitoPayload?.gcSuperintendent?.gcSuperName||''}
                     pmReference={cognitoPayload?.gcProjectManagement||null}
                     onChange={updateField} disabled={!canEdit || saving}/>
+                  {jis.detail&&<div className="bid-edit-grid two-column">{['gcPmOffice','gcPmMobile','gcPmEmail','gcSuperName','gcSuperMobile','gcSuperEmail'].map(key=>jf(key))}</div>}
                 </ActiveProjectSection>
               </div>
 
@@ -620,12 +641,12 @@ function NumberedProjectEditDrawer({
                   canInspect={canInspectChoices} blocked={saving}/>
               </ActiveProjectSection>
               <ActiveProjectSection sectionId="additionalMembers" kicker="TEAM" title="Additional Members">
-                <ActiveProjectAdditionalMembers jobListId={jobListId} canEdit={canEdit} blocked={saving}
+                <ActiveProjectAdditionalMembers jobListId={jobListId} canEdit={role==='ADMIN'&&canEdit} blocked={saving}
                   onDirtyChange={setAdditionalDirty} onSaved={()=>onSavedRef.current?.()}/>
               </ActiveProjectSection>
 
               <ActiveProjectSection sectionId="scope" kicker="SCOPE" title="Scope & Notes" className="bid-edit-section active-project-scope-section" initiallyOpen>
-                <div className="active-project-scope-grid">
+                {jis.detail?<div className="active-project-scope-grid"><div className="active-project-scope-column">{jf("scope")}{jf("leed")}{jf("ndaRequired")}</div><div className="active-project-scope-column">{jf("comments")}</div></div>:<div className="active-project-scope-grid">
                   <div className="active-project-scope-column"><h4>Scope & requirements</h4>
                     <div className="active-project-readonly-field"><span>Scope</span>
                       <strong>{cognitoPayload?.generalInformation?.scope||'—'}</strong></div>
@@ -638,18 +659,20 @@ function NumberedProjectEditDrawer({
                     <div className="active-project-readonly-field"><span>Project notes</span>
                       <strong>{cognitoPayload?.riggsStartup?.comments||'—'}</strong></div>
                   </div>
-                </div>
+                </div>}
               </ActiveProjectSection>
 
-              {Number(jobListId) === 24 && <ActiveProjectGeneralEditor
-                section={state.general} canEdit={canEdit} blocked={saving}
-                onEdit={(field, value) => editor.edit('general', field, value)}
-                onRetry={() => editor.load('general')} />}
+
               <div className="active-project-jis-reference">
                 {referenceRefreshing && <p className="project-reference-refresh-note" role="status">Refreshing details…</p>}
-                <ActiveProjectCognitoSections compact payload={cognitoPayload}
+                {jis.detail?<>
+                  <ActiveProjectSection sectionId="suppliers" kicker="MATERIALS" title="Authorized Suppliers & Contracts" className="bid-edit-section">
+                    <div className="m9b-supplier-grid"><div className="m9b-supplier-header"><strong>Category</strong><strong>Supplier</strong><strong>Amount</strong><strong>Contracts</strong></div>{SUPPLIERS.map(([key,label])=><div key={key} className="m9b-supplier-row"><strong>{label}</strong>{['Supplier','Amount','Files'].map(s=>jf(key+s,null,true))}</div>)}</div>
+                  </ActiveProjectSection>
+                  {['concrete','detailing','closeout','services'].map((id)=><ActiveProjectSection key={id} sectionId={id} kicker="PROJECT" title={{concrete:'Concrete & Mix Designs',detailing:'Detailing & Submittals',closeout:'Closeout',services:'Project Information'}[id]} className="bid-edit-section"><div className="bid-edit-grid two-column">{projectEditorSectionFields(jis.detail.fields,id).map(f=>jf(f.key))}</div></ActiveProjectSection>)}
+                </>:<ActiveProjectCognitoSections compact payload={cognitoPayload}
                   loading={cognitoLoading} error={cognitoError}
-                  onRetry={() => loadCognitoDetail({fresh:true})} jobListId={jobListId}/>
+                  onRetry={() => loadCognitoDetail({fresh:true})} jobListId={jobListId}/>}
                 {job.entryLink && <a className="active-project-source-link" href={job.entryLink}
                   target="_blank" rel="noreferrer">Open original Cognito entry ↗</a>}
               </div>

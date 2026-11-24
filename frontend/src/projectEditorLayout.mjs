@@ -46,3 +46,9 @@ export function projectFieldAffix(field) {
       (field.section === 'suppliers' && field.kind === 'number' && field.key.endsWith('Amount'))) return '$';
   return null;
 }
+
+// Read-only reference values are not new workflow actions or proof of delivery.
+export function recordedProjectValue(value, kind) {
+  if (kind === 'boolean') return value === true ? 'Yes' : value === false ? 'No' : 'Not recorded';
+  return typeof value === 'string' && value.trim() ? value : 'Not recorded';
+}

@@ -75,3 +75,58 @@ def field_team_availability(role: Literal['SUPER', 'FOREMAN'], user: CurrentUser
                             employeeEid: int | None = Query(default=None, gt=0, le=2147483647)):
     return _respond(lambda: data_api.request_field_team_availability(actor_eid=user.eid, role=role,
                                                                     employee_eid=employeeEid))
+
+
+from .setup_staffing_contract import StaffingSaveRequest
+
+@router.get('/{setup_id}/field-team/plans')
+def get_setup_staffing(setup_id: UUID, user: CurrentUser = Depends(_reader)):
+    return _respond(lambda: data_api.request_setup_staffing(actor_eid=user.eid, setup_id=setup_id))
+
+@router.patch('/{setup_id}/field-team/plans', dependencies=[Depends(_same_origin_json)])
+def save_setup_staffing(setup_id: UUID, body: StaffingSaveRequest, user: CurrentUser = Depends(_admin)):
+    return _respond(lambda: data_api.request_setup_staffing(actor_eid=user.eid, setup_id=setup_id,
+                     body=body.model_dump(mode='json', exclude_none=True)))
+
+
+# Reuse the same BFF request validation, service auth and session actor binding.
+from fastapi.responses import JSONResponse
+from .project_additional_members import ReplaceMembers as AdditionalMembersRequest, _bridge as _roster_bridge
+
+
+class SetupAdditionalMembersRequest(AdditionalMembersRequest):
+    expectedRevision: Annotated[StrictInt, Field(ge=0, le=9007199254740990)]
+
+
+@router.get('/{setup_id}/additional-members')
+def get_setup_additional_members(setup_id: UUID, user: CurrentUser = Depends(_reader)):
+    return JSONResponse(_roster_bridge('GET', None, user.eid, setup_id=setup_id),
+                        headers={'Cache-Control': 'private, no-store'})
+
+
+@router.put('/{setup_id}/additional-members', dependencies=[Depends(_same_origin_json)])
+def save_setup_additional_members(setup_id: UUID, body: SetupAdditionalMembersRequest, user: CurrentUser = Depends(_admin)):
+    return JSONResponse(_roster_bridge('PUT', None, user.eid, body.model_dump(mode='json'), setup_id=setup_id),
+                        headers={'Cache-Control': 'private, no-store'})
+
+from fastapi import HTTPException
+from .auth import get_current_user
+from .project_setup_reviewers import _require_authenticated_actor
+
+def numbered_reader(user: CurrentUser=Depends(get_current_user)):
+    _require_authenticated_actor(user)
+    if str(user.app_role or '').strip().upper() not in {'ADMIN','OPERATIONS','MANAGEMENT_ADMIN','VIEWER'}:raise HTTPException(403,'project_setup_forbidden')
+    return user
+
+def numbered_writer(user: CurrentUser=Depends(get_current_user)):
+    numbered_reader(user)
+    if str(user.app_role or '').strip().upper()=='VIEWER':raise HTTPException(403,'project_setup_forbidden')
+    return user
+
+@router.get('/numbered/{job_id}')
+def get_numbered_jis(job_id: int,user: CurrentUser=Depends(numbered_reader),fresh: bool=False):
+    return _respond(lambda:data_api.request_numbered_project_editor(actor_eid=user.eid,job_id=job_id,fresh=fresh))
+
+@router.patch('/numbered/{job_id}',dependencies=[Depends(_same_origin_json)])
+def save_numbered_jis(job_id: int,body: SaveRequest,user: CurrentUser=Depends(numbered_writer)):
+    return _respond(lambda:data_api.request_numbered_project_editor(actor_eid=user.eid,job_id=job_id,body=body.model_dump(mode='json')))

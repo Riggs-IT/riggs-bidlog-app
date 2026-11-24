@@ -1,6 +1,7 @@
 import ProjectSubmittals from './ProjectSubmittals.jsx';
 import ProjectBuildingRows from './ProjectBuildingRows.jsx';
 import ActiveProjectSection from './ActiveProjectSection.jsx';
+import {recordedProjectValue} from './projectEditorLayout.mjs';
 
 function textValue(value) {
   if (value === null || value === undefined || value === '') {
@@ -300,20 +301,23 @@ export default function ActiveProjectCognitoSections({
           className="bid-edit-section information-sheet-section active-project-compact-reference"
           kicker="CLOSEOUT" title="Closeout">
         <div className="bid-edit-grid three-column information-sheet-grid">
-          <ReadField label="Date project completed" value={startup.dateProjectCompleted} />
-          <BooleanField label="Project completed" value={startup.projectCompleted} />
-          <BooleanField label="Warranty work" value={startup.warrantyWork} />
-          <BooleanField label="Retention collected" value={startup.retentionCollected} />
           <ReadField label="Closeout additional name 1" value={closeout.additionalName1} />
           <ReadField label="Closeout additional email 1" value={closeout.additionalEmail1} />
           <ReadField label="Closeout additional name 2" value={closeout.additionalName2} />
           <ReadField label="Closeout additional email 2" value={closeout.additionalEmail2} />
         </div>
+        <div className="information-sheet-subheading">Recorded closeout status · read-only</div>
+        <div className="project-information-grid">
+          {[["Date project completed",startup.dateProjectCompleted,"date"],
+            ["Project completed",startup.projectCompleted,"boolean"],
+            ["Warranty work",startup.warrantyWork,"boolean"],
+            ["Retention collected",startup.retentionCollected,"boolean"]].map(([label,value,kind])=><div className="project-information-item" key={label}><span>{label}</span><strong>{recordedProjectValue(value,kind)}</strong></div>)}
+        </div>
       </ActiveProjectSection>
       <ActiveProjectSection sectionId="services" kicker="INFORMATION" title="Project Information">
         <div className="project-information-grid">
-          {[["Project email",startup.teamDistributionList],
-            ["Dropbox folder",startup.dropboxFolderName],["Folder created",startup.folderCreated===true?'Yes':startup.folderCreated===false?'No':null]].map(([label,value])=><div className="project-information-item" key={label}><span>{label}</span><strong>{value??'—'}</strong></div>)}
+          {[["Project email",startup.teamDistributionList,"email"],
+            ["Dropbox folder name",startup.dropboxFolderName,"text"],["Folder created (recorded)",startup.folderCreated,"boolean"]].map(([label,value,kind])=><div className="project-information-item" key={label}><span>{label}</span><strong>{recordedProjectValue(value,kind)}</strong></div>)}
         </div>
       </ActiveProjectSection>
     </div>

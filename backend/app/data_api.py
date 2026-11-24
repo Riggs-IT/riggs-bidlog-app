@@ -1938,7 +1938,7 @@ def update_active_project(
 
     try:
         response = _get_http_client().put(
-            f"/v1/jobs/{job_list_id}",
+            f"/v1/project-setups/jis/numbered/{job_list_id}/core",
             json=payload,
             headers=_request_headers(
                 include_service_auth=True,
@@ -4457,4 +4457,61 @@ def request_field_team_availability(*, actor_eid: int, role: str, employee_eid: 
             or not all(isinstance(result.get(k),list) for k in ('employees','currentAssignments','schedules'))
             or employee_eid is None and (result['currentAssignments'] or result['schedules'])):
         raise DataAPIInvalidResponse('Invalid field team identity.')
+    return result
+
+
+
+def request_setup_staffing(*, actor_eid: int, setup_id: UUID, body: dict | None = None) -> dict:
+    """SQL-only planning; preserve operation ID and never auto-retry a mutation."""
+    if type(actor_eid) is not int or not 0 < actor_eid <= 2147483647 or not setup_id.int:
+        raise DataAPIRequestRejected(422, 'field_team_invalid_request')
+    try:
+        response = _get_http_client().request('PATCH' if body is not None else 'GET',
+            f'/v1/project-setups/jis/{setup_id}/field-team/plans', json=body,
+            headers=_request_headers(include_service_auth=True, actor_eid=actor_eid))
+    except (httpx.TimeoutException, httpx.RequestError):
+        raise DataAPIUnavailable('Staffing outcome unavailable; resolve the exact operation.') from None
+    if response.status_code != 200:
+        code = _detail(response)
+        allowed = {403: {'field_team_forbidden'}, 404: {'field_team_plan_not_found'},
+            409: {'field_team_revision_conflict','field_team_operation_conflict'},
+            422: {'field_team_invalid_request'}, 503: {'field_team_unavailable','field_team_busy'}}
+        if code in allowed.get(response.status_code,set()) | _SETUP_ERRORS.get(response.status_code,set()):
+            raise DataAPIRequestRejected(response.status_code, code)
+        _raise_common_failure(response, operation='Setup staffing')
+        raise DataAPIInvalidResponse('Invalid staffing response.')
+    result = _json_object(response, operation='Setup staffing')
+    if (result.get('setupId') != str(setup_id) or type(result.get('revision')) is not int
+            or not 0 <= result['revision'] <= 9007199254740991):
+        raise DataAPIInvalidResponse('Invalid staffing identity.')
+    if body is None:
+        if type(result.get('canEdit')) is not bool or not isinstance(result.get('plans'),list):
+            raise DataAPIInvalidResponse('Invalid staffing plans.')
+        if actor_eid != 2021 and result['canEdit']:
+            raise DataAPIInvalidResponse('Invalid staffing permission.')
+    elif (result.get('operationId') != body['operationId'] or result['revision'] != body['expectedRevision'] + 1
+          or type(result.get('replayed')) is not bool or type(result.get('scheduleId')) is not int
+          or not 0 < result['scheduleId'] <= 9007199254740991
+          or body.get('scheduleId') is not None and result['scheduleId'] != body['scheduleId']):
+        raise DataAPIInvalidResponse('Invalid staffing operation receipt.')
+    return result
+
+
+def request_numbered_project_editor(*,actor_eid:int,job_id:int,body:dict|None=None,fresh:bool=False):
+    if type(job_id) is not int or job_id<=0 or job_id==24 or type(actor_eid) is not int or actor_eid<=0:
+        raise DataAPIRequestRejected(404,'project_setup_not_found')
+    try:
+        response=_get_http_client().request('PATCH' if body is not None else 'GET',f'/v1/project-setups/jis/numbered/{job_id}',json=body,
+            **({'params':{'fresh':'true'}} if fresh and body is None else {}),headers=_request_headers(include_service_auth=True,actor_eid=actor_eid))
+    except (httpx.TimeoutException,httpx.RequestError):raise DataAPIUnavailable('Project editor request unavailable; never replay an uncertain write.') from None
+    if response.status_code!=200:
+        code=_detail(response)
+        if code in _SETUP_ERRORS.get(response.status_code,set()):raise DataAPIRequestRejected(response.status_code,code)
+        if response.status_code==422:raise DataAPIRequestRejected(422,'project_setup_invalid_request')
+        _raise_common_failure(response,operation='Numbered project editor')
+        raise DataAPIInvalidResponse('Invalid project editor response.')
+    result=_json_object(response,operation='Numbered project editor')
+    detail=result.get('detail') if body is not None else result
+    if not isinstance(detail,dict) or detail.get('externalState')!='NUMBERED' or detail.get('jobListId')!=job_id or detail.get('setupId') is not None or detail.get('cognitoEntryId') in (966,1199) or not detail.get('jobNumber') or (body is not None and result.get('result') not in ('NO_CHANGE','VERIFIED')):
+        raise DataAPIInvalidResponse('Invalid numbered project editor identity.')
     return result

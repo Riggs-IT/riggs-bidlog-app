@@ -33,6 +33,13 @@ export function validateJisDetail(body,setupId){
     !positive(body.originalBidLogId)||!positive(body.revision)||!positive(body.entryVersion)||!positive(body.cognitoEntryId)||body.cognitoEntryId===966||
     body.jobListId!==null||body.jobNumber!==null||typeof body.jobName!=='string'||typeof body.writeEnabled!=='boolean'||
     !Array.isArray(body.fields)||body.fields.length!==95||(body.cognitoEntryId===1199&&body.writeEnabled&&body.baselineAccepted!==true))throw Error('Invalid unnumbered project identity');
+  return validateFields(body);
+}
+export function validateNumberedJisDetail(body,jobListId){
+  if(!record(body)||body.externalState!=='NUMBERED'||body.setupId!==null||body.jobListId!==Number(jobListId)||Number(jobListId)===24||body.jobNumber==='11111'||typeof body.jobNumber!=='string'||!body.jobNumber.trim()||body.revision!==1||!positive(body.entryVersion)||!positive(body.cognitoEntryId)||[966,1199].includes(body.cognitoEntryId)||typeof body.jobName!=='string'||typeof body.writeEnabled!=='boolean'||!Array.isArray(body.fields)||body.fields.length!==95)throw Error('Invalid numbered project identity');
+  return validateFields(body);
+}
+function validateFields(body){
   const keys=new Set(),groups=new Set(GROUPS.map(g=>g[0]));
   for(const f of body.fields){
     if(!record(f)||typeof f.key!=='string'||!/^\w+$/.test(f.key)||['__proto__','constructor','prototype'].includes(f.key)||keys.has(f.key)||

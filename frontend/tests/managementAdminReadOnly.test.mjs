@@ -5,18 +5,14 @@ import { fileURLToPath } from 'node:url';
 
 const source = (name) => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 
-test('management role shows read-only Active Projects preview and Cognito instructions', () => {
+test('management can edit eligible numbered projects and metrics', () => {
   const page = source('ActiveProjectsWorkspace.jsx');
-  assert.match(page, /role === 'MANAGEMENT_ADMIN'/);
-  assert.match(page, /management-admin-preview/);
-  assert.match(page, /VIEW ONLY/);
-  assert.match(page, /Project information is read-only for your role/);
   const drawer = source('ActiveProjectEditDrawer.jsx');
-  assert.match(drawer, /const canEdit = role === 'ADMIN'/);
-  assert.match(drawer, /managementPreview/);
-  assert.match(drawer, /Use Cognito’s Job Information Sheet to make changes/);
+  assert.match(page, /const canEdit = \['ADMIN','OPERATIONS','MANAGEMENT_ADMIN'\].includes\(role\)/);
+  assert.match(drawer, /const canEdit = \['ADMIN','OPERATIONS','MANAGEMENT_ADMIN'\].includes\(role\) && Number\(jobListId\) !== 24/);
+  assert.match(drawer, /useNumberedProjectJis\(jobListId,canEdit/);
   assert.match(drawer, /job\.entryLink/);
-  assert.match(drawer, /canEdit && !loading && !loadError && payload && form/);
+  assert.match(drawer, /\(canEdit \|\| canEditMetrics\) && !loading && !loadError && payload && form/);
 });
 
 test('management admin keeps Bid Log business editing, PM editing, and full financial details', () => {

@@ -16,6 +16,7 @@ function setup(t, {canEdit = true, initial = {}, onPatch = null} = {}) {
     assert.equal(body.expectedRevision, server.revision);
     if (body.setSquareFootage) server.squareFootage = body.squareFootage;
     if (body.setCubicYards) server.cubicYards = body.cubicYards;
+    if (body.setNumberOfPanels) server.numberOfPanels = body.numberOfPanels;
     server.revision++;
     return response({jobListId: 24, revision: server.revision, result: 'UPDATED'});
   };
@@ -110,4 +111,21 @@ test('whole quantity display preserves historical decimals until an explicit edi
   h.editor.edit('squareFootage','250');assert.equal(await h.editor.save(),true);assert.equal(h.server.cubicYards,'50.7500');
   assert.equal(quantityWholeDisplay('999999999999999.5000'),'1000000000000000');
   assert.equal(quantityWholeEdit('0.0000'),'0');
+});
+
+test('panel-only edit is a whole integer and preserves SF/CY', async t=>{
+ const h=setup(t,{initial:{panelApplicable:true,numberOfPanels:65}});await h.editor.start();
+ assert.equal(h.state().draft.numberOfPanels,'65');h.editor.edit('numberOfPanels','66');
+ assert.equal(await h.editor.save(),true);assert.equal(h.writes().length,1);
+ assert.deepEqual(h.writes()[0].body,{operationId:'ad76a88e-a605-4ef9-b069-cacc75bfc423',expectedRevision:0,setSquareFootage:false,setCubicYards:false,setNumberOfPanels:true,numberOfPanels:66});
+ assert.equal(h.server.squareFootage,'100.0000');assert.equal(h.server.cubicYards,'0');
+});
+test('non-Tilt metrics never send panel edits',async t=>{
+ const h=setup(t,{initial:{panelApplicable:false,numberOfPanels:null}});await h.editor.start();h.editor.edit('numberOfPanels','6');
+ assert.equal(await h.editor.save(),true);assert.equal(h.writes().length,0);
+});
+test('invalid panel edits do not PATCH',async t=>{
+ const h=setup(t,{initial:{panelApplicable:true,numberOfPanels:null}});await h.editor.start();
+ for(const v of ['1.2','2147483648','-1']){h.editor.edit('numberOfPanels',v);assert.equal(await h.editor.save(),false);}
+ assert.equal(h.writes().length,0);
 });

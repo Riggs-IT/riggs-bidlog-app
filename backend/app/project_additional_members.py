@@ -27,7 +27,7 @@ _ALLOWED = {
           "project_additional_members_link_conflict"},
     422: {"project_additional_members_invalid_request", "project_additional_members_invalid_member"},
     503: {"project_additional_members_busy", "project_additional_members_unavailable",
-          "project_additional_members_writes_disabled", "project_setup_reads_disabled",
+          "project_additional_members_writes_disabled", "project_setup_reads_disabled", "project_setup_writes_disabled",
           "service_auth_unavailable"},
 }
 
@@ -46,12 +46,17 @@ class ReplaceMembers(BaseModel):
         return self
 
 
-def _bridge(method: str, job_list_id: int, actor_eid: int, body: dict | None = None) -> dict:
+def _bridge(method: str, job_list_id: int | None, actor_eid: int, body: dict | None = None,
+            *, setup_id: UUID | None = None) -> dict:
     if type(actor_eid) is not int or actor_eid <= 0:
         raise HTTPException(401, "missing_authenticated_user")
+    if setup_id is not None and job_list_id is not None:
+        raise HTTPException(422, "project_additional_members_invalid_request")
+    url = (f"/v1/project-setups/jis/{setup_id}/additional-members" if setup_id is not None
+           else f"/v1/jobs/{job_list_id}/additional-members")
     try:
         response = data_api._get_http_client().request(
-            method, f"/v1/jobs/{job_list_id}/additional-members", json=body,
+            method, url, json=body,
             headers=data_api._request_headers(include_service_auth=True, actor_eid=actor_eid),
         )
     except (httpx.TimeoutException, httpx.RequestError):
@@ -69,7 +74,14 @@ def _bridge(method: str, job_list_id: int, actor_eid: int, body: dict | None = N
     if (not isinstance(value, dict) or value.get("persistence") != "SQL_ROSTER_ONLY"
             or value.get("externalWrites") != 0 or value.get("jobListId") != job_list_id):
         raise HTTPException(502, "project_additional_members_invalid_response")
+    if setup_id is not None and (value.get("setupId") != str(setup_id)
+            or "jobListId" not in value or type(value.get("rosterRevision")) is not int
+            or not 0 <= value["rosterRevision"] <= 9007199254740991):
+        raise HTTPException(502, "project_additional_members_invalid_response")
     if method == "GET":
+        if setup_id is not None and (type(value.get("canEdit")) is not bool
+                or (value["canEdit"] and actor_eid != 2021) or value.get("canDistribute") is not False):
+            raise HTTPException(502, "project_additional_members_invalid_response")
         if (type(value.get("rosterRevision")) is not int or value["rosterRevision"] < 0
                 or not isinstance(value.get("members"), list)
                 or not isinstance(value.get("directory"), list)

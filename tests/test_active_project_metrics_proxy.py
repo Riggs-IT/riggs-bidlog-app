@@ -30,16 +30,16 @@ class ProjectMetricsBffTests(unittest.TestCase):
         self.client = TestClient(main.app)
 
     def test_get_uses_session_eid_not_browser_header(self):
-        with patch.object(main, "get_active_project_metrics", return_value={"jobListId": 24}) as fn:
-            r = self.client.get('/api/active-projects/24/metrics', headers={'X-Riggs-User-EID': '9999'})
+        with patch.object(main, "get_active_project_metrics", return_value={"jobListId": 452}) as fn:
+            r = self.client.get('/api/active-projects/452/metrics', headers={'X-Riggs-User-EID': '9999'})
         self.assertEqual(r.status_code, 200)
         self.assertEqual(fn.call_args.kwargs['actor_eid'], 2021)
         self.assertIn('no-store', r.headers['cache-control'])
 
     def test_patch_uses_session_eid_and_exact_body(self):
         payload = valid_patch()
-        with patch.object(main, "save_active_project_metrics", return_value={"jobListId": 24}) as fn:
-            r = self.client.patch('/api/active-projects/24/metrics', json=payload,
+        with patch.object(main, "save_active_project_metrics", return_value={"jobListId": 452}) as fn:
+            r = self.client.patch('/api/active-projects/452/metrics', json=payload,
                 headers={'X-Riggs-User-EID': '9999'})
         self.assertEqual(r.status_code, 200)
         self.assertEqual(fn.call_args.kwargs['actor_eid'], 2021)
@@ -47,12 +47,25 @@ class ProjectMetricsBffTests(unittest.TestCase):
         self.assertIn('no-store', r.headers['cache-control'])
 
     def test_view_only_users_cannot_patch(self):
-        for role in ('VIEWER', 'OPERATIONS', 'MANAGEMENT_ADMIN'):
+        for role in ('VIEWER',):
             main.app.dependency_overrides[get_current_user] = lambda role=role: replace(ADMIN, app_role=role)
             with self.subTest(role=role), patch.object(main, 'save_active_project_metrics') as fn:
-                r = self.client.patch('/api/active-projects/24/metrics', json=valid_patch())
+                r = self.client.patch('/api/active-projects/452/metrics', json=valid_patch())
                 self.assertEqual(r.status_code, 403)
                 fn.assert_not_called()
+
+    def test_ops_and_management_panel_save(self):
+        for role in ('OPERATIONS','MANAGEMENT_ADMIN'):
+            main.app.dependency_overrides[get_current_user] = lambda role=role: replace(ADMIN,app_role=role)
+            body={'operationId':str(uuid4()),'expectedRevision':1,'setSquareFootage':False,'setCubicYards':False,'setNumberOfPanels':True,'numberOfPanels':65}
+            with patch.object(main,'save_active_project_metrics',return_value={'jobListId':452}) as upstream:
+                r=self.client.patch('/api/active-projects/452/metrics',json=body)
+                self.assertEqual(r.status_code,200,r.text);self.assertEqual(upstream.call_args.args[1],body)
+
+    def test_protected_metrics_route_no_upstream(self):
+        with patch.object(main,'save_active_project_metrics') as upstream:
+            self.assertEqual(self.client.patch('/api/active-projects/24/metrics',json=valid_patch()).status_code,404)
+            upstream.assert_not_called()
 
     def test_reject_forged_actor_and_invalid_quantities(self):
         for extra in ({'actorEid': 9999}, {'jobListId': 500}, {'squareFootage': '-1'},
@@ -61,13 +74,13 @@ class ProjectMetricsBffTests(unittest.TestCase):
                       {'setSquareFootage': 1}, {'expectedRevision': True}):
             payload = {**valid_patch(), **extra}
             with self.subTest(extra=extra), patch.object(main, 'save_active_project_metrics') as fn:
-                r = self.client.patch('/api/active-projects/24/metrics', json=payload)
+                r = self.client.patch('/api/active-projects/452/metrics', json=payload)
                 self.assertEqual(r.status_code, 422)
                 fn.assert_not_called()
 
     def test_conflict_preserved(self):
         with patch.object(main, 'save_active_project_metrics', side_effect=DataAPIRequestRejected(409, 'project_metrics_revision_conflict')):
-            r = self.client.patch('/api/active-projects/24/metrics', json=valid_patch())
+            r = self.client.patch('/api/active-projects/452/metrics', json=valid_patch())
         self.assertEqual(r.status_code, 409)
         self.assertEqual(r.json()['detail'], 'project_metrics_revision_conflict')
 
