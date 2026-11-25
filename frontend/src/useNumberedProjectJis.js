@@ -1,4 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
+import {cancelEmptyBuildingDraft} from './projectEditorLayout.mjs';
 import {requestSetup,createSetupOperationId} from './projectSetupAuthoring.mjs';
 import {validateNumberedJisDetail,buildJisChanges,referenceValue} from './unnumberedProjectEditor.mjs';
 
@@ -14,6 +15,7 @@ export default function useNumberedProjectJis(jobListId,enabled,onSaved){
   useEffect(()=>{if(!dirty&&!review)return;const warn=e=>{e.preventDefault();e.returnValue='';};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn);},[dirty,review]);
   const canEdit=enabled&&detail?.writeEnabled===true&&!loading&&!busy&&!review;
   function change(field,value){if(canEdit&&field.editable)setValues(old=>({...old,[field.key]:value}));}
+  function cancelBuildingEdit(field){if(canEdit&&field.editable)setValues(old=>cancelEmptyBuildingDraft(old,field));}
   function discard(){if(!busy&&!review)setValues({});}
   function reload(){if(!busy)setCycle(c=>c+1);}
   async function save(){if(!dirty||!canEdit||saving.current)return false;let changes;
@@ -27,5 +29,5 @@ export default function useNumberedProjectJis(jobListId,enabled,onSaved){
     }catch(e){if(active.current){setReview(true);setError('Save not verified. Reload details before another save.');}return false;}
     finally{saving.current=false;if(active.current)setBusy(false);}
   }
-  return {detail,values,loading,error,busy,review,dirty,canEdit,change,discard,reload,save};
+  return {detail,values,loading,error,busy,review,dirty,canEdit,change,cancelBuildingEdit,discard,reload,save};
 }

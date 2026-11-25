@@ -31,10 +31,11 @@ test('project amounts preserve allowed precision without rounding or saving comm
 });
 test('both active project editors reuse the money input and keep percentage affixes',()=>{
   const numbered=source('ActiveProjectEditDrawer.jsx'), pending=source('UnnumberedProjectEditor.jsx'), input=source('MoneyInput.jsx');
-  for(const key of ['squareFootage','cubicYards']){
-    assert.match(numbered,new RegExp(`<MoneyInput maxFractionDigits=\\{0\\} value=\\{metricsState.draft\\?\\.${key}`));
-    assert.match(numbered,new RegExp(`onValueChange=\\{value=>metricsEditor.edit\\('${key}',value\\)\\}`));
-  }
+  const metrics=source('ProjectMetricsFields.jsx');
+  for(const editor of [numbered,pending])assert.match(editor,/<ProjectMetricsFields/);
+  for(const key of ['squareFootage','cubicYards'])assert.ok(metrics.includes(key));
+  assert.match(metrics,/<MoneyInput maxFractionDigits=\{0\} value=\{state.draft\?\.\[key\]/);
+  assert.match(metrics,/onValueChange=\{value=>editor.edit\(key,value\)\}/);
   assert.match(pending,/<MoneyInput maxFractionDigits=\{groupedQuantity\?0:field.kind==='moneyText'\?4:null\}/);
   assert.match(pending,/disabled=\{!canChange\|\|!editable\} onValueChange=\{onChange\}/);
   assert.match(pending,/project-value-affix/);

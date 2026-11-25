@@ -12,7 +12,7 @@ test('AP4F3Q restores actual Cognito operational sections in the compact Active 
     'Detailing & Submittals','Closeout','Project Information']) {
     assert.ok(compact.includes(title), `missing section ${title}`);
   }
-  for (const title of ['Admin','Buildings']) {
+  for (const title of ['Contract & Financial Details','Buildings']) {
     assert.ok(drawer.includes(`title="${title}"`), `missing section ${title}`);
     assert.ok(!compact.includes(`title="${title}"`), `duplicate section ${title}`);
   }

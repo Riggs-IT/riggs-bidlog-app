@@ -1,0 +1,11 @@
+/* Reuse the editor inputs/buttons and light/dark variables. */
+.external-team-list {display:flex;flex-direction:column;gap:10px;min-width:0;}
+.external-team-description {margin:0;color:var(--muted);font-size:12px;}
+.external-team-table {display:flex;flex-direction:column;gap:8px;}
+.external-team-row {display:grid;grid-template-columns:minmax(130px,1fr) minmax(200px,1.35fr) auto;gap:10px;align-items:center;min-width:0;}
+.external-team-row > * {min-width:0;overflow-wrap:anywhere;}
+.external-team-heading {color:var(--muted);font-size:12px;font-weight:600;}
+.external-team-actions,.external-team-save {display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.external-team-actions {justify-content:space-between;}
+.external-team-row input {width:100%;box-sizing:border-box;}
+@media(max-width:660px){.external-team-row {grid-template-columns:1fr;gap:6px;}.external-team-heading {display:none;}.external-team-row {padding:8px 0;border-bottom:1px solid var(--border);}}

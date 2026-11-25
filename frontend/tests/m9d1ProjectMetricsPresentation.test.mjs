@@ -17,17 +17,19 @@ test('metrics are displayed once; planned dates and notes are hidden without cha
  assert.deepEqual(keys('location'),['anticipatedStartDate','estimatedDurationMonths']);assert.deepEqual(keys('scope'),['comments']);
  assert.deepEqual(fields,original);
 });
-test('numbered metrics retain independent save bindings and disabled-mode reference display',()=>{
- const source=read('ActiveProjectEditDrawer.jsx');const card=source.split('sectionId="metrics"')[1].split('</ActiveProjectSection>')[0];
- assert.match(card,/title="Project Metrics"/);assert.match(card,/metricsState.disabled &&/);
- assert.match(card,/metricsEditor.edit\('squareFootage',value\)/);assert.match(card,/metricsEditor.edit\('cubicYards',value\)/);
- assert.match(card,/metricsState.snapshot\?\.canEdit/);assert.match(source,/await metricsEditor.save\(\)/);
+test('numbered metrics retain independent SQL save bindings and reference display',()=>{
+ const source=read('ActiveProjectEditDrawer.jsx'),card=read('ProjectMetricsFields.jsx');
+ assert.match(source,/title="Project Metrics"/);assert.match(card,/state.disabled\?/);
+ assert.match(source,/<ProjectMetricsFields state=\{metricsState\} editor=\{metricsEditor\}/);
+ assert.match(card,/state.snapshot\?\.canEdit/);assert.match(source,/await metricsEditor.save\(\)/);
  assert.doesNotMatch(source.split('sectionId="basics"')[1].split('</ActiveProjectSection>')[0],/Square Footage|Cubic Yards/);
 });
-test('unnumbered metrics use an independent SQL editor, not ordinary JIS edits',()=>{
+test('pending metrics use the same card, independent SQL persistence and one footer save',()=>{
  const source=read('UnnumberedProjectEditor.jsx');assert.match(source,/renderSection\(\['metrics','METRICS','Project Metrics'\]\)/);
- const card=source.split(":id==='metrics'?")[1].split(":id==='parties'?")[0];assert.match(card,/active-project-readonly-field/);
- assert.match(card,/MoneyInput/);assert.match(card,/metricsEditor.edit/);assert.match(card,/Save Metrics/);assert.doesNotMatch(card,/renderField\(/);
+ assert.match(source,/<ProjectMetricsFields state=\{metricsState\} editor=\{metricsEditor\}/);
+ assert.match(source,/saveMetrics:\(\)=>metricsEditor.save\(\)/);
+ assert.match(source,/disabled=\{!canSave\} onClick=\{\(\)=>void save\(\)\}/);
+ assert.doesNotMatch(source,/Save Metrics|Discard Metrics/);
 });
 test('formatting keeps missing and zero distinct and does not mark untouched precision dirty',()=>{
  assert.equal(displayMoneyValue(quantityWholeDisplay('12345.1234'),false,0),'12,345');

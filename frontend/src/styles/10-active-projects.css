@@ -1964,3 +1964,37 @@ button.project-submittal-chip:focus-visible,.project-contract-toggle > button:fo
 .project-submittal-empty {color:var(--muted);font-size:12px}
 @media(max-width:980px){.active-project-edit-drawer .active-project-admin-buildings-pair {grid-template-columns:minmax(0,1fr)}}
 @media(max-width:520px){.active-project-edit-drawer .active-project-admin-grid {grid-template-columns:minmax(0,1fr)}}
+
+/* Project service links use the existing palette in both themes, including
+   browser-visited links. No separate technical binding captions. */
+.project-service-bindings .project-information-item a,
+.project-service-bindings .project-information-item a:visited {
+  color:var(--accent);
+  text-decoration:underline;
+  text-decoration-color:var(--muted);
+  text-underline-offset:3px;
+  overflow-wrap:anywhere;
+}
+.project-service-bindings .project-information-item a:hover,
+.project-service-bindings .project-information-item a:focus-visible {color:var(--text-strong);text-decoration-color:currentColor;}
+.project-service-bindings .project-information-item a:focus-visible {outline:2px solid var(--accent);outline-offset:3px;border-radius:2px;}
+.project-contract-comparison {display:flex;flex-direction:column;gap:5px;min-width:0;}
+.project-contract-comparison>.bid-edit-field {margin:0;}
+.project-foundation-reference {font-size:12px;color:var(--muted);font-weight:500;font-variant-numeric:tabular-nums;line-height:1.35;}
+
+/* M9D5K — adaptive metrics / contract / building layout. */
+.active-project-edit-drawer .project-quantities-layout {grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;}
+.active-project-edit-drawer .project-quantities-layout.has-buildings {grid-template-areas:"metrics metrics" "commercial buildings";}
+.active-project-edit-drawer .project-quantities-layout.no-buildings {grid-template-areas:"commercial metrics";}
+.active-project-edit-drawer .project-quantities-layout.no-buildings.can-add-buildings {grid-template-areas:"commercial add" "commercial metrics";grid-template-rows:auto 1fr;row-gap:8px;}
+.project-quantities-layout > [data-project-section="metrics"] {grid-area:metrics;}
+.project-quantities-layout > [data-project-section="admin"] {grid-area:commercial;}
+.project-quantities-layout > [data-project-section="buildings"] {grid-area:buildings;}
+.project-quantities-layout > .bid-edit-section {margin:0;min-width:0;}
+.project-building-launcher {grid-area:add;display:flex;justify-content:flex-end;align-items:center;}
+@media(max-width:980px){
+  .active-project-edit-drawer .project-quantities-layout {grid-template-columns:minmax(0,1fr);grid-template-rows:auto;}
+  .active-project-edit-drawer .project-quantities-layout.has-buildings {grid-template-areas:"metrics" "commercial" "buildings";}
+  .active-project-edit-drawer .project-quantities-layout.no-buildings {grid-template-areas:"commercial" "metrics";}
+  .active-project-edit-drawer .project-quantities-layout.no-buildings.can-add-buildings {grid-template-areas:"commercial" "add" "metrics";grid-template-rows:auto;}
+}

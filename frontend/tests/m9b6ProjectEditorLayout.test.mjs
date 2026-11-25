@@ -30,8 +30,7 @@ test('both editor states use existing contact cards and preserve verified select
   for(const s of [numbered,unnumbered]){
     assert.match(s,/active-project-parties-grid/);
     assert.match(s,/active-project-party-block/);
-    assert.match(s,/design-team-person-card/);
-    assert.match(s,/DesignTeamContactDetails/);
+    assert.match(s,/<ProjectReferenceContactCard/);
     assert.match(s,/active-project-scope-grid/);
   }
   assert.match(design,/project-setup-design-grid/);
@@ -41,7 +40,9 @@ test('both editor states use existing contact cards and preserve verified select
   assert.match(unnumbered,/contactCard\('structuralEngineerLookupId'/);
   assert.match(unnumbered,/onChange=\{value=>change\(field,value\)\}/);
   for(const key of ['ownerName','ownerEmail','ownerStreetAddress','ownerCityStateZip'])assert.match(unnumbered,new RegExp(`namedField\\('${key}'`));
-  assert.match(unnumbered,/DesignTeamContactDetails contact=\{contact\} showSource=\{false\}/);
+  assert.match(read('ProjectReferenceContactCard.jsx'),/DesignTeamContactDetails contact=\{contact\} showSource=\{false\}/);
+  assert.match(numbered,/designContactCard\('architectLookupId'/);
+  assert.match(numbered,/designContactCard\('structuralEngineerLookupId'/);
 });
 test('both keep project notes and header identity while deferring scheduling controls',()=>{
   const location=numbered.split('sectionId="location"')[1].split('</ActiveProjectSection>')[0];

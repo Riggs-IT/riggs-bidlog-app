@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import ProjectSetupIdentityPicker from './ProjectSetupIdentityPicker.jsx';
 import './ActiveProjectAdditionalMembers.css';
 import {additionalMemberScope,validRoster,validRosterIdentity,rosterCanEdit} from './additionalMemberRoster.mjs';
@@ -35,7 +35,8 @@ async function jsonRequest(url, options = {}) {
 }
 
 export default function ActiveProjectAdditionalMembers({ jobListId, setupId, canEdit, canInspect = canEdit,
-  blocked = false, reloadKey = 0, onDirtyChange, onSavingChange, onSaved }) {
+  blocked = false, reloadKey = 0, onDirtyChange, onSavingChange, onSaved,
+  ref, coordinating = false, onSummaryChange }) {
   const scope = useMemo(() => additionalMemberScope({jobListId, setupId}), [jobListId, setupId]);
   const [data, setData] = useState(null);
   const [ids, setIds] = useState([]);
@@ -56,6 +57,9 @@ export default function ActiveProjectAdditionalMembers({ jobListId, setupId, can
 
   useEffect(() => { onDirtyChange?.(dirty || uncertain || conflict); }, [dirty, uncertain, conflict, onDirtyChange]);
   useEffect(() => { onSavingChange?.(saving); }, [saving, onSavingChange]);
+  useEffect(() => {
+    onSummaryChange?.({status:uncertain||conflict?'review':loading?'loading':data?'ready':'unavailable',members:(data?.members||[]).map(m=>({key:String(m.itUserId),name:m.label}))});
+  }, [data, loading, uncertain, conflict, onSummaryChange]);
   useEffect(() => () => onSavingChange?.(false), [onSavingChange]);
   useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
 
@@ -83,7 +87,7 @@ export default function ActiveProjectAdditionalMembers({ jobListId, setupId, can
   }, [load, reloadKey]);
 
   function changeMembers(next) {
-    if (!editable || saving || blocked || uncertain || conflict || !Array.isArray(next) || next.length > 200
+    if (!editable || saving || blocked || coordinating || uncertain || conflict || !Array.isArray(next) || next.length > 200
         || next.some(id => !Number.isSafeInteger(id) || id <= 0)
         || new Set(next).size !== next.length) return;
     setIds(next);
@@ -91,7 +95,7 @@ export default function ActiveProjectAdditionalMembers({ jobListId, setupId, can
   }
 
   async function save() {
-    if (!editable || !data || loading || saving || saveInFlight.current || blocked || conflict || (!dirty && !uncertain)) return;
+    if (!editable || !data || loading || saving || saveInFlight.current || blocked || conflict || (!dirty && !uncertain)) return {ok:false,committed:false};
     saveInFlight.current = true;
     setSaving(true); onSavingChange?.(true); setError(''); setNotice('');
     let sent = false;
@@ -118,6 +122,7 @@ export default function ActiveProjectAdditionalMembers({ jobListId, setupId, can
       setNotice(reloaded ? 'Members saved.'
         : 'Membership save succeeded. Reload the roster before editing again.');
       Promise.resolve().then(() => onSavedRef.current?.()).catch(() => {});
+      return {ok:reloaded===true,committed:true,message:reloaded?null:'Internal team saved. Reload members to verify the current list.'};
     } catch (cause) {
       const notCertain = sent && (!cause.status || cause.status >= 500);
       setUncertain(notCertain);
@@ -132,15 +137,26 @@ export default function ActiveProjectAdditionalMembers({ jobListId, setupId, can
           ? 'Save outcome unknown. Retry the SAME request, or reload and verify before changing anything.'
           : cause.message || 'Unable to save members.');
       }
+      return {ok:false,committed:false,message:notCertain?'Internal save outcome unknown; retry the same save or reload.':'Internal team save not accepted.'};
     } finally { saveInFlight.current = false; setSaving(false); onSavingChange?.(false); }
   }
+
+  // The parent validates both rosters before executing either save. Return a
+  // closure over this render's draft/revision; the modal freezes both panels
+  // for the whole sequence. Existing exact-operation retry logic stays here.
+  useImperativeHandle(ref, () => ({prepareSave() {
+    if (!dirty && !uncertain && !conflict) return {state:'unchanged'};
+    if (conflict || !editable || !data || loading || saving || blocked || saveInFlight.current
+        || (uncertain && !operation.current)) return {state:'blocked',message:'Reload or resolve the internal roster before saving.'};
+    return {state:'ready',run:save};
+  }}));
 
   if (!canInspect || !scope) return null;
   return <div className="additional-members-inline">
     {loading && <div className="bid-edit-message" role="status">Loading additional members…</div>}
     {error && <div className="bid-edit-message error" role="alert">{error}</div>}
     {!data && !loading && <button type="button" className="secondary-button"
-      onClick={() => void load()}>Retry members</button>}
+      disabled={coordinating || blocked || saving} onClick={() => void load()}>Retry members</button>}
     {data && <>
       {editable ? <ProjectSetupIdentityPicker
         label="Additional team members"
@@ -148,7 +164,7 @@ export default function ActiveProjectAdditionalMembers({ jobListId, setupId, can
         value={ids}
         options={choices}
         onChange={changeMembers}
-        disabled={loading || saving || blocked || uncertain || conflict}
+        disabled={loading || saving || blocked || coordinating || uncertain || conflict}
       /> : <div className="project-setup-identity-selected" aria-label="Additional team members (view only)">
         {data.members.length ? data.members.map(member => <span className="project-setup-identity-chip" key={member.itUserId}>{member.label}</span>) : <small>No additional members</small>}
       </div>}
@@ -157,14 +173,11 @@ export default function ActiveProjectAdditionalMembers({ jobListId, setupId, can
       </small>}
       {editable && <div className="additional-members-actions">
         {(dirty || uncertain || conflict || error) && <button type="button" className="secondary-button"
-          disabled={saving || blocked || loading}
+          disabled={saving || blocked || coordinating || loading}
           onClick={() => {
             if ((dirty || uncertain || conflict) && !window.confirm('Reload roster and discard local membership selections?')) return;
             void load();
           }}>Reload</button>}
-        <button type="button" className="bid-log-save-button"
-          disabled={saving || blocked || loading || conflict || (!dirty && !uncertain)}
-          onClick={() => void save()}>{saving ? 'Saving…' : uncertain ? 'Retry Same Save' : 'Save Members'}</button>
       </div>}
     </>}
     {notice && <div className="bid-edit-message" role="status">{notice}</div>}

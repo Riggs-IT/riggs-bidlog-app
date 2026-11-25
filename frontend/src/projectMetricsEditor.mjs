@@ -40,6 +40,15 @@ export function metricsChanges(base, draft) {
   return keys.filter(key => !sameQuantity(quantityWholeDisplay(base[key]), draft[key]));
 }
 
+export function validateMetricEdits(base,draft) {
+  return Object.fromEntries(metricsChanges(base,draft).map(field=>{
+    const value=quantityWholeEdit(draft[field]);
+    if(value===null)throw new Error('Enter a value or 0 for the quantity being edited.');
+    if(field==='numberOfPanels'&&Number(value)>2147483647)throw new Error('Enter a panel count no greater than 2,147,483,647.');
+    return [field,value];
+  }));
+}
+
 function draftFrom(payload) {
   return {
     squareFootage: quantityWholeDisplay(payload.squareFootage),
@@ -138,14 +147,7 @@ export function createProjectMetricsEditor({
     if (!fields.length) return true;
     let values;
     try {
-      values = Object.fromEntries(fields.map(field => {
-        const value = quantityWholeEdit(state.draft[field]);
-        // A blank input is not N/A. Explicit override clearing requires a
-        // separate UI action; never silently replace a real value with NULL.
-        if (value === null) throw new Error('Enter a value or 0 for the quantity being edited.');
-        if (field === 'numberOfPanels' && Number(value) > 2147483647) throw new Error('Enter a panel count no greater than 2,147,483,647.');
-        return [field, value];
-      }));
+      values = validateMetricEdits(state.snapshot,state.draft);
     } catch (error) {
       emit({error: error.message});
       return false;

@@ -19,9 +19,9 @@ test('both compact editors show closeout and recorded folder state as readouts',
     assert.match(source,/Folder created \(recorded\)/);
     assert.match(source,/recordedProjectValue\(value,/);
   }
-  assert.match(pending,/field.lane==='workflow'\|\|field.lane==='accountingReview'\)return <div className="project-information-item"/);
-  assert.match(pending,/OH&P and lender details · read-only/);
-  assert.match(pending,/f.key!=='foundationContractAmount'/);
+  assert.match(pending,/field.lane==='workflow'\)return <div className="project-information-item"/);
+  assert.match(pending,/field.lane==='accountingReview'\)return <ReadField/);
+  assert.match(pending,/\['retention','operationalContractAmount','bond','parcel','ohp','lender','lenderStreet','lenderCityStateZip'\]/);
   assert.match(pending,/filter\(f=>f.lane==='workflow'\).map\(renderField\)/);
 });
 test('read-only workflow/accounting fields cannot be serialized by the ordinary save path',()=>{

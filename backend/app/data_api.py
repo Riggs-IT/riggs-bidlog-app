@@ -4515,3 +4515,26 @@ def request_numbered_project_editor(*,actor_eid:int,job_id:int,body:dict|None=No
     if not isinstance(detail,dict) or detail.get('externalState')!='NUMBERED' or detail.get('jobListId')!=job_id or detail.get('setupId') is not None or detail.get('cognitoEntryId') in (966,1199) or not detail.get('jobNumber') or (body is not None and result.get('result') not in ('NO_CHANGE','VERIFIED')):
         raise DataAPIInvalidResponse('Invalid numbered project editor identity.')
     return result
+
+
+# External Team: typed project scope and session actor; no provider credentials in BFF.
+def request_project_external_team(*,actor_eid:int,setup_id:UUID|None=None,job_id:int|None=None,body:dict|None=None):
+    if (type(actor_eid) is not int or actor_eid<=0 or (setup_id is None)==(job_id is None)
+            or job_id is not None and (type(job_id) is not int or not 0<job_id<=2147483647 or job_id==24)):
+        raise DataAPIRequestRejected(404,'project_setup_not_found')
+    scope=f'/numbered/{job_id}' if job_id is not None else f'/{setup_id}'
+    try:
+        response=_get_http_client().request('PUT' if body is not None else 'GET',f'/v1/project-setups/jis{scope}/external-team',json=body,
+            headers=_request_headers(include_service_auth=True,actor_eid=actor_eid))
+    except (httpx.TimeoutException,httpx.RequestError):
+        raise DataAPIUnavailable('External team unavailable. Verify the saved list before editing again.') from None
+    if response.status_code!=200:
+        code=_detail(response)
+        if code in _SETUP_ERRORS.get(response.status_code,set()):raise DataAPIRequestRejected(response.status_code,code)
+        if response.status_code==422:raise DataAPIRequestRejected(422,'project_setup_invalid_request')
+        _raise_common_failure(response,operation='External team')
+        raise DataAPIInvalidResponse('Invalid external team response.')
+    result=_json_object(response,operation='External team')
+    if result.get('setupId')!=(str(setup_id) if setup_id is not None else None) or result.get('jobListId')!=job_id or (body is not None and result.get('operationId')!=body.get('operationId')):
+        raise DataAPIInvalidResponse('External team identity mismatch.')
+    return result

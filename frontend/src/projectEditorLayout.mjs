@@ -52,3 +52,34 @@ export function recordedProjectValue(value, kind) {
   if (kind === 'boolean') return value === true ? 'Yes' : value === false ? 'No' : 'Not recorded';
   return typeof value === 'string' && value.trim() ? value : 'Not recorded';
 }
+
+// A provider default NumberOfBuildings is not a named building row. Do not
+// fabricate rows or write a count when rendering the layout.
+export function projectBuildingLayout(rows, canAdd, editing=false) {
+  const known=Array.isArray(rows);
+  const named=known&&rows.some(row=>typeof row?.name==='string'&&row.name.trim()!=='');
+  const showBuildings=known&&(named||editing||rows.some(row=>row?.id===null));
+  return {showBuildings,canAddBuildings:known&&!showBuildings&&canAdd===true,unavailable:!known};
+}
+
+export function beginProjectBuildings(rows) {
+  if (!Array.isArray(rows) || rows.some(row=>typeof row?.name!=='string'||row.name.trim())) return null;
+  // Keep existing provider row IDs. If a legacy blank slot already exists,
+  // use it rather than increment a provider default or invent a row ID.
+  return rows.length?rows.map(row=>({...row})):[{id:null,name:''}];
+}
+
+// Cancelling the first unsaved building must restore the original field,
+// including legacy blank provider rows, without submitting an empty repeater.
+export function canCancelEmptyBuildingDraft(field) {
+  return field?.key==='buildingNames' && field.kind==='rows' && field.editable===true &&
+    Array.isArray(field.value) && field.value.every(row=>typeof row?.name==='string'&&!row.name.trim());
+}
+
+export function cancelEmptyBuildingDraft(values,field) {
+  if (!canCancelEmptyBuildingDraft(field) || !Object.hasOwn(values,'buildingNames') ||
+      !Array.isArray(values.buildingNames) || values.buildingNames.length!==1) return values;
+  const next={...values};
+  delete next.buildingNames;
+  return next;
+}

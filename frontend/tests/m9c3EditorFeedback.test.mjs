@@ -34,7 +34,8 @@ test('currency and percent are UI-only affixes, not quantities or arbitrary numb
 test('save notifications reuse ActionToast and retain receipt/uncertain guards',()=>{
  assert.match(source,/<ActionToast message=\{notice\?\.message\} type=\{notice\?\.type\}/);
  assert.match(source,/setNotice\(\{type:'success'/);
- assert.match(source,/setUncertain\(true\);setNotice\(\{type:'error'/);
+ assert.match(source,/setUncertain\(true\);fieldsError=/);
+ assert.match(source,/result.saved.includes\('metrics'\)/);
  assert.doesNotMatch(source,/notice&&<p/);
  assert.match(source,/expectedVersion:detail.entryVersion/);
  assert.match(source,/accepted.entryVersion!==/);

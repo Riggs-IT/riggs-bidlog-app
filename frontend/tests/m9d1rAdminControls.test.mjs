@@ -40,7 +40,8 @@ test('management preview shares visible editor, not authoring capability',()=>{
   const workspace=read('ActiveProjectsWorkspace.jsx'),editor=read('UnnumberedProjectEditor.jsx'),drawer=read('ActiveProjectEditDrawer.jsx');
   assert.match(workspace,/canReadCreatedProjects=mayInspectSetup\(user\)/);
   assert.match(editor,/canEdit=author&&detail\?\.writeEnabled===true/);
-  for(const code of [editor,drawer])assert.match(code,/active-project-admin-buildings-pair/);
+  for(const code of [editor,drawer])assert.match(code,/<ProjectQuantitiesLayout/);
+  assert.match(read('ProjectQuantitiesLayout.jsx'),/active-project-admin-buildings-pair/);
   assert.match(drawer,/<ProjectContractType value=\{cognitoPayload\?\.contract\}\/>/);
   assert.match(read('ActiveProjectCognitoSections.jsx'),/<ProjectSubmittals value=\{submittals\} \/>/);
 });

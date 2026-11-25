@@ -130,3 +130,26 @@ def get_numbered_jis(job_id: int,user: CurrentUser=Depends(numbered_reader),fres
 @router.patch('/numbered/{job_id}',dependencies=[Depends(_same_origin_json)])
 def save_numbered_jis(job_id: int,body: SaveRequest,user: CurrentUser=Depends(numbered_writer)):
     return _respond(lambda:data_api.request_numbered_project_editor(actor_eid=user.eid,job_id=job_id,body=body.model_dump(mode='json')))
+
+
+from .project_external_team_contract import ExternalTeamSaveRequest
+
+
+@router.get('/{setup_id}/external-team')
+def get_setup_external_team(setup_id: UUID,user: CurrentUser=Depends(_reader)):
+    return _respond(lambda:data_api.request_project_external_team(actor_eid=user.eid,setup_id=setup_id))
+
+
+@router.put('/{setup_id}/external-team',dependencies=[Depends(_same_origin_json)])
+def put_setup_external_team(setup_id: UUID,body: ExternalTeamSaveRequest,user: CurrentUser=Depends(_admin)):
+    return _respond(lambda:data_api.request_project_external_team(actor_eid=user.eid,setup_id=setup_id,body=body.model_dump(mode='json')))
+
+
+@router.get('/numbered/{job_id}/external-team')
+def get_numbered_external_team(job_id: int,user: CurrentUser=Depends(numbered_reader)):
+    return _respond(lambda:data_api.request_project_external_team(actor_eid=user.eid,job_id=job_id))
+
+
+@router.put('/numbered/{job_id}/external-team',dependencies=[Depends(_same_origin_json)])
+def put_numbered_external_team(job_id: int,body: ExternalTeamSaveRequest,user: CurrentUser=Depends(numbered_writer)):
+    return _respond(lambda:data_api.request_project_external_team(actor_eid=user.eid,job_id=job_id,body=body.model_dump(mode='json')))

@@ -1,7 +1,8 @@
 // An ordered name list, never a separate count input. The provider owns IDs.
-export default function ProjectBuildingRows({rows,editable=false,disabled=false,onChange}) {
+export default function ProjectBuildingRows({rows,editable=false,disabled=false,onChange,onCancel}) {
   if(!Array.isArray(rows))return <div className="bid-edit-message">Building information unavailable.</div>;
   const canChange=editable&&!disabled&&typeof onChange==='function';
+  const canCancel=typeof onCancel==='function';
   return <div className="project-building-rows">
     <div className="cognito-general-row-heading project-building-heading">
       <small>{rows.length} {rows.length===1?'building':'buildings'}</small>
@@ -17,7 +18,10 @@ export default function ProjectBuildingRows({rows,editable=false,disabled=false,
           :<strong>{row?.name||'—'}</strong>}
       </label>
       {editable&&<button type="button" className="secondary-button" aria-label={`Remove Building ${index+1}`}
-        disabled={!canChange||rows.length<=1} onClick={()=>onChange(rows.filter((_,i)=>i!==index))}>Remove</button>}
+        disabled={!canChange||(rows.length<=1&&!canCancel)} onClick={()=>{
+          if(rows.length===1){if(canCancel)onCancel();return;}
+          onChange(rows.filter((_,i)=>i!==index));
+        }}>Remove</button>}
     </div>)}
   </div>;
 }

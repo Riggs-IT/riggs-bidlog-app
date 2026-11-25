@@ -44,7 +44,7 @@ test('both identities use same public modal entry and visual shell without canar
   assert.doesNotMatch(page,/UnnumberedProjectsPanel|Awaiting Job Number/);assert.match(page,/setEditProjectId\(projectDirectoryKey\(project\)\)/);
   assert.match(drawer,/<UnnumberedProjectEditor/);assert.match(drawer,/<NumberedProjectEditDrawer/);assert.match(drawer,/bid-log-edit-drawer active-project-edit-drawer project-setup-editor/);assert.match(editor,/bid-log-edit-drawer active-project-edit-drawer project-setup-editor/);
   for(const title of ['Closeout','Project Information'])assert.ok(sheet.includes(`title="${title}"`));
-  for(const title of ['Buildings','Admin'])assert.ok(drawer.includes(`title="${title}"`));
+  for(const title of ['Buildings','Contract & Financial Details'])assert.ok(drawer.includes(`title="${title}"`));
   assert.doesNotMatch(editor,/Original canary retained|approved reset|Mapped · save not enabled|integration pending/);
   assert.match(editor,/detail\?\.writeEnabled===true/);assert.match(editor,/expectedEntryId:detail.cognitoEntryId/);
 });
